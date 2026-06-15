@@ -1,0 +1,16 @@
+[
+    {
+        "groupTitle": "办公室",
+        "icon": "home",
+        "opened": false,
+        "isSequence": false,
+        "items": [
+            {
+                "text": "花盘",
+                "icon": "/static/ISM/cool/21@3x.png",
+                "imageURL": "/static/ISM/cool/21@3x.png"
+            }
+        ]
+    }
+]
+

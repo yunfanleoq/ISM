@@ -1,0 +1,306 @@
+{
+  "device_count": 12,
+  "total_points": 2827,
+  "devices": {
+    "P1_仪表_": {
+      "point_count": 306,
+      "sample_points": [
+        {
+          "name": "P1_仪表_ 1A1_U11_S18_1Input 1",
+          "addr": "8500"
+        },
+        {
+          "name": "P1_仪表_ 1A1_U11_S18_1Input 2",
+          "addr": "8501"
+        },
+        {
+          "name": "P1_仪表_ 1A1_U11_S18_1Input 3",
+          "addr": "8502"
+        },
+        {
+          "name": "P1_仪表_ 1A1_U11_S18_1通讯状态",
+          "addr": "8503"
+        },
+        {
+          "name": "P1_仪表_ 1A1_U11_S18_2Input 1",
+          "addr": "8505"
+        }
+      ]
+    },
+    "1A配电室 172.31.4.14 172.20.255.14": {
+      "point_count": 76,
+      "sample_points": [
+        {
+          "name": "装置本身DIO信息",
+          "addr": "8504"
+        },
+        {
+          "name": "装置本身DIO信息",
+          "addr": "8509"
+        },
+        {
+          "name": "装置本身DIO信息",
+          "addr": "8514"
+        },
+        {
+          "name": "装置本身DIO信息",
+          "addr": "8519"
+        },
+        {
+          "name": "装置本身DIO信息",
+          "addr": "8524"
+        }
+      ]
+    },
+    "P2_仪表_": {
+      "point_count": 306,
+      "sample_points": [
+        {
+          "name": "P2_仪表_ 1A1_U11_S16_1Input 1",
+          "addr": "8545"
+        },
+        {
+          "name": "P2_仪表_ 1A1_U11_S16_1Input 2",
+          "addr": "8546"
+        },
+        {
+          "name": "P2_仪表_ 1A1_U11_S16_1Input 3",
+          "addr": "8547"
+        },
+        {
+          "name": "P2_仪表_ 1A1_U11_S16_1通讯状态",
+          "addr": "8548"
+        },
+        {
+          "name": "P2_仪表_ 1A1_U11_S16_2Input 1",
+          "addr": "8550"
+        }
+      ]
+    },
+    "P3_仪表_": {
+      "point_count": 288,
+      "sample_points": [
+        {
+          "name": "P3_仪表_A40 1A1_U11_S11_1Input 1",
+          "addr": "8590"
+        },
+        {
+          "name": "P3_仪表_A40 1A1_U11_S11_1Input 2",
+          "addr": "8591"
+        },
+        {
+          "name": "P3_仪表_A40 1A1_U11_S11_1通讯状态",
+          "addr": "8592"
+        },
+        {
+          "name": "P3_仪表_A40 1A1_U11_S11_2Input 1",
+          "addr": "8594"
+        },
+        {
+          "name": "P3_仪表_A40 1A1_U11_S11_2Input 2",
+          "addr": "8595"
+        }
+      ]
+    },
+    "P4_仪表_": {
+      "point_count": 306,
+      "sample_points": [
+        {
+          "name": "P4_仪表_ 1A1_U11_S17_1Input 1",
+          "addr": "8620"
+        },
+        {
+          "name": "P4_仪表_ 1A1_U11_S17_1Input 2",
+          "addr": "8621"
+        },
+        {
+          "name": "P4_仪表_ 1A1_U11_S17_1Input 3",
+          "addr": "8622"
+        },
+        {
+          "name": "P4_仪表_ 1A1_U11_S17_1通讯状态",
+          "addr": "8623"
+        },
+        {
+          "name": "P4_仪表_ 1A1_U11_S17_2Input 1",
+          "addr": "8625"
+        }
+      ]
+    },
+    "P5_仪表_": {
+      "point_count": 306,
+      "sample_points": [
+        {
+          "name": "P5_仪表_ 1A1_U11_S19_1Input 1",
+          "addr": "8665"
+        },
+        {
+          "name": "P5_仪表_ 1A1_U11_S19_1Input 2",
+          "addr": "8666"
+        },
+        {
+          "name": "P5_仪表_ 1A1_U11_S19_1Input 3",
+          "addr": "8667"
+        },
+        {
+          "name": "P5_仪表_ 1A1_U11_S19_1通讯状态",
+          "addr": "8668"
+        },
+        {
+          "name": "P5_仪表_ 1A1_U11_S19_2Input 1",
+          "addr": "8670"
+        }
+      ]
+    },
+    "P6_仪表_": {
+      "point_count": 238,
+      "sample_points": [
+        {
+          "name": "P6_仪表_ 1A3_U11_D14_1Input 1",
+          "addr": "8710"
+        },
+        {
+          "name": "P6_仪表_ 1A3_U11_D14_1Input 2",
+          "addr": "8711"
+        },
+        {
+          "name": "P6_仪表_ 1A3_U11_D14_1Input 3",
+          "addr": "8712"
+        },
+        {
+          "name": "P6_仪表_ 1A3_U11_D14_1通讯状态",
+          "addr": "8713"
+        },
+        {
+          "name": "P6_仪表_ 1A3_U11_D14_2Input 1",
+          "addr": "8715"
+        }
+      ]
+    },
+    "P7_仪表_": {
+      "point_count": 306,
+      "sample_points": [
+        {
+          "name": "P7_仪表_ 1A3_U11_D13_1Input 1",
+          "addr": "8745"
+        },
+        {
+          "name": "P7_仪表_ 1A3_U11_D13_1Input 2",
+          "addr": "8746"
+        },
+        {
+          "name": "P7_仪表_ 1A3_U11_D13_1Input 3",
+          "addr": "8747"
+        },
+        {
+          "name": "P7_仪表_ 1A3_U11_D13_1通讯状态",
+          "addr": "8748"
+        },
+        {
+          "name": "P7_仪表_ 1A3_U11_D13_2Input 1",
+          "addr": "8750"
+        }
+      ]
+    },
+    "P8_仪表_": {
+      "point_count": 176,
+      "sample_points": [
+        {
+          "name": "P8_仪表_A40 1A3_U11_D11_1Input 1",
+          "addr": "8790"
+        },
+        {
+          "name": "P8_仪表_A40 1A3_U11_D11_1Input 2",
+          "addr": "8791"
+        },
+        {
+          "name": "P8_仪表_A40 1A3_U11_D11_1通讯状态",
+          "addr": "8792"
+        },
+        {
+          "name": "P8_仪表_A40 1A3_U11_D11_2Input 1",
+          "addr": "8794"
+        },
+        {
+          "name": "P8_仪表_A40 1A3_U11_D11_2Input 2",
+          "addr": "8795"
+        }
+      ]
+    },
+    "P9_仪表_": {
+      "point_count": 204,
+      "sample_points": [
+        {
+          "name": "P9_仪表_ 1A3_U11_D01_1Input 1",
+          "addr": "8806"
+        },
+        {
+          "name": "P9_仪表_ 1A3_U11_D01_1Input 2",
+          "addr": "8807"
+        },
+        {
+          "name": "P9_仪表_ 1A3_U11_D01_1Input 3",
+          "addr": "8808"
+        },
+        {
+          "name": "P9_仪表_ 1A3_U11_D01_1通讯状态",
+          "addr": "8809"
+        },
+        {
+          "name": "P9_仪表_ 1A3_U11_D01_2Input 1",
+          "addr": "8811"
+        }
+      ]
+    },
+    "P10_施耐德UPS_": {
+      "point_count": 180,
+      "sample_points": [
+        {
+          "name": "P10_施耐德UPS_1A1_U11通讯状态",
+          "addr": "8836"
+        },
+        {
+          "name": "P10_施耐德UPS_1A1_U12通讯状态",
+          "addr": "8838"
+        },
+        {
+          "name": "P10_施耐德UPS_1A1_U13通讯状态",
+          "addr": "8840"
+        },
+        {
+          "name": "P10_施耐德UPS_1A1_U14通讯状态",
+          "addr": "8842"
+        },
+        {
+          "name": "P10_施耐德UPS_1A1_U11UPS使用模式",
+          "addr": "3169"
+        }
+      ]
+    },
+    "P11_施耐德UPS_": {
+      "point_count": 135,
+      "sample_points": [
+        {
+          "name": "P11_施耐德UPS_1A3_U11通讯状态",
+          "addr": "8844"
+        },
+        {
+          "name": "P11_施耐德UPS_1A3_U12通讯状态",
+          "addr": "8846"
+        },
+        {
+          "name": "P11_施耐德UPS_1A3_U13通讯状态",
+          "addr": "8848"
+        },
+        {
+          "name": "P11_施耐德UPS_1A3_U11UPS使用模式",
+          "addr": "3345"
+        },
+        {
+          "name": "P11_施耐德UPS_1A3_U11UPS逆变器内部故障",
+          "addr": "3346"
+        }
+      ]
+    }
+  }
+}

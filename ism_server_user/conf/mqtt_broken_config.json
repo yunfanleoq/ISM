@@ -1,0 +1,34 @@
+{
+  "listeners": [
+    {
+      "type": "tcp",
+      "id": "file-tcp1",
+      "address": ":18883"
+    }
+  ],
+  "hooks": {
+    "auth": {
+      "allow_all": false,
+      "ledger": {
+        "auth": [
+          {
+            "username": "test",
+            "password": "123456",
+            "allow": true
+          }
+        ],
+        "acl": [
+          {
+            "remote": "127.0.0.1:*"
+          },
+          {
+            "username": "melon",
+            "filters": null,
+            "melon/#": 3,
+            "updates/#": 2
+          }
+        ]
+      }
+    }
+  }
+}

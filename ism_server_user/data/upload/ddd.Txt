@@ -1,0 +1,1 @@
+[{"DisplayName":"Counter","Nodeid":"ns=3;i=1001","DataType":"Int32","AccessLevel":"Readable | History Read"},{"DisplayName":"Random","Nodeid":"ns=3;i=1002","DataType":"Double","AccessLevel":"Readable | History Read"}]

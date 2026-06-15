@@ -1,0 +1,106 @@
+{
+  "id": "distribution_room",
+  "name": "配电室监控总览",
+  "category": "配电/变电",
+  "keywords": ["配电室","配电柜","电力仪表","A20","A40","Modbus","楼层","总览"],
+  "description": "10kV配电室标准监控大屏。左侧设备树+中央配电柜面板网格+右侧实时告警列表+hover弹出设备详情。",
+  "size": "1920x1080",
+  "style": {
+    "theme": "tech-blue",
+    "primary_color": "#00d4ff",
+    "accent_color": "#ff6b35",
+    "bg_color": "#0a1628",
+    "text_color": "#e0e6ed",
+    "font_family": "Microsoft YaHei"
+  },
+  "pages": [
+    {
+      "name": "总览",
+      "is_home": true,
+      "sections": [
+        {
+          "name": "顶部标题栏",
+          "zone": "top",
+          "position": {"x":0,"y":0,"w":1920,"h":80},
+          "components": [
+            {
+              "type": "DvBorderBox1",
+              "content": {
+                "text": "{{project_name}} - 配电室监控总览",
+                "fontSize": 28,
+                "foreColor": "#00d4ff"
+              }
+            }
+          ]
+        },
+        {
+          "name": "左侧设备树",
+          "zone": "left",
+          "position": {"x":10,"y":90,"w":280,"h":950},
+          "components": [
+            {"type": "DeviceTree", "content": {"title": "设备拓扑树"}},
+            {"type": "ViewSvgTextStatus", "content": {"text": "设备总数: {{device_count}}台", "fontSize": 14}}
+          ]
+        },
+        {
+          "name": "中央配电柜面板区域",
+          "zone": "center",
+          "position": {"x":300,"y":90,"w":1300,"h":950},
+          "layout": "auto_grid",
+          "config": {
+            "cols": 4,
+            "card_width": 300,
+            "card_height": 200,
+            "gap": 20
+          },
+          "components": [],
+          "sub_sections": [
+            {
+              "name": "配电柜设备卡片(自动生成)",
+              "type": "device_card",
+              "template": {
+                "container": {"type": "DvBorderBox8", "position": {"x":"{{auto_x}}","y":"{{auto_y}}","w":300,"h":40}},
+                "device_label": {"type": "ViewSvgText", "text": "{{device_name}}", "fontSize": 14, "foreColor": "#00d4ff"},
+                "ab_voltage": {"type": "ViewSvgText", "text": "AB线电压: {{value}} V", "fontSize": 12},
+                "a_current": {"type": "ViewSvgText", "text": "A相电流: {{value}} A", "fontSize": 12},
+                "power": {"type": "ViewSvgText", "text": "总有功: {{value}} kW", "fontSize": 12},
+                "status": {"type": "ViewSvgImageStatus", "device": "{{device_uuid}}", "point": "主通讯状态"}
+              },
+              "interactions": {
+                "hover": {
+                  "trigger": "mouseenter",
+                  "action": "visible",
+                  "show": "detail_popup_{{device_id}}",
+                  "hide_trigger": "mouseleave"
+                },
+                "click": {
+                  "trigger": "click",
+                  "action": "link",
+                  "linkType": "Inside",
+                  "page": "cabinet_{{cabinet_id}}",
+                  "isPopUp": false
+                }
+              },
+              "popup_detail": {
+                "size": {"w":480,"h":380},
+                "components": [
+                  {"type": "DvBorderBox1", "text": "{{device_full_name}}"},
+                  {"type": "RealDataTable", "device": "{{device_uuid}}", "columns": 2}
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "右侧告警面板",
+          "zone": "right",
+          "position": {"x":1610,"y":90,"w":300,"h":950},
+          "components": [
+            {"type": "alarmList", "content": {"title": "实时告警", "alarm_level_filter": [2,3,4]}},
+            {"type": "ViewChartGauge1", "content": {"title": "在线率", "data": "{{online_rate}}"}}
+          ]
+        }
+      ]
+    }
+  ]
+}

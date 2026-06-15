@@ -1,0 +1,4149 @@
+{
+  "_meta": {
+    "format_version": "1.0",
+    "generator": "ISM Excel Import Skill v2",
+    "project_name": "1A配电室"
+  },
+  "project": {
+    "name": "1A配电室",
+    "description": "1A配电室 Modbus TCP监控",
+    "gateway": {
+      "primary_ip": "172.31.4.14",
+      "port": 502
+    }
+  },
+  "data_models": [
+    {
+      "name": "A20电力仪表",
+      "protocol": "modbus",
+      "connection": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      },
+      "register_groups": [
+        {
+          "group_name": "AI模拟量",
+          "register_type": "holding",
+          "addresses": [
+            {
+              "name": "BC线电压",
+              "offset": 2,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "V",
+              "coeff": 0.01,
+              "conversion_expression": "x*0.01",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "CA线电压",
+              "offset": 4,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "V",
+              "coeff": 0.01,
+              "conversion_expression": "x*0.01",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "频率",
+              "offset": 6,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "Hz",
+              "coeff": 0.01,
+              "conversion_expression": "x*0.01",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "A相电流",
+              "offset": 8,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "A",
+              "coeff": 0.001,
+              "conversion_expression": "x*0.001",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "B相电流",
+              "offset": 10,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "A",
+              "coeff": 0.001,
+              "conversion_expression": "x*0.001",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "C相电流",
+              "offset": 12,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "A",
+              "coeff": 0.001,
+              "conversion_expression": "x*0.001",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "中性线电流",
+              "offset": 14,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "A",
+              "coeff": 0.001,
+              "conversion_expression": "x*0.001",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "总有功功率",
+              "offset": 16,
+              "register_type": "holding",
+              "data_type": "int32",
+              "unit": "",
+              "coeff": 0.01,
+              "conversion_expression": "x*0.01",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "总无功功率",
+              "offset": 18,
+              "register_type": "holding",
+              "data_type": "int32",
+              "unit": "",
+              "coeff": 0.01,
+              "conversion_expression": "x*0.01",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "总视在功率",
+              "offset": 20,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "",
+              "coeff": 0.01,
+              "conversion_expression": "x*0.01",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "总功率因数",
+              "offset": 22,
+              "register_type": "holding",
+              "data_type": "int32",
+              "unit": "",
+              "coeff": 0.001,
+              "conversion_expression": "x*0.001",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "正有功电度",
+              "offset": 24,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "kWh",
+              "coeff": 1,
+              "conversion_expression": "x*1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "A相电流谐波畸变率",
+              "offset": 26,
+              "register_type": "holding",
+              "data_type": "int16",
+              "unit": "%",
+              "coeff": 0.1,
+              "conversion_expression": "x*0.1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "B相电流谐波畸变率",
+              "offset": 27,
+              "register_type": "holding",
+              "data_type": "int16",
+              "unit": "%",
+              "coeff": 0.1,
+              "conversion_expression": "x*0.1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "C相电流谐波畸变率",
+              "offset": 28,
+              "register_type": "holding",
+              "data_type": "int16",
+              "unit": "%",
+              "coeff": 0.1,
+              "conversion_expression": "x*0.1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "中性线电流谐波畸变率",
+              "offset": 29,
+              "register_type": "holding",
+              "data_type": "int16",
+              "unit": "%",
+              "coeff": 0.1,
+              "conversion_expression": "x*0.1",
+              "is_alarm": false,
+              "is_record": true
+            }
+          ]
+        },
+        {
+          "group_name": "DI数字量",
+          "register_type": "coil",
+          "addresses": [
+            {
+              "name": "输入状态1（合分闸状态）",
+              "offset": 2,
+              "register_type": "coil",
+              "data_type": "bit",
+              "unit": "",
+              "coeff": 1,
+              "is_alarm": false,
+              "alarm_level": 0,
+              "alarm_message": ""
+            },
+            {
+              "name": "主通讯状态",
+              "offset": 3,
+              "register_type": "coil",
+              "data_type": "bit",
+              "unit": "",
+              "coeff": 1,
+              "is_alarm": true,
+              "alarm_level": 3,
+              "alarm_message": "设备通讯离线"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "A40电力仪表",
+      "protocol": "modbus",
+      "connection": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      },
+      "register_groups": [
+        {
+          "group_name": "AI模拟量",
+          "register_type": "holding",
+          "addresses": [
+            {
+              "name": "B相电流",
+              "offset": 2,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "A",
+              "coeff": 0.001,
+              "conversion_expression": "x*0.001",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "C相电流",
+              "offset": 4,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "A",
+              "coeff": 0.001,
+              "conversion_expression": "x*0.001",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "中性线电流",
+              "offset": 6,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "A",
+              "coeff": 0.001,
+              "conversion_expression": "x*0.001",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "AB线电压",
+              "offset": 8,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "V",
+              "coeff": 0.01,
+              "conversion_expression": "x*0.01",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "BC线电压",
+              "offset": 10,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "V",
+              "coeff": 0.01,
+              "conversion_expression": "x*0.01",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "CA线电压",
+              "offset": 12,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "V",
+              "coeff": 0.01,
+              "conversion_expression": "x*0.01",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "A相电压",
+              "offset": 14,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "V",
+              "coeff": 0.01,
+              "conversion_expression": "x*0.01",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "B相电压",
+              "offset": 16,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "V",
+              "coeff": 0.01,
+              "conversion_expression": "x*0.01",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "C相电压",
+              "offset": 18,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "V",
+              "coeff": 0.01,
+              "conversion_expression": "x*0.01",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "频率",
+              "offset": 20,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "Hz",
+              "coeff": 0.01,
+              "conversion_expression": "x*0.01",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "总有功功率",
+              "offset": 22,
+              "register_type": "holding",
+              "data_type": "int32",
+              "unit": "",
+              "coeff": 0.01,
+              "conversion_expression": "x*0.01",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "总无功功率",
+              "offset": 24,
+              "register_type": "holding",
+              "data_type": "int32",
+              "unit": "",
+              "coeff": 0.01,
+              "conversion_expression": "x*0.01",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "总视在功率",
+              "offset": 26,
+              "register_type": "holding",
+              "data_type": "int32",
+              "unit": "",
+              "coeff": 0.01,
+              "conversion_expression": "x*0.01",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "总功率因数",
+              "offset": 28,
+              "register_type": "holding",
+              "data_type": "int32",
+              "unit": "",
+              "coeff": 0.001,
+              "conversion_expression": "x*0.001",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "正有功电度",
+              "offset": 30,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "kWh",
+              "coeff": 177,
+              "conversion_expression": "x*177",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "负有功电度",
+              "offset": 32,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "kWh",
+              "coeff": 177,
+              "conversion_expression": "x*177",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "A相电流谐波畸变率",
+              "offset": 34,
+              "register_type": "holding",
+              "data_type": "int16",
+              "unit": "%",
+              "coeff": 0.1,
+              "conversion_expression": "x*0.1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "B相电流谐波畸变率",
+              "offset": 35,
+              "register_type": "holding",
+              "data_type": "int16",
+              "unit": "%",
+              "coeff": 0.1,
+              "conversion_expression": "x*0.1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "C相电流谐波畸变率",
+              "offset": 36,
+              "register_type": "holding",
+              "data_type": "int16",
+              "unit": "%",
+              "coeff": 0.1,
+              "conversion_expression": "x*0.1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "中性电流谐波畸变率",
+              "offset": 37,
+              "register_type": "holding",
+              "data_type": "int16",
+              "unit": "%",
+              "coeff": 0.1,
+              "conversion_expression": "x*0.1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "UAB线电压谐波畸变率",
+              "offset": 38,
+              "register_type": "holding",
+              "data_type": "int16",
+              "unit": "V",
+              "coeff": 0.1,
+              "conversion_expression": "x*0.1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "UBC线电压谐波畸变率",
+              "offset": 39,
+              "register_type": "holding",
+              "data_type": "int16",
+              "unit": "V",
+              "coeff": 0.1,
+              "conversion_expression": "x*0.1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "UCA线电压谐波畸变率",
+              "offset": 40,
+              "register_type": "holding",
+              "data_type": "int16",
+              "unit": "V",
+              "coeff": 0.1,
+              "conversion_expression": "x*0.1",
+              "is_alarm": false,
+              "is_record": true
+            }
+          ]
+        },
+        {
+          "group_name": "DI数字量",
+          "register_type": "coil",
+          "addresses": [
+            {
+              "name": "输入状态2（故障状态）",
+              "offset": 1,
+              "register_type": "coil",
+              "data_type": "bit",
+              "unit": "",
+              "coeff": 1,
+              "is_alarm": false,
+              "alarm_level": 0,
+              "alarm_message": ""
+            },
+            {
+              "name": "主通讯状态",
+              "offset": 2,
+              "register_type": "coil",
+              "data_type": "bit",
+              "unit": "",
+              "coeff": 1,
+              "is_alarm": true,
+              "alarm_level": 3,
+              "alarm_message": "设备通讯离线"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "施耐德UPS",
+      "protocol": "modbus",
+      "connection": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      },
+      "register_groups": [
+        {
+          "group_name": "AI模拟量",
+          "register_type": "holding",
+          "addresses": [
+            {
+              "name": "UPS逆变器内部故障",
+              "offset": 1,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "",
+              "coeff": 1,
+              "conversion_expression": "x*1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "UPS电池开关状态",
+              "offset": 2,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "",
+              "coeff": 1,
+              "conversion_expression": "x*1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "UPS主路开关状态",
+              "offset": 3,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "",
+              "coeff": 1,
+              "conversion_expression": "x*1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "UPS旁路状态",
+              "offset": 4,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "",
+              "coeff": 1,
+              "conversion_expression": "x*1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "UPS旁路内部硬件错误",
+              "offset": 5,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "",
+              "coeff": 1,
+              "conversion_expression": "x*1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "UPS充电状态",
+              "offset": 6,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "",
+              "coeff": 1,
+              "conversion_expression": "x*1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "主路A相电流",
+              "offset": 7,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "A",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "主路B相电流",
+              "offset": 8,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "A",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "主路C相电流",
+              "offset": 9,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "A",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "旁路A相电流",
+              "offset": 10,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "A",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "旁路B相电流",
+              "offset": 11,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "A",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "旁路C相电流",
+              "offset": 12,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "A",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "输出A相电流",
+              "offset": 13,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "A",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "输出B相电流",
+              "offset": 14,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "A",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "输出C相电流",
+              "offset": 15,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "A",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "电池电流",
+              "offset": 16,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "A",
+              "coeff": 73,
+              "conversion_expression": "x*73",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "主路输入AB线电压",
+              "offset": 17,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "主路输入BC线电压",
+              "offset": 18,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "主路输入CA线电压",
+              "offset": 19,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "旁路输入A相电压",
+              "offset": 20,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "旁路输入B相电压",
+              "offset": 21,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "旁路输入C相电压",
+              "offset": 22,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "旁路输入AB线电压",
+              "offset": 23,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "旁路输入BC线电压",
+              "offset": 24,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "旁路输入CA线电压",
+              "offset": 25,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "输出A相电压",
+              "offset": 26,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "输出B相电压",
+              "offset": 27,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "输出C相电压",
+              "offset": 28,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "输出AB线电压",
+              "offset": 29,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "输出BC线电压",
+              "offset": 30,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "输出CA线电压",
+              "offset": 31,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "电池电压",
+              "offset": 32,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "输出总有功功率",
+              "offset": 33,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "",
+              "coeff": 73,
+              "conversion_expression": "x*73",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "输出视在功率",
+              "offset": 34,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "",
+              "coeff": 73,
+              "conversion_expression": "x*73",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "输出功率因数",
+              "offset": 35,
+              "register_type": "holding",
+              "data_type": "int16",
+              "unit": "",
+              "coeff": 0.01,
+              "conversion_expression": "x*0.01",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "主路输入频率",
+              "offset": 36,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "Hz",
+              "coeff": 0.1,
+              "conversion_expression": "x*0.1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "旁路输入频率",
+              "offset": 37,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "Hz",
+              "coeff": 0.1,
+              "conversion_expression": "x*0.1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "输出频率",
+              "offset": 38,
+              "register_type": "holding",
+              "data_type": "uint16",
+              "unit": "Hz",
+              "coeff": 0.1,
+              "conversion_expression": "x*0.1",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "电池剩余运行时间",
+              "offset": 39,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "min",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "电池温度",
+              "offset": 40,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "°C",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "主路输入A相电压",
+              "offset": 41,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "主路输入B相电压",
+              "offset": 42,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            },
+            {
+              "name": "主路输入C相电压",
+              "offset": 43,
+              "register_type": "holding",
+              "data_type": "code_1",
+              "unit": "V",
+              "coeff": 71,
+              "conversion_expression": "x*71",
+              "is_alarm": false,
+              "is_record": true
+            }
+          ]
+        },
+        {
+          "group_name": "DI数字量",
+          "register_type": "coil",
+          "addresses": []
+        }
+      ]
+    }
+  ],
+  "devices": [
+    {
+      "name": "1A1_U11_S18_1",
+      "display_name": "P1_仪表_ 1A1_U11_S18_1",
+      "model_name": "A20电力仪表",
+      "group": "P1",
+      "register_offset": 1000,
+      "di_start": 8501,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S18",
+        "unit": "1",
+        "description": "1A1区, U11_S18"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S18_2",
+      "display_name": "P1_仪表_ 1A1_U11_S18_2",
+      "model_name": "A20电力仪表",
+      "group": "P1",
+      "register_offset": 1030,
+      "di_start": 8506,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S18",
+        "unit": "2",
+        "description": "1A1区, U11_S18"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S18_3",
+      "display_name": "P1_仪表_ 1A1_U11_S18_3",
+      "model_name": "A20电力仪表",
+      "group": "P1",
+      "register_offset": 1060,
+      "di_start": 8511,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S18",
+        "unit": "3",
+        "description": "1A1区, U11_S18"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S18_4",
+      "display_name": "P1_仪表_ 1A1_U11_S18_4",
+      "model_name": "A20电力仪表",
+      "group": "P1",
+      "register_offset": 1090,
+      "di_start": 8516,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S18",
+        "unit": "4",
+        "description": "1A1区, U11_S18"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S18_5",
+      "display_name": "P1_仪表_ 1A1_U11_S18_5",
+      "model_name": "A20电力仪表",
+      "group": "P1",
+      "register_offset": 1120,
+      "di_start": 8521,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S18",
+        "unit": "5",
+        "description": "1A1区, U11_S18"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S18_6",
+      "display_name": "P1_仪表_ 1A1_U11_S18_6",
+      "model_name": "A20电力仪表",
+      "group": "P1",
+      "register_offset": 1150,
+      "di_start": 8526,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S18",
+        "unit": "6",
+        "description": "1A1区, U11_S18"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S18_7",
+      "display_name": "P1_仪表_ 1A1_U11_S18_7",
+      "model_name": "A20电力仪表",
+      "group": "P1",
+      "register_offset": 1180,
+      "di_start": 8531,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S18",
+        "unit": "7",
+        "description": "1A1区, U11_S18"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S18_8",
+      "display_name": "P1_仪表_ 1A1_U11_S18_8",
+      "model_name": "A20电力仪表",
+      "group": "P1",
+      "register_offset": 1210,
+      "di_start": 8536,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S18",
+        "unit": "8",
+        "description": "1A1区, U11_S18"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S18_9",
+      "display_name": "P1_仪表_ 1A1_U11_S18_9",
+      "model_name": "A20电力仪表",
+      "group": "P1",
+      "register_offset": 1240,
+      "di_start": 8541,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S18",
+        "unit": "9",
+        "description": "1A1区, U11_S18"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S16_1",
+      "display_name": "P2_仪表_ 1A1_U11_S16_1",
+      "model_name": "A20电力仪表",
+      "group": "P2",
+      "register_offset": 1270,
+      "di_start": 8546,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S16",
+        "unit": "1",
+        "description": "1A1区, U11_S16"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S16_2",
+      "display_name": "P2_仪表_ 1A1_U11_S16_2",
+      "model_name": "A20电力仪表",
+      "group": "P2",
+      "register_offset": 1300,
+      "di_start": 8551,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S16",
+        "unit": "2",
+        "description": "1A1区, U11_S16"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S16_3",
+      "display_name": "P2_仪表_ 1A1_U11_S16_3",
+      "model_name": "A20电力仪表",
+      "group": "P2",
+      "register_offset": 1330,
+      "di_start": 8556,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S16",
+        "unit": "3",
+        "description": "1A1区, U11_S16"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S16_4",
+      "display_name": "P2_仪表_ 1A1_U11_S16_4",
+      "model_name": "A20电力仪表",
+      "group": "P2",
+      "register_offset": 1360,
+      "di_start": 8561,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S16",
+        "unit": "4",
+        "description": "1A1区, U11_S16"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S16_5",
+      "display_name": "P2_仪表_ 1A1_U11_S16_5",
+      "model_name": "A20电力仪表",
+      "group": "P2",
+      "register_offset": 1390,
+      "di_start": 8566,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S16",
+        "unit": "5",
+        "description": "1A1区, U11_S16"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S16_6",
+      "display_name": "P2_仪表_ 1A1_U11_S16_6",
+      "model_name": "A20电力仪表",
+      "group": "P2",
+      "register_offset": 1420,
+      "di_start": 8571,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S16",
+        "unit": "6",
+        "description": "1A1区, U11_S16"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S16_7",
+      "display_name": "P2_仪表_ 1A1_U11_S16_7",
+      "model_name": "A20电力仪表",
+      "group": "P2",
+      "register_offset": 1450,
+      "di_start": 8576,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S16",
+        "unit": "7",
+        "description": "1A1区, U11_S16"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S16_8",
+      "display_name": "P2_仪表_ 1A1_U11_S16_8",
+      "model_name": "A20电力仪表",
+      "group": "P2",
+      "register_offset": 1480,
+      "di_start": 8581,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S16",
+        "unit": "8",
+        "description": "1A1区, U11_S16"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S16_9",
+      "display_name": "P2_仪表_ 1A1_U11_S16_9",
+      "model_name": "A20电力仪表",
+      "group": "P2",
+      "register_offset": 1510,
+      "di_start": 8586,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S16",
+        "unit": "9",
+        "description": "1A1区, U11_S16"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S11_1",
+      "display_name": "P3_仪表_A40 1A1_U11_S11_1",
+      "model_name": "A40电力仪表",
+      "group": "P3",
+      "register_offset": 1540,
+      "di_start": 8590,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S11",
+        "unit": "1",
+        "description": "1A1区, U11_S11"
+      },
+      "data_point_count": 25
+    },
+    {
+      "name": "1A1_U11_S11_2",
+      "display_name": "P3_仪表_A40 1A1_U11_S11_2",
+      "model_name": "A40电力仪表",
+      "group": "P3",
+      "register_offset": 1580,
+      "di_start": 8594,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S11",
+        "unit": "2",
+        "description": "1A1区, U11_S11"
+      },
+      "data_point_count": 25
+    },
+    {
+      "name": "1A1_U11_S12_1",
+      "display_name": "P3_仪表_A40 1A1_U11_S12_1",
+      "model_name": "A40电力仪表",
+      "group": "P3",
+      "register_offset": 1620,
+      "di_start": 8598,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S12",
+        "unit": "1",
+        "description": "1A1区, U11_S12"
+      },
+      "data_point_count": 25
+    },
+    {
+      "name": "1A1_U11_S12_2",
+      "display_name": "P3_仪表_A40 1A1_U11_S12_2",
+      "model_name": "A40电力仪表",
+      "group": "P3",
+      "register_offset": 1660,
+      "di_start": 8602,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S12",
+        "unit": "2",
+        "description": "1A1区, U11_S12"
+      },
+      "data_point_count": 25
+    },
+    {
+      "name": "1A1_U11_S13_1",
+      "display_name": "P3_仪表_A40 1A1_U11_S13_1",
+      "model_name": "A40电力仪表",
+      "group": "P3",
+      "register_offset": 1700,
+      "di_start": 8606,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S13",
+        "unit": "1",
+        "description": "1A1区, U11_S13"
+      },
+      "data_point_count": 25
+    },
+    {
+      "name": "1A1_U11_S14_1",
+      "display_name": "P3_仪表_ 1A1_U11_S14_1",
+      "model_name": "A20电力仪表",
+      "group": "P3",
+      "register_offset": 1740,
+      "di_start": 8611,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S14",
+        "unit": "1",
+        "description": "1A1区, U11_S14"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S15_1",
+      "display_name": "P3_仪表_ 1A1_U11_S15_1",
+      "model_name": "A20电力仪表",
+      "group": "P3",
+      "register_offset": 1770,
+      "di_start": 8616,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S15",
+        "unit": "1",
+        "description": "1A1区, U11_S15"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S17_1",
+      "display_name": "P4_仪表_ 1A1_U11_S17_1",
+      "model_name": "A20电力仪表",
+      "group": "P4",
+      "register_offset": 1800,
+      "di_start": 8621,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S17",
+        "unit": "1",
+        "description": "1A1区, U11_S17"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S17_2",
+      "display_name": "P4_仪表_ 1A1_U11_S17_2",
+      "model_name": "A20电力仪表",
+      "group": "P4",
+      "register_offset": 1830,
+      "di_start": 8626,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S17",
+        "unit": "2",
+        "description": "1A1区, U11_S17"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S17_3",
+      "display_name": "P4_仪表_ 1A1_U11_S17_3",
+      "model_name": "A20电力仪表",
+      "group": "P4",
+      "register_offset": 1860,
+      "di_start": 8631,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S17",
+        "unit": "3",
+        "description": "1A1区, U11_S17"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S17_4",
+      "display_name": "P4_仪表_ 1A1_U11_S17_4",
+      "model_name": "A20电力仪表",
+      "group": "P4",
+      "register_offset": 1890,
+      "di_start": 8636,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S17",
+        "unit": "4",
+        "description": "1A1区, U11_S17"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S17_5",
+      "display_name": "P4_仪表_ 1A1_U11_S17_5",
+      "model_name": "A20电力仪表",
+      "group": "P4",
+      "register_offset": 1920,
+      "di_start": 8641,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S17",
+        "unit": "5",
+        "description": "1A1区, U11_S17"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S17_6",
+      "display_name": "P4_仪表_ 1A1_U11_S17_6",
+      "model_name": "A20电力仪表",
+      "group": "P4",
+      "register_offset": 1950,
+      "di_start": 8646,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S17",
+        "unit": "6",
+        "description": "1A1区, U11_S17"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S17_7",
+      "display_name": "P4_仪表_ 1A1_U11_S17_7",
+      "model_name": "A20电力仪表",
+      "group": "P4",
+      "register_offset": 1980,
+      "di_start": 8651,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S17",
+        "unit": "7",
+        "description": "1A1区, U11_S17"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S17_8",
+      "display_name": "P4_仪表_ 1A1_U11_S17_8",
+      "model_name": "A20电力仪表",
+      "group": "P4",
+      "register_offset": 2010,
+      "di_start": 8656,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S17",
+        "unit": "8",
+        "description": "1A1区, U11_S17"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S17_9",
+      "display_name": "P4_仪表_ 1A1_U11_S17_9",
+      "model_name": "A20电力仪表",
+      "group": "P4",
+      "register_offset": 2040,
+      "di_start": 8661,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S17",
+        "unit": "9",
+        "description": "1A1区, U11_S17"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S19_1",
+      "display_name": "P5_仪表_ 1A1_U11_S19_1",
+      "model_name": "A20电力仪表",
+      "group": "P5",
+      "register_offset": 2070,
+      "di_start": 8666,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S19",
+        "unit": "1",
+        "description": "1A1区, U11_S19"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S19_2",
+      "display_name": "P5_仪表_ 1A1_U11_S19_2",
+      "model_name": "A20电力仪表",
+      "group": "P5",
+      "register_offset": 2100,
+      "di_start": 8671,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S19",
+        "unit": "2",
+        "description": "1A1区, U11_S19"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S19_3",
+      "display_name": "P5_仪表_ 1A1_U11_S19_3",
+      "model_name": "A20电力仪表",
+      "group": "P5",
+      "register_offset": 2130,
+      "di_start": 8676,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S19",
+        "unit": "3",
+        "description": "1A1区, U11_S19"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S19_4",
+      "display_name": "P5_仪表_ 1A1_U11_S19_4",
+      "model_name": "A20电力仪表",
+      "group": "P5",
+      "register_offset": 2160,
+      "di_start": 8681,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S19",
+        "unit": "4",
+        "description": "1A1区, U11_S19"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S19_5",
+      "display_name": "P5_仪表_ 1A1_U11_S19_5",
+      "model_name": "A20电力仪表",
+      "group": "P5",
+      "register_offset": 2190,
+      "di_start": 8686,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S19",
+        "unit": "5",
+        "description": "1A1区, U11_S19"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S19_6",
+      "display_name": "P5_仪表_ 1A1_U11_S19_6",
+      "model_name": "A20电力仪表",
+      "group": "P5",
+      "register_offset": 2220,
+      "di_start": 8691,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S19",
+        "unit": "6",
+        "description": "1A1区, U11_S19"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S19_7",
+      "display_name": "P5_仪表_ 1A1_U11_S19_7",
+      "model_name": "A20电力仪表",
+      "group": "P5",
+      "register_offset": 2250,
+      "di_start": 8696,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S19",
+        "unit": "7",
+        "description": "1A1区, U11_S19"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S19_8",
+      "display_name": "P5_仪表_ 1A1_U11_S19_8",
+      "model_name": "A20电力仪表",
+      "group": "P5",
+      "register_offset": 2280,
+      "di_start": 8701,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S19",
+        "unit": "8",
+        "description": "1A1区, U11_S19"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A1_U11_S19_9",
+      "display_name": "P5_仪表_ 1A1_U11_S19_9",
+      "model_name": "A20电力仪表",
+      "group": "P5",
+      "register_offset": 2310,
+      "di_start": 8706,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "U11_S19",
+        "unit": "9",
+        "description": "1A1区, U11_S19"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U11_D14_1",
+      "display_name": "P6_仪表_ 1A3_U11_D14_1",
+      "model_name": "A20电力仪表",
+      "group": "P6",
+      "register_offset": 2340,
+      "di_start": 8711,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D14",
+        "unit": "1",
+        "description": "1A3区, U11_D14"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U11_D14_2",
+      "display_name": "P6_仪表_ 1A3_U11_D14_2",
+      "model_name": "A20电力仪表",
+      "group": "P6",
+      "register_offset": 2370,
+      "di_start": 8716,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D14",
+        "unit": "2",
+        "description": "1A3区, U11_D14"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U11_D14_3",
+      "display_name": "P6_仪表_ 1A3_U11_D14_3",
+      "model_name": "A20电力仪表",
+      "group": "P6",
+      "register_offset": 2400,
+      "di_start": 8721,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D14",
+        "unit": "3",
+        "description": "1A3区, U11_D14"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U11_D14_4",
+      "display_name": "P6_仪表_ 1A3_U11_D14_4",
+      "model_name": "A20电力仪表",
+      "group": "P6",
+      "register_offset": 2430,
+      "di_start": 8726,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D14",
+        "unit": "4",
+        "description": "1A3区, U11_D14"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U11_D14_5",
+      "display_name": "P6_仪表_ 1A3_U11_D14_5",
+      "model_name": "A20电力仪表",
+      "group": "P6",
+      "register_offset": 2460,
+      "di_start": 8731,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D14",
+        "unit": "5",
+        "description": "1A3区, U11_D14"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U11_D14_6",
+      "display_name": "P6_仪表_ 1A3_U11_D14_6",
+      "model_name": "A20电力仪表",
+      "group": "P6",
+      "register_offset": 2490,
+      "di_start": 8736,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D14",
+        "unit": "6",
+        "description": "1A3区, U11_D14"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U11_D14_7",
+      "display_name": "P6_仪表_ 1A3_U11_D14_7",
+      "model_name": "A20电力仪表",
+      "group": "P6",
+      "register_offset": 2520,
+      "di_start": 8741,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D14",
+        "unit": "7",
+        "description": "1A3区, U11_D14"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U11_D13_1",
+      "display_name": "P7_仪表_ 1A3_U11_D13_1",
+      "model_name": "A20电力仪表",
+      "group": "P7",
+      "register_offset": 2550,
+      "di_start": 8746,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D13",
+        "unit": "1",
+        "description": "1A3区, U11_D13"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U11_D13_2",
+      "display_name": "P7_仪表_ 1A3_U11_D13_2",
+      "model_name": "A20电力仪表",
+      "group": "P7",
+      "register_offset": 2580,
+      "di_start": 8751,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D13",
+        "unit": "2",
+        "description": "1A3区, U11_D13"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U11_D13_3",
+      "display_name": "P7_仪表_ 1A3_U11_D13_3",
+      "model_name": "A20电力仪表",
+      "group": "P7",
+      "register_offset": 2610,
+      "di_start": 8756,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D13",
+        "unit": "3",
+        "description": "1A3区, U11_D13"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U11_D13_4",
+      "display_name": "P7_仪表_ 1A3_U11_D13_4",
+      "model_name": "A20电力仪表",
+      "group": "P7",
+      "register_offset": 2640,
+      "di_start": 8761,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D13",
+        "unit": "4",
+        "description": "1A3区, U11_D13"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U11_D13_5",
+      "display_name": "P7_仪表_ 1A3_U11_D13_5",
+      "model_name": "A20电力仪表",
+      "group": "P7",
+      "register_offset": 2670,
+      "di_start": 8766,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D13",
+        "unit": "5",
+        "description": "1A3区, U11_D13"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U11_D13_6",
+      "display_name": "P7_仪表_ 1A3_U11_D13_6",
+      "model_name": "A20电力仪表",
+      "group": "P7",
+      "register_offset": 2700,
+      "di_start": 8771,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D13",
+        "unit": "6",
+        "description": "1A3区, U11_D13"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U11_D13_7",
+      "display_name": "P7_仪表_ 1A3_U11_D13_7",
+      "model_name": "A20电力仪表",
+      "group": "P7",
+      "register_offset": 2730,
+      "di_start": 8776,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D13",
+        "unit": "7",
+        "description": "1A3区, U11_D13"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U11_D13_8",
+      "display_name": "P7_仪表_ 1A3_U11_D13_8",
+      "model_name": "A20电力仪表",
+      "group": "P7",
+      "register_offset": 2760,
+      "di_start": 8781,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D13",
+        "unit": "8",
+        "description": "1A3区, U11_D13"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U11_D13_9",
+      "display_name": "P7_仪表_ 1A3_U11_D13_9",
+      "model_name": "A20电力仪表",
+      "group": "P7",
+      "register_offset": 2790,
+      "di_start": 8786,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D13",
+        "unit": "9",
+        "description": "1A3区, U11_D13"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U11_D11_1",
+      "display_name": "P8_仪表_A40 1A3_U11_D11_1",
+      "model_name": "A40电力仪表",
+      "group": "P8",
+      "register_offset": 2820,
+      "di_start": 8790,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D11",
+        "unit": "1",
+        "description": "1A3区, U11_D11"
+      },
+      "data_point_count": 25
+    },
+    {
+      "name": "1A3_U11_D11_2",
+      "display_name": "P8_仪表_A40 1A3_U11_D11_2",
+      "model_name": "A40电力仪表",
+      "group": "P8",
+      "register_offset": 2860,
+      "di_start": 8794,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D11",
+        "unit": "2",
+        "description": "1A3区, U11_D11"
+      },
+      "data_point_count": 25
+    },
+    {
+      "name": "1A3_U11_D12_1",
+      "display_name": "P8_仪表_A40 1A3_U11_D12_1",
+      "model_name": "A40电力仪表",
+      "group": "P8",
+      "register_offset": 2900,
+      "di_start": 8798,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D12",
+        "unit": "1",
+        "description": "1A3区, U11_D12"
+      },
+      "data_point_count": 25
+    },
+    {
+      "name": "1A3_U11_D12_2",
+      "display_name": "P8_仪表_A40 1A3_U11_D12_2",
+      "model_name": "A40电力仪表",
+      "group": "P8",
+      "register_offset": 2940,
+      "di_start": 8802,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D12",
+        "unit": "2",
+        "description": "1A3区, U11_D12"
+      },
+      "data_point_count": 25
+    },
+    {
+      "name": "1A3_U11_D01_1",
+      "display_name": "P9_仪表_ 1A3_U11_D01_1",
+      "model_name": "A20电力仪表",
+      "group": "P9",
+      "register_offset": 2980,
+      "di_start": 8807,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D01",
+        "unit": "1",
+        "description": "1A3区, U11_D01"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U11_D01_2",
+      "display_name": "P9_仪表_ 1A3_U11_D01_2",
+      "model_name": "A20电力仪表",
+      "group": "P9",
+      "register_offset": 3010,
+      "di_start": 8812,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U11_D01",
+        "unit": "2",
+        "description": "1A3区, U11_D01"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U12_D01_1",
+      "display_name": "P9_仪表_ 1A3_U12_D01_1",
+      "model_name": "A20电力仪表",
+      "group": "P9",
+      "register_offset": 3040,
+      "di_start": 8817,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U12_D01",
+        "unit": "1",
+        "description": "1A3区, U12_D01"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U12_D01_2",
+      "display_name": "P9_仪表_ 1A3_U12_D01_2",
+      "model_name": "A20电力仪表",
+      "group": "P9",
+      "register_offset": 3070,
+      "di_start": 8822,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U12_D01",
+        "unit": "2",
+        "description": "1A3区, U12_D01"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U13_D01_1",
+      "display_name": "P9_仪表_ 1A3_U13_D01_1",
+      "model_name": "A20电力仪表",
+      "group": "P9",
+      "register_offset": 3100,
+      "di_start": 8827,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U13_D01",
+        "unit": "1",
+        "description": "1A3区, U13_D01"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "1A3_U13_D01_2",
+      "display_name": "P9_仪表_ 1A3_U13_D01_2",
+      "model_name": "A20电力仪表",
+      "group": "P9",
+      "register_offset": 3130,
+      "di_start": 8832,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "U13_D01",
+        "unit": "2",
+        "description": "1A3区, U13_D01"
+      },
+      "data_point_count": 18
+    },
+    {
+      "name": "UPS_1A1_U11",
+      "display_name": "P10_施耐德UPS_1A1_U11",
+      "model_name": "施耐德UPS",
+      "group": "P10",
+      "register_offset": 3160,
+      "di_start": 8836,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "UPS_U11",
+        "unit": "11",
+        "description": "1A1区, UPS_U11"
+      },
+      "data_point_count": 43
+    },
+    {
+      "name": "UPS_1A1_U12",
+      "display_name": "P10_施耐德UPS_1A1_U12",
+      "model_name": "施耐德UPS",
+      "group": "P10",
+      "register_offset": null,
+      "di_start": 8838,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "UPS_U12",
+        "unit": "12",
+        "description": "1A1区, UPS_U12"
+      },
+      "data_point_count": 43
+    },
+    {
+      "name": "UPS_1A1_U13",
+      "display_name": "P10_施耐德UPS_1A1_U13",
+      "model_name": "施耐德UPS",
+      "group": "P10",
+      "register_offset": null,
+      "di_start": 8840,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "UPS_U13",
+        "unit": "13",
+        "description": "1A1区, UPS_U13"
+      },
+      "data_point_count": 43
+    },
+    {
+      "name": "UPS_1A1_U14",
+      "display_name": "P10_施耐德UPS_1A1_U14",
+      "model_name": "施耐德UPS",
+      "group": "P10",
+      "register_offset": null,
+      "di_start": 8842,
+      "location": {
+        "building": "1A1区",
+        "cabinet": "UPS_U14",
+        "unit": "14",
+        "description": "1A1区, UPS_U14"
+      },
+      "data_point_count": 43
+    },
+    {
+      "name": "UPS_1A3_U11",
+      "display_name": "P11_施耐德UPS_1A3_U11",
+      "model_name": "施耐德UPS",
+      "group": "P11",
+      "register_offset": null,
+      "di_start": 8844,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "UPS_U11",
+        "unit": "11",
+        "description": "1A3区, UPS_U11"
+      },
+      "data_point_count": 43
+    },
+    {
+      "name": "UPS_1A3_U12",
+      "display_name": "P11_施耐德UPS_1A3_U12",
+      "model_name": "施耐德UPS",
+      "group": "P11",
+      "register_offset": null,
+      "di_start": 8846,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "UPS_U12",
+        "unit": "12",
+        "description": "1A3区, UPS_U12"
+      },
+      "data_point_count": 43
+    },
+    {
+      "name": "UPS_1A3_U13",
+      "display_name": "P11_施耐德UPS_1A3_U13",
+      "model_name": "施耐德UPS",
+      "group": "P11",
+      "register_offset": null,
+      "di_start": 8848,
+      "location": {
+        "building": "1A3区",
+        "cabinet": "UPS_U13",
+        "unit": "13",
+        "description": "1A3区, UPS_U13"
+      },
+      "data_point_count": 43
+    }
+  ],
+  "alarm_triggers": [
+    {
+      "name": "1A1_U11_S18_1_通讯离线告警",
+      "device_name": "1A1_U11_S18_1",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S18_1 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S18_2_通讯离线告警",
+      "device_name": "1A1_U11_S18_2",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S18_2 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S18_3_通讯离线告警",
+      "device_name": "1A1_U11_S18_3",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S18_3 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S18_4_通讯离线告警",
+      "device_name": "1A1_U11_S18_4",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S18_4 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S18_5_通讯离线告警",
+      "device_name": "1A1_U11_S18_5",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S18_5 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S18_6_通讯离线告警",
+      "device_name": "1A1_U11_S18_6",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S18_6 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S18_7_通讯离线告警",
+      "device_name": "1A1_U11_S18_7",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S18_7 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S18_8_通讯离线告警",
+      "device_name": "1A1_U11_S18_8",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S18_8 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S18_9_通讯离线告警",
+      "device_name": "1A1_U11_S18_9",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S18_9 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S16_1_通讯离线告警",
+      "device_name": "1A1_U11_S16_1",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S16_1 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S16_2_通讯离线告警",
+      "device_name": "1A1_U11_S16_2",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S16_2 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S16_3_通讯离线告警",
+      "device_name": "1A1_U11_S16_3",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S16_3 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S16_4_通讯离线告警",
+      "device_name": "1A1_U11_S16_4",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S16_4 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S16_5_通讯离线告警",
+      "device_name": "1A1_U11_S16_5",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S16_5 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S16_6_通讯离线告警",
+      "device_name": "1A1_U11_S16_6",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S16_6 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S16_7_通讯离线告警",
+      "device_name": "1A1_U11_S16_7",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S16_7 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S16_8_通讯离线告警",
+      "device_name": "1A1_U11_S16_8",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S16_8 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S16_9_通讯离线告警",
+      "device_name": "1A1_U11_S16_9",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S16_9 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S11_1_通讯离线告警",
+      "device_name": "1A1_U11_S11_1",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S11_1 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S11_2_通讯离线告警",
+      "device_name": "1A1_U11_S11_2",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S11_2 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S12_1_通讯离线告警",
+      "device_name": "1A1_U11_S12_1",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S12_1 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S12_2_通讯离线告警",
+      "device_name": "1A1_U11_S12_2",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S12_2 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S13_1_通讯离线告警",
+      "device_name": "1A1_U11_S13_1",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S13_1 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S14_1_通讯离线告警",
+      "device_name": "1A1_U11_S14_1",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S14_1 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S15_1_通讯离线告警",
+      "device_name": "1A1_U11_S15_1",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S15_1 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S17_1_通讯离线告警",
+      "device_name": "1A1_U11_S17_1",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S17_1 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S17_2_通讯离线告警",
+      "device_name": "1A1_U11_S17_2",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S17_2 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S17_3_通讯离线告警",
+      "device_name": "1A1_U11_S17_3",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S17_3 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S17_4_通讯离线告警",
+      "device_name": "1A1_U11_S17_4",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S17_4 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S17_5_通讯离线告警",
+      "device_name": "1A1_U11_S17_5",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S17_5 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S17_6_通讯离线告警",
+      "device_name": "1A1_U11_S17_6",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S17_6 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S17_7_通讯离线告警",
+      "device_name": "1A1_U11_S17_7",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S17_7 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S17_8_通讯离线告警",
+      "device_name": "1A1_U11_S17_8",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S17_8 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S17_9_通讯离线告警",
+      "device_name": "1A1_U11_S17_9",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S17_9 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S19_1_通讯离线告警",
+      "device_name": "1A1_U11_S19_1",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S19_1 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S19_2_通讯离线告警",
+      "device_name": "1A1_U11_S19_2",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S19_2 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S19_3_通讯离线告警",
+      "device_name": "1A1_U11_S19_3",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S19_3 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S19_4_通讯离线告警",
+      "device_name": "1A1_U11_S19_4",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S19_4 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S19_5_通讯离线告警",
+      "device_name": "1A1_U11_S19_5",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S19_5 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S19_6_通讯离线告警",
+      "device_name": "1A1_U11_S19_6",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S19_6 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S19_7_通讯离线告警",
+      "device_name": "1A1_U11_S19_7",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S19_7 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S19_8_通讯离线告警",
+      "device_name": "1A1_U11_S19_8",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S19_8 设备通讯离线"
+    },
+    {
+      "name": "1A1_U11_S19_9_通讯离线告警",
+      "device_name": "1A1_U11_S19_9",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A1_U11_S19_9 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D14_1_通讯离线告警",
+      "device_name": "1A3_U11_D14_1",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D14_1 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D14_2_通讯离线告警",
+      "device_name": "1A3_U11_D14_2",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D14_2 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D14_3_通讯离线告警",
+      "device_name": "1A3_U11_D14_3",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D14_3 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D14_4_通讯离线告警",
+      "device_name": "1A3_U11_D14_4",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D14_4 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D14_5_通讯离线告警",
+      "device_name": "1A3_U11_D14_5",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D14_5 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D14_6_通讯离线告警",
+      "device_name": "1A3_U11_D14_6",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D14_6 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D14_7_通讯离线告警",
+      "device_name": "1A3_U11_D14_7",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D14_7 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D13_1_通讯离线告警",
+      "device_name": "1A3_U11_D13_1",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D13_1 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D13_2_通讯离线告警",
+      "device_name": "1A3_U11_D13_2",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D13_2 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D13_3_通讯离线告警",
+      "device_name": "1A3_U11_D13_3",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D13_3 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D13_4_通讯离线告警",
+      "device_name": "1A3_U11_D13_4",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D13_4 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D13_5_通讯离线告警",
+      "device_name": "1A3_U11_D13_5",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D13_5 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D13_6_通讯离线告警",
+      "device_name": "1A3_U11_D13_6",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D13_6 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D13_7_通讯离线告警",
+      "device_name": "1A3_U11_D13_7",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D13_7 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D13_8_通讯离线告警",
+      "device_name": "1A3_U11_D13_8",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D13_8 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D13_9_通讯离线告警",
+      "device_name": "1A3_U11_D13_9",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D13_9 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D11_1_通讯离线告警",
+      "device_name": "1A3_U11_D11_1",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D11_1 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D11_2_通讯离线告警",
+      "device_name": "1A3_U11_D11_2",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D11_2 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D12_1_通讯离线告警",
+      "device_name": "1A3_U11_D12_1",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D12_1 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D12_2_通讯离线告警",
+      "device_name": "1A3_U11_D12_2",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D12_2 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D01_1_通讯离线告警",
+      "device_name": "1A3_U11_D01_1",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D01_1 设备通讯离线"
+    },
+    {
+      "name": "1A3_U11_D01_2_通讯离线告警",
+      "device_name": "1A3_U11_D01_2",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U11_D01_2 设备通讯离线"
+    },
+    {
+      "name": "1A3_U12_D01_1_通讯离线告警",
+      "device_name": "1A3_U12_D01_1",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U12_D01_1 设备通讯离线"
+    },
+    {
+      "name": "1A3_U12_D01_2_通讯离线告警",
+      "device_name": "1A3_U12_D01_2",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U12_D01_2 设备通讯离线"
+    },
+    {
+      "name": "1A3_U13_D01_1_通讯离线告警",
+      "device_name": "1A3_U13_D01_1",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U13_D01_1 设备通讯离线"
+    },
+    {
+      "name": "1A3_U13_D01_2_通讯离线告警",
+      "device_name": "1A3_U13_D01_2",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "1A3_U13_D01_2 设备通讯离线"
+    },
+    {
+      "name": "UPS_1A1_U11_通讯离线告警",
+      "device_name": "UPS_1A1_U11",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "UPS_1A1_U11 设备通讯离线"
+    },
+    {
+      "name": "UPS_1A1_U12_通讯离线告警",
+      "device_name": "UPS_1A1_U12",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "UPS_1A1_U12 设备通讯离线"
+    },
+    {
+      "name": "UPS_1A1_U13_通讯离线告警",
+      "device_name": "UPS_1A1_U13",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "UPS_1A1_U13 设备通讯离线"
+    },
+    {
+      "name": "UPS_1A1_U14_通讯离线告警",
+      "device_name": "UPS_1A1_U14",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "UPS_1A1_U14 设备通讯离线"
+    },
+    {
+      "name": "UPS_1A3_U11_通讯离线告警",
+      "device_name": "UPS_1A3_U11",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "UPS_1A3_U11 设备通讯离线"
+    },
+    {
+      "name": "UPS_1A3_U12_通讯离线告警",
+      "device_name": "UPS_1A3_U12",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "UPS_1A3_U12 设备通讯离线"
+    },
+    {
+      "name": "UPS_1A3_U13_通讯离线告警",
+      "device_name": "UPS_1A3_U13",
+      "data_point": "主通讯状态",
+      "condition": "x == 0",
+      "level": 3,
+      "keep_time": 10,
+      "alarm_message": "UPS_1A3_U13 设备通讯离线"
+    }
+  ],
+  "dashboard": {
+    "name": "1A配电室监控总览",
+    "size": "1920x1080",
+    "style": {
+      "theme": "科技蓝",
+      "primary_color": "#00d4ff",
+      "bg_color": "#0a1628"
+    },
+    "overview_page": {
+      "name": "总览",
+      "is_home": true,
+      "sections": [
+        {
+          "name": "顶部",
+          "zone": "top",
+          "height": 80,
+          "component": {
+            "type": "DvBorderBox1",
+            "text": "1A配电室 - 监控总览 (76台设备)"
+          }
+        },
+        {
+          "name": "左侧设备树",
+          "zone": "left",
+          "width": 280,
+          "component": {
+            "type": "DeviceTree",
+            "title": "设备拓扑"
+          }
+        },
+        {
+          "name": "区域1配电柜",
+          "zone": "center_top",
+          "height": 480,
+          "cabinets": [
+            {
+              "name": "U11_S18",
+              "device_count": 9,
+              "devices": [
+                {
+                  "name": "1A1_U11_S18_1",
+                  "full_name": "P1_仪表_ 1A1_U11_S18_1",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S18_1"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S18_2",
+                  "full_name": "P1_仪表_ 1A1_U11_S18_2",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S18_2"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S18_3",
+                  "full_name": "P1_仪表_ 1A1_U11_S18_3",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S18_3"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S18_4",
+                  "full_name": "P1_仪表_ 1A1_U11_S18_4",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S18_4"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S18_5",
+                  "full_name": "P1_仪表_ 1A1_U11_S18_5",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S18_5"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S18_6",
+                  "full_name": "P1_仪表_ 1A1_U11_S18_6",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S18_6"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S18_7",
+                  "full_name": "P1_仪表_ 1A1_U11_S18_7",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S18_7"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S18_8",
+                  "full_name": "P1_仪表_ 1A1_U11_S18_8",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S18_8"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S18_9",
+                  "full_name": "P1_仪表_ 1A1_U11_S18_9",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S18_9"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "U11_S16",
+              "device_count": 9,
+              "devices": [
+                {
+                  "name": "1A1_U11_S16_1",
+                  "full_name": "P2_仪表_ 1A1_U11_S16_1",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S16_1"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S16_2",
+                  "full_name": "P2_仪表_ 1A1_U11_S16_2",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S16_2"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S16_3",
+                  "full_name": "P2_仪表_ 1A1_U11_S16_3",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S16_3"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S16_4",
+                  "full_name": "P2_仪表_ 1A1_U11_S16_4",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S16_4"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S16_5",
+                  "full_name": "P2_仪表_ 1A1_U11_S16_5",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S16_5"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S16_6",
+                  "full_name": "P2_仪表_ 1A1_U11_S16_6",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S16_6"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S16_7",
+                  "full_name": "P2_仪表_ 1A1_U11_S16_7",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S16_7"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S16_8",
+                  "full_name": "P2_仪表_ 1A1_U11_S16_8",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S16_8"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S16_9",
+                  "full_name": "P2_仪表_ 1A1_U11_S16_9",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S16_9"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "U11_S11",
+              "device_count": 2,
+              "devices": [
+                {
+                  "name": "1A1_U11_S11_1",
+                  "full_name": "P3_仪表_A40 1A1_U11_S11_1",
+                  "model_type": "A40电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S11_1"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S11_2",
+                  "full_name": "P3_仪表_A40 1A1_U11_S11_2",
+                  "model_type": "A40电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S11_2"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "U11_S12",
+              "device_count": 2,
+              "devices": [
+                {
+                  "name": "1A1_U11_S12_1",
+                  "full_name": "P3_仪表_A40 1A1_U11_S12_1",
+                  "model_type": "A40电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S12_1"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S12_2",
+                  "full_name": "P3_仪表_A40 1A1_U11_S12_2",
+                  "model_type": "A40电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S12_2"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "U11_S13",
+              "device_count": 1,
+              "devices": [
+                {
+                  "name": "1A1_U11_S13_1",
+                  "full_name": "P3_仪表_A40 1A1_U11_S13_1",
+                  "model_type": "A40电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S13_1"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "U11_S14",
+              "device_count": 1,
+              "devices": [
+                {
+                  "name": "1A1_U11_S14_1",
+                  "full_name": "P3_仪表_ 1A1_U11_S14_1",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S14_1"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "U11_S15",
+              "device_count": 1,
+              "devices": [
+                {
+                  "name": "1A1_U11_S15_1",
+                  "full_name": "P3_仪表_ 1A1_U11_S15_1",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S15_1"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "U11_S17",
+              "device_count": 9,
+              "devices": [
+                {
+                  "name": "1A1_U11_S17_1",
+                  "full_name": "P4_仪表_ 1A1_U11_S17_1",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S17_1"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S17_2",
+                  "full_name": "P4_仪表_ 1A1_U11_S17_2",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S17_2"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S17_3",
+                  "full_name": "P4_仪表_ 1A1_U11_S17_3",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S17_3"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S17_4",
+                  "full_name": "P4_仪表_ 1A1_U11_S17_4",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S17_4"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S17_5",
+                  "full_name": "P4_仪表_ 1A1_U11_S17_5",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S17_5"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S17_6",
+                  "full_name": "P4_仪表_ 1A1_U11_S17_6",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S17_6"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S17_7",
+                  "full_name": "P4_仪表_ 1A1_U11_S17_7",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S17_7"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S17_8",
+                  "full_name": "P4_仪表_ 1A1_U11_S17_8",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S17_8"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S17_9",
+                  "full_name": "P4_仪表_ 1A1_U11_S17_9",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S17_9"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "U11_S19",
+              "device_count": 9,
+              "devices": [
+                {
+                  "name": "1A1_U11_S19_1",
+                  "full_name": "P5_仪表_ 1A1_U11_S19_1",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S19_1"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S19_2",
+                  "full_name": "P5_仪表_ 1A1_U11_S19_2",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S19_2"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S19_3",
+                  "full_name": "P5_仪表_ 1A1_U11_S19_3",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S19_3"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S19_4",
+                  "full_name": "P5_仪表_ 1A1_U11_S19_4",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S19_4"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S19_5",
+                  "full_name": "P5_仪表_ 1A1_U11_S19_5",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S19_5"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S19_6",
+                  "full_name": "P5_仪表_ 1A1_U11_S19_6",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S19_6"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S19_7",
+                  "full_name": "P5_仪表_ 1A1_U11_S19_7",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S19_7"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S19_8",
+                  "full_name": "P5_仪表_ 1A1_U11_S19_8",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S19_8"
+                    }
+                  }
+                },
+                {
+                  "name": "1A1_U11_S19_9",
+                  "full_name": "P5_仪表_ 1A1_U11_S19_9",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_1A1_U11_S19_9"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "UPS_U11",
+              "device_count": 1,
+              "devices": [
+                {
+                  "name": "UPS_1A1_U11",
+                  "full_name": "P10_施耐德UPS_1A1_U11",
+                  "model_type": "施耐德UPS",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_UPS_1A1_U11"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "UPS_U12",
+              "device_count": 1,
+              "devices": [
+                {
+                  "name": "UPS_1A1_U12",
+                  "full_name": "P10_施耐德UPS_1A1_U12",
+                  "model_type": "施耐德UPS",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_UPS_1A1_U12"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "UPS_U13",
+              "device_count": 1,
+              "devices": [
+                {
+                  "name": "UPS_1A1_U13",
+                  "full_name": "P10_施耐德UPS_1A1_U13",
+                  "model_type": "施耐德UPS",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_UPS_1A1_U13"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "UPS_U14",
+              "device_count": 1,
+              "devices": [
+                {
+                  "name": "UPS_1A1_U14",
+                  "full_name": "P10_施耐德UPS_1A1_U14",
+                  "model_type": "施耐德UPS",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ],
+                  "interactions": {
+                    "hover": {
+                      "show": "detail_popup_UPS_1A1_U14"
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "区域2配电柜",
+          "zone": "center_bottom",
+          "height": 480,
+          "cabinets": [
+            {
+              "name": "U11_D14",
+              "device_count": 7,
+              "devices": [
+                {
+                  "name": "1A3_U11_D14_1",
+                  "full_name": "P6_仪表_ 1A3_U11_D14_1",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U11_D14_2",
+                  "full_name": "P6_仪表_ 1A3_U11_D14_2",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U11_D14_3",
+                  "full_name": "P6_仪表_ 1A3_U11_D14_3",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U11_D14_4",
+                  "full_name": "P6_仪表_ 1A3_U11_D14_4",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U11_D14_5",
+                  "full_name": "P6_仪表_ 1A3_U11_D14_5",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U11_D14_6",
+                  "full_name": "P6_仪表_ 1A3_U11_D14_6",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U11_D14_7",
+                  "full_name": "P6_仪表_ 1A3_U11_D14_7",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "U11_D13",
+              "device_count": 9,
+              "devices": [
+                {
+                  "name": "1A3_U11_D13_1",
+                  "full_name": "P7_仪表_ 1A3_U11_D13_1",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U11_D13_2",
+                  "full_name": "P7_仪表_ 1A3_U11_D13_2",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U11_D13_3",
+                  "full_name": "P7_仪表_ 1A3_U11_D13_3",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U11_D13_4",
+                  "full_name": "P7_仪表_ 1A3_U11_D13_4",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U11_D13_5",
+                  "full_name": "P7_仪表_ 1A3_U11_D13_5",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U11_D13_6",
+                  "full_name": "P7_仪表_ 1A3_U11_D13_6",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U11_D13_7",
+                  "full_name": "P7_仪表_ 1A3_U11_D13_7",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U11_D13_8",
+                  "full_name": "P7_仪表_ 1A3_U11_D13_8",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U11_D13_9",
+                  "full_name": "P7_仪表_ 1A3_U11_D13_9",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "U11_D11",
+              "device_count": 2,
+              "devices": [
+                {
+                  "name": "1A3_U11_D11_1",
+                  "full_name": "P8_仪表_A40 1A3_U11_D11_1",
+                  "model_type": "A40电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U11_D11_2",
+                  "full_name": "P8_仪表_A40 1A3_U11_D11_2",
+                  "model_type": "A40电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "U11_D12",
+              "device_count": 2,
+              "devices": [
+                {
+                  "name": "1A3_U11_D12_1",
+                  "full_name": "P8_仪表_A40 1A3_U11_D12_1",
+                  "model_type": "A40电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U11_D12_2",
+                  "full_name": "P8_仪表_A40 1A3_U11_D12_2",
+                  "model_type": "A40电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "U11_D01",
+              "device_count": 2,
+              "devices": [
+                {
+                  "name": "1A3_U11_D01_1",
+                  "full_name": "P9_仪表_ 1A3_U11_D01_1",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U11_D01_2",
+                  "full_name": "P9_仪表_ 1A3_U11_D01_2",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "U12_D01",
+              "device_count": 2,
+              "devices": [
+                {
+                  "name": "1A3_U12_D01_1",
+                  "full_name": "P9_仪表_ 1A3_U12_D01_1",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U12_D01_2",
+                  "full_name": "P9_仪表_ 1A3_U12_D01_2",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "U13_D01",
+              "device_count": 2,
+              "devices": [
+                {
+                  "name": "1A3_U13_D01_1",
+                  "full_name": "P9_仪表_ 1A3_U13_D01_1",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                },
+                {
+                  "name": "1A3_U13_D01_2",
+                  "full_name": "P9_仪表_ 1A3_U13_D01_2",
+                  "model_type": "A20电力仪表",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "UPS_U11",
+              "device_count": 1,
+              "devices": [
+                {
+                  "name": "UPS_1A3_U11",
+                  "full_name": "P11_施耐德UPS_1A3_U11",
+                  "model_type": "施耐德UPS",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "UPS_U12",
+              "device_count": 1,
+              "devices": [
+                {
+                  "name": "UPS_1A3_U12",
+                  "full_name": "P11_施耐德UPS_1A3_U12",
+                  "model_type": "施耐德UPS",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "UPS_U13",
+              "device_count": 1,
+              "devices": [
+                {
+                  "name": "UPS_1A3_U13",
+                  "full_name": "P11_施耐德UPS_1A3_U13",
+                  "model_type": "施耐德UPS",
+                  "key_data": [
+                    "AB线电压",
+                    "A相电流",
+                    "总有功功率",
+                    "主通讯状态"
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "右侧告警",
+          "zone": "right",
+          "width": 660,
+          "components": [
+            {
+              "type": "alarmList",
+              "title": "实时告警"
+            },
+            {
+              "type": "RealDataTable",
+              "title": "关键数据"
+            }
+          ]
+        }
+      ]
+    },
+    "interaction_templates": {
+      "hover_tooltip": {
+        "trigger": "mouseenter",
+        "action": "visible",
+        "showItems": "[detail_popup_{{device_name}}]",
+        "hide": {
+          "trigger": "mouseleave",
+          "action": "visible",
+          "hideItems": "[detail_popup_{{device_name}}]"
+        }
+      }
+    }
+  },
+  "import_guide": [
+    "1.创建项目",
+    "2.导入数据模型",
+    "3.导入设备",
+    "4.导入告警触发器",
+    "5.生成组态大屏"
+  ]
+}

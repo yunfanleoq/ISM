@@ -1,0 +1,92 @@
+# 支持零配置启动，即无需填写配置默认启用所有的插件。
+# 只需要填写需要修改的配置项即可。不需要将所有的配置都填写进来！！。
+# 全局配置参考 https://m7s.live/guide/config.html
+# 插件配置参考各个插件的文档
+# 插件都有一个enable配置，如果为false则不启用该插件，默认为true即不需要配置。
+
+global:
+  disableall: false # 是否禁用所有插件
+  loglang: zh # 日志语言，可选值：zh,en
+  loglevel: fatal # 日志级别，可选值：debug,info,warn,error,panic,fatal
+  http:
+    listenaddr: :18080 # 网关地址，用于访问API
+    cors: true  # 是否自动添加cors头
+    username: ""  # 用户名和密码，用于API访问时的基本身份认证
+    password: ""
+    readtimeout: 0 # 读超时时间
+    writetimeout: 0 # 写超时时间
+    idletimeout: 0 # 空闲超时时间
+    
+llhls:
+  enable: false
+hls:
+  enable: false
+monitor:
+  enable: false
+gb28181:
+  invitemode:     1 #0、手动invite 1、表示自动发起invite，当Server（SIP）接收到设备信息时，立即向设备发送invite命令获取流,2、按需拉流，既等待订阅者触发
+  position:
+    autosubposition: false #是否自动订阅定位
+    expires: 3600s #订阅周期(单位：秒)，默认3600
+    interval: 6s #订阅间隔（单位：秒），默认6
+  udpcachesize:   0 #表示UDP缓存大小，默认为0，不开启。仅当TCP关闭，切缓存大于0时才开启
+  sipip:          "" #sip服务器地址 默认 自动适配设备网段
+  serial:         "34020000002000000001"
+  realm:          "3402000000"
+  username:       ""
+  password:       ""
+  
+  registervalidity:  60s #注册有效期
+  
+  mediaip:          "" #媒体服务器地址 默认 自动适配设备网段
+  port:
+    sip: udp:5060 #sip服务器端口
+    media: tcp:58200-59200 #媒体服务器端口，用于接收设备的流
+
+  removebaninterval: 10m #定时移除注册失败的设备黑名单，单位秒，默认10分钟（600秒）
+  loglevel:         info  
+
+rtsp:
+    publish: # 参考全局配置格式
+    subscribe: # 参考全局配置格式
+    pull: # 格式参考文档 https://m7s.live/guide/config.html#%E6%8F%92%E4%BB%B6%E9%85%8D%E7%BD%AE
+    push: # 格式参考文档 https://m7s.live/guide/config.html#%E6%8F%92%E4%BB%B6%E9%85%8D%E7%BD%AE
+    listenaddr: :554
+    udpaddr: :8000
+    rtcpaddr: :8001
+    readbuffercount: 2048 # 读取缓存队列大小
+    writebuffercount: 2048 # 写出缓存队列大小
+    pullprotocol: tcp # auto, tcp, udp
+    
+record:
+  subscribe: # 格式参考全局配置
+  flv:
+      ext: .flv
+      path: record/flv
+      autorecord: false
+      filter: ""
+      fragment: 0
+  fmp4:
+      ext: .mp4
+      path: record/fmp4
+      autorecord: false
+      filter: ""
+      fragment: 0
+  mp4:
+      ext: .mp4
+      path: record/mp4
+      autorecord: true
+      filter: ""
+      fragment: 300s
+  hls:
+      ext: .m3u8
+      path: record/hls
+      autorecord: false
+      filter: ""
+      fragment: 0
+  raw:
+      ext: .
+      path: record/raw
+      autorecord: false
+      filter: ""
+      fragment: 0  

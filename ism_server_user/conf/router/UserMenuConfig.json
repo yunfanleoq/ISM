@@ -1,0 +1,64 @@
+[
+  {
+    "router": "root",
+    "children": [
+      {
+        "router": "dashboard"
+      },
+      {
+        "router": "DataWarehouse"
+      },
+      {
+        "router": "DeviceLibraryConfig"
+      },
+      {
+        "router": "RealTimeAlarm"
+      },
+      {
+        "router": "TaskPlan"
+      },
+      {
+        "router": "Reporting",
+        "children": [
+          {
+            "router": "AlarmHistory"
+          },
+          {
+            "router": "DataHistory"
+          },
+          {
+            "router": "DataHistoryReport"
+          },
+          {
+            "router": "SqlReportTemplate"
+          },
+          {
+            "router": "DiyReport"
+          },
+          {
+            "router": "DiyReportTemplete"
+          },
+          {
+            "router": "ReportTempleteContent"
+          }
+        ]
+      },
+      {
+        "router": "Setting",
+        "children": [
+          {
+            "router": "Account"
+          }
+        ]
+      },
+      {
+        "router": "Journal",
+        "children": [
+          {
+            "router": "OperationJournal"
+          }
+        ]
+      }
+    ]
+  }
+]

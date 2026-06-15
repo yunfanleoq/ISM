@@ -1,0 +1,333 @@
+[
+  {
+    "router": "root",
+    "children": [
+      {
+        "router": "dashboard"
+      },
+      {
+        "router": "DataWarehouse"
+      },
+      {
+        "router": "DeviceLibraryConfig"
+      },
+      {
+        "router": "DeviceModel",
+        "children": [
+          {
+            "router": "SnmpModel"
+          },
+          {
+            "router": "SnmpAdd"
+          },
+          {
+            "router": "SnmpDetail"
+          },
+          {
+            "router": "ModbusModel"
+          },
+          {
+            "router": "ModbusAdd"
+          },
+          {
+            "router": "ModbusRegister"
+          },
+          {
+            "router": "ModbusDetail"
+          },
+          {
+            "router": "DLT645Model"
+          },
+          {
+            "router": "DLT645ModelAdd"
+          },
+          {
+            "router": "DLT645ModelData"
+          },
+          {
+            "router": "DLT645ModelDetail"
+          },
+          {
+            "router": "CJT188Model"
+          },
+          {
+            "router": "CJT188ModelAdd"
+          },
+          {
+            "router": "CJT188ModelData"
+          },
+          {
+            "router": "CJT188ModelDetail"
+          },
+          {
+            "router": "OPCUAModel"
+          },
+          {
+            "router": "OpcuaAdd"
+          },
+          {
+            "router": "OpcuaNodeid"
+          },
+          {
+            "router": "OpcuaDetail"
+          },
+          {
+            "router": "MqttModel"
+          },
+          {
+            "router": "MqttAdd"
+          },
+          {
+            "router": "MqttNodeid"
+          },
+          {
+            "router": "MqttDetail"
+          },
+          {
+            "router": "SiemensS7Model"
+          },
+          {
+            "router": "SimS7Add"
+          },
+          {
+            "router": "S7DataList"
+          },
+          {
+            "router": "SimS7Detail"
+          },
+          {
+            "router": "IEC104Model"
+          },
+          {
+            "router": "IEC104ModelAdd"
+          },
+          {
+            "router": "IEC104ModelData"
+          },
+          {
+            "router": "IEC104ModelDetail"
+          },
+          {
+            "router": "IEC61850Model"
+          },
+          {
+            "router": "IEC61850Add"
+          },
+          {
+            "router": "IEC61850Nodeid"
+          },
+          {
+            "router": "IEC61850Detail"
+          },
+          {
+            "router": "BACnetModel"
+          },
+          {
+            "router": "BACnetAdd"
+          },
+          {
+            "router": "BACnetNodeid"
+          },
+          {
+            "router": "BACnetDetail"
+          },
+          {
+            "router": "RestFulModel"
+          },
+          {
+            "router": "RestFulData"
+          },
+          {
+            "router": "HJ212Model"
+          },
+          {
+            "router": "HJ212Add"
+          },
+          {
+            "router": "HJ212Nodeid"
+          },
+          {
+            "router": "HJ212Detail"
+          },
+          {
+            "router": "VirtualDevice"
+          },
+          {
+            "router": "VirtualDeviceData"
+          },
+          {
+            "router": "DeviceCustomData"
+          },
+          {
+            "router": "SystemData"
+          },
+          {
+            "router": "StaticDataAdd"
+          },
+          {
+            "router": "StaticDataDetail"
+          }
+        ]
+      },
+      {
+        "router": "Application"
+      },
+      {
+        "router": "TemplateMarket"
+      },
+      {
+        "router": "SCADAMonitor"
+      },
+      {
+        "router": "AIProjectGenerator"
+      },
+      {
+        "router": "VideoManager",
+        "children": [
+          {
+            "router": "videoScreen"
+          },
+          {
+            "router": "videoList"
+          },
+          {
+            "router": "GB28281List"
+          }
+        ]
+      },
+      {
+        "router": "RealTimeAlarm"
+      },
+      {
+        "router": "AlarmStrategy",
+        "children": [
+          {
+            "router": "ModelTrigger"
+          },
+          {
+            "router": "AlarmRestoreMask"
+          }
+        ]
+      },
+      {
+        "router": "TaskPlan"
+      },
+      {
+        "router": "ISMScripts"
+      },
+      {
+        "router": "DataPush",
+        "children": [
+          {
+            "router": "DataTemplete"
+          },
+          {
+            "router": "IEC104DataTemplete"
+          },
+          {
+            "router": "IEC104TempleteData"
+          },
+          {
+            "router": "ModbusDataTemplete"
+          },
+          {
+            "router": "ModbusTempleteData"
+          },
+          {
+            "router": "DataInterface"
+          }
+        ]
+      },
+      {
+        "router": "Reporting",
+        "children": [
+          {
+            "router": "AlarmHistory"
+          },
+          {
+            "router": "DataHistory"
+          },
+          {
+            "router": "DataHistoryReport"
+          },
+          {
+            "router": "SqlReportTemplate"
+          },
+          {
+            "router": "DiyReport"
+          },
+          {
+            "router": "DiyReportTemplete"
+          },
+          {
+            "router": "ReportTempleteContent"
+          }
+        ]
+      },
+      {
+        "router": "Network",
+        "children": [
+          {
+            "router": "SystemNetwork"
+          },
+          {
+            "router": "ISMNetwork"
+          }
+        ]
+      },
+      {
+        "router": "DataBase",
+        "children": [
+          {
+            "router": "DbManager"
+          },
+          {
+            "router": "HistoryManager"
+          }
+        ]
+      },
+      {
+        "router": "Setting",
+        "children": [
+          {
+            "router": "Account"
+          },
+          {
+            "router": "UserAdd"
+          },
+          {
+            "router": "UserManager"
+          },
+          {
+            "router": "AlarmTipsSetting"
+          },
+          {
+            "router": "SystemParams"
+          },
+          {
+            "router": "AccessToken"
+          }
+        ]
+      },
+      {
+        "router": "Journal",
+        "children": [
+          {
+            "router": "OperationJournal"
+          }
+        ]
+      },
+      {
+        "router": "Help",
+        "children": [
+          {
+            "router": "AboutSystem"
+          },
+          {
+            "router": "SystemAuth"
+          }
+        ]
+      }
+    ]
+  }
+]

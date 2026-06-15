@@ -1,0 +1,2056 @@
+{
+  "templates": [
+    {
+      "type": "A20",
+      "aiCount": 30,
+      "diCount": 3,
+      "aiParams": [
+        {
+          "name": "AB线电压",
+          "offset": 0,
+          "factor": 0.01,
+          "parseMode": 177
+        },
+        {
+          "name": "BC线电压",
+          "offset": 2,
+          "factor": 0.01,
+          "parseMode": 177
+        },
+        {
+          "name": "CA线电压",
+          "offset": 4,
+          "factor": 0.01,
+          "parseMode": 177
+        },
+        {
+          "name": "频率",
+          "offset": 6,
+          "factor": 0.01,
+          "parseMode": 177
+        },
+        {
+          "name": "A相电流",
+          "offset": 8,
+          "factor": 0.001,
+          "parseMode": 177
+        },
+        {
+          "name": "B相电流",
+          "offset": 10,
+          "factor": 0.001,
+          "parseMode": 177
+        },
+        {
+          "name": "C相电流",
+          "offset": 12,
+          "factor": 0.001,
+          "parseMode": 177
+        },
+        {
+          "name": "中性线电流",
+          "offset": 14,
+          "factor": 0.001,
+          "parseMode": 177
+        },
+        {
+          "name": "总有功功率",
+          "offset": 16,
+          "factor": 0.01,
+          "parseMode": 179
+        },
+        {
+          "name": "总无功功率",
+          "offset": 18,
+          "factor": 0.01,
+          "parseMode": 179
+        },
+        {
+          "name": "总视在功率",
+          "offset": 20,
+          "factor": 0.01,
+          "parseMode": 177
+        },
+        {
+          "name": "总功率因数",
+          "offset": 22,
+          "factor": 0.001,
+          "parseMode": 179
+        },
+        {
+          "name": "正有功电度",
+          "offset": 24,
+          "factor": 1,
+          "parseMode": 177
+        },
+        {
+          "name": "A相电流谐波畸变率",
+          "offset": 26,
+          "factor": 0.1,
+          "parseMode": 73
+        },
+        {
+          "name": "B相电流谐波畸变率",
+          "offset": 27,
+          "factor": 0.1,
+          "parseMode": 73
+        },
+        {
+          "name": "C相电流谐波畸变率",
+          "offset": 28,
+          "factor": 0.1,
+          "parseMode": 73
+        },
+        {
+          "name": "中性线电流谐波畸变率",
+          "offset": 29,
+          "factor": 0.1,
+          "parseMode": 73
+        }
+      ],
+      "diParams": [
+        {
+          "name": "输入状态2（故障状态）",
+          "registerOffset": 1,
+          "bitOffset": ""
+        },
+        {
+          "name": "输入状态1（合分闸状态）",
+          "registerOffset": 2,
+          "bitOffset": ""
+        },
+        {
+          "name": "主通讯状态",
+          "registerOffset": 3,
+          "bitOffset": ""
+        }
+      ]
+    },
+    {
+      "type": "A40",
+      "aiCount": 41,
+      "diCount": 3,
+      "aiParams": [
+        {
+          "name": "A相电流",
+          "offset": 0,
+          "factor": 0.001,
+          "parseMode": 177
+        },
+        {
+          "name": "B相电流",
+          "offset": 2,
+          "factor": 0.001,
+          "parseMode": 177
+        },
+        {
+          "name": "C相电流",
+          "offset": 4,
+          "factor": 0.001,
+          "parseMode": 177
+        },
+        {
+          "name": "中性线电流",
+          "offset": 6,
+          "factor": 0.001,
+          "parseMode": 177
+        },
+        {
+          "name": "AB线电压",
+          "offset": 8,
+          "factor": 0.01,
+          "parseMode": 177
+        },
+        {
+          "name": "BC线电压",
+          "offset": 10,
+          "factor": 0.01,
+          "parseMode": 177
+        },
+        {
+          "name": "CA线电压",
+          "offset": 12,
+          "factor": 0.01,
+          "parseMode": 177
+        },
+        {
+          "name": "A相电压",
+          "offset": 14,
+          "factor": 0.01,
+          "parseMode": 177
+        },
+        {
+          "name": "B相电压",
+          "offset": 16,
+          "factor": 0.01,
+          "parseMode": 177
+        },
+        {
+          "name": "C相电压",
+          "offset": 18,
+          "factor": 0.01,
+          "parseMode": 177
+        },
+        {
+          "name": "频率",
+          "offset": 20,
+          "factor": 0.01,
+          "parseMode": 177
+        },
+        {
+          "name": "总有功功率",
+          "offset": 22,
+          "factor": 0.01,
+          "parseMode": 179
+        },
+        {
+          "name": "总无功功率",
+          "offset": 24,
+          "factor": 0.01,
+          "parseMode": 179
+        },
+        {
+          "name": "总视在功率",
+          "offset": 26,
+          "factor": 0.01,
+          "parseMode": 177
+        },
+        {
+          "name": "总功率因数",
+          "offset": 28,
+          "factor": 0.001,
+          "parseMode": 179
+        },
+        {
+          "name": "正有功电度",
+          "offset": 30,
+          "factor": 1,
+          "parseMode": 177
+        },
+        {
+          "name": "负有功电度",
+          "offset": 32,
+          "factor": 1,
+          "parseMode": 177
+        },
+        {
+          "name": "A相电流谐波畸变率",
+          "offset": 34,
+          "factor": 0.1,
+          "parseMode": 73
+        },
+        {
+          "name": "B相电流谐波畸变率",
+          "offset": 35,
+          "factor": 0.1,
+          "parseMode": 73
+        },
+        {
+          "name": "C相电流谐波畸变率",
+          "offset": 36,
+          "factor": 0.1,
+          "parseMode": 73
+        },
+        {
+          "name": "中性电流谐波畸变率",
+          "offset": 37,
+          "factor": 0.1,
+          "parseMode": 73
+        },
+        {
+          "name": "UAB线电压谐波畸变率",
+          "offset": 38,
+          "factor": 0.1,
+          "parseMode": 73
+        },
+        {
+          "name": "UBC线电压谐波畸变率",
+          "offset": 39,
+          "factor": 0.1,
+          "parseMode": 73
+        },
+        {
+          "name": "UCA线电压谐波畸变率",
+          "offset": 40,
+          "factor": 0.1,
+          "parseMode": 73
+        }
+      ],
+      "diParams": [
+        {
+          "name": "输入状态1（合分闸状态）",
+          "registerOffset": 0,
+          "bitOffset": ""
+        },
+        {
+          "name": "输入状态2（故障状态）",
+          "registerOffset": 1,
+          "bitOffset": ""
+        },
+        {
+          "name": "主通讯状态",
+          "registerOffset": 2,
+          "bitOffset": ""
+        }
+      ]
+    },
+    {
+      "type": "施耐德UPS",
+      "aiCount": 44,
+      "diCount": 1,
+      "aiParams": [
+        {
+          "name": "UPS使用模式",
+          "offset": 0,
+          "factor": "",
+          "parseMode": ""
+        },
+        {
+          "name": "UPS逆变器内部故障",
+          "offset": 1,
+          "factor": 1.0,
+          "parseMode": ""
+        },
+        {
+          "name": "UPS电池开关状态",
+          "offset": 2,
+          "factor": 1.0,
+          "parseMode": ""
+        },
+        {
+          "name": "UPS主路开关状态",
+          "offset": 3,
+          "factor": 1.0,
+          "parseMode": ""
+        },
+        {
+          "name": "UPS旁路状态",
+          "offset": 4,
+          "factor": 1.0,
+          "parseMode": ""
+        },
+        {
+          "name": "UPS旁路内部硬件错误",
+          "offset": 5,
+          "factor": 1.0,
+          "parseMode": ""
+        },
+        {
+          "name": "UPS充电状态",
+          "offset": 6,
+          "factor": 1.0,
+          "parseMode": ""
+        },
+        {
+          "name": "主路A相电流",
+          "offset": 7,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "主路B相电流",
+          "offset": 8,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "主路C相电流",
+          "offset": 9,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "旁路A相电流",
+          "offset": 10,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "旁路B相电流",
+          "offset": 11,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "旁路C相电流",
+          "offset": 12,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "输出A相电流",
+          "offset": 13,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "输出B相电流",
+          "offset": 14,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "输出C相电流",
+          "offset": 15,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "电池电流",
+          "offset": 16,
+          "factor": 1,
+          "parseMode": 73
+        },
+        {
+          "name": "主路输入AB线电压",
+          "offset": 17,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "主路输入BC线电压",
+          "offset": 18,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "主路输入CA线电压",
+          "offset": 19,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "旁路输入A相电压",
+          "offset": 20,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "旁路输入B相电压",
+          "offset": 21,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "旁路输入C相电压",
+          "offset": 22,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "旁路输入AB线电压",
+          "offset": 23,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "旁路输入BC线电压",
+          "offset": 24,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "旁路输入CA线电压",
+          "offset": 25,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "输出A相电压",
+          "offset": 26,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "输出B相电压",
+          "offset": 27,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "输出C相电压",
+          "offset": 28,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "输出AB线电压",
+          "offset": 29,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "输出BC线电压",
+          "offset": 30,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "输出CA线电压",
+          "offset": 31,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "电池电压",
+          "offset": 32,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "输出总有功功率",
+          "offset": 33,
+          "factor": 1,
+          "parseMode": 73
+        },
+        {
+          "name": "输出视在功率",
+          "offset": 34,
+          "factor": 1,
+          "parseMode": 73
+        },
+        {
+          "name": "输出功率因数",
+          "offset": 35,
+          "factor": 0.01,
+          "parseMode": 73
+        },
+        {
+          "name": "主路输入频率",
+          "offset": 36,
+          "factor": 0.1,
+          "parseMode": 71
+        },
+        {
+          "name": "旁路输入频率",
+          "offset": 37,
+          "factor": 0.1,
+          "parseMode": 71
+        },
+        {
+          "name": "输出频率",
+          "offset": 38,
+          "factor": 0.1,
+          "parseMode": 71
+        },
+        {
+          "name": "电池剩余运行时间",
+          "offset": 39,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "电池温度",
+          "offset": 40,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "主路输入A相电压",
+          "offset": 41,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "主路输入B相电压",
+          "offset": 42,
+          "factor": 1,
+          "parseMode": 71
+        },
+        {
+          "name": "主路输入C相电压",
+          "offset": 43,
+          "factor": 1,
+          "parseMode": 71
+        }
+      ],
+      "diParams": [
+        {
+          "name": "通讯状态",
+          "registerOffset": 0,
+          "bitOffset": ""
+        }
+      ]
+    }
+  ],
+  "devices": [
+    {
+      "name": "1A1_U11_S18_1",
+      "templateType": "A20",
+      "aiStartAddr": 1000,
+      "diStartAddr": 8501,
+      "aiName": "AB线电压",
+      "diName": "输入状态2（故障状态）"
+    },
+    {
+      "name": "1A1_U11_S18_2",
+      "templateType": "A20",
+      "aiStartAddr": 1030,
+      "diStartAddr": 8506,
+      "aiName": "BC线电压",
+      "diName": "输入状态1（合分闸状态）"
+    },
+    {
+      "name": "1A1_U11_S18_3",
+      "templateType": "A20",
+      "aiStartAddr": 1060,
+      "diStartAddr": 8511,
+      "aiName": "CA线电压",
+      "diName": "主通讯状态"
+    },
+    {
+      "name": "1A1_U11_S18_4",
+      "templateType": "A20",
+      "aiStartAddr": 1090,
+      "diStartAddr": 8516,
+      "aiName": "频率",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S18_5",
+      "templateType": "A20",
+      "aiStartAddr": 1120,
+      "diStartAddr": 8521,
+      "aiName": "A相电流",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S18_6",
+      "templateType": "A20",
+      "aiStartAddr": 1150,
+      "diStartAddr": 8526,
+      "aiName": "B相电流",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S18_7",
+      "templateType": "A20",
+      "aiStartAddr": 1180,
+      "diStartAddr": 8531,
+      "aiName": "C相电流",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S18_8",
+      "templateType": "A20",
+      "aiStartAddr": 1210,
+      "diStartAddr": 8536,
+      "aiName": "中性线电流",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S18_9",
+      "templateType": "A20",
+      "aiStartAddr": 1240,
+      "diStartAddr": 8541,
+      "aiName": "总有功功率",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S16_1",
+      "templateType": "A20",
+      "aiStartAddr": 1270,
+      "diStartAddr": 8546,
+      "aiName": "总无功功率",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S16_2",
+      "templateType": "A20",
+      "aiStartAddr": 1300,
+      "diStartAddr": 8551,
+      "aiName": "总视在功率",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S16_3",
+      "templateType": "A20",
+      "aiStartAddr": 1330,
+      "diStartAddr": 8556,
+      "aiName": "总功率因数",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S16_4",
+      "templateType": "A20",
+      "aiStartAddr": 1360,
+      "diStartAddr": 8561,
+      "aiName": "正有功电度",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S16_5",
+      "templateType": "A20",
+      "aiStartAddr": 1390,
+      "diStartAddr": 8566,
+      "aiName": "A相电流谐波畸变率",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S16_6",
+      "templateType": "A20",
+      "aiStartAddr": 1420,
+      "diStartAddr": 8571,
+      "aiName": "B相电流谐波畸变率",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S16_7",
+      "templateType": "A20",
+      "aiStartAddr": 1450,
+      "diStartAddr": 8576,
+      "aiName": "C相电流谐波畸变率",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S16_8",
+      "templateType": "A20",
+      "aiStartAddr": 1480,
+      "diStartAddr": 8581,
+      "aiName": "中性线电流谐波畸变率",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S16_9",
+      "templateType": "A20",
+      "aiStartAddr": 1510,
+      "diStartAddr": 8586,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S14_1",
+      "templateType": "A20",
+      "aiStartAddr": 1745,
+      "diStartAddr": 8611,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S15_1",
+      "templateType": "A20",
+      "aiStartAddr": 1775,
+      "diStartAddr": 8616,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S17_1",
+      "templateType": "A20",
+      "aiStartAddr": 1805,
+      "diStartAddr": 8621,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S17_2",
+      "templateType": "A20",
+      "aiStartAddr": 1835,
+      "diStartAddr": 8626,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S17_3",
+      "templateType": "A20",
+      "aiStartAddr": 1865,
+      "diStartAddr": 8631,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S17_4",
+      "templateType": "A20",
+      "aiStartAddr": 1895,
+      "diStartAddr": 8636,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S17_5",
+      "templateType": "A20",
+      "aiStartAddr": 1925,
+      "diStartAddr": 8641,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S17_6",
+      "templateType": "A20",
+      "aiStartAddr": 1955,
+      "diStartAddr": 8646,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S17_7",
+      "templateType": "A20",
+      "aiStartAddr": 1985,
+      "diStartAddr": 8651,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S17_8",
+      "templateType": "A20",
+      "aiStartAddr": 2015,
+      "diStartAddr": 8656,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S17_9",
+      "templateType": "A20",
+      "aiStartAddr": 2045,
+      "diStartAddr": 8661,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S19_1",
+      "templateType": "A20",
+      "aiStartAddr": 2075,
+      "diStartAddr": 8666,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S19_2",
+      "templateType": "A20",
+      "aiStartAddr": 2105,
+      "diStartAddr": 8671,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S19_3",
+      "templateType": "A20",
+      "aiStartAddr": 2135,
+      "diStartAddr": 8676,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S19_4",
+      "templateType": "A20",
+      "aiStartAddr": 2165,
+      "diStartAddr": 8681,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S19_5",
+      "templateType": "A20",
+      "aiStartAddr": 2195,
+      "diStartAddr": 8686,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S19_6",
+      "templateType": "A20",
+      "aiStartAddr": 2225,
+      "diStartAddr": 8691,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S19_7",
+      "templateType": "A20",
+      "aiStartAddr": 2255,
+      "diStartAddr": 8696,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S19_8",
+      "templateType": "A20",
+      "aiStartAddr": 2285,
+      "diStartAddr": 8701,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S19_9",
+      "templateType": "A20",
+      "aiStartAddr": 2315,
+      "diStartAddr": 8706,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D14_1",
+      "templateType": "A20",
+      "aiStartAddr": 2345,
+      "diStartAddr": 8711,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D14_2",
+      "templateType": "A20",
+      "aiStartAddr": 2375,
+      "diStartAddr": 8716,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D14_3",
+      "templateType": "A20",
+      "aiStartAddr": 2405,
+      "diStartAddr": 8721,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D14_4",
+      "templateType": "A20",
+      "aiStartAddr": 2435,
+      "diStartAddr": 8726,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D14_5",
+      "templateType": "A20",
+      "aiStartAddr": 2465,
+      "diStartAddr": 8731,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D14_6",
+      "templateType": "A20",
+      "aiStartAddr": 2495,
+      "diStartAddr": 8736,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D14_7",
+      "templateType": "A20",
+      "aiStartAddr": 2525,
+      "diStartAddr": 8741,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D13_1",
+      "templateType": "A20",
+      "aiStartAddr": 2555,
+      "diStartAddr": 8746,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D13_2",
+      "templateType": "A20",
+      "aiStartAddr": 2585,
+      "diStartAddr": 8751,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D13_3",
+      "templateType": "A20",
+      "aiStartAddr": 2615,
+      "diStartAddr": 8756,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D13_4",
+      "templateType": "A20",
+      "aiStartAddr": 2645,
+      "diStartAddr": 8761,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D13_5",
+      "templateType": "A20",
+      "aiStartAddr": 2675,
+      "diStartAddr": 8766,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D13_6",
+      "templateType": "A20",
+      "aiStartAddr": 2705,
+      "diStartAddr": 8771,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D13_7",
+      "templateType": "A20",
+      "aiStartAddr": 2735,
+      "diStartAddr": 8776,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D13_8",
+      "templateType": "A20",
+      "aiStartAddr": 2765,
+      "diStartAddr": 8781,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D13_9",
+      "templateType": "A20",
+      "aiStartAddr": 2795,
+      "diStartAddr": 8786,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D01_1",
+      "templateType": "A20",
+      "aiStartAddr": 2989,
+      "diStartAddr": 8807,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D01_2",
+      "templateType": "A20",
+      "aiStartAddr": 3019,
+      "diStartAddr": 8812,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U12_D01_1",
+      "templateType": "A20",
+      "aiStartAddr": 3049,
+      "diStartAddr": 8817,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U12_D01_2",
+      "templateType": "A20",
+      "aiStartAddr": 3079,
+      "diStartAddr": 8822,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U13_D01_1",
+      "templateType": "A20",
+      "aiStartAddr": 3109,
+      "diStartAddr": 8827,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U13_D01_2",
+      "templateType": "A20",
+      "aiStartAddr": 3139,
+      "diStartAddr": 8832,
+      "aiName": "",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S11_1",
+      "templateType": "A40",
+      "aiStartAddr": 1540,
+      "diStartAddr": 8590,
+      "aiName": "A相电流",
+      "diName": "输入状态1（合分闸状态）"
+    },
+    {
+      "name": "1A1_U11_S11_2",
+      "templateType": "A40",
+      "aiStartAddr": 1581,
+      "diStartAddr": 8594,
+      "aiName": "B相电流",
+      "diName": "输入状态2（故障状态）"
+    },
+    {
+      "name": "1A1_U11_S12_1",
+      "templateType": "A40",
+      "aiStartAddr": 1622,
+      "diStartAddr": 8598,
+      "aiName": "C相电流",
+      "diName": "主通讯状态"
+    },
+    {
+      "name": "1A1_U11_S12_2",
+      "templateType": "A40",
+      "aiStartAddr": 1663,
+      "diStartAddr": 8602,
+      "aiName": "中性线电流",
+      "diName": ""
+    },
+    {
+      "name": "1A1_U11_S13_1",
+      "templateType": "A40",
+      "aiStartAddr": 1704,
+      "diStartAddr": 8606,
+      "aiName": "AB线电压",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D11_1",
+      "templateType": "A40",
+      "aiStartAddr": 2825,
+      "diStartAddr": 8790,
+      "aiName": "BC线电压",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D11_2",
+      "templateType": "A40",
+      "aiStartAddr": 2866,
+      "diStartAddr": 8794,
+      "aiName": "CA线电压",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D12_1",
+      "templateType": "A40",
+      "aiStartAddr": 2907,
+      "diStartAddr": 8798,
+      "aiName": "A相电压",
+      "diName": ""
+    },
+    {
+      "name": "1A3_U11_D12_2",
+      "templateType": "A40",
+      "aiStartAddr": 2948,
+      "diStartAddr": 8802,
+      "aiName": "B相电压",
+      "diName": ""
+    },
+    {
+      "name": "UPS_1A1_U11",
+      "templateType": "施耐德UPS",
+      "aiStartAddr": 3169,
+      "diStartAddr": 8836,
+      "aiName": "UPS使用模式",
+      "diName": "通讯状态"
+    },
+    {
+      "name": "UPS_1A1_U12",
+      "templateType": "施耐德UPS",
+      "aiStartAddr": 3213,
+      "diStartAddr": 8838,
+      "aiName": "UPS逆变器内部故障",
+      "diName": ""
+    },
+    {
+      "name": "UPS_1A1_U13",
+      "templateType": "施耐德UPS",
+      "aiStartAddr": 3257,
+      "diStartAddr": 8840,
+      "aiName": "UPS电池开关状态",
+      "diName": ""
+    },
+    {
+      "name": "UPS_1A1_U14",
+      "templateType": "施耐德UPS",
+      "aiStartAddr": 3301,
+      "diStartAddr": 8842,
+      "aiName": "UPS主路开关状态",
+      "diName": ""
+    },
+    {
+      "name": "UPS_1A3_U11",
+      "templateType": "施耐德UPS",
+      "aiStartAddr": 3345,
+      "diStartAddr": 8844,
+      "aiName": "UPS旁路状态",
+      "diName": ""
+    },
+    {
+      "name": "UPS_1A3_U12",
+      "templateType": "施耐德UPS",
+      "aiStartAddr": 3389,
+      "diStartAddr": 8846,
+      "aiName": "UPS旁路内部硬件错误",
+      "diName": ""
+    },
+    {
+      "name": "UPS_1A3_U13",
+      "templateType": "施耐德UPS",
+      "aiStartAddr": 3433,
+      "diStartAddr": 8848,
+      "aiName": "UPS充电状态",
+      "diName": ""
+    }
+  ],
+  "sourceNodePoints": {
+    "P1_仪表_": 306,
+    "1A配电室 172.31.4.14 172.20.255.14": 76,
+    "P2_仪表_": 306,
+    "P3_仪表_": 288,
+    "P4_仪表_": 306,
+    "P5_仪表_": 306,
+    "P6_仪表_": 238,
+    "P7_仪表_": 306,
+    "P8_仪表_": 176,
+    "P9_仪表_": 204,
+    "P10_施耐德UPS_": 180,
+    "P11_施耐德UPS_": 135
+  },
+  "models": {
+    "A20": {
+      "name": "A20",
+      "description": "A20 设备模型",
+      "protocol": "ModbusTCP",
+      "aiCount": 30,
+      "diCount": 3,
+      "aiPoints": [
+        {
+          "name": "AB线电压",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.01,
+          "parseMode": 177,
+          "offset": 0
+        },
+        {
+          "name": "BC线电压",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.01,
+          "parseMode": 177,
+          "offset": 2
+        },
+        {
+          "name": "CA线电压",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.01,
+          "parseMode": 177,
+          "offset": 4
+        },
+        {
+          "name": "频率",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.01,
+          "parseMode": 177,
+          "offset": 6
+        },
+        {
+          "name": "A相电流",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.001,
+          "parseMode": 177,
+          "offset": 8
+        },
+        {
+          "name": "B相电流",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.001,
+          "parseMode": 177,
+          "offset": 10
+        },
+        {
+          "name": "C相电流",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.001,
+          "parseMode": 177,
+          "offset": 12
+        },
+        {
+          "name": "中性线电流",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.001,
+          "parseMode": 177,
+          "offset": 14
+        },
+        {
+          "name": "总有功功率",
+          "dataType": "Long",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 0.01,
+          "parseMode": 179,
+          "offset": 16
+        },
+        {
+          "name": "总无功功率",
+          "dataType": "Long",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 0.01,
+          "parseMode": 179,
+          "offset": 18
+        },
+        {
+          "name": "总视在功率",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.01,
+          "parseMode": 177,
+          "offset": 20
+        },
+        {
+          "name": "总功率因数",
+          "dataType": "Long",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 0.001,
+          "parseMode": 179,
+          "offset": 22
+        },
+        {
+          "name": "正有功电度",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 1,
+          "parseMode": 177,
+          "offset": 24
+        },
+        {
+          "name": "A相电流谐波畸变率",
+          "dataType": "Short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.1,
+          "parseMode": 73,
+          "offset": 26
+        },
+        {
+          "name": "B相电流谐波畸变率",
+          "dataType": "Short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.1,
+          "parseMode": 73,
+          "offset": 27
+        },
+        {
+          "name": "C相电流谐波畸变率",
+          "dataType": "Short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.1,
+          "parseMode": 73,
+          "offset": 28
+        },
+        {
+          "name": "中性线电流谐波畸变率",
+          "dataType": "Short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.1,
+          "parseMode": 73,
+          "offset": 29
+        }
+      ],
+      "diPoints": [
+        {
+          "name": "输入状态2（故障状态）",
+          "dataType": "BOOL",
+          "registerType": "DI",
+          "registerCount": 1,
+          "registerOffset": 1,
+          "bitOffset": ""
+        },
+        {
+          "name": "输入状态1（合分闸状态）",
+          "dataType": "BOOL",
+          "registerType": "DI",
+          "registerCount": 1,
+          "registerOffset": 2,
+          "bitOffset": ""
+        },
+        {
+          "name": "主通讯状态",
+          "dataType": "BOOL",
+          "registerType": "DI",
+          "registerCount": 1,
+          "registerOffset": 3,
+          "bitOffset": ""
+        }
+      ]
+    },
+    "A40": {
+      "name": "A40",
+      "description": "A40 设备模型",
+      "protocol": "ModbusTCP",
+      "aiCount": 41,
+      "diCount": 3,
+      "aiPoints": [
+        {
+          "name": "A相电流",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.001,
+          "parseMode": 177,
+          "offset": 0
+        },
+        {
+          "name": "B相电流",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.001,
+          "parseMode": 177,
+          "offset": 2
+        },
+        {
+          "name": "C相电流",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.001,
+          "parseMode": 177,
+          "offset": 4
+        },
+        {
+          "name": "中性线电流",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.001,
+          "parseMode": 177,
+          "offset": 6
+        },
+        {
+          "name": "AB线电压",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.01,
+          "parseMode": 177,
+          "offset": 8
+        },
+        {
+          "name": "BC线电压",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.01,
+          "parseMode": 177,
+          "offset": 10
+        },
+        {
+          "name": "CA线电压",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.01,
+          "parseMode": 177,
+          "offset": 12
+        },
+        {
+          "name": "A相电压",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.01,
+          "parseMode": 177,
+          "offset": 14
+        },
+        {
+          "name": "B相电压",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.01,
+          "parseMode": 177,
+          "offset": 16
+        },
+        {
+          "name": "C相电压",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.01,
+          "parseMode": 177,
+          "offset": 18
+        },
+        {
+          "name": "频率",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.01,
+          "parseMode": 177,
+          "offset": 20
+        },
+        {
+          "name": "总有功功率",
+          "dataType": "Long",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 0.01,
+          "parseMode": 179,
+          "offset": 22
+        },
+        {
+          "name": "总无功功率",
+          "dataType": "Long",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 0.01,
+          "parseMode": 179,
+          "offset": 24
+        },
+        {
+          "name": "总视在功率",
+          "dataType": "Long",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 0.01,
+          "parseMode": 179,
+          "offset": 26
+        },
+        {
+          "name": "总功率因数",
+          "dataType": "Long",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 0.001,
+          "parseMode": 179,
+          "offset": 28
+        },
+        {
+          "name": "正有功电度",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 177,
+          "parseMode": 1,
+          "offset": 30
+        },
+        {
+          "name": "负有功电度",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 177,
+          "parseMode": 1,
+          "offset": 32
+        },
+        {
+          "name": "A相电流谐波畸变率",
+          "dataType": "Short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.1,
+          "parseMode": 73,
+          "offset": 34
+        },
+        {
+          "name": "B相电流谐波畸变率",
+          "dataType": "Short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.1,
+          "parseMode": 73,
+          "offset": 35
+        },
+        {
+          "name": "C相电流谐波畸变率",
+          "dataType": "Short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.1,
+          "parseMode": 73,
+          "offset": 36
+        },
+        {
+          "name": "中性电流谐波畸变率",
+          "dataType": "Short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.1,
+          "parseMode": 73,
+          "offset": 37
+        },
+        {
+          "name": "UAB线电压谐波畸变率",
+          "dataType": "Short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.1,
+          "parseMode": 73,
+          "offset": 38
+        },
+        {
+          "name": "UBC线电压谐波畸变率",
+          "dataType": "Short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.1,
+          "parseMode": 73,
+          "offset": 39
+        },
+        {
+          "name": "UCA线电压谐波畸变率",
+          "dataType": "Short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.1,
+          "parseMode": 73,
+          "offset": 40
+        }
+      ],
+      "diPoints": [
+        {
+          "name": "输入状态1（合分闸状态）",
+          "dataType": "BOOL",
+          "registerType": "DI",
+          "registerCount": 1,
+          "registerOffset": 0,
+          "bitOffset": ""
+        },
+        {
+          "name": "输入状态2（故障状态）",
+          "dataType": "BOOL",
+          "registerType": "DI",
+          "registerCount": 1,
+          "registerOffset": 1,
+          "bitOffset": ""
+        },
+        {
+          "name": "主通讯状态",
+          "dataType": "BOOL",
+          "registerType": "DI",
+          "registerCount": 1,
+          "registerOffset": 2,
+          "bitOffset": ""
+        }
+      ]
+    },
+    "施耐德UPS": {
+      "name": "施耐德UPS",
+      "description": "施耐德UPS 设备模型",
+      "protocol": "ModbusTCP",
+      "aiCount": 44,
+      "diCount": 1,
+      "aiPoints": [
+        {
+          "name": "UPS使用模式",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": "",
+          "parseMode": "",
+          "offset": 0
+        },
+        {
+          "name": "UPS逆变器内部故障",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": "",
+          "parseMode": "",
+          "offset": 1
+        },
+        {
+          "name": "UPS电池开关状态",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": "",
+          "parseMode": "",
+          "offset": 2
+        },
+        {
+          "name": "UPS主路开关状态",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": "",
+          "parseMode": "",
+          "offset": 3
+        },
+        {
+          "name": "UPS旁路状态",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": "",
+          "parseMode": "",
+          "offset": 4
+        },
+        {
+          "name": "UPS旁路内部硬件错误",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": "",
+          "parseMode": "",
+          "offset": 5
+        },
+        {
+          "name": "UPS充电状态",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": "",
+          "parseMode": "",
+          "offset": 6
+        },
+        {
+          "name": "主路A相电流",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 7
+        },
+        {
+          "name": "主路B相电流",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 8
+        },
+        {
+          "name": "主路C相电流",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 9
+        },
+        {
+          "name": "旁路A相电流",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 10
+        },
+        {
+          "name": "旁路B相电流",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 11
+        },
+        {
+          "name": "旁路C相电流",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 12
+        },
+        {
+          "name": "输出A相电流",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 13
+        },
+        {
+          "name": "输出B相电流",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 14
+        },
+        {
+          "name": "输出C相电流",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 15
+        },
+        {
+          "name": "电池电流",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 73,
+          "parseMode": 1,
+          "offset": 16
+        },
+        {
+          "name": "主路输入AB线电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 17
+        },
+        {
+          "name": "主路输入BC线电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 18
+        },
+        {
+          "name": "主路输入CA线电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 19
+        },
+        {
+          "name": "旁路输入A相电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 20
+        },
+        {
+          "name": "旁路输入B相电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 21
+        },
+        {
+          "name": "旁路输入C相电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 22
+        },
+        {
+          "name": "旁路输入AB线电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 23
+        },
+        {
+          "name": "旁路输入BC线电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 24
+        },
+        {
+          "name": "旁路输入CA线电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 25
+        },
+        {
+          "name": "输出A相电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 26
+        },
+        {
+          "name": "输出B相电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 27
+        },
+        {
+          "name": "输出C相电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 28
+        },
+        {
+          "name": "输出AB线电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 29
+        },
+        {
+          "name": "输出BC线电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 30
+        },
+        {
+          "name": "输出CA线电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 31
+        },
+        {
+          "name": "电池电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 32
+        },
+        {
+          "name": "输出总有功功率",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 73,
+          "parseMode": 1,
+          "offset": 33
+        },
+        {
+          "name": "输出视在功率",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 73,
+          "parseMode": 1,
+          "offset": 34
+        },
+        {
+          "name": "输出功率因数",
+          "dataType": "Short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.01,
+          "parseMode": 73,
+          "offset": 35
+        },
+        {
+          "name": "主路输入频率",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.1,
+          "parseMode": 71,
+          "offset": 36
+        },
+        {
+          "name": "旁路输入频率",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.1,
+          "parseMode": 71,
+          "offset": 37
+        },
+        {
+          "name": "输出频率",
+          "dataType": "Unsigned short",
+          "registerType": "HOLDING",
+          "registerCount": 1,
+          "factor": 0.1,
+          "parseMode": 71,
+          "offset": 38
+        },
+        {
+          "name": "电池剩余运行时间",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 39
+        },
+        {
+          "name": "电池温度",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 40
+        },
+        {
+          "name": "主路输入A相电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 41
+        },
+        {
+          "name": "主路输入B相电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 42
+        },
+        {
+          "name": "主路输入C相电压",
+          "dataType": "Float",
+          "registerType": "HOLDING",
+          "registerCount": 2,
+          "factor": 71,
+          "parseMode": 1,
+          "offset": 43
+        }
+      ],
+      "diPoints": [
+        {
+          "name": "通讯状态",
+          "dataType": "BOOL",
+          "registerType": "DI",
+          "registerCount": 1,
+          "registerOffset": 0,
+          "bitOffset": ""
+        }
+      ]
+    }
+  }
+}

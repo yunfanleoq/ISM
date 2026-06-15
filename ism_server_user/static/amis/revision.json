@@ -1,0 +1,7 @@
+{
+  "branch": "master",
+  "SHA1": "41d3b12ed",
+  "message": "feat: 选项类的组件 autoFill 支持配置 initAutoFill 属性 Close: #9391 (#9547)",
+  "author": "liaoxuezhi",
+  "date": "2024-01-31 16:09:30"
+}

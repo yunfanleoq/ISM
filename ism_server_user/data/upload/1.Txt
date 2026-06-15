@@ -1,0 +1,111 @@
+[{
+    "DisplayName": "甩保护11",
+    "Nodeid": "ns=2;s=38.1.1.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护12",
+    "Nodeid": "ns=2;s=38.1.2.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护13",
+    "Nodeid": "ns=2;s=38.1.3.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护14",
+    "Nodeid": "ns=2;s=38.1.4.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护15",
+    "Nodeid": "ns=2;s=38.1.5.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护16",
+    "Nodeid": "ns=2;s=38.1.6.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护21",
+    "Nodeid": "ns=2;s=3801.1.1.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护22",
+    "Nodeid": "ns=2;s=3801.1.2.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护23",
+    "Nodeid": "ns=2;s=3801.1.3.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护24",
+    "Nodeid": "ns=2;s=3801.1.4.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护25",
+    "Nodeid": "ns=2;s=3801.1.5.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护26",
+    "Nodeid": "ns=2;s=3801.1.6.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护27",
+    "Nodeid": "ns=2;s=3801.1.7.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护28",
+    "Nodeid": "ns=2;s=3801.1.8.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护31",
+    "Nodeid": "ns=2;s=3802.1.1.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护32",
+    "Nodeid": "ns=2;s=3802.1.2.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护33",
+    "Nodeid": "ns=2;s=3802.1.3.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护34",
+    "Nodeid": "ns=2;s=3802.1.4.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护35",
+    "Nodeid": "ns=2;s=3802.1.5.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护36",
+    "Nodeid": "ns=2;s=3802.1.6.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护37",
+    "Nodeid": "ns=2;s=3802.1.7.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}, {
+    "DisplayName": "甩保护38",
+    "Nodeid": "ns=2;s=3802.1.8.甩保护",
+    "DataType": "Boolean",
+    "AccessLevel": "Readable | Writeable"
+}]

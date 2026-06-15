@@ -1,0 +1,78 @@
+---
+description: ISM Display 组件渲染崩溃 —— 缺少 animate.selected / detail.style.text 导致 Vue 渲染降级为空白注释节点
+alwaysApply: true
+globs: "**/ISMDisPlay/**/*.vue,**/ismSceneNormalizer.js,**/generate_complete_package.py"
+---
+
+# ISM 组态组件渲染崩溃速查
+
+## 致命模式：`$el` 是 `#comment`（空白节点）
+
+当 Vue 组件渲染函数抛异常时，Vue 静默降级，`$el` 变成 `<!---->` 注释节点，组件区域完全空白。
+
+### 第一致死原因：`animateType.includes(...)` 崩溃
+
+**链路**：
+```
+data.detail.animate 缺少 "selected" key
+  → initComponents() 执行 this.animateType = option.animate.selected  // undefined
+  → 模板中 animateType.includes('blink')  // TypeError: Cannot read properties of undefined
+  → Vue render 抛异常 → $el = #comment
+```
+
+**影响范围**：100+ 个组件（所有使用 `intComponents` 模式的组件）
+
+**修复**：在 `initComponents()` 中加 fallback：
+```javascript
+// 修复前（会崩）
+this.animateType = option.animate.selected
+
+// 修复后（安全）
+this.animateType = option.animate.selected || []
+```
+
+### 第二致死原因：`detail.style.text` 缺失
+
+**链路**：
+```
+data.detail.style 没有 "text" key
+  → 模板中 {{ detail.style.text }} 渲染为空
+  → 文字组件看不到文字
+```
+
+**修复**：Python 生成脚本 `generate_complete_package.py` 的 `make_text_cell` 必须输出：
+```python
+"style": {
+    "position": {"x": x, "y": y, "w": w, "h": h},
+    "text": text,           # ← 必须
+    "visible": 1,           # ← 必须（v-show 用）
+    "foreColor": color,     # ← 必须
+    "fontSize": font_size,
+    "diy": [],              # ← 必须（initComponents 遍历用）
+    # ... 其他字段
+}
+```
+
+## CDP 排障三板斧
+
+当浏览器中组件区域空白时：
+
+```javascript
+// 1. 找到组件的 Vue 实例
+var el = document.querySelector('[data-shape="目标shape"]');
+var vue = el.__vue__ || el.firstChild.__vue__;
+
+// 2. 检查 detail 完整性
+JSON.stringify({animateKeys: Object.keys(vue.detail.animate), styleKeys: Object.keys(vue.detail.style)})
+
+// 3. 手动执行渲染函数看异常
+try { vue.$options.render.call(vue, vue.$createElement) } catch(e) { e.message }
+```
+
+## 数据生成层检查清单
+
+- [ ] `detail.animate.selected` 存在且为数组 `[]`
+- [ ] `detail.animate.animateElement` 存在且为数组 `[]`
+- [ ] `detail.style.text` 存在（文字组件）
+- [ ] `detail.style.visible` 存在且为 `1`
+- [ ] `detail.style.diy` 存在且为数组 `[]`

@@ -1,0 +1,305 @@
+------------------------------------------------------------------------------
+--
+-- Title: iDRAC MIB
+--
+-- Version: 4.2
+-- Date: 31 July 2020
+--
+-- Description: This MIB defines MIB objects that make iDRAC data available
+-- to SNMP management applications.
+--
+-- Note that the iDRAC MIB file is published in both types of SMI (Structure
+-- of Managed Information) notations: SMIv1 and SMIv2. This copy of the iDRAC
+-- MIB file is the SMIv1 version of the MIB file.
+--
+-- Copyright (c) 2012-2018 Dell Inc.
+-- All Rights Reserved.
+--
+-- Note: The information and functionality described by this MIB file,
+-- like many MIB files, is subject to change without notice.
+-- Please examine the version number of this MIB and compare it
+-- to the version number you are expecting.
+--
+-- OID Format Legend:
+--   <a> = attribute ID
+--   <i> = index ID
+--   <n> = trap ID
+--
+------------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------------
+-- Begin MIB
+------------------------------------------------------------------------------
+
+IDRAC-MIB DEFINITIONS ::= BEGIN
+
+IMPORTS
+    enterprises
+        FROM RFC1155-SMI
+    OBJECT-TYPE
+        FROM RFC-1212
+    TRAP-TYPE
+        FROM RFC-1215
+    DisplayString
+        FROM RFC1213-MIB;
+
+------------------------------------------------------------------------------
+-- Object Identifiers
+------------------------------------------------------------------------------
+
+-- Enterprise ID
+dell                            OBJECT IDENTIFIER ::= { enterprises    674   }
+
+-- Server3 Branch
+server3                         OBJECT IDENTIFIER ::= { dell           10892 }
+
+-- Server3 Groups
+outOfBandGroup                  OBJECT IDENTIFIER ::= { server3        5     }
+
+-- Server3 Out-of-Band Groups
+--
+-- The informationGroup provides information to discover the system (RAC,
+-- modular enclosure/chassis, and server) and its associated properties.
+--
+informationGroup                OBJECT IDENTIFIER ::= { outOfBandGroup 1     }
+racInfoGroup                    OBJECT IDENTIFIER ::= { informationGroup 1   }
+chassisInfoGroup                OBJECT IDENTIFIER ::= { informationGroup 2   }
+systemInfoGroup                 OBJECT IDENTIFIER ::= { informationGroup 3   }
+statusGroup                     OBJECT IDENTIFIER ::= { outOfBandGroup 2     }
+alertGroup                      OBJECT IDENTIFIER ::= { outOfBandGroup 3     }
+alertVariablesGroup             OBJECT IDENTIFIER ::= { alertGroup     1     }
+alertTrapGroup                  OBJECT IDENTIFIER ::= { alertGroup     2     }
+systemAlertTrapGroup            OBJECT IDENTIFIER ::= { alertTrapGroup 1     }
+storageAlertTrapGroup           OBJECT IDENTIFIER ::= { alertTrapGroup 2     }
+updatesAlertTrapGroup           OBJECT IDENTIFIER ::= { alertTrapGroup 3     }
+auditAlertTrapGroup             OBJECT IDENTIFIER ::= { alertTrapGroup 4     }
+configurationAlertTrapGroup     OBJECT IDENTIFIER ::= { alertTrapGroup 5     }
+
+-- System details start
+systemDetailsGroup              OBJECT IDENTIFIER ::= { outOfBandGroup 4        }
+mIBVersionGroup                 OBJECT IDENTIFIER ::= { systemDetailsGroup 1    }
+systemStateGroup                OBJECT IDENTIFIER ::= { systemDetailsGroup 200  }
+chassisInformationGroup         OBJECT IDENTIFIER ::= { systemDetailsGroup 300  }
+powerGroup                      OBJECT IDENTIFIER ::= { systemDetailsGroup 600  }
+thermalGroup                    OBJECT IDENTIFIER ::= { systemDetailsGroup 700  }
+deviceGroup                     OBJECT IDENTIFIER ::= { systemDetailsGroup 1100 }
+slotGroup                       OBJECT IDENTIFIER ::= { systemDetailsGroup 1200  }
+fruGroup                        OBJECT IDENTIFIER ::= { systemDetailsGroup 2000  }
+-- System details end
+
+-- Storage details start
+storageDetailsGroup             OBJECT IDENTIFIER ::= { outOfBandGroup 5      }
+software                        OBJECT IDENTIFIER ::= { storageDetailsGroup 1 }
+storageManagement               OBJECT IDENTIFIER ::= { software 20           }
+physicalDevices                 OBJECT IDENTIFIER ::= { storageManagement 130 }
+logicalDevices                  OBJECT IDENTIFIER ::= { storageManagement 140 }
+-- Storage details end
+
+
+------------------------------------------------------------------------------
+-- Textual Conventions
+------------------------------------------------------------------------------
+
+StringType                      ::= DisplayString (SIZE (0..1023))
+String64                        ::= DisplayString (SIZE (0..64))
+FQDDString                      ::= DisplayString (SIZE (0..512))
+MACAddress                      ::= OCTET STRING (SIZE(6))
+ObjectRange                     ::= INTEGER (1..128)
+Unsigned8BitRange               ::= INTEGER (0..255)
+Unsigned16BitRange              ::= INTEGER (0..65535)
+Unsigned32BitRange              ::= INTEGER (0..2147483647)
+Signed32BitRange                ::= INTEGER (-2147483647..2147483647)
+BooleanType                     ::= INTEGER (0..1)    -- 0 = FALSE, 1 = TRUE
+
+-- DateName dates are defined in the displayable format
+--   yyyymmddHHMMSS.uuuuuu+ooo
+-- where yyyy is the year, mm is the month number, dd is the day of the month,
+-- HHMMSS are the hours, minutes and seconds, respectively, uuuuuu is the
+-- number of microseconds, and +ooo is the offset from UTC in minutes. If east
+-- of UTC, the number is preceded by a plus (+) sign, and if west of UTC, the
+-- number is preceded by a minus (-) sign.
+--
+-- For example, Wednesday, May 25, 1994, at 1:30:15 PM EDT
+--   would be represented as: 19940525133015.000000-300
+--
+-- Values must be zero-padded if necessary, like "05" in the example above.
+-- If a value is not supplied for a field, each character in the field
+-- must be replaced with asterisk ('*') characters.
+DateName                    ::= DisplayString (SIZE (25))
+
+-- Note About Bit Fields:
+-- Attributes with definitions of xxxCapabilities, xxxCapabilitiesUnique,
+-- xxxSettings, xxxSettingsUnique and xxxFeatureFlags are integers
+-- representing a series of bit definitions.  They are NOT enumerations and
+-- should be treated as bit fields.  The value is passed as a decimal value;
+-- it should be converted to hex, and the appropriate bits should be parsed
+-- from that.  Some of the more common bit combinations are defined in some
+-- variables, but not all combinations are or will be defined.
+
+--
+-- Generic State Capabilities
+--
+StateCapabilitiesFlags          ::= INTEGER {
+    -- If set to 0 (zero), object has no state capabilities
+    unknownCapabilities(1),     -- object's state capabilities are unknown
+    -- The object's state capabilities allow it to be set to:
+    enableCapable(2),           -- be disabled (offline) or be enabled (online)
+    notReadyCapable(4),         -- not ready
+    enableAndNotReadyCapable(6)
+}
+
+SystemLockdownModeEnum                             ::= INTEGER {
+    --disabled(0),                             -  LockdownMode disabled
+    enabled(1),                                  -- LockdownMode enabled
+	unknown(2)                                  -- LockdownMode unknown
+}
+--
+-- Generic State Settings
+--
+StateSettingsFlags              ::= INTEGER {
+    -- If set to 0 (zero), object has no state settings enabled and is disabled
+    unknown(1),             -- object's state is unknown
+    enabled(2),             -- object's state is disabled (offline) if bit is off
+                            -- or enabled (online) if bit is on
+    notReady(4),            -- object's state is not ready
+    enabledAndNotReady(6)
+}
+
+--
+-- Probe Capabilities
+--
+ProbeCapabilitiesFlags                          ::= INTEGER {
+    -- If set to 0 (zero) the object has no probe capabilities
+    -- The object's probe capabilities allow it to be set to:
+    upperNonCriticalThresholdSetCapable(1),     -- upper noncritical threshold can be set
+    lowerNonCriticalThresholdSetCapable(2),     -- lower noncritical threshold can be set
+    upperNonCriticalThresholdDefaultCapable(4), -- upper noncritical threshold can be set to default
+    lowerNonCriticalThresholdDefaultCapable(8)  -- lower noncritical threshold can be set to default
+}
+
+--
+-- Probe Status
+--
+StatusProbeEnum             ::= INTEGER {
+    other(1),               -- probe status is not one of the following:
+    unknown(2),             -- probe status is unknown (not known or monitored)
+    ok(3),                  -- probe is reporting a value within the thresholds
+    nonCriticalUpper(4),    -- probe has crossed upper noncritical threshold
+    criticalUpper(5),       -- probe has crossed upper critical threshold
+    nonRecoverableUpper(6), -- probe has crossed upper non-recoverable threshold
+    nonCriticalLower(7),    -- probe has crossed lower noncritical threshold
+    criticalLower(8),       -- probe has crossed lower critical threshold
+    nonRecoverableLower(9), -- probe has crossed lower non-recoverable threshold
+    failed(10)              -- probe is not functional
+}
+
+--
+-- Redundancy Status
+--
+StatusRedundancyEnum        ::= INTEGER {
+    other(1),               -- redundancy status is not one of the following:
+    unknown(2),             -- redundancy status is unknown (not known or monitored)
+    full(3),                -- object is fully redundant
+    degraded(4),            -- object's redundancy has been degraded
+    lost(5),                -- object's redundancy has been lost
+    notRedundant(6),        -- redundancy status does not apply or object is not redundant
+    redundancyOffline(7)    -- redundancy object taken offline
+}
+
+--
+-- Status
+--
+ObjectStatusEnum        ::= INTEGER {
+    other(1),           -- the status of the object is not one of the
+                        --  following:
+    unknown(2),         -- the status of the object is unknown
+                        --  (not known or monitored)
+    ok(3),              -- the status of the object is ok
+    nonCritical(4),     -- the status of the object is warning, non-critical
+    critical(5),        -- the status of the object is critical (failure)
+    nonRecoverable(6)   -- the status of the object is non-recoverable (dead)
+}
+
+RacTypeEnum                 ::= INTEGER {
+    other(1),               -- the RAC type is not one of the following
+    unknown(2),             -- the RAC type is unknown
+    idrac7monolithic(16),   -- iDRAC7 Monolithic
+    idrac7modular(17),      -- iDRAC7 Modular
+    idrac7DCS(21),          -- iDRAC7 DCS
+    idrac8monolithic(32),   -- iDRAC8 Monolithic
+    idrac8modular(33),      -- iDRAC8 Modular
+    idrac8DCS(34),         -- iDRAC8 DCS
+    idrac9Monolithic(48),   -- iDRAC9 Monolothic
+    idrac9Modular(49),      -- iDRAC9 Modular
+    idrac9DCS(50),          -- iDRAC9 DCS
+    idrac915GMonolithic(64),   -- iDRAC9 Monolothic
+    idrac915GModular(65),      -- iDRAC9 Modular
+    idrac915GDCS(66)           -- iDRAC9 DCS
+}
+
+
+SystemFormFactorEnum   ::= INTEGER {
+    other(1),                       -- the form factor is not one of the following:
+    unknown(2),                     -- the form factor is unknown
+    u1(3),                          -- 1U Monolithic
+    u2(4),                          -- 2U Monolithic
+    u4(5),                          -- 4U Monolithic
+    u7(6),                          -- 7U Monolithic
+    singleWidthHalfHeight(7),       -- Single width, half height Modular
+    dualWidthHalfHeight(8),         -- Dual width, half height Modular
+    singleWidthFullHeight(9),       -- Single width, full height Modular
+    dualWidthFullHeight(10),        -- Dual width, full height Modular
+    singleWidthQuarterHeight(11),   -- Single width, quarter height Modular
+    u5(12),                         -- 5U Monolithic
+    u1HalfWidth(13),                -- 1U, half width Modular
+    u1QuarterWidth(14),             -- 1U, quarter width Modular
+    u1FullWidth(15)                 -- 1U, full width Modular
+}
+
+BladeGeometryEnum               ::= INTEGER {
+    other(1),                       -- the modular geometry is not one of the following:
+    unknown(2),                     -- the modular geometry is unknown
+    singleWidthHalfHeight(3),       -- Single width, half height Modular
+    dualWidthHalfHeight(4),         -- Dual width, half height Modular
+    singleWidthFullHeight(5),       -- Single width, full height Modular
+    dualWidthFullHeight(6),         -- Dual width, full height Modular
+    singleWidthQuarterHeight(7),    -- Single width, quarter height Modular
+    u1HalfWidth(8),                 -- 1U, half width Modular
+    u1QuarterWidth(9),              -- 1U, quarter width Modular
+    u1FullWidth(10)                 -- 1U, full width Modular
+}
+
+PowerStateStatusEnum            ::= INTEGER {
+    other(1),                       -- the power state status is not one of the following:
+    unknown(2),                     -- the power state status is unknown
+    off(3),                         -- system power is off
+    on(4)                           -- system power is on
+}
+
+
+
+------------------------------------------------------------------------------
+--
+-- MIB Groups
+--
+------------------------------------------------------------------------------
+
+
+------------------------------------------------------------------------------
+-- RAC Information Group
+--
+-- OID Format: 1.3.6.1.4.1.674.10892.5.1.1.<a>.0
+------------------------------------------------------------------------------
+
+racName OBJECT-TYPE
+    SYNTAX          DisplayString (SIZE (0..1023))
+    ACCESS          read-only
+    STATUS          mandatory
+    DESCRIPTION
+        "This attribute defines the product name of a remote access card."
+    ::= { racInfoGroup 1 }
+
+
+
+END

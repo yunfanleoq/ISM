@@ -1,0 +1,97 @@
+@font-face {
+    font-family: '数字字体-1';
+    src: url('./digitalism.TTF');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: '数字字体-2';
+    src: url('./DS-DIGIB.TTF');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: '数字字体-3';
+    src: url('./DS-DIGI.TTF');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: '数字字体-4';
+    src: url('./DS-DIGII.TTF');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: '数字字体-5';
+    src: url('./DS-DIGIT.TTF');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: '数字字体-6';
+    src: url('./FakeHope.TTF');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: '数字字体-7';
+    src: url('./FakeHopeFilled.TTF');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: '数字字体-8';
+    src: url('./Quartz Regular.TTF');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: '数字字体-9';
+    src: url('./Technology.TTF');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: '数字字体-10';
+    src: url('./Technology-Bold.TTF');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: '数字字体-11';
+    src: url('./Technology-BoldItalic.TTF');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: '数字字体-12';
+    src: url('./Technology-Italic.TTF');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: '黑体';
+    src: url('./simhei.ttf');
+    font-weight: normal;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: '楷体';
+    src: url('./simkai.ttf');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: '隶书';
+    src: url('./SIMLI.TTF');
+    font-weight: normal;
+    font-style: normal;
+}
+@font-face {
+    font-family: '宋体';
+    src: url('./simsun.ttf');
+    font-weight: normal;
+    font-style: normal;
+}

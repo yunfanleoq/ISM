@@ -1,0 +1,1 @@
+backend might crash with rapid API calls. let me try SQL direct insert for device tree, then restart backend to let it sync device_real_data automatically.

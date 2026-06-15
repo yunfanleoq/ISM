@@ -1,0 +1,1337 @@
+{
+  "project_name": "1A配电室",
+  "protocol": "Modbus TCP",
+  "gateway": {
+    "primary_ip": "172.31.4.14",
+    "port": 502
+  },
+  "total_devices": 76,
+  "total_data_points": 1606,
+  "device_categories": {
+    "A20电力仪表": {
+      "description": "16AI+2DI",
+      "ai_count": 16,
+      "di_count": 2,
+      "register_offset_per_device": 18,
+      "devices": [
+        {
+          "group": "P1",
+          "full_name": "P1_仪表_ 1A1_U11_S18_1U12_1",
+          "short_name": "1000",
+          "ai_start": 8501,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P1",
+          "full_name": "P1_仪表_ 1A1_U11_S18_2U12_1",
+          "short_name": "1030",
+          "ai_start": 8506,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P1",
+          "full_name": "P1_仪表_ 1A1_U11_S18_3U12_1",
+          "short_name": "1060",
+          "ai_start": 8511,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P1",
+          "full_name": "P1_仪表_ 1A1_U11_S18_4U12_1",
+          "short_name": "1090",
+          "ai_start": 8516,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P1",
+          "full_name": "P1_仪表_ 1A1_U11_S18_5U12_1",
+          "short_name": "1120",
+          "ai_start": 8521,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P1",
+          "full_name": "P1_仪表_ 1A1_U11_S18_6U12_1",
+          "short_name": "1150",
+          "ai_start": 8526,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P1",
+          "full_name": "P1_仪表_ 1A1_U11_S18_7U12_1",
+          "short_name": "1180",
+          "ai_start": 8531,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P1",
+          "full_name": "P1_仪表_ 1A1_U11_S18_8U12_1",
+          "short_name": "1210",
+          "ai_start": 8536,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P1",
+          "full_name": "P1_仪表_ 1A1_U11_S18_9U12_1",
+          "short_name": "1240",
+          "ai_start": 8541,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P2",
+          "full_name": "P2_仪表_ 1A1_U11_S16_1U12_1",
+          "short_name": "1270",
+          "ai_start": 8546,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P2",
+          "full_name": "P2_仪表_ 1A1_U11_S16_2U12_1",
+          "short_name": "1300",
+          "ai_start": 8551,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P2",
+          "full_name": "P2_仪表_ 1A1_U11_S16_3U12_1",
+          "short_name": "1330",
+          "ai_start": 8556,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P2",
+          "full_name": "P2_仪表_ 1A1_U11_S16_4U12_1",
+          "short_name": "1360",
+          "ai_start": 8561,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P2",
+          "full_name": "P2_仪表_ 1A1_U11_S16_5U12_1",
+          "short_name": "1390",
+          "ai_start": 8566,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P2",
+          "full_name": "P2_仪表_ 1A1_U11_S16_6U12_1",
+          "short_name": "1420",
+          "ai_start": 8571,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P2",
+          "full_name": "P2_仪表_ 1A1_U11_S16_7U12_1",
+          "short_name": "1450",
+          "ai_start": 8576,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P2",
+          "full_name": "P2_仪表_ 1A1_U11_S16_8U12_1",
+          "short_name": "1480",
+          "ai_start": 8581,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P2",
+          "full_name": "P2_仪表_ 1A1_U11_S16_9U12_1",
+          "short_name": "1510",
+          "ai_start": 8586,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P3",
+          "full_name": "P3_仪表_ 1A1_U11_S14_1U12_1",
+          "short_name": "1745",
+          "ai_start": 8611,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P3",
+          "full_name": "P3_仪表_ 1A1_U11_S15_1U12_1",
+          "short_name": "1775",
+          "ai_start": 8616,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P4",
+          "full_name": "P4_仪表_ 1A1_U11_S17_1U12_1",
+          "short_name": "1805",
+          "ai_start": 8621,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P4",
+          "full_name": "P4_仪表_ 1A1_U11_S17_2U12_1",
+          "short_name": "1835",
+          "ai_start": 8626,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P4",
+          "full_name": "P4_仪表_ 1A1_U11_S17_3U12_1",
+          "short_name": "1865",
+          "ai_start": 8631,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P4",
+          "full_name": "P4_仪表_ 1A1_U11_S17_4U12_1",
+          "short_name": "1895",
+          "ai_start": 8636,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P4",
+          "full_name": "P4_仪表_ 1A1_U11_S17_5U12_1",
+          "short_name": "1925",
+          "ai_start": 8641,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P4",
+          "full_name": "P4_仪表_ 1A1_U11_S17_6U12_1",
+          "short_name": "1955",
+          "ai_start": 8646,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P4",
+          "full_name": "P4_仪表_ 1A1_U11_S17_7U12_1",
+          "short_name": "1985",
+          "ai_start": 8651,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P4",
+          "full_name": "P4_仪表_ 1A1_U11_S17_8U12_1",
+          "short_name": "2015",
+          "ai_start": 8656,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P4",
+          "full_name": "P4_仪表_ 1A1_U11_S17_9U12_1",
+          "short_name": "2045",
+          "ai_start": 8661,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P5",
+          "full_name": "P5_仪表_ 1A1_U11_S19_1U12_1",
+          "short_name": "2075",
+          "ai_start": 8666,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P5",
+          "full_name": "P5_仪表_ 1A1_U11_S19_2U12_1",
+          "short_name": "2105",
+          "ai_start": 8671,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P5",
+          "full_name": "P5_仪表_ 1A1_U11_S19_3U12_1",
+          "short_name": "2135",
+          "ai_start": 8676,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P5",
+          "full_name": "P5_仪表_ 1A1_U11_S19_4U12_1",
+          "short_name": "2165",
+          "ai_start": 8681,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P5",
+          "full_name": "P5_仪表_ 1A1_U11_S19_5U12_1",
+          "short_name": "2195",
+          "ai_start": 8686,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P5",
+          "full_name": "P5_仪表_ 1A1_U11_S19_6U12_1",
+          "short_name": "2225",
+          "ai_start": 8691,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P5",
+          "full_name": "P5_仪表_ 1A1_U11_S19_7U12_1",
+          "short_name": "2255",
+          "ai_start": 8696,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P5",
+          "full_name": "P5_仪表_ 1A1_U11_S19_8U12_1",
+          "short_name": "2285",
+          "ai_start": 8701,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P5",
+          "full_name": "P5_仪表_ 1A1_U11_S19_9U12_1",
+          "short_name": "2315",
+          "ai_start": 8706,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P6",
+          "full_name": "P6_仪表_ 1A3_U11_D14_1U12_1",
+          "short_name": "2345",
+          "ai_start": 8711,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P6",
+          "full_name": "P6_仪表_ 1A3_U11_D14_2U12_1",
+          "short_name": "2375",
+          "ai_start": 8716,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P6",
+          "full_name": "P6_仪表_ 1A3_U11_D14_3U12_1",
+          "short_name": "2405",
+          "ai_start": 8721,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P6",
+          "full_name": "P6_仪表_ 1A3_U11_D14_4U12_1",
+          "short_name": "2435",
+          "ai_start": 8726,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P6",
+          "full_name": "P6_仪表_ 1A3_U11_D14_5U12_1",
+          "short_name": "2465",
+          "ai_start": 8731,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P6",
+          "full_name": "P6_仪表_ 1A3_U11_D14_6U12_1",
+          "short_name": "2495",
+          "ai_start": 8736,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P6",
+          "full_name": "P6_仪表_ 1A3_U11_D14_7U12_1",
+          "short_name": "2525",
+          "ai_start": 8741,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P7",
+          "full_name": "P7_仪表_ 1A3_U11_D13_1U12_1",
+          "short_name": "2555",
+          "ai_start": 8746,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P7",
+          "full_name": "P7_仪表_ 1A3_U11_D13_2U12_1",
+          "short_name": "2585",
+          "ai_start": 8751,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P7",
+          "full_name": "P7_仪表_ 1A3_U11_D13_3U12_1",
+          "short_name": "2615",
+          "ai_start": 8756,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P7",
+          "full_name": "P7_仪表_ 1A3_U11_D13_4U12_1",
+          "short_name": "2645",
+          "ai_start": 8761,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P7",
+          "full_name": "P7_仪表_ 1A3_U11_D13_5U12_1",
+          "short_name": "2675",
+          "ai_start": 8766,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P7",
+          "full_name": "P7_仪表_ 1A3_U11_D13_6U12_1",
+          "short_name": "2705",
+          "ai_start": 8771,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P7",
+          "full_name": "P7_仪表_ 1A3_U11_D13_7U12_1",
+          "short_name": "2735",
+          "ai_start": 8776,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P7",
+          "full_name": "P7_仪表_ 1A3_U11_D13_8U12_1",
+          "short_name": "2765",
+          "ai_start": 8781,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P7",
+          "full_name": "P7_仪表_ 1A3_U11_D13_9U12_1",
+          "short_name": "2795",
+          "ai_start": 8786,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P9",
+          "full_name": "P9_仪表_ 1A3_U11_D01_1U12_1",
+          "short_name": "2989",
+          "ai_start": 8807,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P9",
+          "full_name": "P9_仪表_ 1A3_U11_D01_2U12_1",
+          "short_name": "3019",
+          "ai_start": 8812,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P9",
+          "full_name": "P9_仪表_ 1A3_U12_D01_1U12_1",
+          "short_name": "3049",
+          "ai_start": 8817,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P9",
+          "full_name": "P9_仪表_ 1A3_U12_D01_2U12_1",
+          "short_name": "3079",
+          "ai_start": 8822,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P9",
+          "full_name": "P9_仪表_ 1A3_U13_D01_1U12_1",
+          "short_name": "3109",
+          "ai_start": 8827,
+          "di_start": null,
+          "data_point_count": 18
+        },
+        {
+          "group": "P9",
+          "full_name": "P9_仪表_ 1A3_U13_D01_2U12_1",
+          "short_name": "3139",
+          "ai_start": 8832,
+          "di_start": null,
+          "data_point_count": 18
+        }
+      ],
+      "data_point_types": {
+        "AI": [
+          {
+            "offset": 2,
+            "name": "BC线电压",
+            "coeff": 0.01,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": "V"
+          },
+          {
+            "offset": 4,
+            "name": "CA线电压",
+            "coeff": 0.01,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": "V"
+          },
+          {
+            "offset": 6,
+            "name": "频率",
+            "coeff": 0.01,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": "Hz"
+          },
+          {
+            "offset": 8,
+            "name": "A相电流",
+            "coeff": 0.001,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": "A"
+          },
+          {
+            "offset": 10,
+            "name": "B相电流",
+            "coeff": 0.001,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": "A"
+          },
+          {
+            "offset": 12,
+            "name": "C相电流",
+            "coeff": 0.001,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": "A"
+          },
+          {
+            "offset": 14,
+            "name": "中性线电流",
+            "coeff": 0.001,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": "A"
+          },
+          {
+            "offset": 16,
+            "name": "总有功功率",
+            "coeff": 0.01,
+            "parse": 179,
+            "parse_label": "int32",
+            "unit": ""
+          },
+          {
+            "offset": 18,
+            "name": "总无功功率",
+            "coeff": 0.01,
+            "parse": 179,
+            "parse_label": "int32",
+            "unit": ""
+          },
+          {
+            "offset": 20,
+            "name": "总视在功率",
+            "coeff": 0.01,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": ""
+          },
+          {
+            "offset": 22,
+            "name": "总功率因数",
+            "coeff": 0.001,
+            "parse": 179,
+            "parse_label": "int32",
+            "unit": ""
+          },
+          {
+            "offset": 24,
+            "name": "正有功电度",
+            "coeff": 1,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": "kWh"
+          },
+          {
+            "offset": 26,
+            "name": "A相电流谐波畸变率",
+            "coeff": 0.1,
+            "parse": 73,
+            "parse_label": "int16",
+            "unit": "%"
+          },
+          {
+            "offset": 27,
+            "name": "B相电流谐波畸变率",
+            "coeff": 0.1,
+            "parse": 73,
+            "parse_label": "int16",
+            "unit": "%"
+          },
+          {
+            "offset": 28,
+            "name": "C相电流谐波畸变率",
+            "coeff": 0.1,
+            "parse": 73,
+            "parse_label": "int16",
+            "unit": "%"
+          },
+          {
+            "offset": 29,
+            "name": "中性线电流谐波畸变率",
+            "coeff": 0.1,
+            "parse": 73,
+            "parse_label": "int16",
+            "unit": "%"
+          }
+        ],
+        "DI": [
+          {
+            "offset": 2,
+            "name": "输入状态1（合分闸状态）",
+            "bit_offset": null
+          },
+          {
+            "offset": 3,
+            "name": "主通讯状态",
+            "bit_offset": null
+          }
+        ]
+      }
+    },
+    "A40电力仪表": {
+      "description": "23AI+2DI",
+      "ai_count": 23,
+      "di_count": 2,
+      "register_offset_per_device": 25,
+      "devices": [
+        {
+          "group": "P3",
+          "full_name": "P3_仪表_A40 1A1_U11_S11_1I1_1",
+          "short_name": "1540",
+          "ai_start": 8590,
+          "di_start": null,
+          "data_point_count": 25
+        },
+        {
+          "group": "P3",
+          "full_name": "P3_仪表_A40 1A1_U11_S11_2I1_1",
+          "short_name": "1581",
+          "ai_start": 8594,
+          "di_start": null,
+          "data_point_count": 25
+        },
+        {
+          "group": "P3",
+          "full_name": "P3_仪表_A40 1A1_U11_S12_1I1_1",
+          "short_name": "1622",
+          "ai_start": 8598,
+          "di_start": null,
+          "data_point_count": 25
+        },
+        {
+          "group": "P3",
+          "full_name": "P3_仪表_A40 1A1_U11_S12_2I1_1",
+          "short_name": "1663",
+          "ai_start": 8602,
+          "di_start": null,
+          "data_point_count": 25
+        },
+        {
+          "group": "P3",
+          "full_name": "P3_仪表_A40 1A1_U11_S13_1I1_1",
+          "short_name": "1704",
+          "ai_start": 8606,
+          "di_start": null,
+          "data_point_count": 25
+        },
+        {
+          "group": "P8",
+          "full_name": "P8_仪表_A40 1A3_U11_D11_1I1_1",
+          "short_name": "2825",
+          "ai_start": 8790,
+          "di_start": null,
+          "data_point_count": 25
+        },
+        {
+          "group": "P8",
+          "full_name": "P8_仪表_A40 1A3_U11_D11_2I1_1",
+          "short_name": "2866",
+          "ai_start": 8794,
+          "di_start": null,
+          "data_point_count": 25
+        },
+        {
+          "group": "P8",
+          "full_name": "P8_仪表_A40 1A3_U11_D12_1I1_1",
+          "short_name": "2907",
+          "ai_start": 8798,
+          "di_start": null,
+          "data_point_count": 25
+        },
+        {
+          "group": "P8",
+          "full_name": "P8_仪表_A40 1A3_U11_D12_2I1_1",
+          "short_name": "2948",
+          "ai_start": 8802,
+          "di_start": null,
+          "data_point_count": 25
+        }
+      ],
+      "data_point_types": {
+        "AI": [
+          {
+            "offset": 2,
+            "name": "B相电流",
+            "coeff": 0.001,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": "A"
+          },
+          {
+            "offset": 4,
+            "name": "C相电流",
+            "coeff": 0.001,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": "A"
+          },
+          {
+            "offset": 6,
+            "name": "中性线电流",
+            "coeff": 0.001,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": "A"
+          },
+          {
+            "offset": 8,
+            "name": "AB线电压",
+            "coeff": 0.01,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": "V"
+          },
+          {
+            "offset": 10,
+            "name": "BC线电压",
+            "coeff": 0.01,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": "V"
+          },
+          {
+            "offset": 12,
+            "name": "CA线电压",
+            "coeff": 0.01,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": "V"
+          },
+          {
+            "offset": 14,
+            "name": "A相电压",
+            "coeff": 0.01,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": "V"
+          },
+          {
+            "offset": 16,
+            "name": "B相电压",
+            "coeff": 0.01,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": "V"
+          },
+          {
+            "offset": 18,
+            "name": "C相电压",
+            "coeff": 0.01,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": "V"
+          },
+          {
+            "offset": 20,
+            "name": "频率",
+            "coeff": 0.01,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": "Hz"
+          },
+          {
+            "offset": 22,
+            "name": "总有功功率",
+            "coeff": 0.01,
+            "parse": 179,
+            "parse_label": "int32",
+            "unit": ""
+          },
+          {
+            "offset": 24,
+            "name": "总无功功率",
+            "coeff": 0.01,
+            "parse": 179,
+            "parse_label": "int32",
+            "unit": ""
+          },
+          {
+            "offset": 26,
+            "name": "总视在功率",
+            "coeff": 0.01,
+            "parse": 179,
+            "parse_label": "int32",
+            "unit": ""
+          },
+          {
+            "offset": 28,
+            "name": "总功率因数",
+            "coeff": 0.001,
+            "parse": 179,
+            "parse_label": "int32",
+            "unit": ""
+          },
+          {
+            "offset": 30,
+            "name": "正有功电度",
+            "coeff": 177,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "kWh"
+          },
+          {
+            "offset": 32,
+            "name": "负有功电度",
+            "coeff": 177,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "kWh"
+          },
+          {
+            "offset": 34,
+            "name": "A相电流谐波畸变率",
+            "coeff": 0.1,
+            "parse": 73,
+            "parse_label": "int16",
+            "unit": "%"
+          },
+          {
+            "offset": 35,
+            "name": "B相电流谐波畸变率",
+            "coeff": 0.1,
+            "parse": 73,
+            "parse_label": "int16",
+            "unit": "%"
+          },
+          {
+            "offset": 36,
+            "name": "C相电流谐波畸变率",
+            "coeff": 0.1,
+            "parse": 73,
+            "parse_label": "int16",
+            "unit": "%"
+          },
+          {
+            "offset": 37,
+            "name": "中性电流谐波畸变率",
+            "coeff": 0.1,
+            "parse": 73,
+            "parse_label": "int16",
+            "unit": "%"
+          },
+          {
+            "offset": 38,
+            "name": "UAB线电压谐波畸变率",
+            "coeff": 0.1,
+            "parse": 73,
+            "parse_label": "int16",
+            "unit": "V"
+          },
+          {
+            "offset": 39,
+            "name": "UBC线电压谐波畸变率",
+            "coeff": 0.1,
+            "parse": 73,
+            "parse_label": "int16",
+            "unit": "V"
+          },
+          {
+            "offset": 40,
+            "name": "UCA线电压谐波畸变率",
+            "coeff": 0.1,
+            "parse": 73,
+            "parse_label": "int16",
+            "unit": "V"
+          }
+        ],
+        "DI": [
+          {
+            "offset": 1,
+            "name": "输入状态2（故障状态）",
+            "bit_offset": null
+          },
+          {
+            "offset": 2,
+            "name": "主通讯状态",
+            "bit_offset": null
+          }
+        ]
+      }
+    },
+    "施耐德UPS": {
+      "description": "43AI+0DI",
+      "ai_count": 43,
+      "di_count": 0,
+      "register_offset_per_device": 43,
+      "devices": [
+        {
+          "group": "P10",
+          "full_name": "P10_施耐德UPS_1A1_U11UPS使用模式",
+          "short_name": "3169",
+          "ai_start": 8836,
+          "di_start": null,
+          "data_point_count": 43
+        },
+        {
+          "group": "P10",
+          "full_name": "P10_施耐德UPS_1A1_U12UPS使用模式",
+          "short_name": "3213",
+          "ai_start": 8838,
+          "di_start": null,
+          "data_point_count": 43
+        },
+        {
+          "group": "P10",
+          "full_name": "P10_施耐德UPS_1A1_U13UPS使用模式",
+          "short_name": "3257",
+          "ai_start": 8840,
+          "di_start": null,
+          "data_point_count": 43
+        },
+        {
+          "group": "P10",
+          "full_name": "P10_施耐德UPS_1A1_U14UPS使用模式",
+          "short_name": "3301",
+          "ai_start": 8842,
+          "di_start": null,
+          "data_point_count": 43
+        },
+        {
+          "group": "P11",
+          "full_name": "P11_施耐德UPS_1A3_U11UPS使用模式",
+          "short_name": "3345",
+          "ai_start": 8844,
+          "di_start": null,
+          "data_point_count": 43
+        },
+        {
+          "group": "P11",
+          "full_name": "P11_施耐德UPS_1A3_U12UPS使用模式",
+          "short_name": "3389",
+          "ai_start": 8846,
+          "di_start": null,
+          "data_point_count": 43
+        },
+        {
+          "group": "P11",
+          "full_name": "P11_施耐德UPS_1A3_U13UPS使用模式",
+          "short_name": "3433",
+          "ai_start": 8848,
+          "di_start": null,
+          "data_point_count": 43
+        }
+      ],
+      "data_point_types": {
+        "AI": [
+          {
+            "offset": 1,
+            "name": "UPS逆变器内部故障",
+            "coeff": 1,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": ""
+          },
+          {
+            "offset": 2,
+            "name": "UPS电池开关状态",
+            "coeff": 1,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": ""
+          },
+          {
+            "offset": 3,
+            "name": "UPS主路开关状态",
+            "coeff": 1,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": ""
+          },
+          {
+            "offset": 4,
+            "name": "UPS旁路状态",
+            "coeff": 1,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": ""
+          },
+          {
+            "offset": 5,
+            "name": "UPS旁路内部硬件错误",
+            "coeff": 1,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": ""
+          },
+          {
+            "offset": 6,
+            "name": "UPS充电状态",
+            "coeff": 1,
+            "parse": 177,
+            "parse_label": "uint16",
+            "unit": ""
+          },
+          {
+            "offset": 7,
+            "name": "主路A相电流",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "A"
+          },
+          {
+            "offset": 8,
+            "name": "主路B相电流",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "A"
+          },
+          {
+            "offset": 9,
+            "name": "主路C相电流",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "A"
+          },
+          {
+            "offset": 10,
+            "name": "旁路A相电流",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "A"
+          },
+          {
+            "offset": 11,
+            "name": "旁路B相电流",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "A"
+          },
+          {
+            "offset": 12,
+            "name": "旁路C相电流",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "A"
+          },
+          {
+            "offset": 13,
+            "name": "输出A相电流",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "A"
+          },
+          {
+            "offset": 14,
+            "name": "输出B相电流",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "A"
+          },
+          {
+            "offset": 15,
+            "name": "输出C相电流",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "A"
+          },
+          {
+            "offset": 16,
+            "name": "电池电流",
+            "coeff": 73,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "A"
+          },
+          {
+            "offset": 17,
+            "name": "主路输入AB线电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          },
+          {
+            "offset": 18,
+            "name": "主路输入BC线电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          },
+          {
+            "offset": 19,
+            "name": "主路输入CA线电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          },
+          {
+            "offset": 20,
+            "name": "旁路输入A相电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          },
+          {
+            "offset": 21,
+            "name": "旁路输入B相电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          },
+          {
+            "offset": 22,
+            "name": "旁路输入C相电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          },
+          {
+            "offset": 23,
+            "name": "旁路输入AB线电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          },
+          {
+            "offset": 24,
+            "name": "旁路输入BC线电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          },
+          {
+            "offset": 25,
+            "name": "旁路输入CA线电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          },
+          {
+            "offset": 26,
+            "name": "输出A相电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          },
+          {
+            "offset": 27,
+            "name": "输出B相电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          },
+          {
+            "offset": 28,
+            "name": "输出C相电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          },
+          {
+            "offset": 29,
+            "name": "输出AB线电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          },
+          {
+            "offset": 30,
+            "name": "输出BC线电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          },
+          {
+            "offset": 31,
+            "name": "输出CA线电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          },
+          {
+            "offset": 32,
+            "name": "电池电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          },
+          {
+            "offset": 33,
+            "name": "输出总有功功率",
+            "coeff": 73,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": ""
+          },
+          {
+            "offset": 34,
+            "name": "输出视在功率",
+            "coeff": 73,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": ""
+          },
+          {
+            "offset": 35,
+            "name": "输出功率因数",
+            "coeff": 0.01,
+            "parse": 73,
+            "parse_label": "int16",
+            "unit": ""
+          },
+          {
+            "offset": 36,
+            "name": "主路输入频率",
+            "coeff": 0.1,
+            "parse": 71,
+            "parse_label": "uint16",
+            "unit": "Hz"
+          },
+          {
+            "offset": 37,
+            "name": "旁路输入频率",
+            "coeff": 0.1,
+            "parse": 71,
+            "parse_label": "uint16",
+            "unit": "Hz"
+          },
+          {
+            "offset": 38,
+            "name": "输出频率",
+            "coeff": 0.1,
+            "parse": 71,
+            "parse_label": "uint16",
+            "unit": "Hz"
+          },
+          {
+            "offset": 39,
+            "name": "电池剩余运行时间",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "min"
+          },
+          {
+            "offset": 40,
+            "name": "电池温度",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "°C"
+          },
+          {
+            "offset": 41,
+            "name": "主路输入A相电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          },
+          {
+            "offset": 42,
+            "name": "主路输入B相电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          },
+          {
+            "offset": 43,
+            "name": "主路输入C相电压",
+            "coeff": 71,
+            "parse": 1,
+            "parse_label": "code_1",
+            "unit": "V"
+          }
+        ],
+        "DI": []
+      }
+    }
+  }
+}

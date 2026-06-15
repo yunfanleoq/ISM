@@ -1,0 +1,2579 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<SnmpSimulatorData xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<Instances>
+		<Instance name="sysUpTime.0" oid=".1.3.6.1.2.1.1.3.0" valueType="TimeTicks">
+			<Value>1503 hours 34 minutes 15 seconds (541285569)</Value>
+		</Instance>
+		<Instance name="racName.0" oid=".1.3.6.1.4.1.674.10892.5.1.1.1.0" valueType="OctetString">
+			<Value>Integrated Dell Remote Access Controller 9</Value>
+		</Instance>
+		<Instance name="racShortName.0" oid=".1.3.6.1.4.1.674.10892.5.1.1.2.0" valueType="OctetString">
+			<Value>iDRAC9</Value>
+		</Instance>
+		<Instance name="racDescription.0" oid=".1.3.6.1.4.1.674.10892.5.1.1.3.0" valueType="OctetString">
+			<Value>This system component provides a complete set of remote management functions for Dell PowerEdge Servers</Value>
+		</Instance>
+		<Instance name="racManufacturer.0" oid=".1.3.6.1.4.1.674.10892.5.1.1.4.0" valueType="OctetString">
+			<Value>Dell Inc.</Value>
+		</Instance>
+		<Instance name="racVersion.0" oid=".1.3.6.1.4.1.674.10892.5.1.1.5.0" valueType="OctetString">
+			<Value>4.32.10.00</Value>
+		</Instance>
+		<Instance name="racURL.0" oid=".1.3.6.1.4.1.674.10892.5.1.1.6.0" valueType="OctetString">
+			<Value>https://10.100.32.11:443</Value>
+		</Instance>
+		<Instance name="racType.0" oid=".1.3.6.1.4.1.674.10892.5.1.1.7.0" valueType="Integer">
+			<Value>idrac9Monolithic (48)</Value>
+		</Instance>
+		<Instance name="racFirmwareVersion.0" oid=".1.3.6.1.4.1.674.10892.5.1.1.8.0" valueType="OctetString">
+			<Value>4.32.10.00</Value>
+		</Instance>
+		<Instance name="systemServiceTag.0" oid=".1.3.6.1.4.1.674.10892.5.1.3.2.0" valueType="OctetString">
+			<Value>4Q5BMB3</Value>
+		</Instance>
+		<Instance name="systemExpressServiceCode.0" oid=".1.3.6.1.4.1.674.10892.5.1.3.3.0" valueType="OctetString">
+			<Value>10288190127</Value>
+		</Instance>
+		<Instance name="systemModelName.0" oid=".1.3.6.1.4.1.674.10892.5.1.3.12.0" valueType="OctetString">
+			<Value>PowerEdge R740</Value>
+		</Instance>
+		<Instance name="systemSystemID.0" oid=".1.3.6.1.4.1.674.10892.5.1.3.13.0" valueType="Integer">
+			<Value>1813</Value>
+		</Instance>
+		<Instance name="systemNodeID.0" oid=".1.3.6.1.4.1.674.10892.5.1.3.18.0" valueType="OctetString">
+			<Value>4Q5BMB3</Value>
+		</Instance>
+		<Instance name="systemLockdownMode.0" oid=".1.3.6.1.4.1.674.10892.5.1.3.20.0" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="globalSystemStatus.0" oid=".1.3.6.1.4.1.674.10892.5.2.1.0" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemLCDStatus.0" oid=".1.3.6.1.4.1.674.10892.5.2.2.0" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="globalStorageStatus.0" oid=".1.3.6.1.4.1.674.10892.5.2.3.0" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemPowerState.0" oid=".1.3.6.1.4.1.674.10892.5.2.4.0" valueType="Integer">
+			<Value>on (4)</Value>
+		</Instance>
+		<Instance name="systemPowerUpTime.0" oid=".1.3.6.1.4.1.674.10892.5.2.5.0" valueType="Integer">
+			<Value>7594000</Value>
+		</Instance>
+		<Instance name="mIBMajorVersionNumber.0" oid=".1.3.6.1.4.1.674.10892.5.4.1.1.0" valueType="Integer">
+			<Value>3</Value>
+		</Instance>
+		<Instance name="mIBMinorVersionNumber.0" oid=".1.3.6.1.4.1.674.10892.5.4.1.2.0" valueType="Integer">
+			<Value>2</Value>
+		</Instance>
+		<Instance name="mIBMaintenanceVersionNumber.0" oid=".1.3.6.1.4.1.674.10892.5.4.1.3.0" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="systemStatechassisIndex.1" oid=".1.3.6.1.4.1.674.10892.5.4.200.10.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="systemStateGlobalSystemStatus.1" oid=".1.3.6.1.4.1.674.10892.5.4.200.10.1.2.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemStateChassisState.1" oid=".1.3.6.1.4.1.674.10892.5.4.200.10.1.3.1" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="systemStateChassisStatus.1" oid=".1.3.6.1.4.1.674.10892.5.4.200.10.1.4.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemStatePowerUnitStatusRedundancy.1" oid=".1.3.6.1.4.1.674.10892.5.4.200.10.1.6.1" valueType="Integer">
+			<Value>full (3)</Value>
+		</Instance>
+		<Instance name="systemStatePowerSupplyStatusCombined.1" oid=".1.3.6.1.4.1.674.10892.5.4.200.10.1.9.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemStateVoltageStatusCombined.1" oid=".1.3.6.1.4.1.674.10892.5.4.200.10.1.12.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemStateAmperageStatusCombined.1" oid=".1.3.6.1.4.1.674.10892.5.4.200.10.1.15.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemStateCoolingUnitStatusRedundancy.1" oid=".1.3.6.1.4.1.674.10892.5.4.200.10.1.18.1" valueType="Integer">
+			<Value>full (3)</Value>
+		</Instance>
+		<Instance name="systemStateCoolingDeviceStatusCombined.1" oid=".1.3.6.1.4.1.674.10892.5.4.200.10.1.21.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemStateTemperatureStatusCombined.1" oid=".1.3.6.1.4.1.674.10892.5.4.200.10.1.24.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemStateMemoryDeviceStatusCombined.1" oid=".1.3.6.1.4.1.674.10892.5.4.200.10.1.27.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemStateChassisIntrusionStatusCombined.1" oid=".1.3.6.1.4.1.674.10892.5.4.200.10.1.30.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemStatePowerUnitStatusCombined.1" oid=".1.3.6.1.4.1.674.10892.5.4.200.10.1.42.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemStateCoolingUnitStatusCombined.1" oid=".1.3.6.1.4.1.674.10892.5.4.200.10.1.44.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemStateProcessorDeviceStatusCombined.1" oid=".1.3.6.1.4.1.674.10892.5.4.200.10.1.50.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemStateBatteryStatusCombined.1" oid=".1.3.6.1.4.1.674.10892.5.4.200.10.1.52.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemStateTemperatureStatisticsStatusCombined.1" oid=".1.3.6.1.4.1.674.10892.5.4.200.10.1.63.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="numEventLogEntries.0" oid=".1.3.6.1.4.1.674.10892.5.4.300.1.0" valueType="Integer">
+			<Value>59</Value>
+		</Instance>
+		<Instance name="chassisIndexChassisInformation.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="chassisStateCapabilities.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.2.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="chassisStateSettings.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.3.1" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="chassisStatus.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.4.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="chassisparentIndexReference.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.5.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="chassisName.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.7.1" valueType="OctetString">
+			<Value>Main System Chassis</Value>
+		</Instance>
+		<Instance name="chassisManufacturerName.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.8.1" valueType="OctetString">
+			<Value>Dell Inc.</Value>
+		</Instance>
+		<Instance name="chassisModelTypeName.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.9.1" valueType="OctetString">
+			<Value>PowerEdge R740</Value>
+		</Instance>
+		<Instance name="chassisServiceTagName.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.11.1" valueType="OctetString">
+			<Value>4Q5BMB3</Value>
+		</Instance>
+		<Instance name="chassisID.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.12.1" valueType="Integer">
+			<Value>254</Value>
+		</Instance>
+		<Instance name="chassisIDExtension.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.13.1" valueType="Integer">
+			<Value>1813</Value>
+		</Instance>
+		<Instance name="chassisSystemClass.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.14.1" valueType="Integer">
+			<Value>serverClass (4)</Value>
+		</Instance>
+		<Instance name="chassisLEDControlCapabilitiesUnique.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.24.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="chassisLEDControlSettingsUnique.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.25.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="chassisIdentifyFlashControlCapabilities.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.28.1" valueType="Integer">
+			<Value>identifyCapable (8)</Value>
+		</Instance>
+		<Instance name="chassisIdentifyFlashControlSettings.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.29.1" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="chassishostControlCapabilitiesUnique.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.31.1" valueType="Integer">
+			<Value>1023</Value>
+		</Instance>
+		<Instance name="chassishostControlSettingsUnique.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.32.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="chassiswatchDogControlCapabilitiesUnique.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.33.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="chassiswatchDogControlSettingsUnique.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.34.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="chassiswatchDogControlExpiryTimeCapabilitiesUnique.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.35.1" valueType="Integer">
+			<Value>8</Value>
+		</Instance>
+		<Instance name="chassiswatchDogControlExpiryTime.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.36.1" valueType="Integer">
+			<Value>480</Value>
+		</Instance>
+		<Instance name="chassisPowerButtonControlCapabilitiesUnique.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.38.1" valueType="Integer">
+			<Value>enableCapable (2)</Value>
+		</Instance>
+		<Instance name="chassisPowerButtonControlSettingsUnique.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.39.1" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="chassisNMIButtonControlCapabilitiesUnique.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.44.1" valueType="Integer">
+			<Value>enableCapable (2)</Value>
+		</Instance>
+		<Instance name="chassisNMIButtonControlSettingsUnique.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.45.1" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="chassisSystemProperties.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.46.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="chassisSystemRevisionNumber.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.47.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="chassisExpressServiceCodeName.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.10.1.49.1" valueType="OctetString">
+			<Value>10288190127</Value>
+		</Instance>
+		<Instance name="systemBIOSchassisIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.50.1.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="systemBIOSIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.50.1.2.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="systemBIOSStateCapabilities.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.50.1.3.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="systemBIOSStateSettings.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.50.1.4.1.1" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="systemBIOSStatus.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.50.1.5.1.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemBIOSReleaseDateName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.50.1.7.1.1" valueType="OctetString">
+			<Value>11/06/2020</Value>
+		</Instance>
+		<Instance name="systemBIOSVersionName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.50.1.8.1.1" valueType="OctetString">
+			<Value>2.9.4</Value>
+		</Instance>
+		<Instance name="systemBIOSManufacturerName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.50.1.11.1.1" valueType="OctetString">
+			<Value>Dell Inc.</Value>
+		</Instance>
+		<Instance name="firmwarechassisIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="firmwarechassisIndex.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.1.1.2" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="firmwareIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.2.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="firmwareIndex.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.2.1.2" valueType="Integer">
+			<Value>2</Value>
+		</Instance>
+		<Instance name="firmwareStateCapabilities.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.3.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="firmwareStateCapabilities.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.3.1.2" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="firmwareStateSettings.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.4.1.1" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="firmwareStateSettings.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.4.1.2" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="firmwareStatus.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.5.1.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="firmwareStatus.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.5.1.2" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="firmwareSize.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.6.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="firmwareSize.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.6.1.2" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="firmwareType.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.7.1.1" valueType="Integer">
+			<Value>iDRAC9 (23)</Value>
+		</Instance>
+		<Instance name="firmwareType.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.7.1.2" valueType="Integer">
+			<Value>lifecycleController (20)</Value>
+		</Instance>
+		<Instance name="firmwareTypeName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.8.1.1" valueType="OctetString">
+			<Value>iDRAC9</Value>
+		</Instance>
+		<Instance name="firmwareTypeName.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.8.1.2" valueType="OctetString">
+			<Value>Lifecycle Controller 3</Value>
+		</Instance>
+		<Instance name="firmwareUpdateCapabilities.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.9.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="firmwareUpdateCapabilities.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.9.1.2" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="firmwareVersionName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.11.1.1" valueType="OctetString">
+			<Value>4.32.10.00</Value>
+		</Instance>
+		<Instance name="firmwareVersionName.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.300.60.1.11.1.2" valueType="OctetString">
+			<Value>4.32.10.00</Value>
+		</Instance>
+		<Instance name="intrusionchassisIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.70.1.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="intrusionIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.70.1.2.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="intrusionStateCapabilities.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.70.1.3.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="intrusionStateSettings.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.70.1.4.1.1" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="intrusionStatus.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.70.1.5.1.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="intrusionReading.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.70.1.6.1.1" valueType="Integer">
+			<Value>chassisNotBreached (1)</Value>
+		</Instance>
+		<Instance name="intrusionType.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.70.1.7.1.1" valueType="Integer">
+			<Value>chassisBreachDetectionWhenPowerON (1)</Value>
+		</Instance>
+		<Instance name="intrusionLocationName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.300.70.1.8.1.1" valueType="OctetString">
+			<Value>System Board Intrusion</Value>
+		</Instance>
+		<Instance name="powerUnitchassisIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.10.1.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="powerUnitIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.10.1.2.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="powerUnitStateCapabilities.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.10.1.3.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="powerUnitStateSettings.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.10.1.4.1.1" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="powerUnitRedundancyStatus.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.10.1.5.1.1" valueType="Integer">
+			<Value>full (3)</Value>
+		</Instance>
+		<Instance name="powerSupplyCountForRedundancy.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.10.1.6.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="powerUnitName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.10.1.7.1.1" valueType="OctetString">
+			<Value>System Board PS Redundancy</Value>
+		</Instance>
+		<Instance name="powerUnitStatus.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.10.1.8.1.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="powerSupplychassisIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="powerSupplychassisIndex.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.1.1.2" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="powerSupplyIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.2.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="powerSupplyIndex.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.2.1.2" valueType="Integer">
+			<Value>2</Value>
+		</Instance>
+		<Instance name="powerSupplyStateCapabilitiesUnique.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.3.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="powerSupplyStateCapabilitiesUnique.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.3.1.2" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="powerSupplyStateSettingsUnique.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.4.1.1" valueType="Integer">
+			<Value>acPowerAndSwitchAreOnPowerSupplyIsOnIsOkAndOnline (242)</Value>
+		</Instance>
+		<Instance name="powerSupplyStateSettingsUnique.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.4.1.2" valueType="Integer">
+			<Value>acPowerAndSwitchAreOnPowerSupplyIsOnIsOkAndOnline (242)</Value>
+		</Instance>
+		<Instance name="powerSupplyStatus.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.5.1.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="powerSupplyStatus.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.5.1.2" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="powerSupplyOutputWatts.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.6.1.1" valueType="Integer">
+			<Value>7500</Value>
+		</Instance>
+		<Instance name="powerSupplyOutputWatts.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.6.1.2" valueType="Integer">
+			<Value>7500</Value>
+		</Instance>
+		<Instance name="powerSupplyType.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.7.1.1" valueType="Integer">
+			<Value>powerSupplyTypeIsAC (9)</Value>
+		</Instance>
+		<Instance name="powerSupplyType.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.7.1.2" valueType="Integer">
+			<Value>powerSupplyTypeIsAC (9)</Value>
+		</Instance>
+		<Instance name="powerSupplyLocationName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.8.1.1" valueType="OctetString">
+			<Value>PS1 Status</Value>
+		</Instance>
+		<Instance name="powerSupplyLocationName.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.8.1.2" valueType="OctetString">
+			<Value>PS2 Status</Value>
+		</Instance>
+		<Instance name="powerSupplyMaximumInputVoltage.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.9.1.1" valueType="Integer">
+			<Value>264</Value>
+		</Instance>
+		<Instance name="powerSupplyMaximumInputVoltage.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.9.1.2" valueType="Integer">
+			<Value>264</Value>
+		</Instance>
+		<Instance name="powerSupplypowerUnitIndexReference.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.10.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="powerSupplypowerUnitIndexReference.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.10.1.2" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="powerSupplySensorState.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.11.1.1" valueType="Integer">
+			<Value>presenceDetected (1)</Value>
+		</Instance>
+		<Instance name="powerSupplySensorState.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.11.1.2" valueType="Integer">
+			<Value>presenceDetected (1)</Value>
+		</Instance>
+		<Instance name="powerSupplyPowerMonitorCapable.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.13.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="powerSupplyPowerMonitorCapable.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.13.1.2" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="powerSupplyRatedInputWattage.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.14.1.1" valueType="Integer">
+			<Value>9000</Value>
+		</Instance>
+		<Instance name="powerSupplyRatedInputWattage.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.14.1.2" valueType="Integer">
+			<Value>9000</Value>
+		</Instance>
+		<Instance name="powerSupplyFQDD.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.15.1.1" valueType="OctetString">
+			<Value>PSU.Slot.1</Value>
+		</Instance>
+		<Instance name="powerSupplyFQDD.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.15.1.2" valueType="OctetString">
+			<Value>PSU.Slot.2</Value>
+		</Instance>
+		<Instance name="powerSupplyCurrentInputVoltage.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.16.1.1" valueType="Integer">
+			<Value>218</Value>
+		</Instance>
+		<Instance name="powerSupplyCurrentInputVoltage.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.12.1.16.1.2" valueType="Integer">
+			<Value>228</Value>
+		</Instance>
+		<Instance name="amperageProbechassisIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="amperageProbechassisIndex.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.1.1.2" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="amperageProbechassisIndex.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.1.1.3" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="amperageProbeIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.2.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="amperageProbeIndex.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.2.1.2" valueType="Integer">
+			<Value>2</Value>
+		</Instance>
+		<Instance name="amperageProbeIndex.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.2.1.3" valueType="Integer">
+			<Value>3</Value>
+		</Instance>
+		<Instance name="amperageProbeStateCapabilities.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.3.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="amperageProbeStateCapabilities.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.3.1.2" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="amperageProbeStateCapabilities.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.3.1.3" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="amperageProbeStateSettings.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.4.1.1" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="amperageProbeStateSettings.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.4.1.2" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="amperageProbeStateSettings.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.4.1.3" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="amperageProbeStatus.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.5.1.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="amperageProbeStatus.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.5.1.2" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="amperageProbeStatus.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.5.1.3" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="amperageProbeReading.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.6.1.1" valueType="Integer">
+			<Value>10</Value>
+		</Instance>
+		<Instance name="amperageProbeReading.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.6.1.2" valueType="Integer">
+			<Value>8</Value>
+		</Instance>
+		<Instance name="amperageProbeReading.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.6.1.3" valueType="Integer">
+			<Value>364</Value>
+		</Instance>
+		<Instance name="amperageProbeType.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.7.1.1" valueType="Integer">
+			<Value>amperageProbeTypeIsPowerSupplyAmps (23)</Value>
+		</Instance>
+		<Instance name="amperageProbeType.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.7.1.2" valueType="Integer">
+			<Value>amperageProbeTypeIsPowerSupplyAmps (23)</Value>
+		</Instance>
+		<Instance name="amperageProbeType.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.7.1.3" valueType="Integer">
+			<Value>amperageProbeTypeIsSystemWatts (26)</Value>
+		</Instance>
+		<Instance name="amperageProbeLocationName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.8.1.1" valueType="OctetString">
+			<Value>PS1 Current 1</Value>
+		</Instance>
+		<Instance name="amperageProbeLocationName.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.8.1.2" valueType="OctetString">
+			<Value>PS2 Current 2</Value>
+		</Instance>
+		<Instance name="amperageProbeLocationName.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.8.1.3" valueType="OctetString">
+			<Value>System Board Pwr Consumption</Value>
+		</Instance>
+		<Instance name="amperageProbeUpperCriticalThreshold.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.10.1.3" valueType="Integer">
+			<Value>884</Value>
+		</Instance>
+		<Instance name="amperageProbeUpperNonCriticalThreshold.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.11.1.3" valueType="Integer">
+			<Value>806</Value>
+		</Instance>
+		<Instance name="amperageProbeProbeCapabilities.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.15.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="amperageProbeProbeCapabilities.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.15.1.2" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="amperageProbeProbeCapabilities.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.600.30.1.15.1.3" valueType="Integer">
+			<Value>5</Value>
+		</Instance>
+		<Instance name="systemBatteryChassisIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.50.1.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="systemBatteryChassisIndex.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.50.1.1.1.2" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="systemBatteryIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.50.1.2.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="systemBatteryIndex.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.50.1.2.1.2" valueType="Integer">
+			<Value>2</Value>
+		</Instance>
+		<Instance name="systemBatteryStateCapabilities.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.50.1.3.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="systemBatteryStateCapabilities.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.50.1.3.1.2" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="systemBatteryStateSettings.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.50.1.4.1.1" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="systemBatteryStateSettings.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.50.1.4.1.2" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="systemBatteryStatus.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.50.1.5.1.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemBatteryStatus.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.50.1.5.1.2" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemBatteryReading.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.50.1.6.1.1" valueType="Integer">
+			<Value>presenceDetected (4)</Value>
+		</Instance>
+		<Instance name="systemBatteryReading.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.50.1.6.1.2" valueType="Integer">
+			<Value>presenceDetected (4)</Value>
+		</Instance>
+		<Instance name="systemBatteryLocationName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.50.1.7.1.1" valueType="OctetString">
+			<Value>System Board CMOS Battery</Value>
+		</Instance>
+		<Instance name="systemBatteryLocationName.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.600.50.1.7.1.2" valueType="OctetString">
+			<Value>PERC1 ROMB Battery</Value>
+		</Instance>
+		<Instance name="powerUsageChassisIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="powerUsageIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.2.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="powerUsageStateCapabilities.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.3.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="powerUsageStateSettings.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.4.1.1" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="powerUsageStatus.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.5.1.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="powerUsageEntityName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.6.1.1" valueType="OctetString">
+			<Value>System Power Consumption data</Value>
+		</Instance>
+		<Instance name="powerUsageCumulativeWattage.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.7.1.1" valueType="Integer">
+			<Value>5142052</Value>
+		</Instance>
+		<Instance name="powerUsageCumulativeWattageStartDateName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.8.1.1" valueType="OctetString">
+			<Value>20210207005505.000000-360</Value>
+		</Instance>
+		<Instance name="powerUsagePeakWatts.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.9.1.1" valueType="Integer">
+			<Value>695</Value>
+		</Instance>
+		<Instance name="powerUsagePeakWattsStartDateName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.10.1.1" valueType="OctetString">
+			<Value>20210207005505.000000-360</Value>
+		</Instance>
+		<Instance name="powerUsagePeakWattsReadingDateName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.11.1.1" valueType="OctetString">
+			<Value>20220617064719.000000-360</Value>
+		</Instance>
+		<Instance name="powerUsagePeakAmps.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.12.1.1" valueType="Integer">
+			<Value>4</Value>
+		</Instance>
+		<Instance name="powerUsagePeakAmpsStartDateName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.13.1.1" valueType="OctetString">
+			<Value>20210207005505.000000-360</Value>
+		</Instance>
+		<Instance name="powerUsagePeakAmpsReadingDateName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.14.1.1" valueType="OctetString">
+			<Value>20220625083044.000000-360</Value>
+		</Instance>
+		<Instance name="powerUsageIdlePower.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.15.1.1" valueType="Integer">
+			<Value>390</Value>
+		</Instance>
+		<Instance name="powerUsageMaxPotentialPower.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.16.1.1" valueType="Integer">
+			<Value>713</Value>
+		</Instance>
+		<Instance name="powerUsagePowerCapCapabilities.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.17.1.1" valueType="Integer">
+			<Value>enable (1)</Value>
+		</Instance>
+		<Instance name="powerUsagePowerCapSetting.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.18.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="powerUsagePowerCapValue.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.19.1.1" valueType="Integer">
+			<Value>177</Value>
+		</Instance>
+		<Instance name="powerUsageInstantaneousHeadroom.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.20.1.1" valueType="Integer">
+			<Value>376</Value>
+		</Instance>
+		<Instance name="powerUsagePeakHeadroom.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.600.60.1.21.1.1" valueType="Integer">
+			<Value>55</Value>
+		</Instance>
+		<Instance name="coolingUnitchassisIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.700.10.1.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="coolingUnitIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.700.10.1.2.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="coolingUnitStateCapabilties.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.700.10.1.3.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="coolingUnitStateSettings.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.700.10.1.4.1.1" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="coolingUnitRedundancyStatus.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.700.10.1.5.1.1" valueType="Integer">
+			<Value>full (3)</Value>
+		</Instance>
+		<Instance name="coolingDeviceCountForRedundancy.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.700.10.1.6.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="coolingUnitName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.700.10.1.7.1.1" valueType="OctetString">
+			<Value>System Board Fan Redundancy</Value>
+		</Instance>
+		<Instance name="coolingUnitStatus.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.700.10.1.8.1.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="temperatureProbeReading.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.6.1.1" valueType="Integer">
+			<Value>620</Value>
+		</Instance>
+		<Instance name="temperatureProbeReading.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.6.1.2" valueType="Integer">
+			<Value>640</Value>
+		</Instance>
+		<Instance name="temperatureProbeReading.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.6.1.3" valueType="Integer">
+			<Value>250</Value>
+		</Instance>
+		<Instance name="temperatureProbeReading.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.6.1.4" valueType="Integer">
+			<Value>360</Value>
+		</Instance>
+		<Instance name="temperatureProbeLocationName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.8.1.1" valueType="OctetString">
+			<Value>CPU1 Temp</Value>
+		</Instance>
+		<Instance name="temperatureProbeLocationName.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.8.1.2" valueType="OctetString">
+			<Value>CPU2 Temp</Value>
+		</Instance>
+		<Instance name="temperatureProbeLocationName.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.8.1.3" valueType="OctetString">
+			<Value>System Board Inlet Temp</Value>
+		</Instance>
+		<Instance name="temperatureProbeLocationName.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.8.1.4" valueType="OctetString">
+			<Value>System Board Exhaust Temp</Value>
+		</Instance>
+		<Instance name="temperatureProbeUpperCriticalThreshold.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.10.1.1" valueType="Integer">
+			<Value>970</Value>
+		</Instance>
+		<Instance name="temperatureProbeUpperCriticalThreshold.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.10.1.2" valueType="Integer">
+			<Value>970</Value>
+		</Instance>
+		<Instance name="temperatureProbeUpperCriticalThreshold.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.10.1.3" valueType="Integer">
+			<Value>420</Value>
+		</Instance>
+		<Instance name="temperatureProbeUpperCriticalThreshold.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.10.1.4" valueType="Integer">
+			<Value>800</Value>
+		</Instance>
+		<Instance name="temperatureProbeUpperNonCriticalThreshold.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.11.1.3" valueType="Integer">
+			<Value>380</Value>
+		</Instance>
+		<Instance name="temperatureProbeUpperNonCriticalThreshold.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.11.1.4" valueType="Integer">
+			<Value>750</Value>
+		</Instance>
+		<Instance name="temperatureProbeLowerNonCriticalThreshold.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.12.1.3" valueType="Integer">
+			<Value>30</Value>
+		</Instance>
+		<Instance name="temperatureProbeLowerNonCriticalThreshold.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.12.1.4" valueType="Integer">
+			<Value>80</Value>
+		</Instance>
+		<Instance name="temperatureProbeLowerCriticalThreshold.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.13.1.1" valueType="Integer">
+			<Value>30</Value>
+		</Instance>
+		<Instance name="temperatureProbeLowerCriticalThreshold.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.13.1.2" valueType="Integer">
+			<Value>30</Value>
+		</Instance>
+		<Instance name="temperatureProbeLowerCriticalThreshold.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.13.1.3" valueType="Integer">
+			<Value>-70</Value>
+		</Instance>
+		<Instance name="temperatureProbeLowerCriticalThreshold.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.13.1.4" valueType="Integer">
+			<Value>30</Value>
+		</Instance>
+		<Instance name="temperatureProbeProbeCapabilities.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.15.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="temperatureProbeProbeCapabilities.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.15.1.2" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="temperatureProbeProbeCapabilities.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.15.1.3" valueType="Integer">
+			<Value>15</Value>
+		</Instance>
+		<Instance name="temperatureProbeProbeCapabilities.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.700.20.1.15.1.4" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="processorDevicechassisIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="processorDevicechassisIndex.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.1.1.2" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="processorDeviceIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.2.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="processorDeviceIndex.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.2.1.2" valueType="Integer">
+			<Value>2</Value>
+		</Instance>
+		<Instance name="processorDeviceStateCapabilities.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.3.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="processorDeviceStateCapabilities.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.3.1.2" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="processorDeviceStateSettings.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.4.1.1" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="processorDeviceStateSettings.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.4.1.2" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="processorDeviceStatus.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.5.1.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="processorDeviceStatus.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.5.1.2" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="processorDeviceType.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.7.1.1" valueType="Integer">
+			<Value>deviceTypeIsCPU (3)</Value>
+		</Instance>
+		<Instance name="processorDeviceType.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.7.1.2" valueType="Integer">
+			<Value>deviceTypeIsCPU (3)</Value>
+		</Instance>
+		<Instance name="processorDeviceManufacturerName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.8.1.1" valueType="OctetString">
+			<Value>Intel</Value>
+		</Instance>
+		<Instance name="processorDeviceManufacturerName.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.8.1.2" valueType="OctetString">
+			<Value>Intel</Value>
+		</Instance>
+		<Instance name="processorDeviceStatusState.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.9.1.1" valueType="Integer">
+			<Value>enabled (3)</Value>
+		</Instance>
+		<Instance name="processorDeviceStatusState.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.9.1.2" valueType="Integer">
+			<Value>enabled (3)</Value>
+		</Instance>
+		<Instance name="processorDeviceFamily.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.10.1.1" valueType="Integer">
+			<Value>deviceFamilyIsIntelXeon (21)</Value>
+		</Instance>
+		<Instance name="processorDeviceFamily.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.10.1.2" valueType="Integer">
+			<Value>deviceFamilyIsIntelXeon (21)</Value>
+		</Instance>
+		<Instance name="processorDeviceMaximumSpeed.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.11.1.1" valueType="Integer">
+			<Value>4000</Value>
+		</Instance>
+		<Instance name="processorDeviceMaximumSpeed.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.11.1.2" valueType="Integer">
+			<Value>4000</Value>
+		</Instance>
+		<Instance name="processorDeviceCurrentSpeed.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.12.1.1" valueType="Integer">
+			<Value>3100</Value>
+		</Instance>
+		<Instance name="processorDeviceCurrentSpeed.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.12.1.2" valueType="Integer">
+			<Value>3100</Value>
+		</Instance>
+		<Instance name="processorDeviceExternalClockSpeed.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.13.1.1" valueType="Integer">
+			<Value>10400</Value>
+		</Instance>
+		<Instance name="processorDeviceExternalClockSpeed.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.13.1.2" valueType="Integer">
+			<Value>10400</Value>
+		</Instance>
+		<Instance name="processorDeviceVoltage.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.14.1.1" valueType="Integer">
+			<Value>14600</Value>
+		</Instance>
+		<Instance name="processorDeviceVoltage.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.14.1.2" valueType="Integer">
+			<Value>14600</Value>
+		</Instance>
+		<Instance name="processorDeviceVersionName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.16.1.1" valueType="OctetString">
+			<Value>Model 85 Stepping 7</Value>
+		</Instance>
+		<Instance name="processorDeviceVersionName.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.16.1.2" valueType="OctetString">
+			<Value>Model 85 Stepping 7</Value>
+		</Instance>
+		<Instance name="processorDeviceCoreCount.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.17.1.1" valueType="Integer">
+			<Value>20</Value>
+		</Instance>
+		<Instance name="processorDeviceCoreCount.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.17.1.2" valueType="Integer">
+			<Value>20</Value>
+		</Instance>
+		<Instance name="processorDeviceCoreEnabledCount.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.18.1.1" valueType="Integer">
+			<Value>20</Value>
+		</Instance>
+		<Instance name="processorDeviceCoreEnabledCount.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.18.1.2" valueType="Integer">
+			<Value>20</Value>
+		</Instance>
+		<Instance name="processorDeviceThreadCount.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.19.1.1" valueType="Integer">
+			<Value>40</Value>
+		</Instance>
+		<Instance name="processorDeviceThreadCount.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.19.1.2" valueType="Integer">
+			<Value>40</Value>
+		</Instance>
+		<Instance name="processorDeviceCharacteristics.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.20.1.1" valueType="Integer">
+			<Value>4</Value>
+		</Instance>
+		<Instance name="processorDeviceCharacteristics.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.20.1.2" valueType="Integer">
+			<Value>4</Value>
+		</Instance>
+		<Instance name="processorDeviceExtendedCapabilities.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.21.1.1" valueType="Integer">
+			<Value>29</Value>
+		</Instance>
+		<Instance name="processorDeviceExtendedCapabilities.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.21.1.2" valueType="Integer">
+			<Value>29</Value>
+		</Instance>
+		<Instance name="processorDeviceExtendedSettings.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.22.1.1" valueType="Integer">
+			<Value>29</Value>
+		</Instance>
+		<Instance name="processorDeviceExtendedSettings.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.22.1.2" valueType="Integer">
+			<Value>29</Value>
+		</Instance>
+		<Instance name="processorDeviceBrandName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.23.1.1" valueType="OctetString">
+			<Value>Intel(R) Xeon(R) Gold 6242R CPU @ 3.10GHz</Value>
+		</Instance>
+		<Instance name="processorDeviceBrandName.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.23.1.2" valueType="OctetString">
+			<Value>Intel(R) Xeon(R) Gold 6242R CPU @ 3.10GHz</Value>
+		</Instance>
+		<Instance name="processorDeviceFQDD.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.26.1.1" valueType="OctetString">
+			<Value>CPU.Socket.1</Value>
+		</Instance>
+		<Instance name="processorDeviceFQDD.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.30.1.26.1.2" valueType="OctetString">
+			<Value>CPU.Socket.2</Value>
+		</Instance>
+		<Instance name="processorDeviceStatusChassisIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.32.1.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="processorDeviceStatusChassisIndex.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.32.1.1.1.2" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="processorDeviceStatusIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.32.1.2.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="processorDeviceStatusIndex.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.32.1.2.1.2" valueType="Integer">
+			<Value>2</Value>
+		</Instance>
+		<Instance name="processorDeviceStatusStateCapabilities.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.32.1.3.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="processorDeviceStatusStateCapabilities.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.32.1.3.1.2" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="processorDeviceStatusStateSettings.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.32.1.4.1.1" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="processorDeviceStatusStateSettings.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.32.1.4.1.2" valueType="Integer">
+			<Value>enabled (2)</Value>
+		</Instance>
+		<Instance name="processorDeviceStatusStatus.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.32.1.5.1.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="processorDeviceStatusStatus.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.32.1.5.1.2" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="processorDeviceStatusReading.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.32.1.6.1.1" valueType="Integer">
+			<Value>processorPresent (128)</Value>
+		</Instance>
+		<Instance name="processorDeviceStatusReading.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.32.1.6.1.2" valueType="Integer">
+			<Value>processorPresent (128)</Value>
+		</Instance>
+		<Instance name="processorDeviceStatusLocationName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.32.1.7.1.1" valueType="OctetString">
+			<Value>CPU1 Status</Value>
+		</Instance>
+		<Instance name="processorDeviceStatusLocationName.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.32.1.7.1.2" valueType="OctetString">
+			<Value>CPU2 Status</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.1" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.2" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.3" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.4" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.5" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.5" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.6" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.6" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.7" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.7" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.8" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.8" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.9" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.9" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.10" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.10" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.11" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.11" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.12" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.12" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.13" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.13" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.14" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.14" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.15" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.15" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.16" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.16" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.17" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.17" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.18" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.18" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.19" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.19" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.20" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.20" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.21" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.21" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.22" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.22" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.23" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.23" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceType.1.24" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.7.1.24" valueType="Integer">
+			<Value>deviceTypeIsDDR4 (26)</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.1" valueType="OctetString">
+			<Value>DIMM.Socket.A12</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.2" valueType="OctetString">
+			<Value>DIMM.Socket.B7</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.3" valueType="OctetString">
+			<Value>DIMM.Socket.B12</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.4" valueType="OctetString">
+			<Value>DIMM.Socket.B2</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.5" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.5" valueType="OctetString">
+			<Value>DIMM.Socket.B3</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.6" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.6" valueType="OctetString">
+			<Value>DIMM.Socket.B11</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.7" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.7" valueType="OctetString">
+			<Value>DIMM.Socket.B10</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.8" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.8" valueType="OctetString">
+			<Value>DIMM.Socket.A11</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.9" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.9" valueType="OctetString">
+			<Value>DIMM.Socket.A6</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.10" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.10" valueType="OctetString">
+			<Value>DIMM.Socket.A2</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.11" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.11" valueType="OctetString">
+			<Value>DIMM.Socket.B4</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.12" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.12" valueType="OctetString">
+			<Value>DIMM.Socket.A1</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.13" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.13" valueType="OctetString">
+			<Value>DIMM.Socket.B5</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.14" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.14" valueType="OctetString">
+			<Value>DIMM.Socket.A5</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.15" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.15" valueType="OctetString">
+			<Value>DIMM.Socket.A10</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.16" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.16" valueType="OctetString">
+			<Value>DIMM.Socket.A3</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.17" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.17" valueType="OctetString">
+			<Value>DIMM.Socket.A7</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.18" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.18" valueType="OctetString">
+			<Value>DIMM.Socket.A8</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.19" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.19" valueType="OctetString">
+			<Value>DIMM.Socket.B9</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.20" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.20" valueType="OctetString">
+			<Value>DIMM.Socket.A4</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.21" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.21" valueType="OctetString">
+			<Value>DIMM.Socket.A9</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.22" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.22" valueType="OctetString">
+			<Value>DIMM.Socket.B1</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.23" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.23" valueType="OctetString">
+			<Value>DIMM.Socket.B8</Value>
+		</Instance>
+		<Instance name="memoryDeviceLocationName.1.24" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.8.1.24" valueType="OctetString">
+			<Value>DIMM.Socket.B6</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.1" valueType="OctetString">
+			<Value>A</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.2" valueType="OctetString">
+			<Value>B</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.3" valueType="OctetString">
+			<Value>B</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.4" valueType="OctetString">
+			<Value>B</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.5" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.5" valueType="OctetString">
+			<Value>B</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.6" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.6" valueType="OctetString">
+			<Value>B</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.7" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.7" valueType="OctetString">
+			<Value>B</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.8" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.8" valueType="OctetString">
+			<Value>A</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.9" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.9" valueType="OctetString">
+			<Value>A</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.10" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.10" valueType="OctetString">
+			<Value>A</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.11" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.11" valueType="OctetString">
+			<Value>B</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.12" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.12" valueType="OctetString">
+			<Value>A</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.13" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.13" valueType="OctetString">
+			<Value>B</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.14" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.14" valueType="OctetString">
+			<Value>A</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.15" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.15" valueType="OctetString">
+			<Value>A</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.16" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.16" valueType="OctetString">
+			<Value>A</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.17" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.17" valueType="OctetString">
+			<Value>A</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.18" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.18" valueType="OctetString">
+			<Value>A</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.19" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.19" valueType="OctetString">
+			<Value>B</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.20" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.20" valueType="OctetString">
+			<Value>A</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.21" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.21" valueType="OctetString">
+			<Value>A</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.22" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.22" valueType="OctetString">
+			<Value>B</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.23" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.23" valueType="OctetString">
+			<Value>B</Value>
+		</Instance>
+		<Instance name="memoryDeviceBankLocationName.1.24" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.10.1.24" valueType="OctetString">
+			<Value>B</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.1" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.2" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.3" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.4" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.5" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.5" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.6" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.6" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.7" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.7" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.8" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.8" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.9" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.9" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.10" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.10" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.11" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.11" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.12" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.12" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.13" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.13" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.14" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.14" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.15" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.15" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.16" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.16" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.17" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.17" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.18" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.18" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.19" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.19" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.20" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.20" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.21" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.21" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.22" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.22" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.23" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.23" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSize.1.24" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.14.1.24" valueType="Integer">
+			<Value>16777216</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.1" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.2" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.3" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.4" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.5" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.5" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.6" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.6" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.7" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.7" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.8" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.8" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.9" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.9" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.10" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.10" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.11" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.11" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.12" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.12" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.13" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.13" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.14" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.14" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.15" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.15" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.16" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.16" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.17" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.17" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.18" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.18" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.19" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.19" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.20" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.20" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.21" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.21" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.22" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.22" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.23" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.23" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceSpeed.1.24" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.15.1.24" valueType="Integer">
+			<Value>3200</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.1" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.2" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.3" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.4" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.5" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.5" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.6" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.6" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.7" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.7" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.8" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.8" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.9" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.9" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.10" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.10" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.11" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.11" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.12" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.12" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.13" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.13" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.14" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.14" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.15" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.15" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.16" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.16" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.17" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.17" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.18" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.18" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.19" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.19" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.20" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.20" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.21" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.21" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.22" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.22" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.23" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.23" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDeviceManufacturerName.1.24" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.21.1.24" valueType="OctetString">
+			<Value>Samsung</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.1" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.2" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.3" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.4" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.5" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.5" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.6" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.6" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.7" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.7" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.8" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.8" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.9" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.9" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.10" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.10" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.11" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.11" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.12" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.12" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.13" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.13" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.14" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.14" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.15" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.15" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.16" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.16" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.17" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.17" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.18" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.18" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.19" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.19" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.20" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.20" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.21" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.21" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.22" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.22" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.23" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.23" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDevicePartNumberName.1.24" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.22.1.24" valueType="OctetString">
+			<Value>M393A2K43DB3-CWE</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.1" valueType="OctetString">
+			<Value>44D6181C</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.2" valueType="OctetString">
+			<Value>44D64158</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.3" valueType="OctetString">
+			<Value>44D618A3</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.4" valueType="OctetString">
+			<Value>44D61818</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.5" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.5" valueType="OctetString">
+			<Value>44D617E9</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.6" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.6" valueType="OctetString">
+			<Value>44D617BA</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.7" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.7" valueType="OctetString">
+			<Value>44D61C54</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.8" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.8" valueType="OctetString">
+			<Value>44D63E4C</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.9" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.9" valueType="OctetString">
+			<Value>44D61906</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.10" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.10" valueType="OctetString">
+			<Value>44D61867</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.11" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.11" valueType="OctetString">
+			<Value>44D63381</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.12" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.12" valueType="OctetString">
+			<Value>44D61819</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.13" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.13" valueType="OctetString">
+			<Value>44D6181D</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.14" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.14" valueType="OctetString">
+			<Value>44D618FA</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.15" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.15" valueType="OctetString">
+			<Value>44D63D8E</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.16" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.16" valueType="OctetString">
+			<Value>44D61839</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.17" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.17" valueType="OctetString">
+			<Value>44D618D5</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.18" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.18" valueType="OctetString">
+			<Value>44D61907</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.19" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.19" valueType="OctetString">
+			<Value>44D618FE</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.20" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.20" valueType="OctetString">
+			<Value>44D61900</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.21" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.21" valueType="OctetString">
+			<Value>44D64B56</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.22" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.22" valueType="OctetString">
+			<Value>44D61817</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.23" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.23" valueType="OctetString">
+			<Value>44D618FC</Value>
+		</Instance>
+		<Instance name="memoryDeviceSerialNumberName.1.24" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.23.1.24" valueType="OctetString">
+			<Value>44D63424</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.1" valueType="OctetString">
+			<Value>DIMM.Socket.A12</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.2" valueType="OctetString">
+			<Value>DIMM.Socket.B7</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.3" valueType="OctetString">
+			<Value>DIMM.Socket.B12</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.4" valueType="OctetString">
+			<Value>DIMM.Socket.B2</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.5" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.5" valueType="OctetString">
+			<Value>DIMM.Socket.B3</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.6" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.6" valueType="OctetString">
+			<Value>DIMM.Socket.B11</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.7" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.7" valueType="OctetString">
+			<Value>DIMM.Socket.B10</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.8" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.8" valueType="OctetString">
+			<Value>DIMM.Socket.A11</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.9" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.9" valueType="OctetString">
+			<Value>DIMM.Socket.A6</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.10" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.10" valueType="OctetString">
+			<Value>DIMM.Socket.A2</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.11" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.11" valueType="OctetString">
+			<Value>DIMM.Socket.B4</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.12" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.12" valueType="OctetString">
+			<Value>DIMM.Socket.A1</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.13" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.13" valueType="OctetString">
+			<Value>DIMM.Socket.B5</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.14" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.14" valueType="OctetString">
+			<Value>DIMM.Socket.A5</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.15" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.15" valueType="OctetString">
+			<Value>DIMM.Socket.A10</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.16" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.16" valueType="OctetString">
+			<Value>DIMM.Socket.A3</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.17" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.17" valueType="OctetString">
+			<Value>DIMM.Socket.A7</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.18" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.18" valueType="OctetString">
+			<Value>DIMM.Socket.A8</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.19" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.19" valueType="OctetString">
+			<Value>DIMM.Socket.B9</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.20" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.20" valueType="OctetString">
+			<Value>DIMM.Socket.A4</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.21" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.21" valueType="OctetString">
+			<Value>DIMM.Socket.A9</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.22" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.22" valueType="OctetString">
+			<Value>DIMM.Socket.B1</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.23" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.23" valueType="OctetString">
+			<Value>DIMM.Socket.B8</Value>
+		</Instance>
+		<Instance name="memoryDeviceFQDD.1.24" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.26.1.24" valueType="OctetString">
+			<Value>DIMM.Socket.B6</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.1" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.2" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.3" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.4" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.5" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.5" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.6" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.6" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.7" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.7" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.8" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.8" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.9" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.9" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.10" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.10" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.11" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.11" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.12" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.12" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.13" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.13" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.14" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.14" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.15" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.15" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.16" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.16" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.17" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.17" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.18" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.18" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.19" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.19" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.20" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.20" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.21" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.21" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.22" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.22" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.23" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.23" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceCurrentOperatingSpeed.1.24" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.27.1.24" valueType="Integer">
+			<Value>2933</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.1" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.2" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.3" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.4" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.5" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.5" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.6" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.6" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.7" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.7" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.8" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.8" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.9" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.9" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.10" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.10" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.11" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.11" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.12" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.12" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.13" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.13" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.14" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.14" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.15" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.15" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.16" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.16" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.17" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.17" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.18" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.18" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.19" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.19" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.20" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.20" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.21" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.21" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.22" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.22" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.23" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.23" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceTechnology.1.24" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.28.1.24" valueType="Integer">
+			<Value>dram (3)</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.2" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.3" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.4" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.5" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.5" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.6" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.6" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.7" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.7" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.8" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.8" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.9" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.9" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.10" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.10" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.11" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.11" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.12" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.12" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.13" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.13" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.14" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.14" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.15" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.15" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.16" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.16" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.17" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.17" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.18" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.18" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.19" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.19" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.20" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.20" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.21" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.21" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.22" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.22" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.23" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.23" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceVolatileSize.1.24" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.29.1.24" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.2" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.3" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.4" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.5" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.5" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.6" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.6" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.7" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.7" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.8" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.8" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.9" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.9" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.10" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.10" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.11" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.11" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.12" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.12" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.13" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.13" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.14" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.14" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.15" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.15" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.16" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.16" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.17" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.17" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.18" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.18" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.19" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.19" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.20" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.20" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.21" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.21" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.22" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.22" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.23" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.23" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceNonVolatilesSize.1.24" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.30.1.24" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.2" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.3" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.4" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.5" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.5" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.6" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.6" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.7" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.7" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.8" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.8" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.9" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.9" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.10" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.10" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.11" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.11" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.12" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.12" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.13" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.13" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.14" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.14" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.15" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.15" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.16" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.16" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.17" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.17" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.18" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.18" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.19" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.19" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.20" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.20" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.21" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.21" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.22" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.22" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.23" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.23" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceCacheSize.1.24" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.31.1.24" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.1" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.2" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.3" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.4" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.5" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.5" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.6" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.6" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.7" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.7" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.8" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.8" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.9" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.9" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.10" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.10" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.11" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.11" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.12" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.12" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.13" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.13" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.14" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.14" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.15" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.15" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.16" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.16" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.17" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.17" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.18" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.18" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.19" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.19" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.20" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.20" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.21" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.21" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.22" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.22" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.23" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.23" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="memoryDeviceRemainingRatedWriteEndurance.1.24" oid=".1.3.6.1.4.1.674.10892.5.4.1100.50.1.32.1.24" valueType="Integer">
+			<Value>notApplicable (255)</Value>
+		</Instance>
+		<Instance name="networkDeviceCapabilities.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.90.1.29.1.1" valueType="Integer">
+			<Value>supported (1)</Value>
+		</Instance>
+		<Instance name="networkDeviceCapabilities.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.90.1.29.1.2" valueType="Integer">
+			<Value>supported (1)</Value>
+		</Instance>
+		<Instance name="networkDeviceCapabilities.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1100.90.1.29.1.3" valueType="Integer">
+			<Value>supported (1)</Value>
+		</Instance>
+		<Instance name="networkDeviceCapabilities.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1100.90.1.29.1.4" valueType="Integer">
+			<Value>supported (1)</Value>
+		</Instance>
+		<Instance name="networkDeviceCapabilities.1.5" oid=".1.3.6.1.4.1.674.10892.5.4.1100.90.1.29.1.5" valueType="Integer">
+			<Value>supported (1)</Value>
+		</Instance>
+		<Instance name="networkDeviceCapabilities.1.6" oid=".1.3.6.1.4.1.674.10892.5.4.1100.90.1.29.1.6" valueType="Integer">
+			<Value>supported (1)</Value>
+		</Instance>
+		<Instance name="networkDeviceFQDD.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1100.90.1.30.1.1" valueType="OctetString">
+			<Value>NIC.Slot.1-1-1</Value>
+		</Instance>
+		<Instance name="networkDeviceFQDD.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1100.90.1.30.1.2" valueType="OctetString">
+			<Value>NIC.Slot.1-2-1</Value>
+		</Instance>
+		<Instance name="networkDeviceFQDD.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1100.90.1.30.1.3" valueType="OctetString">
+			<Value>NIC.Integrated.1-3-1</Value>
+		</Instance>
+		<Instance name="networkDeviceFQDD.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1100.90.1.30.1.4" valueType="OctetString">
+			<Value>NIC.Integrated.1-4-1</Value>
+		</Instance>
+		<Instance name="networkDeviceFQDD.1.5" oid=".1.3.6.1.4.1.674.10892.5.4.1100.90.1.30.1.5" valueType="OctetString">
+			<Value>NIC.Integrated.1-1-1</Value>
+		</Instance>
+		<Instance name="networkDeviceFQDD.1.6" oid=".1.3.6.1.4.1.674.10892.5.4.1100.90.1.30.1.6" valueType="OctetString">
+			<Value>NIC.Integrated.1-2-1</Value>
+		</Instance>
+		<Instance name="systemSlotchassisIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="systemSlotchassisIndex.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.1.1.2" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="systemSlotchassisIndex.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.1.1.3" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="systemSlotchassisIndex.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.1.1.4" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="systemSlotIndex.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.2.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="systemSlotIndex.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.2.1.2" valueType="Integer">
+			<Value>2</Value>
+		</Instance>
+		<Instance name="systemSlotIndex.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.2.1.3" valueType="Integer">
+			<Value>3</Value>
+		</Instance>
+		<Instance name="systemSlotIndex.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.2.1.4" valueType="Integer">
+			<Value>4</Value>
+		</Instance>
+		<Instance name="systemSlotStateCapabilitiesUnique.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.3.1.1" valueType="Integer">
+			<Value>systemSlotHotPlugIsUnknown (1)</Value>
+		</Instance>
+		<Instance name="systemSlotStateCapabilitiesUnique.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.3.1.2" valueType="Integer">
+			<Value>systemSlotHotPlugIsUnknown (1)</Value>
+		</Instance>
+		<Instance name="systemSlotStateCapabilitiesUnique.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.3.1.3" valueType="Integer">
+			<Value>systemSlotHotPlugIsUnknown (1)</Value>
+		</Instance>
+		<Instance name="systemSlotStateCapabilitiesUnique.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.3.1.4" valueType="Integer">
+			<Value>systemSlotHotPlugIsUnknown (1)</Value>
+		</Instance>
+		<Instance name="systemSlotStateSettingsUnique.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.4.1.1" valueType="Integer">
+			<Value>systemSlotHotPlugIsUnknown (1)</Value>
+		</Instance>
+		<Instance name="systemSlotStateSettingsUnique.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.4.1.2" valueType="Integer">
+			<Value>systemSlotHotPlugIsUnknown (1)</Value>
+		</Instance>
+		<Instance name="systemSlotStateSettingsUnique.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.4.1.3" valueType="Integer">
+			<Value>systemSlotHotPlugIsUnknown (1)</Value>
+		</Instance>
+		<Instance name="systemSlotStateSettingsUnique.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.4.1.4" valueType="Integer">
+			<Value>systemSlotHotPlugIsUnknown (1)</Value>
+		</Instance>
+		<Instance name="systemSlotStatus.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.5.1.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemSlotStatus.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.5.1.2" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemSlotStatus.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.5.1.3" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemSlotStatus.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.5.1.4" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="systemSlotCurrentUsage.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.6.1.1" valueType="Integer">
+			<Value>systemSlotUsageIsInUse (4)</Value>
+		</Instance>
+		<Instance name="systemSlotCurrentUsage.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.6.1.2" valueType="Integer">
+			<Value>systemSlotUsageIsInUse (4)</Value>
+		</Instance>
+		<Instance name="systemSlotCurrentUsage.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.6.1.3" valueType="Integer">
+			<Value>systemSlotUsageIsAvailable (3)</Value>
+		</Instance>
+		<Instance name="systemSlotCurrentUsage.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.6.1.4" valueType="Integer">
+			<Value>systemSlotUsageIsAvailable (3)</Value>
+		</Instance>
+		<Instance name="systemSlotType.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.7.1.1" valueType="Integer">
+			<Value>systemSlotIsPCIExpress (24)</Value>
+		</Instance>
+		<Instance name="systemSlotType.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.7.1.2" valueType="Integer">
+			<Value>systemSlotIsPCIExpress (24)</Value>
+		</Instance>
+		<Instance name="systemSlotType.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.7.1.3" valueType="Integer">
+			<Value>systemSlotIsPCIExpress (24)</Value>
+		</Instance>
+		<Instance name="systemSlotType.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.7.1.4" valueType="Integer">
+			<Value>systemSlotIsPCIExpress (24)</Value>
+		</Instance>
+		<Instance name="systemSlotSlotExternalSlotName.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.8.1.1" valueType="OctetString">
+			<Value>PCI1</Value>
+		</Instance>
+		<Instance name="systemSlotSlotExternalSlotName.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.8.1.2" valueType="OctetString">
+			<Value>PCI4</Value>
+		</Instance>
+		<Instance name="systemSlotSlotExternalSlotName.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.8.1.3" valueType="OctetString">
+			<Value>PCI2</Value>
+		</Instance>
+		<Instance name="systemSlotSlotExternalSlotName.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.8.1.4" valueType="OctetString">
+			<Value>PCI3</Value>
+		</Instance>
+		<Instance name="systemSlotCategory.1.1" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.11.1.1" valueType="Integer">
+			<Value>systemSlotCategoryIsBusConnector (3)</Value>
+		</Instance>
+		<Instance name="systemSlotCategory.1.2" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.11.1.2" valueType="Integer">
+			<Value>systemSlotCategoryIsBusConnector (3)</Value>
+		</Instance>
+		<Instance name="systemSlotCategory.1.3" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.11.1.3" valueType="Integer">
+			<Value>systemSlotCategoryIsBusConnector (3)</Value>
+		</Instance>
+		<Instance name="systemSlotCategory.1.4" oid=".1.3.6.1.4.1.674.10892.5.4.1200.10.1.11.1.4" valueType="Integer">
+			<Value>systemSlotCategoryIsBusConnector (3)</Value>
+		</Instance>
+		<Instance name="controllerNumber.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="controllerName.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.2.1" valueType="OctetString">
+			<Value>PERC H730P Adapter (PCI Slot 4)</Value>
+		</Instance>
+		<Instance name="controllerRebuildRate.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.7.1" valueType="Integer">
+			<Value>30</Value>
+		</Instance>
+		<Instance name="controllerFWVersion.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.8.1" valueType="OctetString">
+			<Value>25.5.8.0001</Value>
+		</Instance>
+		<Instance name="controllerCacheSizeInMB.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.9.1" valueType="Integer">
+			<Value>2048</Value>
+		</Instance>
+		<Instance name="controllerRollUpStatus.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.37.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="controllerComponentStatus.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.38.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="controllerDriverVersion.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.41.1" valueType="OctetString">
+			<Value>--NA--</Value>
+		</Instance>
+		<Instance name="controllerPCISlot.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.42.1" valueType="OctetString">
+			<Value>4</Value>
+		</Instance>
+		<Instance name="controllerReconstructRate.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.48.1" valueType="Integer">
+			<Value>30</Value>
+		</Instance>
+		<Instance name="controllerPatrolReadRate.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.49.1" valueType="Integer">
+			<Value>30</Value>
+		</Instance>
+		<Instance name="controllerBGIRate.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.50.1" valueType="Integer">
+			<Value>30</Value>
+		</Instance>
+		<Instance name="controllerCheckConsistencyRate.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.51.1" valueType="Integer">
+			<Value>30</Value>
+		</Instance>
+		<Instance name="controllerPatrolReadMode.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.52.1" valueType="Integer">
+			<Value>auto (4)</Value>
+		</Instance>
+		<Instance name="controllerPatrolReadState.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.53.1" valueType="Integer">
+			<Value>stopped (2)</Value>
+		</Instance>
+		<Instance name="controllerPersistentHotSpare.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.59.1" valueType="Integer">
+			<Value>128</Value>
+		</Instance>
+		<Instance name="controllerSpinDownUnconfiguredDrives.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.60.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="controllerSpinDownHotSpareDrives.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.61.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="controllerSpinDownTimeInterval.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.62.1" valueType="Integer">
+			<Value>30</Value>
+		</Instance>
+		<Instance name="controllerPreservedCache.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.69.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="controllerCheckConsistencyMode.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.70.1" valueType="Integer">
+			<Value>normal (3)</Value>
+		</Instance>
+		<Instance name="controllerCopyBackMode.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.71.1" valueType="Integer">
+			<Value>on (3)</Value>
+		</Instance>
+		<Instance name="controllerSecurityStatus.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.72.1" valueType="Integer">
+			<Value>none (2)</Value>
+		</Instance>
+		<Instance name="controllerEncryptionKeyPresent.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.73.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="controllerEncryptionCapability.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.74.1" valueType="Integer">
+			<Value>lkm (3)</Value>
+		</Instance>
+		<Instance name="controllerLoadBalanceSetting.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.75.1" valueType="Integer">
+			<Value>auto (3)</Value>
+		</Instance>
+		<Instance name="controllerMaxCapSpeed.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.76.1" valueType="Integer">
+			<Value>twelveGbps (5)</Value>
+		</Instance>
+		<Instance name="controllerFQDD.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.78.1" valueType="OctetString">
+			<Value>RAID.Slot.4-1</Value>
+		</Instance>
+		<Instance name="controllerDisplayName.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.79.1" valueType="OctetString">
+			<Value>RAID Controller in Slot 4</Value>
+		</Instance>
+		<Instance name="controllerT10PICapability.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.80.1" valueType="Integer">
+			<Value>notCapable (3)</Value>
+		</Instance>
+		<Instance name="controllerRAID10UnevenSpansSupported.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.81.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="controllerEnhancedAutoImportForeignConfigMode.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.82.1" valueType="Integer">
+			<Value>disabled (3)</Value>
+		</Instance>
+		<Instance name="controllerBootModeSupported.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.83.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="controllerBootMode.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.1.1.84.1" valueType="Integer">
+			<Value>contOnError (3)</Value>
+		</Instance>
+		<Instance name="enclosureNumber.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="enclosureName.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.2.1" valueType="OctetString">
+			<Value>BP14G+ 0:1</Value>
+		</Instance>
+		<Instance name="enclosureState.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.4.1" valueType="Integer">
+			<Value>ready (2)</Value>
+		</Instance>
+		<Instance name="enclosureServiceTag.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.8.1" valueType="OctetString">
+			<Value>Not Applicable</Value>
+		</Instance>
+		<Instance name="enclosureAssetTag.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.9.1" valueType="OctetString">
+			<Value>Not Applicable</Value>
+		</Instance>
+		<Instance name="enclosureConnectedPort.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.19.1" valueType="OctetString">
+			<Value>Not Applicable</Value>
+		</Instance>
+		<Instance name="enclosureRollUpStatus.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.23.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="enclosureComponentStatus.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.24.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="enclosureFirmwareVersion.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.26.1" valueType="OctetString">
+			<Value>4.35</Value>
+		</Instance>
+		<Instance name="enclosureDriveCount.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.31.1" valueType="Integer">
+			<Value>2</Value>
+		</Instance>
+		<Instance name="enclosureTotalSlots.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.32.1" valueType="Integer">
+			<Value>8</Value>
+		</Instance>
+		<Instance name="enclosureFanCount.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.40.1" valueType="OctetString">
+			<Value>Not Applicable</Value>
+		</Instance>
+		<Instance name="enclosurePSUCount.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.41.1" valueType="OctetString">
+			<Value>Not Applicable</Value>
+		</Instance>
+		<Instance name="enclosureEMMCount.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.42.1" valueType="OctetString">
+			<Value>Not Applicable</Value>
+		</Instance>
+		<Instance name="enclosureTempProbeCount.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.43.1" valueType="OctetString">
+			<Value>Not Applicable</Value>
+		</Instance>
+		<Instance name="enclosureRedundantPath.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.44.1" valueType="OctetString">
+			<Value>Not Applicable</Value>
+		</Instance>
+		<Instance name="enclosurePosition.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.45.1" valueType="OctetString">
+			<Value>Not Applicable</Value>
+		</Instance>
+		<Instance name="enclosureBackplaneBayID.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.46.1" valueType="OctetString">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="enclosureFQDD.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.47.1" valueType="OctetString">
+			<Value>Enclosure.Internal.0-1:RAID.Slot.4-1</Value>
+		</Instance>
+		<Instance name="enclosureDisplayName.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.48.1" valueType="OctetString">
+			<Value>Backplane 1 on Connector 0 of RAID Controller in Slot 4</Value>
+		</Instance>
+		<Instance name="enclosureType.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.3.1.49.1" valueType="Integer">
+			<Value>sassata (3)</Value>
+		</Instance>
+		<Instance name="physicalDiskNumber.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="physicalDiskNumber.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.1.2" valueType="Integer">
+			<Value>2</Value>
+		</Instance>
+		<Instance name="physicalDiskName.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.2.1" valueType="OctetString">
+			<Value>Solid State Disk 0:1:0</Value>
+		</Instance>
+		<Instance name="physicalDiskName.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.2.2" valueType="OctetString">
+			<Value>Solid State Disk 0:1:1</Value>
+		</Instance>
+		<Instance name="physicalDiskManufacturer.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.3.1" valueType="OctetString">
+			<Value>MICRON</Value>
+		</Instance>
+		<Instance name="physicalDiskManufacturer.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.3.2" valueType="OctetString">
+			<Value>MICRON</Value>
+		</Instance>
+		<Instance name="physicalDiskState.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.4.1" valueType="Integer">
+			<Value>online (3)</Value>
+		</Instance>
+		<Instance name="physicalDiskState.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.4.2" valueType="Integer">
+			<Value>online (3)</Value>
+		</Instance>
+		<Instance name="physicalDiskProductID.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.6.1" valueType="OctetString">
+			<Value>MTFDDAK480TDS</Value>
+		</Instance>
+		<Instance name="physicalDiskProductID.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.6.2" valueType="OctetString">
+			<Value>MTFDDAK480TDS</Value>
+		</Instance>
+		<Instance name="physicalDiskSerialNo.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.7.1" valueType="OctetString">
+			<Value>20412B0B51B8</Value>
+		</Instance>
+		<Instance name="physicalDiskSerialNo.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.7.2" valueType="OctetString">
+			<Value>20412B0B51BE</Value>
+		</Instance>
+		<Instance name="physicalDiskRevision.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.8.1" valueType="OctetString">
+			<Value>D3DJ004</Value>
+		</Instance>
+		<Instance name="physicalDiskRevision.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.8.2" valueType="OctetString">
+			<Value>D3DJ004</Value>
+		</Instance>
+		<Instance name="physicalDiskCapacityInMB.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.11.1" valueType="Integer">
+			<Value>457344</Value>
+		</Instance>
+		<Instance name="physicalDiskCapacityInMB.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.11.2" valueType="Integer">
+			<Value>457344</Value>
+		</Instance>
+		<Instance name="physicalDiskUsedSpaceInMB.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.17.1" valueType="Integer">
+			<Value>457344</Value>
+		</Instance>
+		<Instance name="physicalDiskUsedSpaceInMB.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.17.2" valueType="Integer">
+			<Value>457344</Value>
+		</Instance>
+		<Instance name="physicalDiskFreeSpaceInMB.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.19.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="physicalDiskFreeSpaceInMB.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.19.2" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="physicalDiskBusType.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.21.1" valueType="Integer">
+			<Value>sata (4)</Value>
+		</Instance>
+		<Instance name="physicalDiskBusType.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.21.2" valueType="Integer">
+			<Value>sata (4)</Value>
+		</Instance>
+		<Instance name="physicalDiskSpareState.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.22.1" valueType="Integer">
+			<Value>notASpare (1)</Value>
+		</Instance>
+		<Instance name="physicalDiskSpareState.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.22.2" valueType="Integer">
+			<Value>notASpare (1)</Value>
+		</Instance>
+		<Instance name="physicalDiskComponentStatus.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.24.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="physicalDiskComponentStatus.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.24.2" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="physicalDiskPartNumber.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.27.1" valueType="OctetString">
+			<Value>SG0KCT7JMCS000AF2334A00</Value>
+		</Instance>
+		<Instance name="physicalDiskPartNumber.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.27.2" valueType="OctetString">
+			<Value>SG0KCT7JMCS000AF2335A00</Value>
+		</Instance>
+		<Instance name="physicalDiskNegotiatedSpeed.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.29.1" valueType="Integer">
+			<Value>sixGbps (4)</Value>
+		</Instance>
+		<Instance name="physicalDiskNegotiatedSpeed.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.29.2" valueType="Integer">
+			<Value>sixGbps (4)</Value>
+		</Instance>
+		<Instance name="physicalDiskCapableSpeed.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.30.1" valueType="Integer">
+			<Value>sixGbps (4)</Value>
+		</Instance>
+		<Instance name="physicalDiskCapableSpeed.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.30.2" valueType="Integer">
+			<Value>sixGbps (4)</Value>
+		</Instance>
+		<Instance name="physicalDiskSmartAlertIndication.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.31.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="physicalDiskSmartAlertIndication.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.31.2" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="physicalDiskManufactureDay.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.32.1" valueType="OctetString">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="physicalDiskManufactureDay.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.32.2" valueType="OctetString">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="physicalDiskManufactureWeek.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.33.1" valueType="OctetString">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="physicalDiskManufactureWeek.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.33.2" valueType="OctetString">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="physicalDiskManufactureYear.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.34.1" valueType="OctetString">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="physicalDiskManufactureYear.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.34.2" valueType="OctetString">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="physicalDiskMediaType.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.35.1" valueType="Integer">
+			<Value>ssd (3)</Value>
+		</Instance>
+		<Instance name="physicalDiskMediaType.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.35.2" valueType="Integer">
+			<Value>ssd (3)</Value>
+		</Instance>
+		<Instance name="physicalDiskRemainingRatedWriteEndurance.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.49.1" valueType="Integer">
+			<Value>100</Value>
+		</Instance>
+		<Instance name="physicalDiskRemainingRatedWriteEndurance.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.49.2" valueType="Integer">
+			<Value>100</Value>
+		</Instance>
+		<Instance name="physicalDiskOperationalState.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.50.1" valueType="Integer">
+			<Value>notApplicable (1)</Value>
+		</Instance>
+		<Instance name="physicalDiskOperationalState.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.50.2" valueType="Integer">
+			<Value>notApplicable (1)</Value>
+		</Instance>
+		<Instance name="physicalDiskProgress.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.51.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="physicalDiskProgress.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.51.2" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="physicalDiskSecurityStatus.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.52.1" valueType="Integer">
+			<Value>notSupported (2)</Value>
+		</Instance>
+		<Instance name="physicalDiskSecurityStatus.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.52.2" valueType="Integer">
+			<Value>notSupported (2)</Value>
+		</Instance>
+		<Instance name="physicalDiskFormFactor.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.53.1" valueType="Integer">
+			<Value>twoDotFive (3)</Value>
+		</Instance>
+		<Instance name="physicalDiskFormFactor.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.53.2" valueType="Integer">
+			<Value>twoDotFive (3)</Value>
+		</Instance>
+		<Instance name="physicalDiskFQDD.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.54.1" valueType="OctetString">
+			<Value>Disk.Bay.0:Enclosure.Internal.0-1:RAID.Slot.4-1</Value>
+		</Instance>
+		<Instance name="physicalDiskFQDD.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.54.2" valueType="OctetString">
+			<Value>Disk.Bay.1:Enclosure.Internal.0-1:RAID.Slot.4-1</Value>
+		</Instance>
+		<Instance name="physicalDiskDisplayName.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.55.1" valueType="OctetString">
+			<Value>Disk 0 in Backplane 1 of RAID Controller in Slot 4</Value>
+		</Instance>
+		<Instance name="physicalDiskDisplayName.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.55.2" valueType="OctetString">
+			<Value>Disk 1 in Backplane 1 of RAID Controller in Slot 4</Value>
+		</Instance>
+		<Instance name="physicalDiskT10PICapability.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.57.1" valueType="Integer">
+			<Value>notCapable (3)</Value>
+		</Instance>
+		<Instance name="physicalDiskT10PICapability.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.57.2" valueType="Integer">
+			<Value>notCapable (3)</Value>
+		</Instance>
+		<Instance name="physicalDiskBlockSizeInBytes.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.58.1" valueType="Integer">
+			<Value>512</Value>
+		</Instance>
+		<Instance name="physicalDiskBlockSizeInBytes.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.58.2" valueType="Integer">
+			<Value>512</Value>
+		</Instance>
+		<Instance name="physicalDiskProtocolVersion.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.59.1" valueType="OctetString">
+			<Value>Not Applicable</Value>
+		</Instance>
+		<Instance name="physicalDiskProtocolVersion.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.59.2" valueType="OctetString">
+			<Value>Not Applicable</Value>
+		</Instance>
+		<Instance name="physicalDiskPCIeNegotiatedLinkWidth.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.60.1" valueType="Integer">
+			<Value>notApplicable (2)</Value>
+		</Instance>
+		<Instance name="physicalDiskPCIeNegotiatedLinkWidth.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.60.2" valueType="Integer">
+			<Value>notApplicable (2)</Value>
+		</Instance>
+		<Instance name="physicalDiskPCIeCapableLinkWidth.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.61.1" valueType="Integer">
+			<Value>notApplicable (2)</Value>
+		</Instance>
+		<Instance name="physicalDiskPCIeCapableLinkWidth.2" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.4.1.61.2" valueType="Integer">
+			<Value>notApplicable (2)</Value>
+		</Instance>
+		<Instance name="batteryNumber.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.15.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="batteryState.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.15.1.4.1" valueType="Integer">
+			<Value>ready (2)</Value>
+		</Instance>
+		<Instance name="batteryComponentStatus.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.15.1.6.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="batteryFQDD.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.15.1.20.1" valueType="OctetString">
+			<Value>Battery.Integrated.1:RAID.Slot.4-1</Value>
+		</Instance>
+		<Instance name="batteryDisplayName.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.130.15.1.21.1" valueType="OctetString">
+			<Value>Battery on RAID Controller in Slot 4</Value>
+		</Instance>
+		<Instance name="virtualDiskNumber.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.1.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="virtualDiskName.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.2.1" valueType="OctetString">
+			<Value>Virtual Disk 0</Value>
+		</Instance>
+		<Instance name="virtualDiskState.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.4.1" valueType="Integer">
+			<Value>online (2)</Value>
+		</Instance>
+		<Instance name="virtualDiskSizeInMB.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.6.1" valueType="Integer">
+			<Value>457344</Value>
+		</Instance>
+		<Instance name="virtualDiskWritePolicy.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.10.1" valueType="Integer">
+			<Value>writeBack (2)</Value>
+		</Instance>
+		<Instance name="virtualDiskReadPolicy.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.11.1" valueType="Integer">
+			<Value>readAhead (2)</Value>
+		</Instance>
+		<Instance name="virtualDiskLayout.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.13.1" valueType="Integer">
+			<Value>r1 (3)</Value>
+		</Instance>
+		<Instance name="virtualDiskStripeSize.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.14.1" valueType="Integer">
+			<Value>sixtyFourKilobytes (10)</Value>
+		</Instance>
+		<Instance name="virtualDiskComponentStatus.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.20.1" valueType="Integer">
+			<Value>ok (3)</Value>
+		</Instance>
+		<Instance name="virtualDiskBadBlocksDetected.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.23.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="virtualDiskSecured.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.24.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="virtualDiskIsCacheCade.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.25.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="virtualDiskDiskCachePolicy.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.26.1" valueType="Integer">
+			<Value>defullt (3)</Value>
+		</Instance>
+		<Instance name="virtualDiskOperationalState.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.30.1" valueType="Integer">
+			<Value>notApplicable (1)</Value>
+		</Instance>
+		<Instance name="virtualDiskProgress.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.31.1" valueType="Integer">
+			<Value>0</Value>
+		</Instance>
+		<Instance name="virtualDiskAvailableProtocols.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.32.1" valueType="OctetString">
+			<Value>SATA</Value>
+		</Instance>
+		<Instance name="virtualDiskMediaType.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.33.1" valueType="OctetString">
+			<Value>SSD</Value>
+		</Instance>
+		<Instance name="virtualDiskRemainingRedundancy.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.34.1" valueType="Integer">
+			<Value>1</Value>
+		</Instance>
+		<Instance name="virtualDiskFQDD.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.35.1" valueType="OctetString">
+			<Value>Disk.Virtual.0:RAID.Slot.4-1</Value>
+		</Instance>
+		<Instance name="virtualDiskDisplayName.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.36.1" valueType="OctetString">
+			<Value>Virtual Disk 0 on RAID Controller in Slot 4</Value>
+		</Instance>
+		<Instance name="virtualDiskT10PIStatus.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.37.1" valueType="Integer">
+			<Value>disabled (3)</Value>
+		</Instance>
+		<Instance name="virtualDiskBlockSizeInBytes.1" oid=".1.3.6.1.4.1.674.10892.5.5.1.20.140.1.1.38.1" valueType="Integer">
+			<Value>512</Value>
+		</Instance>
+		<Instance name="snmpEngineBoots.0" oid=".1.3.6.1.6.3.10.2.1.2.0" valueType="Integer">
+			<Value>5</Value>
+		</Instance>
+		<Instance name="snmpEngineTime.0" oid=".1.3.6.1.6.3.10.2.1.3.0" valueType="Integer">
+			<Value>48362654</Value>
+		</Instance>
+		<Instance name="snmpEngineMaxMessageSize.0" oid=".1.3.6.1.6.3.10.2.1.4.0" valueType="Integer">
+			<Value>1500</Value>
+		</Instance>
+	</Instances>
+</SnmpSimulatorData>

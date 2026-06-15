@@ -1,0 +1,4 @@
+[
+{"code":"w00000","name":"污水","unit":"升/秒","type":"float"},
+{"code":"w01001","name":"PH值","unit":"无量纲","type":"float"}
+]

@@ -1,0 +1,1648 @@
+{
+  "project_name": "1A配电室",
+  "description": "1A配电室 ModbusTCP 数据采集项目",
+  "protocol": "ModbusTCP",
+  "gateway": {
+    "ip": "172.31.4.14",
+    "port": 502,
+    "backup_ip": "172.20.255.14"
+  },
+  "device_models": {
+    "A20": {
+      "model_name": "A20",
+      "description": "A20 电力设备模型",
+      "protocol": "ModbusTCP",
+      "register_groups": [
+        {
+          "group_name": "AI数据",
+          "register_type": "HOLDING",
+          "start_address": 0,
+          "points": [
+            {
+              "name": "AB线电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.01,
+              "parse_mode": 177,
+              "offset": 0
+            },
+            {
+              "name": "BC线电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.01,
+              "parse_mode": 177,
+              "offset": 2
+            },
+            {
+              "name": "CA线电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.01,
+              "parse_mode": 177,
+              "offset": 4
+            },
+            {
+              "name": "频率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.01,
+              "parse_mode": 177,
+              "offset": 6
+            },
+            {
+              "name": "A相电流",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.001,
+              "parse_mode": 177,
+              "offset": 8
+            },
+            {
+              "name": "B相电流",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.001,
+              "parse_mode": 177,
+              "offset": 10
+            },
+            {
+              "name": "C相电流",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.001,
+              "parse_mode": 177,
+              "offset": 12
+            },
+            {
+              "name": "中性线电流",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.001,
+              "parse_mode": 177,
+              "offset": 14
+            },
+            {
+              "name": "总有功功率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.01,
+              "parse_mode": 179,
+              "offset": 16
+            },
+            {
+              "name": "总无功功率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.01,
+              "parse_mode": 179,
+              "offset": 18
+            },
+            {
+              "name": "总视在功率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.01,
+              "parse_mode": 177,
+              "offset": 20
+            },
+            {
+              "name": "总功率因数",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.001,
+              "parse_mode": 179,
+              "offset": 22
+            },
+            {
+              "name": "正有功电度",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 1,
+              "parse_mode": 177,
+              "offset": 24
+            },
+            {
+              "name": "A相电流谐波畸变率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.1,
+              "parse_mode": 73,
+              "offset": 26
+            },
+            {
+              "name": "B相电流谐波畸变率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.1,
+              "parse_mode": 73,
+              "offset": 27
+            },
+            {
+              "name": "C相电流谐波畸变率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.1,
+              "parse_mode": 73,
+              "offset": 28
+            },
+            {
+              "name": "中性线电流谐波畸变率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.1,
+              "parse_mode": 73,
+              "offset": 29
+            }
+          ]
+        },
+        {
+          "group_name": "DI数据",
+          "register_type": "DI",
+          "start_address": 0,
+          "points": [
+            {
+              "name": "输入状态2（故障状态）",
+              "data_type": "BOOL",
+              "register_count": 1,
+              "register_offset": 1,
+              "bit_offset": ""
+            },
+            {
+              "name": "输入状态1（合分闸状态）",
+              "data_type": "BOOL",
+              "register_count": 1,
+              "register_offset": 2,
+              "bit_offset": ""
+            },
+            {
+              "name": "主通讯状态",
+              "data_type": "BOOL",
+              "register_count": 1,
+              "register_offset": 3,
+              "bit_offset": ""
+            }
+          ]
+        }
+      ]
+    },
+    "A40": {
+      "model_name": "A40",
+      "description": "A40 电力设备模型",
+      "protocol": "ModbusTCP",
+      "register_groups": [
+        {
+          "group_name": "AI数据",
+          "register_type": "HOLDING",
+          "start_address": 0,
+          "points": [
+            {
+              "name": "A相电流",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.001,
+              "parse_mode": 177,
+              "offset": 0
+            },
+            {
+              "name": "B相电流",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.001,
+              "parse_mode": 177,
+              "offset": 2
+            },
+            {
+              "name": "C相电流",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.001,
+              "parse_mode": 177,
+              "offset": 4
+            },
+            {
+              "name": "中性线电流",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.001,
+              "parse_mode": 177,
+              "offset": 6
+            },
+            {
+              "name": "AB线电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.01,
+              "parse_mode": 177,
+              "offset": 8
+            },
+            {
+              "name": "BC线电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.01,
+              "parse_mode": 177,
+              "offset": 10
+            },
+            {
+              "name": "CA线电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.01,
+              "parse_mode": 177,
+              "offset": 12
+            },
+            {
+              "name": "A相电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.01,
+              "parse_mode": 177,
+              "offset": 14
+            },
+            {
+              "name": "B相电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.01,
+              "parse_mode": 177,
+              "offset": 16
+            },
+            {
+              "name": "C相电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.01,
+              "parse_mode": 177,
+              "offset": 18
+            },
+            {
+              "name": "频率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.01,
+              "parse_mode": 177,
+              "offset": 20
+            },
+            {
+              "name": "总有功功率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.01,
+              "parse_mode": 179,
+              "offset": 22
+            },
+            {
+              "name": "总无功功率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.01,
+              "parse_mode": 179,
+              "offset": 24
+            },
+            {
+              "name": "总视在功率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.01,
+              "parse_mode": 179,
+              "offset": 26
+            },
+            {
+              "name": "总功率因数",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.001,
+              "parse_mode": 179,
+              "offset": 28
+            },
+            {
+              "name": "正有功电度",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 1,
+              "parse_mode": 177,
+              "offset": 30
+            },
+            {
+              "name": "负有功电度",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 1,
+              "parse_mode": 177,
+              "offset": 32
+            },
+            {
+              "name": "A相电流谐波畸变率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.1,
+              "parse_mode": 73,
+              "offset": 34
+            },
+            {
+              "name": "B相电流谐波畸变率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.1,
+              "parse_mode": 73,
+              "offset": 35
+            },
+            {
+              "name": "C相电流谐波畸变率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.1,
+              "parse_mode": 73,
+              "offset": 36
+            },
+            {
+              "name": "中性电流谐波畸变率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.1,
+              "parse_mode": 73,
+              "offset": 37
+            },
+            {
+              "name": "UAB线电压谐波畸变率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.1,
+              "parse_mode": 73,
+              "offset": 38
+            },
+            {
+              "name": "UBC线电压谐波畸变率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.1,
+              "parse_mode": 73,
+              "offset": 39
+            },
+            {
+              "name": "UCA线电压谐波畸变率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.1,
+              "parse_mode": 73,
+              "offset": 40
+            }
+          ]
+        },
+        {
+          "group_name": "DI数据",
+          "register_type": "DI",
+          "start_address": 0,
+          "points": [
+            {
+              "name": "输入状态1（合分闸状态）",
+              "data_type": "BOOL",
+              "register_count": 1,
+              "register_offset": 0,
+              "bit_offset": ""
+            },
+            {
+              "name": "输入状态2（故障状态）",
+              "data_type": "BOOL",
+              "register_count": 1,
+              "register_offset": 1,
+              "bit_offset": ""
+            },
+            {
+              "name": "主通讯状态",
+              "data_type": "BOOL",
+              "register_count": 1,
+              "register_offset": 2,
+              "bit_offset": ""
+            }
+          ]
+        }
+      ]
+    },
+    "施耐德UPS": {
+      "model_name": "施耐德UPS",
+      "description": "施耐德UPS 电力设备模型",
+      "protocol": "ModbusTCP",
+      "register_groups": [
+        {
+          "group_name": "AI数据",
+          "register_type": "HOLDING",
+          "start_address": 0,
+          "points": [
+            {
+              "name": "UPS使用模式",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": "",
+              "parse_mode": "",
+              "offset": 0
+            },
+            {
+              "name": "UPS逆变器内部故障",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": "",
+              "parse_mode": "",
+              "offset": 1
+            },
+            {
+              "name": "UPS电池开关状态",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": "",
+              "parse_mode": "",
+              "offset": 2
+            },
+            {
+              "name": "UPS主路开关状态",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": "",
+              "parse_mode": "",
+              "offset": 3
+            },
+            {
+              "name": "UPS旁路状态",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": "",
+              "parse_mode": "",
+              "offset": 4
+            },
+            {
+              "name": "UPS旁路内部硬件错误",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": "",
+              "parse_mode": "",
+              "offset": 5
+            },
+            {
+              "name": "UPS充电状态",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": "",
+              "parse_mode": "",
+              "offset": 6
+            },
+            {
+              "name": "主路A相电流",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 7
+            },
+            {
+              "name": "主路B相电流",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 8
+            },
+            {
+              "name": "主路C相电流",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 9
+            },
+            {
+              "name": "旁路A相电流",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 10
+            },
+            {
+              "name": "旁路B相电流",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 11
+            },
+            {
+              "name": "旁路C相电流",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 12
+            },
+            {
+              "name": "输出A相电流",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 13
+            },
+            {
+              "name": "输出B相电流",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 14
+            },
+            {
+              "name": "输出C相电流",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 15
+            },
+            {
+              "name": "电池电流",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 73,
+              "parse_mode": 1,
+              "offset": 16
+            },
+            {
+              "name": "主路输入AB线电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 17
+            },
+            {
+              "name": "主路输入BC线电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 18
+            },
+            {
+              "name": "主路输入CA线电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 19
+            },
+            {
+              "name": "旁路输入A相电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 20
+            },
+            {
+              "name": "旁路输入B相电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 21
+            },
+            {
+              "name": "旁路输入C相电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 22
+            },
+            {
+              "name": "旁路输入AB线电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 23
+            },
+            {
+              "name": "旁路输入BC线电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 24
+            },
+            {
+              "name": "旁路输入CA线电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 25
+            },
+            {
+              "name": "输出A相电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 26
+            },
+            {
+              "name": "输出B相电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 27
+            },
+            {
+              "name": "输出C相电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 28
+            },
+            {
+              "name": "输出AB线电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 29
+            },
+            {
+              "name": "输出BC线电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 30
+            },
+            {
+              "name": "输出CA线电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 31
+            },
+            {
+              "name": "电池电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 32
+            },
+            {
+              "name": "输出总有功功率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 73,
+              "parse_mode": 1,
+              "offset": 33
+            },
+            {
+              "name": "输出视在功率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 73,
+              "parse_mode": 1,
+              "offset": 34
+            },
+            {
+              "name": "输出功率因数",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.01,
+              "parse_mode": 73,
+              "offset": 35
+            },
+            {
+              "name": "主路输入频率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.1,
+              "parse_mode": 71,
+              "offset": 36
+            },
+            {
+              "name": "旁路输入频率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.1,
+              "parse_mode": 71,
+              "offset": 37
+            },
+            {
+              "name": "输出频率",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 0.1,
+              "parse_mode": 71,
+              "offset": 38
+            },
+            {
+              "name": "电池剩余运行时间",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 39
+            },
+            {
+              "name": "电池温度",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 40
+            },
+            {
+              "name": "主路输入A相电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 41
+            },
+            {
+              "name": "主路输入B相电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 42
+            },
+            {
+              "name": "主路输入C相电压",
+              "data_type": "FLOAT32",
+              "register_count": 2,
+              "factor": 71,
+              "parse_mode": 1,
+              "offset": 43
+            }
+          ]
+        },
+        {
+          "group_name": "DI数据",
+          "register_type": "DI",
+          "start_address": 0,
+          "points": [
+            {
+              "name": "通讯状态",
+              "data_type": "BOOL",
+              "register_count": 1,
+              "register_offset": 0,
+              "bit_offset": ""
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "device_instances": [
+    {
+      "name": "1A1_U11_S18_1",
+      "template_type": "A20",
+      "ai_start_address": 1000,
+      "di_start_address": 8501,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S18_2",
+      "template_type": "A20",
+      "ai_start_address": 1030,
+      "di_start_address": 8506,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S18_3",
+      "template_type": "A20",
+      "ai_start_address": 1060,
+      "di_start_address": 8511,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S18_4",
+      "template_type": "A20",
+      "ai_start_address": 1090,
+      "di_start_address": 8516,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S18_5",
+      "template_type": "A20",
+      "ai_start_address": 1120,
+      "di_start_address": 8521,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S18_6",
+      "template_type": "A20",
+      "ai_start_address": 1150,
+      "di_start_address": 8526,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S18_7",
+      "template_type": "A20",
+      "ai_start_address": 1180,
+      "di_start_address": 8531,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S18_8",
+      "template_type": "A20",
+      "ai_start_address": 1210,
+      "di_start_address": 8536,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S18_9",
+      "template_type": "A20",
+      "ai_start_address": 1240,
+      "di_start_address": 8541,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S16_1",
+      "template_type": "A20",
+      "ai_start_address": 1270,
+      "di_start_address": 8546,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S16_2",
+      "template_type": "A20",
+      "ai_start_address": 1300,
+      "di_start_address": 8551,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S16_3",
+      "template_type": "A20",
+      "ai_start_address": 1330,
+      "di_start_address": 8556,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S16_4",
+      "template_type": "A20",
+      "ai_start_address": 1360,
+      "di_start_address": 8561,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S16_5",
+      "template_type": "A20",
+      "ai_start_address": 1390,
+      "di_start_address": 8566,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S16_6",
+      "template_type": "A20",
+      "ai_start_address": 1420,
+      "di_start_address": 8571,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S16_7",
+      "template_type": "A20",
+      "ai_start_address": 1450,
+      "di_start_address": 8576,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S16_8",
+      "template_type": "A20",
+      "ai_start_address": 1480,
+      "di_start_address": 8581,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S16_9",
+      "template_type": "A20",
+      "ai_start_address": 1510,
+      "di_start_address": 8586,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S14_1",
+      "template_type": "A20",
+      "ai_start_address": 1745,
+      "di_start_address": 8611,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S15_1",
+      "template_type": "A20",
+      "ai_start_address": 1775,
+      "di_start_address": 8616,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S17_1",
+      "template_type": "A20",
+      "ai_start_address": 1805,
+      "di_start_address": 8621,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S17_2",
+      "template_type": "A20",
+      "ai_start_address": 1835,
+      "di_start_address": 8626,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S17_3",
+      "template_type": "A20",
+      "ai_start_address": 1865,
+      "di_start_address": 8631,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S17_4",
+      "template_type": "A20",
+      "ai_start_address": 1895,
+      "di_start_address": 8636,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S17_5",
+      "template_type": "A20",
+      "ai_start_address": 1925,
+      "di_start_address": 8641,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S17_6",
+      "template_type": "A20",
+      "ai_start_address": 1955,
+      "di_start_address": 8646,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S17_7",
+      "template_type": "A20",
+      "ai_start_address": 1985,
+      "di_start_address": 8651,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S17_8",
+      "template_type": "A20",
+      "ai_start_address": 2015,
+      "di_start_address": 8656,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S17_9",
+      "template_type": "A20",
+      "ai_start_address": 2045,
+      "di_start_address": 8661,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S19_1",
+      "template_type": "A20",
+      "ai_start_address": 2075,
+      "di_start_address": 8666,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S19_2",
+      "template_type": "A20",
+      "ai_start_address": 2105,
+      "di_start_address": 8671,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S19_3",
+      "template_type": "A20",
+      "ai_start_address": 2135,
+      "di_start_address": 8676,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S19_4",
+      "template_type": "A20",
+      "ai_start_address": 2165,
+      "di_start_address": 8681,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S19_5",
+      "template_type": "A20",
+      "ai_start_address": 2195,
+      "di_start_address": 8686,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S19_6",
+      "template_type": "A20",
+      "ai_start_address": 2225,
+      "di_start_address": 8691,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S19_7",
+      "template_type": "A20",
+      "ai_start_address": 2255,
+      "di_start_address": 8696,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S19_8",
+      "template_type": "A20",
+      "ai_start_address": 2285,
+      "di_start_address": 8701,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S19_9",
+      "template_type": "A20",
+      "ai_start_address": 2315,
+      "di_start_address": 8706,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D14_1",
+      "template_type": "A20",
+      "ai_start_address": 2345,
+      "di_start_address": 8711,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D14_2",
+      "template_type": "A20",
+      "ai_start_address": 2375,
+      "di_start_address": 8716,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D14_3",
+      "template_type": "A20",
+      "ai_start_address": 2405,
+      "di_start_address": 8721,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D14_4",
+      "template_type": "A20",
+      "ai_start_address": 2435,
+      "di_start_address": 8726,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D14_5",
+      "template_type": "A20",
+      "ai_start_address": 2465,
+      "di_start_address": 8731,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D14_6",
+      "template_type": "A20",
+      "ai_start_address": 2495,
+      "di_start_address": 8736,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D14_7",
+      "template_type": "A20",
+      "ai_start_address": 2525,
+      "di_start_address": 8741,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D13_1",
+      "template_type": "A20",
+      "ai_start_address": 2555,
+      "di_start_address": 8746,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D13_2",
+      "template_type": "A20",
+      "ai_start_address": 2585,
+      "di_start_address": 8751,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D13_3",
+      "template_type": "A20",
+      "ai_start_address": 2615,
+      "di_start_address": 8756,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D13_4",
+      "template_type": "A20",
+      "ai_start_address": 2645,
+      "di_start_address": 8761,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D13_5",
+      "template_type": "A20",
+      "ai_start_address": 2675,
+      "di_start_address": 8766,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D13_6",
+      "template_type": "A20",
+      "ai_start_address": 2705,
+      "di_start_address": 8771,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D13_7",
+      "template_type": "A20",
+      "ai_start_address": 2735,
+      "di_start_address": 8776,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D13_8",
+      "template_type": "A20",
+      "ai_start_address": 2765,
+      "di_start_address": 8781,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D13_9",
+      "template_type": "A20",
+      "ai_start_address": 2795,
+      "di_start_address": 8786,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D01_1",
+      "template_type": "A20",
+      "ai_start_address": 2989,
+      "di_start_address": 8807,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D01_2",
+      "template_type": "A20",
+      "ai_start_address": 3019,
+      "di_start_address": 8812,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U12_D01_1",
+      "template_type": "A20",
+      "ai_start_address": 3049,
+      "di_start_address": 8817,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U12_D01_2",
+      "template_type": "A20",
+      "ai_start_address": 3079,
+      "di_start_address": 8822,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U13_D01_1",
+      "template_type": "A20",
+      "ai_start_address": 3109,
+      "di_start_address": 8827,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U13_D01_2",
+      "template_type": "A20",
+      "ai_start_address": 3139,
+      "di_start_address": 8832,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S11_1",
+      "template_type": "A40",
+      "ai_start_address": 1540,
+      "di_start_address": 8590,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S11_2",
+      "template_type": "A40",
+      "ai_start_address": 1581,
+      "di_start_address": 8594,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S12_1",
+      "template_type": "A40",
+      "ai_start_address": 1622,
+      "di_start_address": 8598,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S12_2",
+      "template_type": "A40",
+      "ai_start_address": 1663,
+      "di_start_address": 8602,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A1_U11_S13_1",
+      "template_type": "A40",
+      "ai_start_address": 1704,
+      "di_start_address": 8606,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D11_1",
+      "template_type": "A40",
+      "ai_start_address": 2825,
+      "di_start_address": 8790,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D11_2",
+      "template_type": "A40",
+      "ai_start_address": 2866,
+      "di_start_address": 8794,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D12_1",
+      "template_type": "A40",
+      "ai_start_address": 2907,
+      "di_start_address": 8798,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "1A3_U11_D12_2",
+      "template_type": "A40",
+      "ai_start_address": 2948,
+      "di_start_address": 8802,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "UPS_1A1_U11",
+      "template_type": "施耐德UPS",
+      "ai_start_address": 3169,
+      "di_start_address": 8836,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "UPS_1A1_U12",
+      "template_type": "施耐德UPS",
+      "ai_start_address": 3213,
+      "di_start_address": 8838,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "UPS_1A1_U13",
+      "template_type": "施耐德UPS",
+      "ai_start_address": 3257,
+      "di_start_address": 8840,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "UPS_1A1_U14",
+      "template_type": "施耐德UPS",
+      "ai_start_address": 3301,
+      "di_start_address": 8842,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "UPS_1A3_U11",
+      "template_type": "施耐德UPS",
+      "ai_start_address": 3345,
+      "di_start_address": 8844,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "UPS_1A3_U12",
+      "template_type": "施耐德UPS",
+      "ai_start_address": 3389,
+      "di_start_address": 8846,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    },
+    {
+      "name": "UPS_1A3_U13",
+      "template_type": "施耐德UPS",
+      "ai_start_address": 3433,
+      "di_start_address": 8848,
+      "modbus_config": {
+        "ip": "172.31.4.14",
+        "port": 502,
+        "slave_id": 1
+      }
+    }
+  ],
+  "statistics": {
+    "total_devices": 76,
+    "a20_count": 60,
+    "a40_count": 9,
+    "ups_count": 7
+  }
+}
