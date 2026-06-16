@@ -1,0 +1,259 @@
+{
+  "label": "航信机房",
+  "timestamp": "202606161809",
+  "created_at": "2026-06-16 18:09:55",
+  "dbtype": 4,
+  "db_kind": "mysql",
+  "project_uuid": "31bc90be-ebc4-dd61-ba9d-ce6e075e40e2",
+  "display_uuid": "043135ad-44be-e5d8-89be-3e54883c23a8",
+  "muids": [
+    "13b6fe72-1ad2-969e-499c-a85d7cefdb6f",
+    "3d734984-56f6-5494-ad4c-dfc67ca28ac8",
+    "6a34f292-8813-362e-7028-339a7c8da678"
+  ],
+  "device_uuids_count": 81,
+  "tables": {
+    "alarm_notice": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "project_uuid",
+      "minimal": true
+    },
+    "alarm_trigger": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "project_uuid",
+      "minimal": true
+    },
+    "bacnet_devices_data_model": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "muid",
+      "minimal": true
+    },
+    "cjt188_devices_data_model": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "muid",
+      "minimal": true
+    },
+    "custom_data": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "project_uuid",
+      "minimal": true
+    },
+    "device_real_data": {
+      "count": 1834,
+      "category": "config",
+      "scope_kind": "device_real",
+      "minimal": true
+    },
+    "devices_alarm_list": {
+      "count": 0,
+      "category": "history",
+      "scope_kind": "project_uuid",
+      "minimal": false
+    },
+    "devices_history_data_list": {
+      "count": 0,
+      "category": "history",
+      "scope_kind": "project_uuid",
+      "minimal": false
+    },
+    "devices_model": {
+      "count": 3,
+      "category": "config",
+      "scope_kind": "devices_model",
+      "minimal": true
+    },
+    "display_model_layer": {
+      "count": 101,
+      "category": "config",
+      "scope_kind": "model_id",
+      "minimal": false
+    },
+    "display_models": {
+      "count": 1,
+      "category": "config",
+      "scope_kind": "project_uuid",
+      "minimal": true
+    },
+    "display_models_user_list": {
+      "count": 2,
+      "category": "config",
+      "scope_kind": "project_uuid",
+      "minimal": true
+    },
+    "dlt645_devices_data_model": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "muid",
+      "minimal": true
+    },
+    "hj212_devices_data_model": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "muid",
+      "minimal": true
+    },
+    "iec104_data_push_model": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "muid",
+      "minimal": true
+    },
+    "iec104_devices_data_model": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "muid",
+      "minimal": true
+    },
+    "iec61850_devices_data_model": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "muid",
+      "minimal": true
+    },
+    "ism_script": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "project_uuid",
+      "minimal": true
+    },
+    "modbus_devices_data_model": {
+      "count": 92,
+      "category": "config",
+      "scope_kind": "muid",
+      "minimal": true
+    },
+    "modbus_devices_register_group": {
+      "count": 6,
+      "category": "config",
+      "scope_kind": "muid",
+      "minimal": true
+    },
+    "modbus_tcp_data_push_model": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "muid",
+      "minimal": true
+    },
+    "monitor_list": {
+      "count": 81,
+      "category": "config",
+      "scope_kind": "project_uuid",
+      "minimal": true
+    },
+    "mqtt_devices_data_model": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "muid",
+      "minimal": true
+    },
+    "opcua_devices_data_model": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "muid",
+      "minimal": true
+    },
+    "out_connect_list": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "project_uuid",
+      "minimal": true
+    },
+    "project_lists": {
+      "count": 1,
+      "category": "config",
+      "scope_kind": "uuid_eq_project",
+      "minimal": true
+    },
+    "project_user": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "project_uuid",
+      "minimal": true
+    },
+    "project_video_list": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "project_uuid",
+      "minimal": true
+    },
+    "report_templete": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "project_uuid",
+      "minimal": true
+    },
+    "rest_ful_data_model": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "muid",
+      "minimal": true
+    },
+    "sim_s7_data_model": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "muid",
+      "minimal": true
+    },
+    "snmp_devices_data_model": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "muid",
+      "minimal": true
+    },
+    "sql_report_templete": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "project_uuid",
+      "minimal": true
+    },
+    "static_data": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "project_uuid",
+      "minimal": true
+    },
+    "system_data_interface": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "project_uuid",
+      "minimal": true
+    },
+    "system_data_model": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "project_uuid",
+      "minimal": true
+    },
+    "system_data_templete": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "project_uuid",
+      "minimal": true
+    },
+    "system_journal": {
+      "count": 191,
+      "category": "log",
+      "scope_kind": "project_uuid",
+      "minimal": false
+    },
+    "task_plan_list": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "project_uuid",
+      "minimal": true
+    },
+    "virtual_device_data_model": {
+      "count": 0,
+      "category": "config",
+      "scope_kind": "muid",
+      "minimal": true
+    }
+  },
+  "total_rows": 2312,
+  "monitor_list_type1": 76
+}

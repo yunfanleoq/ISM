@@ -134,13 +134,31 @@ const mapComponents = require.context('./ISMComponents/map/', true, /\.vue$/)
 
 const historyChartsComponents = require.context('./ISMComponents/historyCharts/', true, /\.vue$/)
 const MesStandardComponentsDir = require.context('./ISMComponents/Mes/standard/', true, /\.vue$/)
+
+// 防御性读取组态组件的 base 样式。
+// require.context 批量扫描注册组态组件时，若个别组件因循环依赖 / 导出残缺，
+// 使得 comp.default.data 不是函数，原本 `comp.default.data().base` 会直接抛
+// TypeError，进而让整个 forEach 中断、ISMBase 模块加载失败，最终路由异步组件
+// 解析失败（"comp.default.data is not a function" 运行时回归）。
+// 这里对单个组件 try/catch 跳过，保证一个坏组件不会拖垮整张大屏的加载。
+function safeBaseOf(comp, filePath) {
+  try {
+    if (comp && comp.default && typeof comp.default.data === 'function') {
+      return comp.default.data().base
+    }
+    console.error('[ISMBase] 跳过无效组态组件(缺少 data 函数): ' + filePath)
+  } catch (e) {
+    console.error('[ISMBase] 组态组件扫描异常已跳过: ' + filePath + ' -> ' + (e && e.message))
+  }
+  return undefined
+}
 //标准控件
 componentsStandard.keys().forEach(filePath => {
   const keyArr = filePath.split('/')
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = componentsStandard(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -163,7 +181,7 @@ componentsVideo.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = componentsVideo(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -185,7 +203,7 @@ componentsLogin.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = componentsLogin(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -207,7 +225,7 @@ componentsCanvas.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = componentsCanvas(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -229,7 +247,7 @@ componentsCharts.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = componentsCharts(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -252,7 +270,7 @@ componentsSvgArrows.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = componentsSvgArrows(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -275,7 +293,7 @@ componentsSvgElectric.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = componentsSvgElectric(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -307,7 +325,7 @@ componentsBigScreen.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = componentsBigScreen(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -331,7 +349,7 @@ deviceComponents.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = deviceComponents(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -354,7 +372,7 @@ MesStandardComponentsDir.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = MesStandardComponentsDir(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -377,7 +395,7 @@ historyChartsComponents.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = historyChartsComponents(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -400,7 +418,7 @@ mapComponents.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = mapComponents(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({

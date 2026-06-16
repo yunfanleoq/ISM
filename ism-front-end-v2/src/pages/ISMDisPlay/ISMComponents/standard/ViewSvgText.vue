@@ -2,6 +2,9 @@
   <div xmlns="http://www.w3.org/1999/xhtml"
        v-show="detail.style.visible==1||isStart"
        @click="onTextClick"
+       @mouseenter="onDeviceHoverEnter"
+       @mousemove="onDeviceHoverMove"
+       @mouseleave="onDeviceHoverLeave"
        :style="{
          width: (detail.style.position && detail.style.position.w ? detail.style.position.w : 100) + 'px',
          height: (detail.style.position && detail.style.position.h ? detail.style.position.h : 40) + 'px',
@@ -205,6 +208,44 @@ export default {
       }
     },
     methods: {
+      // hover 预览：仅在运行态（非编辑/工具箱）且本 cell 绑定了设备时触发，
+      // 不影响既有 onTextClick / GoPage 钻探逻辑。
+      resolveDeviceBinding() {
+        const d = this.detail || {}
+        const actives = d.active || []
+        for (let i = 0; i < actives.length; i++) {
+          const c = actives[i] && actives[i].condition
+          if (c && c.deviceSN) {
+            return { uuid: c.deviceSN, name: c.DeviceName || (d.style && d.style.text) || '' }
+          }
+        }
+        const ac = d.animate && d.animate.condition
+        if (ac && ac.deviceSN) {
+          return { uuid: ac.deviceSN, name: ac.DeviceName || (d.style && d.style.text) || '' }
+        }
+        return null
+      },
+      onDeviceHoverEnter(e) {
+        if (this.IsToolBox || this.editMode) return
+        const b = this.resolveDeviceBinding()
+        if (!b) return
+        this.$EventBus.$emit('device-hover-show', {
+          deviceUuid: b.uuid,
+          deviceName: b.name,
+          clientX: e.clientX,
+          clientY: e.clientY
+        })
+      },
+      onDeviceHoverMove(e) {
+        if (this.IsToolBox || this.editMode) return
+        if (!this.resolveDeviceBinding()) return
+        this.$EventBus.$emit('device-hover-move', { clientX: e.clientX, clientY: e.clientY })
+      },
+      onDeviceHoverLeave() {
+        if (this.IsToolBox || this.editMode) return
+        if (!this.resolveDeviceBinding()) return
+        this.$EventBus.$emit('device-hover-hide')
+      },
       onTextClick() {
         if (this.IsToolBox || this.editMode) {
           return
