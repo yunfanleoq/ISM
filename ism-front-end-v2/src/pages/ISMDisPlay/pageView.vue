@@ -6,25 +6,15 @@
 </template>
 
 <script>
-
-import ISMRender from './ISMRender';
+import ISMRender from './ISMRender'
 import PreviewWatermark from '@/components/PreviewWatermark.vue'
 
 export default {
   name: 'AppRun',
   components: {
     ISMRender,
-    PreviewWatermark
+    PreviewWatermark,
   },
-  methods: {
-
-  },
-  created() {
-
-  },
-  mounted() {
-
-  }
 }
 </script>
 
@@ -36,5 +26,3 @@ export default {
   overflow: hidden;
 }
 </style>
-
-
