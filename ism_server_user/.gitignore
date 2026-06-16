@@ -11,7 +11,8 @@
 /data/cert
 /.idea
 /data/dbbackup
-/data/db
+/data/db/*
+!/data/db/ism.db
 /vendor/gorm.io/gorm/LICENSE
 /ISM Web组态软件源代码销售合同.doc
 /ISM Web组态软件授权协议.docx
@@ -19,7 +20,6 @@
 /ISMServer.exe
 /ISMServer
 /shutdown.bat
-/data/db/ism.db
 /ISMServerForArm
 /record
 /static/1.mp4
