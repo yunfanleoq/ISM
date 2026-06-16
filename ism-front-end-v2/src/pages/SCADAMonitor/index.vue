@@ -338,17 +338,24 @@
 
 <script>
 import * as echarts from 'echarts'
-import { getMonitorTree, GetDeviceModelDataList } from '@/services/device'
+import { getMonitorTree, GetDeviceModelDataList, getRealDataByUuid } from '@/services/device'
 import { GetChartDataHistoryTrendList } from '@/services/report'
 import {
   DEVICE_TYPE_COLORS,
   DEVICE_TYPE_COMPONENT,
-  FALLBACK_BUILDINGS,
   STATUS_LABELS,
   DATA_KEY_MAP,
   floorKeyForDevice,
   inferDeviceType,
 } from './config'
+import {
+  buildPointCatalog,
+  findModelDataUuid,
+  ingestRealDataResponse,
+  ingestWsPush,
+  readCachedValue,
+  realDataKey,
+} from './scadaRealData'
 import ElectricIcon from './ElectricIcon.vue'
 
 export default {
@@ -386,14 +393,17 @@ export default {
       },
       activeAlarms: [],
       realTimeData: {},
+      pendingRealData: {},
+      pointCatalog: {},
+      subscribeModelUuids: [],
+      subscribeDeviceUuids: [],
+      refreshIntervalMs: 1000,
+      dataPollTimer: null,
+      flushTimer: null,
       trendChart: null,
       deviceChart: null,
-      // 数据点映射: Uuid → { deviceUid, dataName }
-      dataPointMap: {},
-      // 数据点名 → 英文key 映射
-      dataKeyMap: {},
-      // 24小时功率历史记录（每小时一个点，null=暂无数据）
       powerHistory: new Array(24).fill(null),
+      devicePowerHistory: new Array(24).fill(null),
       lastRecordedHour: -1,
       historyRecordingTimer: null,
     }
@@ -414,8 +424,8 @@ export default {
     this.updateClock()
     this.clockTimer = setInterval(this.updateClock, 1000)
     this.fetchDeviceTree()
-    this._lastDataRefresh = 0
     this.setupEventBus()
+    this.startDataTimers()
     this.$nextTick(() => {
       this.initTrendChart()
     })
@@ -423,6 +433,7 @@ export default {
   beforeDestroy() {
     clearInterval(this.clockTimer)
     clearInterval(this.historyRecordingTimer)
+    this.stopDataTimers()
     this.trendChart?.dispose()
     this.deviceChart?.dispose()
     if (this._readDataHandler) {
@@ -442,22 +453,21 @@ export default {
           this.buildings = this.transformTreeToBuildings(res.data.list)
         }
       } catch (e) {
-        console.warn('[SCADA] 获取设备树失败，使用 fallback 数据:', e.message)
-      }
-      if (this.buildings.length === 0) {
-        this.buildings = [...FALLBACK_BUILDINGS]
+        console.warn('[SCADA] 获取设备树失败:', e.message)
       }
       this.loading = false
-      // 先统计设备数量；功率/电量等 realTimeData 数据会在数据点映射就绪后刷新
-      this.recalcStats()
-      // 拿到设备树后，获取数据点映射
-      this.fetchDeviceDataPoints()
+      if (this.buildings.length === 0) {
+        console.warn('[SCADA] 当前项目无设备数据，请先在设备管理中配置')
+      } else {
+        this.recalcStats()
+        await this.fetchDeviceDataPoints()
+      }
       this.$nextTick(() => {
         if (!this.trendChart) this.initTrendChart()
       })
     },
 
-    /** 获取所有设备的数据点，建立 Uuid → {deviceUid, dataName} 映射 */
+    /** 拉取数据点目录并订阅实时数据 */
     async fetchDeviceDataPoints() {
       const allDeviceUids = []
       for (const bldg of this.buildings) {
@@ -471,94 +481,75 @@ export default {
         console.warn('[SCADA] fetchDeviceDataPoints: 没有设备 UID，跳过')
         return
       }
-      console.log('[SCADA] fetchDeviceDataPoints: 请求设备数 =', allDeviceUids.length)
 
       try {
         const res = await GetDeviceModelDataList({ getType: 0, SelectDevice: allDeviceUids })
-        if (res.data && res.data.code === 0 && res.data.list) {
-          const rawList = res.data.list
-          console.log('[SCADA] GetDeviceModelDataList 返回模型数 =', rawList.length)
-          const map = {}
-          let totalDpCount = 0
-          let matchedDpCount = 0
-          const deviceMuidSet = new Set()
-          for (const bldg of this.buildings) {
-            for (const flr of bldg.floors) {
-              for (const dev of flr.devices) {
-                if (dev.muid) deviceMuidSet.add(dev.muid)
-              }
-            }
-          }
-          console.log('[SCADA] 设备树中非空 muid 数量 =', deviceMuidSet.size)
-
-          for (const modelItem of rawList) {
-            if (!modelItem || !modelItem.DataList) continue
-            const dataPoints = modelItem.DataList
-            totalDpCount += dataPoints.length
-            for (const dp of dataPoints) {
-              if (!dp.uuid) continue
-              for (const bldg of this.buildings) {
-                for (const flr of bldg.floors) {
-                  for (const dev of flr.devices) {
-                    if (dev.muid === dp.muid || dev.muid === dp.Muid) {
-                      map[dp.uuid] = {
-                        deviceUid: dev.uid,
-                        dataName: dp.name || dp.Name || '',
-                      }
-                      matchedDpCount++
-                    }
-                  }
-                }
-              }
-            }
-          }
-          console.log('[SCADA] 数据点总数 =', totalDpCount, ', 匹配成功 =', matchedDpCount)
-          if (matchedDpCount === 0 && totalDpCount > 0) {
-            const sampleDps = []
-            for (const modelItem of rawList) {
-              if (!modelItem?.DataList?.length) continue
-              for (const dp of modelItem.DataList) {
-                if (dp.uuid && sampleDps.length < 3) {
-                  sampleDps.push({ muid: dp.muid, name: dp.name, uuid: String(dp.uuid).slice(0, 8) })
-                }
-              }
-            }
-            const sampleDevices = []
-            for (const bldg of this.buildings) {
-              for (const flr of bldg.floors) {
-                for (const dev of flr.devices) {
-                  if (sampleDevices.length < 3) {
-                    sampleDevices.push({ name: dev.name, muid: String(dev.muid).slice(0, 8), uid: String(dev.uid).slice(0, 8) })
-                  }
-                }
-              }
-            }
-            console.warn('[SCADA] 数据点匹配失败！样本 dp.muid:', sampleDps, '样本 dev.muid:', sampleDevices)
-          }
-          this.dataPointMap = map
-          // 诊断：用第一个设备测几个 key 的查找结果
-          const firstDev = (() => {
-            for (const b of this.buildings) { for (const f of b.floors) { for (const d of f.devices) { return d } } }
-          })()
-          if (firstDev) {
-            console.log('[SCADA] 诊断查找 设备=' + firstDev.name + ' uid=' + String(firstDev.uid).slice(0, 12) + ' muid=' + String(firstDev.muid).slice(0, 12))
-            const testKeys = ['power', 'Ia', 'Ib', 'Ua', 'temp', 'pf']
-            for (const k of testKeys) {
-              const found = this.findDataPointUuid(firstDev.uid, k)
-              console.log('[SCADA]   findDataPointUuid(' + k + ') =>', found ? found.slice(0, 12) : 'null')
-            }
-            // 也打印 dataPointMap 中前 5 个 entry 看看格式
-            const entries = Object.entries(map).slice(0, 5)
-            console.log('[SCADA] dataPointMap 前5条:', entries.map(([dpUuid, info]) => ({ dpUuid: dpUuid.slice(0, 12), dataName: info.dataName, deviceUid: String(info.deviceUid).slice(0, 12) })))
-          }
+        if (res.data?.code === 0 && res.data.list) {
+          const { catalog, modelDataUuids, deviceUuids } = buildPointCatalog(this.buildings, res.data.list)
+          this.pointCatalog = catalog
+          this.subscribeModelUuids = modelDataUuids
+          this.subscribeDeviceUuids = deviceUuids
+          console.log('[SCADA] 点位目录:', Object.keys(catalog).length, '订阅设备:', deviceUuids.length)
+          await this.pullRealDataSnapshot()
+          this.fetchTrendHistoryData()
         } else {
           console.warn('[SCADA] GetDeviceModelDataList 返回异常 code:', res.data?.code)
         }
       } catch (e) {
         console.warn('[SCADA] 获取数据点映射失败:', e.message)
       }
+    },
+
+    /** 调用 getRealDataByUuid 拉取当前快照（同时触发后端 WS 推送注册） */
+    async pullRealDataSnapshot() {
+      if (!this.subscribeModelUuids.length || !this.subscribeDeviceUuids.length) return
+      try {
+        const res = await getRealDataByUuid({
+          uuid: this.subscribeModelUuids,
+          devices: this.subscribeDeviceUuids,
+        })
+        if (res.data?.code === 0 && Array.isArray(res.data.realData)) {
+          ingestRealDataResponse(this.pendingRealData, res.data.realData)
+          this.flushRealDataToView()
+          console.log('[SCADA] 实时快照:', res.data.realData.filter(r => r.value !== '').length, '/', res.data.realData.length)
+        }
+      } catch (e) {
+        console.warn('[SCADA] pullRealDataSnapshot 失败:', e.message)
+      }
+    },
+
+    startDataTimers() {
+      this.stopDataTimers()
+      // UI 合并 pending → realTimeData，默认 1s 刷新一次（避免 WS 高频推送导致界面抖动）
+      this.flushTimer = setInterval(() => this.flushRealDataToView(), this.refreshIntervalMs)
+      // 轮询快照作为 WS 兜底，间隔略长以减轻后端压力
+      this.dataPollTimer = setInterval(() => this.pullRealDataSnapshot(), this.refreshIntervalMs * 5)
+    },
+
+    stopDataTimers() {
+      if (this.dataPollTimer) {
+        clearInterval(this.dataPollTimer)
+        this.dataPollTimer = null
+      }
+      if (this.flushTimer) {
+        clearInterval(this.flushTimer)
+        this.flushTimer = null
+      }
+    },
+
+    /** 将 pending 缓冲合并到 realTimeData 并刷新 UI（默认 1s 一次） */
+    flushRealDataToView() {
+      const keys = Object.keys(this.pendingRealData)
+      if (!keys.length) return
+      for (const key of keys) {
+        this.$set(this.realTimeData, key, this.pendingRealData[key])
+      }
       this.recalcStats()
-      this.fetchTrendHistoryData()
+      this.recordPowerHistory()
+      this.refreshTrendChart()
+      if (this.drillLevel === 3) {
+        this.refreshDeviceChart()
+      }
     },
 
     transformTreeToBuildings(treeList) {
@@ -676,64 +667,35 @@ export default {
       this.stats.totalDevices = totalDevices
       this.stats.onlineDevices = onlineDevices
 
-      // 从 WebSocket 实时数据聚合总功率和今日用电量
+      // 从 WebSocket / 轮询快照聚合总功率和今日用电量
       let totalPower = 0
       let todayEnergy = 0
       const powerCandidates = DATA_KEY_MAP.power || []
       const energyCandidates = (DATA_KEY_MAP.energy || []).concat(DATA_KEY_MAP.todayEnergy || [])
 
-      for (const [dpUuid, info] of Object.entries(this.dataPointMap)) {
-        const data = this.realTimeData[dpUuid]
-        if (!data || data.Value === undefined || data.Value === null) continue
+      for (const entry of Object.values(this.pointCatalog)) {
+        const data = this.realTimeData[realDataKey(entry.deviceUid, entry.modelDataUuid)]
+        if (!data || data.Value === undefined || data.Value === null || data.Value === '') continue
         const v = Number(data.Value)
-        if (isNaN(v)) continue
+        if (Number.isNaN(v)) continue
 
-        if (powerCandidates.some(name => info.dataName.includes(name))) {
+        if (powerCandidates.some(name => entry.dataName === name || entry.dataName.includes(name))) {
           totalPower += v
         }
-        if (energyCandidates.some(name => info.dataName.includes(name))) {
+        if (energyCandidates.some(name => entry.dataName === name || entry.dataName.includes(name))) {
           todayEnergy += v
         }
       }
 
-      this.stats.totalPower = String(Math.round(totalPower))
-      this.stats.todayEnergy = String(Math.round(todayEnergy))
+      this.stats.totalPower = totalPower > 0 ? String(Math.round(totalPower * 10) / 10) : '0'
+      this.stats.todayEnergy = todayEnergy > 0 ? String(Math.round(todayEnergy * 10) / 10) : '0'
     },
 
     // ========== EventBus 实时数据 ==========
     setupEventBus() {
-      let wsMsgCount = 0
       this._readDataHandler = (wsData) => {
         this.wsConnected = true
-        wsMsgCount++
-        if (wsMsgCount <= 3) {
-          const sample = wsData.Data?.slice(0, 2).map(d => ({ muid: d.ModelDataUuid?.slice(0, 12), uid: d.Uuid?.slice(0, 12), v: d.Value })) || []
-          console.log('[SCADA] WS#' + wsMsgCount + ' dataCount=' + (wsData.Data?.length || 0) + ' sample:', JSON.stringify(sample))
-        }
-        const now = Date.now()
-        // 节流：最快每秒刷新一次显示
-        if (now - this._lastDataRefresh < 1000) {
-          // 但仍要缓存最新数据，否则节流期间的数据会丢失
-          if (wsData.Data && Array.isArray(wsData.Data)) {
-            for (const item of wsData.Data) {
-              const dpUuid = item.ModelDataUuid || item.Uuid || item.UUID || item.uuid
-              if (dpUuid) this.$set(this.realTimeData, dpUuid, item)
-            }
-          }
-          return
-        }
-        this._lastDataRefresh = now
-        if (wsData.Data && Array.isArray(wsData.Data)) {
-          for (const item of wsData.Data) {
-            const dpUuid = item.ModelDataUuid || item.Uuid || item.UUID || item.uuid
-            if (dpUuid) {
-              this.$set(this.realTimeData, dpUuid, item)
-            }
-          }
-        }
-        // 每次收到实时数据后，刷新统计和历史记录
-        this.recalcStats()
-        this.recordPowerHistory()
+        ingestWsPush(this.pendingRealData, wsData)
       }
       this._realAlarmHandler = (wsData) => {
         this.wsConnected = true
@@ -763,32 +725,17 @@ export default {
     // ========== 实时数据取值 ==========
     getRealValue(deviceUid, key) {
       if (!deviceUid) return '--'
-      // 通过数据点映射找到该设备下对应 key 的数据点 Uuid
-      const dataPointUuid = this.findDataPointUuid(deviceUid, key)
-      if (dataPointUuid) {
-        const data = this.realTimeData[dataPointUuid]
-        if (data && data.Value !== undefined && data.Value !== null) {
-          const v = Number(data.Value)
-          if (!isNaN(v)) return key === 'pf' ? v.toFixed(2) : Math.round(v)
-        }
+      const v = readCachedValue(this.realTimeData, deviceUid, key, this.pointCatalog)
+      if (v === null) return '--'
+      if (key === 'pf') {
+        const pf = v > 1 ? v / 100 : v
+        return pf.toFixed(2)
       }
-      // 无数据时返回 '--'
-      return '--'
+      return Number.isInteger(v) ? String(v) : (Math.round(v * 100) / 100).toString()
     },
 
-    /** 根据 deviceUid 和 key 查找对应的数据点 Uuid */
     findDataPointUuid(deviceUid, key) {
-      const candidates = DATA_KEY_MAP[key]
-      if (!candidates) return null
-      // 遍历 dataPointMap，找 deviceUid 匹配 + 数据点名在 candidates 中
-      for (const [dpUuid, info] of Object.entries(this.dataPointMap)) {
-        if (info.deviceUid === deviceUid) {
-          if (candidates.some(name => info.dataName.includes(name))) {
-            return dpUuid
-          }
-        }
-      }
-      return null
+      return findModelDataUuid(this.pointCatalog, deviceUid, key)
     },
 
     // ========== 时钟 ==========
@@ -804,14 +751,13 @@ export default {
       if (!el) return
       this.trendChart = echarts.init(el)
       const hours = Array.from({ length: 24 }, (_, i) => i + ':00')
-      // 使用 powerHistory（null 转为 0 占位，真实数据随 WebSocket 推送累积）
-      const data = this.powerHistory.map(v => v !== null ? v : 0)
+      const data = [...this.powerHistory]
       this.trendChart.setOption({
         grid: { top: 10, right: 20, bottom: 30, left: 50 },
         xAxis: { type: 'category', data: hours, axisLabel: { color: '#94a3b8', fontSize: 10, interval: 3 } },
         yAxis: { type: 'value', name: 'kW', axisLabel: { color: '#94a3b8' }, splitLine: { lineStyle: { color: '#1e293b' } } },
         series: [{
-          data, type: 'line', smooth: true,
+          data, type: 'line', smooth: true, connectNulls: false,
           areaStyle: {
             color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
               { offset: 0, color: 'rgba(52,152,219,0.3)' },
@@ -827,8 +773,7 @@ export default {
     /** 刷新趋势图数据 */
     refreshTrendChart() {
       if (!this.trendChart) return
-      const data = this.powerHistory.map(v => v !== null ? v : 0)
-      this.trendChart.setOption({ series: [{ data }] })
+      this.trendChart.setOption({ series: [{ data: [...this.powerHistory] }] })
     },
     initDeviceChart() {
       this.$nextTick(() => {
@@ -837,8 +782,7 @@ export default {
         if (!el) return
         this.deviceChart = echarts.init(el)
         const hours = Array.from({ length: 24 }, (_, i) => i + ':00')
-        // 使用 powerHistory 展示设备功率趋势（随 WebSocket 推送累积真实数据）
-        const data = this.powerHistory.map(v => v !== null ? v : 0)
+        const data = [...this.devicePowerHistory]
         this.deviceChart.setOption({
           grid: { top: 10, right: 20, bottom: 30, left: 45 },
           xAxis: { type: 'category', data: hours, axisLabel: { color: '#94a3b8', fontSize: 9, interval: 4 } },
@@ -859,8 +803,7 @@ export default {
     /** 刷新设备曲线图 */
     refreshDeviceChart() {
       if (!this.deviceChart) return
-      const data = this.powerHistory.map(v => v !== null ? v : 0)
-      this.deviceChart.setOption({ series: [{ data }] })
+      this.deviceChart.setOption({ series: [{ data: [...this.devicePowerHistory] }] })
     },
 
     /** 每小时记录一次当前总功率到 powerHistory */
@@ -870,23 +813,29 @@ export default {
       if (currentHour === this.lastRecordedHour) return
       this.lastRecordedHour = currentHour
 
-      // 从 realTimeData 聚合当前总功率
       const powerCandidates = DATA_KEY_MAP.power || []
       let totalPower = 0
-      for (const [dpUuid, info] of Object.entries(this.dataPointMap)) {
-        const data = this.realTimeData[dpUuid]
-        if (!data || data.Value === undefined || data.Value === null) continue
+      for (const entry of Object.values(this.pointCatalog)) {
+        if (!powerCandidates.some(name => entry.dataName === name || entry.dataName.includes(name))) continue
+        const data = this.realTimeData[realDataKey(entry.deviceUid, entry.modelDataUuid)]
+        if (!data || data.Value === undefined || data.Value === null || data.Value === '') continue
         const v = Number(data.Value)
-        if (isNaN(v)) continue
-        if (powerCandidates.some(name => info.dataName.includes(name))) {
-          totalPower += v
-        }
+        if (Number.isNaN(v)) continue
+        totalPower += v
       }
 
-      // 更新当前小时的功率值（触发 Vue 响应式）
       const newHistory = [...this.powerHistory]
       newHistory[currentHour] = Math.round(totalPower)
       this.powerHistory = newHistory
+
+      if (this.selectedDevice?.uid) {
+        const devicePower = readCachedValue(this.realTimeData, this.selectedDevice.uid, 'power', this.pointCatalog)
+        if (devicePower !== null) {
+          const deviceHistory = [...this.devicePowerHistory]
+          deviceHistory[currentHour] = Math.round(devicePower)
+          this.devicePowerHistory = deviceHistory
+        }
+      }
 
       this.refreshTrendChart()
       this.refreshDeviceChart()
@@ -894,27 +843,18 @@ export default {
 
     /** 格式化功率因数显示（处理 0-100 与 0-1 两种量程） */
     formatPf(deviceUid) {
-      const dpUuid = this.findDataPointUuid(deviceUid, 'pf')
-      if (!dpUuid) return '--'
-      const data = this.realTimeData[dpUuid]
-      if (!data || data.Value === undefined || data.Value === null) return '--'
-      const v = Number(data.Value)
-      if (isNaN(v)) return '--'
-      // 如果值 > 1，认为是以百分数存储（如 85 表示 0.85），除以 100
-      const pf = v > 1 ? v / 100 : v
-      return pf.toFixed(2)
+      return this.getRealValue(deviceUid, 'pf')
     },
 
     /** 从后端历史数据库拉取最近 24h 的功率趋势数据 */
     async fetchTrendHistoryData() {
-      // 从 dataPointMap 中找出所有"功率"相关数据点
       const powerCandidates = DATA_KEY_MAP.power || []
       const deviceList = []
-      for (const [dpUuid, info] of Object.entries(this.dataPointMap)) {
-        if (powerCandidates.some(name => info.dataName.includes(name))) {
+      for (const entry of Object.values(this.pointCatalog)) {
+        if (powerCandidates.some(name => entry.dataName === name || entry.dataName.includes(name))) {
           deviceList.push({
-            DeviceUuid: info.deviceUid,
-            ModelDataUuid: dpUuid,
+            DeviceUuid: entry.deviceUid,
+            ModelDataUuid: entry.modelDataUuid,
           })
         }
       }
@@ -1005,7 +945,55 @@ export default {
       this.selectedFloor = flr
       this.selectedDevice = dev
       this.drillLevel = 3
+      this.devicePowerHistory = new Array(24).fill(null)
+      this.fetchDeviceTrendHistory(dev.uid)
       this.initDeviceChart()
+    },
+
+    /** 拉取单台设备 24h 功率历史 */
+    async fetchDeviceTrendHistory(deviceUid) {
+      const modelDataUuid = findModelDataUuid(this.pointCatalog, deviceUid, 'power')
+      if (!modelDataUuid) return
+      try {
+        const res = await GetChartDataHistoryTrendList({
+          TimeIn: 1,
+          List: [{ DeviceUuid: deviceUid, ModelDataUuid: modelDataUuid }],
+          HistoryTime: 24 * 60,
+        })
+        if (res.data?.code === 0 && res.data.data) {
+          this.buildDevicePowerHistoryFromRaw(res.data.data)
+        }
+      } catch (e) {
+        console.warn('[SCADA] 获取设备历史趋势失败:', e.message)
+      }
+    },
+
+    buildDevicePowerHistoryFromRaw(rawList) {
+      const hourBuckets = new Array(24).fill(null).map(() => ({ sum: 0, count: 0 }))
+      const now = new Date()
+      const currentHour = now.getHours()
+      for (const item of rawList) {
+        if (!item.RecordTime || item.DataValue === undefined || item.DataValue === null || item.DataValue === '') continue
+        const t = new Date(item.RecordTime)
+        const hour = t.getHours()
+        const v = Number(item.DataValue)
+        if (Number.isNaN(v)) continue
+        const hourDiff = currentHour - hour
+        const targetIdx = hourDiff < 0 ? hourDiff + 24 : hourDiff
+        const idx = 23 - Math.min(targetIdx, 23)
+        if (idx >= 0 && idx < 24) {
+          hourBuckets[idx].sum += v
+          hourBuckets[idx].count += 1
+        }
+      }
+      const newHistory = [...this.devicePowerHistory]
+      for (let i = 0; i < 24; i++) {
+        if (hourBuckets[i].count > 0) {
+          newHistory[i] = Math.round(hourBuckets[i].sum / hourBuckets[i].count)
+        }
+      }
+      this.devicePowerHistory = newHistory
+      this.refreshDeviceChart()
     },
 
     // ========== 统计函数 ==========
