@@ -5,8 +5,8 @@
       <dv-decoration-3 class="header-deco" />
       <div class="header-left">
         <span class="header-logo">⚡</span>
-        <span class="header-title">配电房智能监控系统</span>
-        <span class="header-subtitle">SCADA Power Monitor</span>
+        <span class="header-title">{{ pageTitle }}</span>
+        <span class="header-subtitle">{{ pageSubtitle }}</span>
       </div>
       <div class="header-center">
         <div class="breadcrumb">
@@ -55,7 +55,7 @@
                     <div v-for="flr in bldg.floors" :key="flr.id" class="tree-floor"
                          :class="{selected: selectedFloor?.id === flr.id}"
                          @click="selectFloor(bldg, flr)">
-                      <span class="tree-icon">📋</span>
+                      <span class="tree-icon">{{ flr.name.includes('UPS') ? '🔋' : '📋' }}</span>
                       <span class="tree-name">{{ flr.name }}</span>
                       <span class="tree-badge" :class="getFloorStatus(flr)">{{ getFloorAlarmCount(flr) }}</span>
                     </div>
@@ -210,7 +210,7 @@
               <dv-border-box-1>
                 <div class="floor-card-inner">
                   <div class="floor-card-header">
-                    <span class="floor-card-name">📋 {{ flr.name }}</span>
+                    <span class="floor-card-name">{{ flr.name.includes('UPS') ? '🔋' : '📋' }} {{ flr.name }}</span>
                     <span class="floor-card-count">{{ flr.devices.length }}台设备</span>
                   </div>
                   <div class="floor-card-stats">
@@ -269,7 +269,7 @@
         <div v-else-if="drillLevel === 3" class="level-device">
           <div class="level-header">
             <span class="back-btn" @click="selectFloor(selectedBuilding, selectedFloor)">← {{ selectedFloor?.name }}</span>
-            <h2>🔧 {{ selectedDevice?.name }}</h2>
+            <h2>{{ selectedDevice?.type === 'ups' ? '🔋' : '🔧' }} {{ selectedDevice?.name }}</h2>
             <span class="status-tag" :class="selectedDevice?.status">{{ statusLabel(selectedDevice?.status) }}</span>
           </div>
           <div class="device-detail-grid">
@@ -296,12 +296,22 @@
             <div class="detail-panel">
               <div class="panel-title">📊 实时参数</div>
               <table class="param-table">
-                <tr><td>A相电压</td><td>{{ getRealValue(selectedDevice?.uid, 'Ua') }} V</td></tr>
-                <tr><td>B相电压</td><td>{{ getRealValue(selectedDevice?.uid, 'Ub') }} V</td></tr>
-                <tr><td>C相电压</td><td>{{ getRealValue(selectedDevice?.uid, 'Uc') }} V</td></tr>
-                <tr><td>A相电流</td><td>{{ getRealValue(selectedDevice?.uid, 'Ia') }} A</td></tr>
-                <tr><td>有功功率</td><td>{{ getRealValue(selectedDevice?.uid, 'power') }} kW</td></tr>
-                <tr><td>功率因数</td><td>{{ formatPf(selectedDevice?.uid) }}</td></tr>
+                <template v-if="selectedDevice?.type === 'ups'">
+                  <tr><td>输出A相电压</td><td>{{ getRealValue(selectedDevice?.uid, 'Ua') }} V</td></tr>
+                  <tr><td>输出B相电压</td><td>{{ getRealValue(selectedDevice?.uid, 'Ub') }} V</td></tr>
+                  <tr><td>输出C相电压</td><td>{{ getRealValue(selectedDevice?.uid, 'Uc') }} V</td></tr>
+                  <tr><td>输出A相电流</td><td>{{ getRealValue(selectedDevice?.uid, 'Ia') }} A</td></tr>
+                  <tr><td>输出总有功功率</td><td>{{ getRealValue(selectedDevice?.uid, 'power') }} kW</td></tr>
+                  <tr><td>输出功率因数</td><td>{{ formatPf(selectedDevice?.uid) }}</td></tr>
+                </template>
+                <template v-else>
+                  <tr><td>A相电压</td><td>{{ getRealValue(selectedDevice?.uid, 'Ua') }} V</td></tr>
+                  <tr><td>B相电压</td><td>{{ getRealValue(selectedDevice?.uid, 'Ub') }} V</td></tr>
+                  <tr><td>C相电压</td><td>{{ getRealValue(selectedDevice?.uid, 'Uc') }} V</td></tr>
+                  <tr><td>A相电流</td><td>{{ getRealValue(selectedDevice?.uid, 'Ia') }} A</td></tr>
+                  <tr><td>有功功率</td><td>{{ getRealValue(selectedDevice?.uid, 'power') }} kW</td></tr>
+                  <tr><td>功率因数</td><td>{{ formatPf(selectedDevice?.uid) }}</td></tr>
+                </template>
               </table>
             </div>
             <div class="detail-panel detail-chart">
@@ -336,12 +346,28 @@ import {
   FALLBACK_BUILDINGS,
   STATUS_LABELS,
   DATA_KEY_MAP,
+  floorKeyForDevice,
+  inferDeviceType,
 } from './config'
 import ElectricIcon from './ElectricIcon.vue'
 
 export default {
   name: 'SCADAMonitor',
   components: { ElectricIcon },
+  props: {
+    title: {
+      type: String,
+      default: '配电房智能监控系统',
+    },
+    subtitle: {
+      type: String,
+      default: 'SCADA Power Monitor',
+    },
+    projectUuid: {
+      type: String,
+      default: '31bc90be-ebc4-dd61-ba9d-ce6e075e40e2',
+    },
+  },
   data() {
     return {
       buildings: [],
@@ -373,6 +399,12 @@ export default {
     }
   },
   computed: {
+    pageTitle() {
+      return this.title
+    },
+    pageSubtitle() {
+      return this.subtitle
+    },
     deviceAlarms() {
       if (!this.selectedDevice) return []
       return this.activeAlarms.filter(a => a.deviceUid === this.selectedDevice?.uid)
@@ -405,8 +437,7 @@ export default {
     async fetchDeviceTree() {
       this.loading = true
       try {
-        const PROJECT_UUID = '31bc90be-ebc4-dd61-ba9d-ce6e075e40e2'
-        const res = await getMonitorTree({ headers: { ProjectUuid: PROJECT_UUID } })
+        const res = await getMonitorTree({ headers: { ProjectUuid: this.projectUuid } })
         if (res.data && res.data.code === 0 && res.data.list && res.data.list.length > 0) {
           this.buildings = this.transformTreeToBuildings(res.data.list)
         }
@@ -551,6 +582,7 @@ export default {
       }
       function buildBuilding(node) {
         const floors = []
+        const directDevices = []
         if (node.children) {
           for (const child of node.children) {
             if (child.value && child.value.type === 0) {
@@ -559,13 +591,20 @@ export default {
                 floors.push(flr)
               }
             } else if (child.value && child.value.type === 1) {
-              // 设备直接在建筑下
-              if (floors.length === 0) {
-                floors.push({ id: node.key + '_default', name: '默认区域', devices: [] })
-              }
-              floors[0].devices.push(deviceFromNode(child))
+              directDevices.push(deviceFromNode(child))
             }
           }
+        }
+        if (directDevices.length > 0) {
+          const grouped = {}
+          for (const dev of directDevices) {
+            const key = floorKeyForDevice(dev.name, dev.muid)
+            if (!grouped[key]) {
+              grouped[key] = { id: `${node.key}_${key}`, name: key, devices: [] }
+            }
+            grouped[key].devices.push(dev)
+          }
+          floors.push(...Object.values(grouped).sort((a, b) => a.name.localeCompare(b.name, 'zh-CN')))
         }
         return {
           id: node.key,
@@ -605,13 +644,15 @@ export default {
         }
         const modbusAddr = extraData?.Modbus?.address || extraData?.modbus?.address || v.slaveId || ''
         const packTime = extraData?.Modbus?.packTime ?? extraData?.modbus?.packTime ?? ''
+        const deviceName = node.text || v.Name || '未知设备'
+        const muid = v.muid || ''
         return {
           uid: node.key,
-          name: node.text || v.Name || '未知设备',
-          type: v.deviceType || 'switchgear',
-          protocol: v.protocol || 'modbus',
+          name: deviceName,
+          type: inferDeviceType(deviceName, muid, v.deviceType),
+          protocol: v.protocol || (deviceName.startsWith('UPS') ? 'modbus' : 'modbus'),
           status: v.Status === 1 ? 'running' : v.Status === 0 ? 'stopped' : 'offline',
-          muid: v.muid || '',
+          muid,
           configUid: v.configUid || '',
           modbusAddr: modbusAddr,
           packTime: packTime,

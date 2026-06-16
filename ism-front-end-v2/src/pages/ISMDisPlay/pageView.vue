@@ -1,30 +1,36 @@
 <template>
   <div class="ism-pageview">
-    <ISMRender :showUuid="$route.params.uid" showToken="" showDeviceUuid="" />
-    <PreviewWatermark />
+    <SCADAMonitor
+      v-if="scadaConfig"
+      :title="scadaConfig.title"
+      :subtitle="scadaConfig.subtitle"
+      :project-uuid="scadaConfig.projectUuid"
+    />
+    <template v-else>
+      <ISMRender :showUuid="$route.params.uid" showToken="" showDeviceUuid="" />
+      <PreviewWatermark />
+    </template>
   </div>
 </template>
 
 <script>
-
-import ISMRender from './ISMRender';
+import ISMRender from './ISMRender'
 import PreviewWatermark from '@/components/PreviewWatermark.vue'
+import SCADAMonitor from '@/pages/SCADAMonitor/index'
+import { getScadaConfigForDisplay } from '@/pages/SCADAMonitor/scadaDisplayRegistry'
 
 export default {
   name: 'AppRun',
   components: {
     ISMRender,
-    PreviewWatermark
+    PreviewWatermark,
+    SCADAMonitor,
   },
-  methods: {
-
+  computed: {
+    scadaConfig() {
+      return getScadaConfigForDisplay(this.$route.params.uid)
+    },
   },
-  created() {
-
-  },
-  mounted() {
-
-  }
 }
 </script>
 
@@ -36,5 +42,3 @@ export default {
   overflow: hidden;
 }
 </style>
-
-

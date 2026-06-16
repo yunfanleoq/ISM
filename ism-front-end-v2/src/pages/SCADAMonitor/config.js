@@ -130,15 +130,40 @@ export const STATUS_LABELS = {
 
 // 数据点中文名 → 英文 key 映射（用于 SCADA 数据查询）
 export const DATA_KEY_MAP = {
-  'power': ['有功功率', '功率', '总功率', '有功总功率'],
-  'Ia': ['A相电流', 'Ia', 'A相电流Ia', '电流A'],
-  'Ib': ['B相电流', 'Ib', 'B相电流Ib', '电流B'],
-  'Ic': ['C相电流', 'Ic', 'C相电流Ic', '电流C'],
-  'Ua': ['A相电压', 'Ua', 'A相电压Ua', '电压A'],
-  'Ub': ['B相电压', 'Ub', 'B相电压Ub', '电压B'],
-  'Uc': ['C相电压', 'Uc', 'C相电压Uc', '电压C'],
-  'temp': ['温度', 'A相温度', 'B相温度', 'C相温度', 'Temperature', '环境温度'],
-  'pf': ['功率因数', 'PF', '功率因素', '总功率因数'],
-  'energy': ['正向有功总电能', '有功总电能', '总电能', '正向有功电能', '有功电能', '电度', '总电度', '用电量'],
-  'todayEnergy': ['今日用电量', '日用电量', '当日电度', '日总电能'],
+  power: ['总有功功率', '有功功率', '功率', '总功率', '有功总功率', '输出总有功功率', '输出有功功率'],
+  Ia: ['A相电流', 'Ia', 'A相电流Ia', '电流A', '输出A相电流'],
+  Ib: ['B相电流', 'Ib', 'B相电流Ib', '电流B', '输出B相电流'],
+  Ic: ['C相电流', 'Ic', 'C相电流Ic', '电流C', '输出C相电流'],
+  Ua: ['A相电压', 'Ua', 'A相电压Ua', '电压A', 'AB线电压', '输出A相电压'],
+  Ub: ['B相电压', 'Ub', 'B相电压Ub', '电压B', 'BC线电压', '输出B相电压'],
+  Uc: ['C相电压', 'Uc', 'C相电压Uc', '电压C', 'CA线电压', '输出C相电压'],
+  temp: ['温度', 'A相温度', 'B相温度', 'C相温度', 'Temperature', '环境温度', '电池温度'],
+  pf: ['功率因数', 'PF', '功率因素', '总功率因数', '输出功率因数'],
+  energy: ['正向有功总电能', '有功总电能', '总电能', '正向有功电能', '有功电能', '电度', '总电度', '用电量', '正有功电度'],
+  todayEnergy: ['今日用电量', '日用电量', '当日电度', '日总电能'],
+  battery: ['电池电压', '电池剩余运行时间', 'UPS旁路状态'],
+}
+
+export const UPS_MODEL_UUID = '13b6fe72-1ad2-969e-499c-a85d7cefdb6f'
+
+export function floorKeyForDevice(name, muid) {
+  const deviceName = name || ''
+  if (deviceName.startsWith('UPS') || muid === UPS_MODEL_UUID) {
+    return 'UPS设备组'
+  }
+  const parts = deviceName.split('_')
+  if (parts.length >= 3) {
+    return `${parts[2]}设备组`
+  }
+  return '其他设备'
+}
+
+export function inferDeviceType(name, muid, deviceType) {
+  if (deviceType && deviceType !== 'switchgear') {
+    return deviceType
+  }
+  if ((name || '').startsWith('UPS') || muid === UPS_MODEL_UUID) {
+    return 'ups'
+  }
+  return deviceType || 'meter-cabinet'
 }
