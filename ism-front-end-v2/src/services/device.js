@@ -16,8 +16,8 @@ export async function deviceOrZoneAdd(params) {
 }
 
 
-export async function getMonitorTree() {
-  return request(MONITORTREE, METHOD.POST)
+export async function getMonitorTree(config) {
+  return request(MONITORTREE, METHOD.POST, {}, config)
 }
 
 export async function addMonitor(params) {

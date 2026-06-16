@@ -618,6 +618,34 @@ ISM3DEditor 支持以下 3D 专属交互：
 || 35 | **设备全部堆在 RootZone 下，缺少层级结构** | `ImportCreateFullProject` Phase 2 将设备硬编码 `Pid: 1`。ExtraData 保存了 `cabinet/group` 但未据此创建中间 Zone → UPS柜下无设备 | Phase 2 先创建 Cabinet/Group Zone 节点 → 设备 Pid 映射到对应 Zone Sid。文件：`openApiModel.go` Phase 2 |
 || 36 | **换算表达式 `x*0.01` 导致采集数据不转换** | SmartImport 写入 `convExpr = "x*0.01"`，所有协议引擎用 `strings.Replace(expr, "{val}", value)` 替换 → 找不到 `{val}` → 数据显示原始值 | 改为 `"{val}*0.01"`。新增 `normalizeConversionExpr()` 自动补 `{val}*` 前缀。文件：`openApiModel.go` Phase 3 |
 || 37 | **前端 `npm run serve` 被 Cursor Shell SIGTSTP 挂起** | Cursor 后台 Shell 通过 tty 发 stop signal → `nohup`/`disown` 均无效 → webpack 编译到 68% 后进程状态 T | 用 Python `subprocess.Popen(start_new_session=True, close_fds=True)` 完全脱离终端 |
+|| 38 | **写数据库前未确认 `dbtype` 导致连错库** | 想当然地 `sqlite3.connect('ism.db')` 查数据，但 `app.conf` 里 `dbtype=4` 表示后端实际连 OceanBase。在 SQLite 中查不到任何新写入的数据 → 误以为项目创建失败、反复重试 → 最后一次查看 OceanBase 才发现多个重复项目已创建 | **铁律：操作数据库前 MUST 先读 `ism_server_user/conf/app.conf` 确认 `dbtype` 值。** 0=MySQL, 1=SQLite, 2=PostgreSQL, 3=DM, 4=OceanBase。OceanBase 用 `pymysql`（兼容 MySQL 协议），连接参数：`host=127.0.0.1 port=2881 user=root@<tenant> password=<> database=<>`。诊断命令：`grep dbtype ism_server_user/conf/app.conf` |
+|| 39 | **Shell `echo` 算 MD5 不可靠（带换行符导致密码错误）** | zsh 下 `echo "123456" | md5` 输出 `f447b20...`（末尾多一个 `0a` 换行符）；正确 MD5 是 `e10adc39...`。用错误 MD5 登录 → 后端 `bcrypt.CompareHashAndPassword()` 不匹配 → code=1002（token 为空字符串，User UUID 错误的指向 project_user 表）。最隐蔽的是：返回体看起来像是"登录成功"（code=1000 和 1002 的响应 JSON 结构相同，只是 token 为空），容易误以为登录正常。 | **禁止在 Shell 中算 MD5。只用 Python：** `hashlib.md5('123456'.encode()).hexdigest()` → 得到正确的 `e10adc3949ba59abbe56e057f20f883e`。验证登录成功的标志：`code=1000` 且 `data.token` 非空。`echo -n` 也可能不可靠（取决于 shell 版本），所以统一用 Python 算 MD5。 |
+|| 40 | **OceanBase/MySQL 保留字导致 SQL INSERT 语法错误** | `interval` 是 MySQL/OceanBase 保留字。`INSERT INTO monitor_list (... interval, ...)` 直接报 `Syntax error`。OceanBase 的报错信息比 MySQL 更不具体，容易误以为是拼写错误。 | **涉及保留字的列名用反引号括起来：** `` `interval` ``。`monitor_list` 表受影响列：`` `interval` ``、`` `status` ``。同时注意 OceanBase 对列名大小写敏感度与 MySQL 不完全一致，统一用小写最安全。 |
+|| 41 | **GORM AutoMigrate 列名与直接 SQL 的列名不一致** | Go model 字段 `IsEnable` → GORM 映射为列 `is_enable`；`FailedTimes` → `failed_times`；`ExtraData` → `extra_data`；`DeviceType` → `device_type`；`OfflineClear` → `offline_clear`。直接用驼峰名写入 SQL 会报 `Unknown column` 或写入空值。 | **直接 SQL 操作时统一用 GORM 映射后的下划线小写列名。** 诊断：对每个表跑 `DESCRIBE 表名` 查看实际列名。关键对照：`IsEnable→is_enable`, `FailedTimes→failed_times`, `ExtraData→extra_data`, `DeviceType→device_type`, `OfflineClear→offline_clear`, `ProjectUuid→project_uuid`, `ConfigurationUid→configuration_uid`, `PageUUID→page_uuid`。 |
+|| 42 | **Python `uuid.uuid4()` 与 Go `createUuid.New()` 生成的 UUID 不一致 → 子表数据关联断裂** | Go 后端用 `github.com/satori/go.uuid` v1 格式生成 UUID，Python `uuid.uuid4()` 生成标准 RFC 格式。虽然字符串看起来都是 36 字符，但格式细微差异导致 `monitor_list.muid` 与 `devices_model.uuid` 无法 JOIN 匹配 → `GetAllDevices()` 的 JOIN 查询返回 0 行 → 前端监控树只能看到 Zone 节点，设备全部不显示。 | **铁律：复制已有项目的设备模型时，不能自己生成 UUID。必须先查询 DB 获取目标项目中 `devices_model` 的真实 UUID，然后写入 `monitor_list.muid` 时严格等于这个值。** 验证命令：`SELECT ml.name FROM monitor_list ml JOIN devices_model dm ON dm.uuid=ml.muid WHERE ml.project_uuid='...'` 应返回所有设备。返回 0 行说明 UUID 不匹配，用 `UPDATE monitor_list SET muid=(SELECT uuid FROM devices_model WHERE name='A20' AND project_uuid='...')` 修复。 |
+|| 43 | **`device_real_data` 表 NOT NULL 字段无默认值导致 INSERT 失败** | `type`, `device_type`, `oid` 三个字段定义为 NOT NULL 且无 DEFAULT，INSERT 时缺少这些字段报 `Field 'type' doesn't have a default value`。OceanBase 比 MySQL 更严格，不会像某些 MySQL 配置那样静默填 0。 | **device_real_data INSERT 必须包含全字段：** 最低要求 `type=1, device_type=2, oid='<与uuid同值>'`, `auth=0, is_alarm=0, alarm_level=0, is_record=0, alarm_shield=1, conversion_expression='{val}*1'`。建议先 `SELECT * FROM device_real_data LIMIT 1` 参考已有记录的所有字段值做模板。 |
+|| 44 | **Zone 节点未先创建就创建设备 → 树结构断裂** | 先创建了设备（`pid=zone_sid`）才创建 Zone（`sid=zone_sid`）。虽然数据库层面无外键约束不报错，但 Go 后端 `monitTree()` 从 `pid=0` 开始递归查找子节点 → Zone 不在已加载的 menu 数组中 → 设备永远不会出现在树的任何层级 → 前端监控树 RootZone 下面直接为空。 | **铁律：Zone 节点 MUST 先于设备创建，然后用 Zone 的 sid 作为设备的 pid。** 执行顺序：先 `INSERT INTO monitor_list (sid, pid, name, type, ...) VALUES (3001, 1, '配电柜1', 0, ...)` 再 `INSERT INTO monitor_list (sid, pid, name, type, ...) VALUES (1001, 3001, '设备X', 1, ...)`。 |
+|| 45 | **SCADAMonitor 大屏设备详情不显示 extra_data 中的 Modbus 参数** | SCADAMonitor 组件的 `deviceFromNode()` 函数只提取 `uid/name/type/protocol/status/muid/configUid`，完全忽略 `extra` 字段。用户在大屏点设备后看不到 Modbus 从站地址和打包时间。 | **修改 `ism-front-end-v2/src/pages/SCADAMonitor/index.vue`：** 在 `deviceFromNode()` 中 `JSON.parse(v.extra)` 提取 `Modbus.address` 和 `Modbus.packTime`；模板中 `<tr><td>Modbus地址</td><td>{{ selectedDevice?.modbusAddr || '-' }}</td></tr>`。构建后需重启前端才能生效。 |
+|| 46 | **`import_1a_project.py` 硬编码 SQLite 连接，OceanBase 环境下 db_read() 全部失败** | 脚本 db_read() 用 `sqlite3.connect(DB_PATH)` → OceanBase 环境下日志疯狂报 `no such table`，所有 UUID 查询返回空 → 模型创建后查不到 model_uuids → 寄存器组和所有数据点 muid 全部为空 → 设备全部关联到 NULL 模型 | **OceanBase/MySQL 环境 MUST 使用 `pymysql` 替代 `sqlite3`。** `conn = pymysql.connect(host=..., port=2881, ...); cur = conn.cursor(); cur.execute(sql, params); rows = cur.fetchall()`。同时检查 `app.conf dbtype=4` 确认当前数据库类型。已适配版本：`scripts/import_hx_project.py` |
+|| 47 | **UPS 设备被 `get_cab_for_device()` 错误分配到 1A1_U11柜** | 原函数对 UPS 设备的 fallback 是 `return cab_a1` → 所有 UPS 设备（7台）全部分配到 1A1_U11柜 → UPS柜虽已创建但无任何子设备 | **修复**：`if 'UPS' in dev_name: return cab_ups` 放在函数最前面。验证：`SELECT p.name, COUNT(*) FROM monitor_list ml JOIN monitor_list p ON p.sid=ml.pid WHERE ml.project_uuid=? AND ml.type=1 GROUP BY p.name` |
+|| 48 | **`ProjectFixCreator` API 未能修正 creator_uuid，项目在前端列表中不可见** | 导入完成后 creator_uuid 仍为 `puid-xxx` 格式，admin 的 ProjectList 过滤不到 → 前端看不到新项目 | 导入后验证：`SELECT name, creator_uuid FROM project_lists WHERE name LIKE '%新项目名%'`。不一致时直接 SQL：`UPDATE project_lists SET creator_uuid=<admin_uuid>`。 |
+
+### 8.4 新建项目速查清单（无 Excel 手工建项目时逐项打勾）
+
+- [ ] **S0**: 读 `ism_server_user/conf/app.conf` 确认 `dbtype` 当前值
+- [ ] **S0.5**: 用对数据库连接（OceanBase → `pymysql` port 2881）
+- [ ] **S1**: `POST /ProjectAdd` 创建项目（必填：`name, description, industry`）
+- [ ] **S2**: DB 中 `UPDATE monitor_list SET name='XX' WHERE pid=0 AND type=0` 重命名 RootZone
+- [ ] **S3**: DB 中创建 Zone 子节点（`pid=1, type=0`）—— **必须先于 S4 设备！**
+- [ ] **S4**: DB 中复用或创建 `devices_model` → **记下 DB 中真实 UUID，不要自己生成**
+- [ ] **S5**: DB 中创建设备（`type=1, muid=S4真实UUID, pid=Zone的sid`）
+- [ ] **S5.5**: `extra_data` JSON 必须包含 `{"Modbus":{"address":"1","packTime":100,...}}`
+- [ ] **S6**: 复制 `modbus_devices_register_group` + `modbus_devices_data_model`
+- [ ] **S7**: 为所有设备建 `device_real_data`（必填 `type, device_type, oid`）
+- [ ] **S8**: 验证 JOIN：设备 muid 须等于 devices_model.uuid
+- [ ] **S9**: 验证 API：`POST /monitortree`（全小写！）返回 `code=0` 且设备在 Zone 下
+- [ ] **S9.5**: SCADA 大屏需要 extra_data → 修改 `SCADAMonitor/index.vue` 的 `deviceFromNode()` 和模板
+- [ ] **S10**: `npm run build` → 重启前端 `serve_dist.js` → 浏览器验证
 
 ### 13.4 设备实例 (MonitorList) 默认值
 

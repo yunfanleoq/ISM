@@ -17,6 +17,7 @@ const routesConfig = [
   'DisPlay3DRunApp',
   'AmisEditor',
   'AppRun',
+  'DisPlayRunApp',
   'ShareApp',
   'AppLogin',
   'root',

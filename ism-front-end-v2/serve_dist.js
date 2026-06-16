@@ -44,12 +44,14 @@ const MIME_TYPES = {
 
 const server = http.createServer((req, res) => {
   const parsed = url.parse(req.url);
+  console.log(`[serve_dist] ${req.method} ${parsed.pathname}`);
 
   // Proxy /api/* 和 /login 到后端
   if (parsed.pathname.startsWith('/api') || parsed.pathname === '/login' || parsed.pathname.startsWith('/ws')) {
     // Strip /api prefix for backend
     if (parsed.pathname.startsWith('/api')) {
       req.url = req.url.replace(/^\/api/, '');
+      console.log(`[proxy] ${req.method} ${req.url} -> ${API_TARGET}`);
     }
     return proxy.web(req, res);
   }

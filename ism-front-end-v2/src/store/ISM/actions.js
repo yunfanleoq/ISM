@@ -603,7 +603,7 @@ export const selectPopUpPagerContainerDisplayPageDataStruct = (ctx,page) => {
     let PCPageInfo = ctx.state.PCPageList
     let PhonePageInfo = ctx.state.PhonePageList
 
-    let pageid = page.page.pageUuid
+    let pageid = page.page ? (page.page.pageUuid || page.page.pageUUID || '') : ''
     let bangDingData=[]
     let bangDingDeviceSN=[]
 
@@ -744,7 +744,7 @@ export const selectPopUpPagerContainerDisplayPageDataStruct = (ctx,page) => {
             let PCPageInfo = ctx.state.PCPageList
             let PhonePageInfo = ctx.state.PhonePageList
 
-            let pageid = page.page.pageUuid
+            let pageid = page.page ? (page.page.pageUuid || page.page.pageUUID || '') : ''
             let bangDingData = []
             let bangDingDeviceSN = []
             for (let i = 0, PCPageInfoLen = PCPageInfo.length; i < PCPageInfoLen; i++) {
@@ -873,7 +873,7 @@ export const selectDisplayPageContainerDataStruct = (ctx,page) => {
     let PCPageInfo = ctx.state.PCPageList
     let PhonePageInfo = ctx.state.PhonePageList
 
-    let pageid = page.page.pageUuid
+    let pageid = page.page ? (page.page.pageUuid || page.page.pageUUID || '') : ''
     let bangDingData=[]
     let bangDingDeviceSN=[]
     for(let i=0,PCPageInfoLen=PCPageInfo.length;i<PCPageInfoLen;i++)
@@ -1014,7 +1014,7 @@ export const selectDisplayPageContainerDataStruct = (ctx,page) => {
             let PCPageInfo = ctx.state.PCPageList
             let PhonePageInfo = ctx.state.PhonePageList
 
-            let pageid = page.page.pageUuid
+            let pageid = page.page ? (page.page.pageUuid || page.page.pageUUID || '') : ''
             let bangDingData=[]
             let bangDingDeviceSN=[]
             for(let i=0,PCPageInfoLen=PCPageInfo.length;i<PCPageInfoLen;i++)
@@ -1680,7 +1680,7 @@ export const selectDisplayPageDataStructFromDb = (ctx,page) => {
             let PCPageInfo = ctx.state.PCPageList
             let PhonePageInfo = ctx.state.PhonePageList
 
-            let pageid = page.page.pageUuid
+            let pageid = page.page ? (page.page.pageUuid || page.page.pageUUID || '') : ''
             let bangDingData=[]
             let bangDingDeviceSN=[]
             for(let i=0,PCPageInfoLen=PCPageInfo.length;i<PCPageInfoLen;i++)
@@ -1826,7 +1826,7 @@ export const selectDisplayPageDataStruct = (ctx,page) => {
     let PCPageInfo = ctx.state.PCPageList
     let PhonePageInfo = ctx.state.PhonePageList
 
-    let pageid = page.page.pageUuid
+    let pageid = page.page ? (page.page.pageUuid || page.page.pageUUID || '') : ''
     let bangDingData=[]
     let bangDingDeviceSN=[]
     if(!pageid)
@@ -1993,7 +1993,7 @@ export const selectPopUpDisplayPageDataStruct = (ctx,page) => {
     let PCPageInfo = ctx.state.PCPageList
     let PhonePageInfo = ctx.state.PhonePageList
 
-    let pageid = page.page.pageUuid
+    let pageid = page.page ? (page.page.pageUuid || page.page.pageUUID || '') : ''
     let bangDingData=[]
     let bangDingDeviceSN=[]
     if(!pageid)

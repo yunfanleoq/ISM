@@ -49,8 +49,8 @@ type DisplayModelLayer struct {
 	IsHome     int    `gorm:"index;type:int;not null"  json:"IsHome" validate:"required,min=4,max=250" label:"是否为首页"`
 	IsLogin    int    `gorm:"index;type:int;"  json:"IsLogin" validate:"required,min=4,max=250" label:"是否为登录页"`
 	PageType   int    `gorm:"index;type:int;not null"  json:"PageType" validate:"required,min=4,max=250" label:"页面类型,0：手机 1：PC"`
-	Layer      string `gorm:"type:longtext;not null" json:"layer" validate:"required" label:"图层信息"`
-	Components string `gorm:"type:longtext;not null" json:"components" validate:"required" label:"图层中的组件信息"`
+	Layer      string `gorm:"column:layer;type:longtext;not null" json:"layer" validate:"required" label:"图层信息"`
+	Components string `gorm:"column:components;type:longtext;not null" json:"components" validate:"required" label:"图层中的组件信息"`
 }
 
 type layerStu struct {
@@ -220,16 +220,14 @@ func DisplayUser11ModelList(ProjectUuid string, uuid string) ([]DisplayModels, i
 func DisplayModelLayerGet(muid string) ([]DisplayModelLayer, int) {
 
 	var getDisplayModelLayer []DisplayModelLayer
-	var total int = 0
 
-	Db.Model(&DisplayModelLayer{}).Select("*").Where("model_id = ? AND deleted_at IS NULL", muid).Find(&getDisplayModelLayer)
-
-	var dberr error
-	if dberr == gorm.ErrRecordNotFound {
+	result := Db.Raw("SELECT id, created_at, updated_at, deleted_at, model_id, page_name, page_id, is_home, is_login, page_type, layer, components FROM display_model_layer WHERE model_id = ? AND deleted_at IS NULL", muid).Scan(&getDisplayModelLayer)
+	
+	if result.Error != nil {
 		return getDisplayModelLayer, 0
 	}
 
-	return getDisplayModelLayer, total
+	return getDisplayModelLayer, 0
 }
 
 // 单个页面获取
@@ -251,16 +249,13 @@ func DisplayModelLayerPageGet(pageid string) (DisplayModelLayer, int) {
 func DisplayModelLayerGetLogin(muid string, pageType int) (DisplayModelLayer, int) {
 
 	var getDisplayModelLayer DisplayModelLayer
-	var total int = 0
 
-	Db.Model(&DisplayModelLayer{}).Select("*").Where("is_login = ? and model_id = ? and page_type = ? AND deleted_at IS NULL", 1, muid, pageType).First(&getDisplayModelLayer)
-
-	var dberr error
-	if dberr == gorm.ErrRecordNotFound {
+	result := Db.Table("display_model_layer").Where("is_login = ? and model_id = ? and page_type = ? AND deleted_at IS NULL", 1, muid, pageType).First(&getDisplayModelLayer)
+	if result.Error != nil {
 		return getDisplayModelLayer, -1
 	}
 
-	return getDisplayModelLayer, total
+	return getDisplayModelLayer, 1
 }
 
 // 模型更新

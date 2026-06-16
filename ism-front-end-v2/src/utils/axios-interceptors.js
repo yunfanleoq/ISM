@@ -83,7 +83,7 @@ const reqCommon = {
     {
       return config
     }
-    if(((url.indexOf('ImportProject')!==-1)||(url.indexOf('ExportProject')!==-1)||(url.indexOf('WitePhysicalID')!==-1)||(url.indexOf('GetPhysicalIDCheck')!==-1)||url.indexOf('setData')!==-1)||(url.indexOf('GetSystemParams')!==-1)|| (url.indexOf('GetSystemDeviceInfo')!==-1)||(url.indexOf('getDisplayModelLayerData')!==-1)||(url.indexOf('getDisplayModelLayerDataByToken')!==-1)||(url.indexOf('GetCustomPel')!==-1)||(url.indexOf('getRealDataByUuid')!==-1)||(url.indexOf('GetSystemAnalysis')!==-1)||(url.indexOf('GetSystemMonitorList')!==-1))
+    if(((url.indexOf('ImportProject')!==-1)||(url.indexOf('ExportProject')!==-1)||(url.indexOf('WitePhysicalID')!==-1)||(url.indexOf('GetPhysicalIDCheck')!==-1)||url.indexOf('setData')!==-1)||(url.indexOf('GetSystemParams')!==-1)|| (url.indexOf('GetSystemDeviceInfo')!==-1)||(url.indexOf('getDisplayModelLayerData')!==-1)||(url.indexOf('getDisplayModelLayerDataByToken')!==-1)||(url.indexOf('GetCustomPel')!==-1)||(url.indexOf('getRealDataByUuid')!==-1)||(url.indexOf('GetSystemMonitorList')!==-1))
     {
       return config
     }

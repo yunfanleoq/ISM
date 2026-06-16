@@ -1,6 +1,23 @@
 <template>
-  <div style="color: red; font-size: 24px">
-    {{ detail && detail.style ? detail.style.text : 'NO DETAIL' }}
+  <div xmlns="http://www.w3.org/1999/xhtml"
+       v-show="detail.style.visible==1||isStart"
+       @click="onTextClick"
+       :style="{
+         width: (detail.style.position && detail.style.position.w ? detail.style.position.w : 100) + 'px',
+         height: (detail.style.position && detail.style.position.h ? detail.style.position.h : 40) + 'px',
+         cursor: hasClickAction ? 'pointer' : 'default',
+         overflow: 'hidden',
+         display: 'flex',
+         alignItems: 'center',
+         fontSize: (detail.style.fontSize || 14) + 'px',
+         fontFamily: detail.style.fontFamily || 'Microsoft YaHei, PingFang SC, sans-serif',
+         fontWeight: detail.style.fontWeight || 400,
+         color: detail.style.foreColor || '#e2e8f0',
+         textAlign: textAlign,
+         whiteSpace: 'nowrap',
+         textOverflow: 'ellipsis'
+       }">
+    {{ detail.style.text }}
   </div>
 </template>
 
@@ -16,7 +33,7 @@ export default {
       return {
         Text:"",
         DivOpacity:1,
-        animateType:"blink",
+        animateType:[],
         startColor:"#74f808",
         stopColor:"#74f808",
         animateSpeed:0.5,
@@ -26,7 +43,7 @@ export default {
         isStart:false,
         italic:false,
         imageURL:"",
-        detail: { style: {}, animate: { selected: [], animateElement: [] } },
+        detail: { style: { diy: [], position: { w: 100, h: 40 }, visible: 1, text: '' }, animate: { selected: [], animateElement: [] }, action: [] },
         IsToolBox:false,
         editMode:true,
         base:{
@@ -161,14 +178,9 @@ export default {
       }
     },
     computed: {
-      animatedStyle(){
-        return {
-          "--blinkSpeed":this.blinkSpeed+'s',
-          "--stopColor":this.stopColor,
-          "--startColor":this.startColor,
-          "--animateSpeed":this.animateSpeed+'s',
-          "--animateSpinSpeed":this.animateSpinSpeed+'s'
-        }
+      hasClickAction() {
+        const actions = (this.detail && this.detail.action) || []
+        return actions.some(a => a && a.type === 'click' && a.action === 'link')
       },
       textAlign: function(){
         if(this.detail.style.textAlign == undefined) {
@@ -193,43 +205,70 @@ export default {
       }
     },
     methods: {
+      onTextClick() {
+        if (this.IsToolBox || this.editMode) {
+          return
+        }
+        const actions = (this.detail && this.detail.action) || []
+        const clickAction = actions.find(
+          a => a && a.type === 'click' && a.action === 'link' && a.link
+        )
+        if (!clickAction || !clickAction.link) {
+          return
+        }
+        const link = clickAction.link
+        this.$EventBus.$emit('GoPage', {
+          IsPopUp: link.isPopUp,
+          autoClose: link.autoClose,
+          linkType: link.linkType,
+          ModelId: link.Inside && link.Inside.displayUUID,
+          PageUuid: link.Inside && link.Inside.pageUUID,
+          width: link.width,
+          height: link.height,
+          External: link.External,
+          title: link.title,
+          OpenExternalType: link.OpenExternalType
+        })
+      },
       initComponents(option){
         if(this.IsToolBox)
         {
           return
         }
+        if (!option || !option.style) return
         this.DivOpacity = option.style.opacity
+        const diy = option.style.diy || []
         let i=0
-        for( i=0;i<option.style.diy.length;i++)
+        for( i=0;i<diy.length;i++)
         {
-          if(option.style.diy[i].key=="strokeWidth")
+          if(diy[i].key=="strokeWidth")
           {
-            this.strokeWidth=option.style.diy[i].value
+            this.strokeWidth=diy[i].value
           }
-          else if(option.style.diy[i].key=="strokeFill")
+          else if(diy[i].key=="strokeFill")
           {
-            this.fill=option.style.diy[i].value
+            this.fill=diy[i].value
           }
-          else if(option.style.diy[i].key=="strokeColor")
+          else if(diy[i].key=="strokeColor")
           {
-            this.strokeColor=option.style.diy[i].value
+            this.strokeColor=diy[i].value
           }
-          else if(option.style.diy[i].key=="fillOpacity")
+          else if(diy[i].key=="fillOpacity")
           {
-            this.fillOpacity=option.style.diy[i].value
+            this.fillOpacity=diy[i].value
           }
-          else if(option.style.diy[i].key=="strokeOpacity")
+          else if(diy[i].key=="strokeOpacity")
           {
-            this.strokeOpacity=option.style.diy[i].value
+            this.strokeOpacity=diy[i].value
           }
-          else if(option.style.diy[i].key=="imageURL")
+          else if(diy[i].key=="imageURL")
           {
-            this.imageURL=option.style.diy[i].value
+            this.imageURL=diy[i].value
           }
         }
         i=0
-        this.animateType = option.animate.selected || []
-        if(option.animate.isExpression)
+        this.animateType = (option.animate && option.animate.selected) || []
+        if(option.animate && option.animate.isExpression)
         {
           this.isStart = false
         }
@@ -237,67 +276,30 @@ export default {
         {
           this.isStart = true
         }
-        for( i=0;i<option.animate.animateElement.length;i++)
-        {
-          if(option.animate.animateElement[i].id=="millcolorGrad")
-          {
-            for(let k =0;k<option.animate.animateElement[i].elementList.length;k++)
-            {
-              if(option.animate.animateElement[i].elementList[k].key=="startColor")
-              {
-                this.startColor=option.animate.animateElement[i].elementList[k].value
-              }
-              else if(option.animate.animateElement[i].elementList[k].key=="stopColor")
-              {
-                this.stopColor=option.animate.animateElement[i].elementList[k].value
-              }
-              else if(option.animate.animateElement[i].elementList[k].key=="animateSpeed")
-              {
-                this.animateSpeed=option.animate.animateElement[i].elementList[k].value
-              }
-            }
-          }
-          else if(option.animate.animateElement[i].id=="blink")
-          {
-            for(let k =0;k<option.animate.animateElement[i].elementList.length;k++) {
-              if (option.animate.animateElement[i].elementList[k].key == "blinkSpeed") {
-                this.blinkSpeed = option.animate.animateElement[i].elementList[k].value
-              }
-            }
-          }
-          else if(option.animate.animateElement[i].id=="animateSpin")
-          {
-            for(let k =0;k<option.animate.animateElement[i].elementList.length;k++) {
-              if (option.animate.animateElement[i].elementList[k].key == "spinSpeed") {
-                this.animateSpinSpeed = option.animate.animateElement[i].elementList[k].value
-              }
-              else if (option.animate.animateElement[i].elementList[k].key == "spinDirection") {
-                this.spinDirection = option.animate.animateElement[i].elementList[k].value
-              }
-            }
-          }
-        }
       }
     },
     mounted() {
       let _t = this
       this.$nextTick(function(){
        this.initComponents(this.detail);
-        let activeEvent = this.detail.identifier+"activeEvent"//动作数据
-        let animateEvent = this.detail.identifier+"animateEvent"//动作数据
+        if (!this.detail || !this.detail.identifier) return
+        let activeEvent = this.detail.identifier+"activeEvent"
+        let animateEvent = this.detail.identifier+"animateEvent"
 
         _t.$EventBus.$on(activeEvent, (data) => {
           if((_t.editMode)&&(!this.IsToolBox)){
             return
           }
-
+          if (data && data.result !== undefined) {
+            let value = data.result
+            if (typeof value === 'boolean') value = value ? '1' : '0'
+            _t.detail.style.text = String(value)
+          }
         })
         _t.$EventBus.$on(animateEvent, (data) => {
-          console.log("data",data)
           if((_t.editMode)&&(!this.IsToolBox)){
             return
           }
-          console.log("data222222",data)
           _t.isStart = data
         })
 
@@ -308,11 +310,10 @@ export default {
     try {
       this.GetNodeObj = this.getNode()
       if (!this.GetNodeObj) {
-        console.warn('[ViewSvgText] getNode returned null')
         return
       }
       const nodeData = this.GetNodeObj.getData() || {}
-      this.detail = nodeData.detail || { style: { diy: [] }, animate: { selected: [], animateElement: [] } }
+      this.detail = nodeData.detail || this.detail
       this.editMode = nodeData.editMode || false
       this.showDeviceUuid = nodeData.showDeviceUuid || ''
       this.IsToolBox = nodeData.IsToolBox || false
@@ -340,7 +341,6 @@ export default {
 </script>
 <style >
 .svg-el {
-  /*transform: rotate(45deg);*/
   transform-origin: center center;
 }
 

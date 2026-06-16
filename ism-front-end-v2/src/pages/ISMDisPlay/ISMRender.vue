@@ -2207,7 +2207,7 @@ export default {
                 }
               }
             }
-            else if(realData.DeviceUuid==_t.SelectDeviceUuid)
+            else if(realData.DeviceUuid==_t.SelectDeviceUuid || (!_t.SelectDeviceUuid && realData.DeviceUuid==condition.deviceSN))
             {
               let isStart = false
               if ((condition.dataID == realData.Data[k].ModelDataUuid)||(condition.dataID == realData.Data[k].Uuid)) {
@@ -2324,7 +2324,7 @@ export default {
                 }
               }
             }
-            else if(realData.DeviceUuid==_t.SelectDeviceUuid)
+            else if(realData.DeviceUuid==_t.SelectDeviceUuid || (!_t.SelectDeviceUuid && realData.DeviceUuid==conditionx.deviceSN))
             {
                   if ((conditionx.dataID == realData.Data[k].ModelDataUuid)||(conditionx.dataID == realData.Data[k].Uuid)) {
                     const RealValue = parseFloat(realData.Data[k].Value)
@@ -2364,7 +2364,7 @@ export default {
                 }
               }
             }
-            else if(realData.DeviceUuid==_t.SelectDeviceUuid)
+            else if(realData.DeviceUuid==_t.SelectDeviceUuid || (!_t.SelectDeviceUuid && realData.DeviceUuid==conditiony.deviceSN))
             {
               if ((conditiony.dataID == realData.Data[k].ModelDataUuid)||(conditiony.dataID == realData.Data[k].Uuid)) {
                 const RealValue = parseFloat(realData.Data[k].Value)
@@ -2516,7 +2516,7 @@ export default {
                   }
                 }
               }
-              else if(realData.DeviceUuid==_t.SelectDeviceUuid)
+              else if(realData.DeviceUuid==_t.SelectDeviceUuid || (!_t.SelectDeviceUuid && realData.DeviceUuid==active[activeIndex].condition.deviceSN))
               {
                 if ((active[activeIndex].condition.dataID == realData.Data[k].ModelDataUuid)||(active[activeIndex].condition.dataID == realData.Data[k].Uuid)) {
                   if((typeof active[activeIndex].isExpression!='undefined')&&(active[activeIndex].isExpression))

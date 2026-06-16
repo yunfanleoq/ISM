@@ -126,6 +126,19 @@ const options = {
       component: () => import('@/pages/ISMDisPlay/pageView')
     },
     {
+      path: '/ISMDisPlay/DisPlayRunApp',
+      name: '组态预览(兼容)',
+      redirect: to => {
+        const displayUUID = to.query.displayUUID || to.query.uid
+        if (displayUUID) {
+          const query = { ...to.query }
+          delete query.displayUUID
+          return { path: `/AppRun/${displayUUID}`, query }
+        }
+        return '/404'
+      }
+    },
+    {
       path: '/ShareApp/:uid/:token',
       name: '组态分享',
       meta: {

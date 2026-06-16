@@ -384,6 +384,13 @@ func init() {
 	//
 	beego.Router("/GetChartDataHistoryList", &controllers.ReportController{}, "*:GetChartDataHistoryList")
 	beego.Router("/GetTrendChartData", &controllers.ReportController{}, "*:GetTrendChartData")
+	beego.Router("/GetTrendChartDataByDate", &controllers.ReportController{}, "*:GetTrendChartDataByDate")
+	beego.Router("/GetDataHistoryReport", &controllers.ReportController{}, "*:GetDataHistoryReport")
+	beego.Router("/GetHistoryHour", &controllers.ReportController{}, "*:GetHistoryHour")
+	beego.Router("/GetHistoryDayDifferenceReport", &controllers.ReportController{}, "*:GetHistoryDayDifferenceReport")
+	beego.Router("/GetHistoryWeeklyDifferenceReport", &controllers.ReportController{}, "*:GetHistoryWeeklyDifferenceReport")
+	beego.Router("/GetHistoryMonthDifferenceReport", &controllers.ReportController{}, "*:GetHistoryMonthDifferenceReport")
+	beego.Router("/GetHistoryYearDifferenceReport", &controllers.ReportController{}, "*:GetHistoryYearDifferenceReport")
 
 	//系统参数接口
 	beego.Router("/GetSystemWebData", &controllers.SystemParamsController{}, "*:GetSystemWebData")

@@ -429,6 +429,12 @@ export default {
         }],
       },
       SystemInfo:{
+        AppCount: 0,
+        DeviceCount: 0,
+        DeviceOffCount: 0,
+        AlarmCount: 0,
+        DataCount: 0,
+        VideoCount: 0,
         CpuInfo:{
           Number:0,
           Cores:0,
@@ -601,6 +607,14 @@ export default {
         }
         if (apiData.Goroutine != null) _t.SystemInfo.Goroutine = apiData.Goroutine
         if (apiData.BootTime) _t.SystemInfo.BootTime = apiData.BootTime
+
+        // 复制项目统计指标字段
+        if (apiData.AppCount != null) _t.SystemInfo.AppCount = apiData.AppCount
+        if (apiData.DeviceCount != null) _t.SystemInfo.DeviceCount = apiData.DeviceCount
+        if (apiData.DeviceOffCount != null) _t.SystemInfo.DeviceOffCount = apiData.DeviceOffCount
+        if (apiData.AlarmCount != null) _t.SystemInfo.AlarmCount = apiData.AlarmCount
+        if (apiData.DataCount != null) _t.SystemInfo.DataCount = apiData.DataCount
+        if (apiData.VideoCount != null) _t.SystemInfo.VideoCount = apiData.VideoCount
 
         _t.updateCpuChart(_t.SystemInfo.CpuInfo.UsedPercent[0])
         _t.updateMemChart(_t.SystemInfo.MemInfo.usedPercent)
