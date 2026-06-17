@@ -123,7 +123,10 @@ export default {
 
     transform(node) {
       const v = node.value || {}
-      const sid = v.Sid
+      // monitortree 节点 value 的主键字段是小写 sid（大写 Sid 不存在 → undefined）。
+      // 取错会让所有 page_id 退化成 uuid5('...-undefined')，与 build_ncc_dashboard.py
+      // 写入的 page_id 全部错位 → 钻探必然 page not found → 右侧白屏。
+      const sid = v.sid
       const type = v.type
       const name = node.text || v.Name || '未命名'
       const children = node.children || []
