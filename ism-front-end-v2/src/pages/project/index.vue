@@ -204,6 +204,8 @@ import {setAuthorization} from '@/utils/request'
 import ProjectLayout from "../../layouts/ProjectLayout";
 import {AUTH_TYPE} from "../../utils/request";
 import {formatDate} from '@/utils/common';
+import {mapMutations, mapGetters} from 'vuex';
+import {applyHomeProjectAuth} from '@/config/homeDashboard'
 import {
   ProjectAdd,
   ProjectList,
@@ -272,6 +274,7 @@ export default {
     },
   },
   computed: {
+    ...mapGetters('setting', ['homeDashboardPath']),
     SystemDynamicUrl () {
       return this.$store.state.setting.SystemDynamicUrl
     },
@@ -285,7 +288,8 @@ export default {
     },
     GoProject(uuid){
       setAuthorization({token: uuid},AUTH_TYPE.AUTH1)
-      this.$router.push('/dashboard')
+      applyHomeProjectAuth(this.$store)
+      this.$router.push(this.homeDashboardPath)
     },
     editProject(e,item){
       this.projectVisible=true

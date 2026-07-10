@@ -37,6 +37,9 @@
           <a-button :loading="logging" class="login" style="width: 100%;margin-top: 2px" size="large" htmlType="submit" type="primary">{{$t('loginPage.logonBtn')}}</a-button>
         </a-form-item>
       </a-form>
+      <div style="margin-top: 12px; text-align: center;">
+        <a @click="$router.push('/login')">使用桌面版登录</a>
+      </div>
       <div>
         <a-breadcrumb>
           <a-breadcrumb-item   v-for=" lang in langList" :key="lang.key" ><a @click="setLang(lang.key)">{{lang.name}}</a></a-breadcrumb-item>
@@ -48,13 +51,16 @@
 
 <script>
 import CommonLayout from '@/layouts/CommonLayout'
-import {login, } from '@/services/user'
+import {login} from '@/services/user'
 import {AUTH_TYPE, setAuthorization} from '@/utils/request'
-import {mapMutations} from 'vuex'
+import {loadRoutes} from '@/utils/routerUtil'
+import {mapMutations, mapGetters} from 'vuex'
 import {mapState} from 'vuex'
-import md5 from 'js-md5';
+import md5 from 'js-md5'
+import {ProjectList} from '@/services/project'
+import {applyHomeProjectAuth} from '@/config/homeDashboard'
 export default {
-  name: 'Login',
+  name: 'LoginPhone',
   i18n: require('@/i18n/language'),
   components: {CommonLayout},
   data () {
@@ -81,6 +87,7 @@ export default {
   },
   computed: {
     ...mapState('setting', ['langList','isMobile','lang',]),
+    ...mapGetters('setting', ['homeDashboardPath']),
     systemName () {
       return this.$store.state.setting.systemName
     },
@@ -90,7 +97,7 @@ export default {
   },
   methods: {
     ...mapMutations('setting', ['setLang']),
-    ...mapMutations('account', ['setUser', 'setPermissions', 'setRoles']),
+    ...mapMutations('account', ['setUser', 'setPermissions', 'setRoles', 'setRoutesConfig']),
     autoLogin(user,password){
       let _t = this
       const Username = user
@@ -126,24 +133,52 @@ export default {
         const {user, roles} = loginRes.data
         this.setUser(user)
         this.setRoles(roles)
+        this.setRoutesConfig(user.Menu)
         setAuthorization({token: loginRes.data.token, expireAt: loginRes.data.expireAt})
-        if(roles[0].id=="User")
-        {
-          setAuthorization({token: user.ProjectUUID},AUTH_TYPE.AUTH1)
-          this.$router.push('/UserDisplayList/'+user.Uuid)
-          this.$message.success(this.$t('loginPage.logonSuccess'), 3)
+        localStorage.setItem('LoginFrom', '/loginPhone')
+        this.$message.success(this.$t('loginPage.logonSuccess'), 3)
+        const _t = this
+        const proceedAfterLogin = () => {
+          loadRoutes(user.Menu)
+          _t.enterAfterAuth(roles, user)
         }
-        else
-        {
-          localStorage.removeItem("phoneUser")
-          localStorage.removeItem("phonePassword")
-          this.$message.error(this.$t('loginPage.userLoginTips'), 3)
-        }
+        this.$store.dispatch('setting/fetchSystemHomeDashboard')
+          .then(proceedAfterLogin)
+          .catch(function () {
+            proceedAfterLogin()
+          })
       } else {
-        localStorage.removeItem("phoneUser")
-        localStorage.removeItem("phonePassword")
+        localStorage.removeItem('phoneUser')
+        localStorage.removeItem('phonePassword')
         this.$message.error(this.$t('loginPage.logonFailed'), 3)
       }
+    },
+    // 与 Login.vue 保持一致：Admin/单项目自动进首页大屏，多项目进项目选择页
+    enterAfterAuth(roles, user) {
+      const _t = this
+      const roleId = (roles && roles[0]) ? roles[0].id : ''
+      const goHome = () => {
+        applyHomeProjectAuth(_t.$store)
+        _t.$router.push(_t.homeDashboardPath)
+      }
+      if (roleId === 'User' || roleId === 'Operator') {
+        if (user && user.ProjectUUID) {
+          setAuthorization({token: user.ProjectUUID}, AUTH_TYPE.AUTH1)
+        }
+        goHome()
+        return
+      }
+      ProjectList().then(function (res) {
+        const list = (res && res.data && res.data.code == 0 && res.data.list) ? res.data.list : []
+        if (list.length == 1 && list[0].ProjectInfo) {
+          setAuthorization({token: list[0].ProjectInfo.uuid}, AUTH_TYPE.AUTH1)
+          goHome()
+        } else {
+          _t.$router.push('/project')
+        }
+      }).catch(function () {
+        _t.$router.push('/project')
+      })
     }
   }
 }

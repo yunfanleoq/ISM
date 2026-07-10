@@ -1,8 +1,8 @@
 import account from './account'
-import setting from './setting'
+import settingModule from './setting'
 import ISMDisPlayEditorTool from '../ISM'
 export default {
     account,
-    setting,
+    setting: settingModule,
     ISMDisPlayEditorTool
 }

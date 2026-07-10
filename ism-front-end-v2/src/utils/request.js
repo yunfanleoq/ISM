@@ -26,6 +26,15 @@ const METHOD = {
   POST: 'post'
 }
 
+/** 后端 expireAt 为 Unix 秒；js-cookie 的 expires 数字表示「天数」，误用会导致 Invalid Date、Cookie 丢失 */
+function resolveCookieExpires(expireAt) {
+  if (expireAt == null || expireAt === '') return undefined
+  const n = Number(expireAt)
+  if (!Number.isFinite(n) || n <= 0) return undefined
+  if (n > 1e6) return new Date(n * 1000)
+  return n
+}
+
 /**
  * axios请求
  * @param url 请求地址
@@ -51,10 +60,13 @@ async function request(url, method, params, config) {
  */
 function setAuthorization(auth, authType = AUTH_TYPE.BEARER) {
   switch (authType) {
-    case AUTH_TYPE.BEARER:
-      Cookie.set(xsrfHeaderName, auth.token, {expires: auth.expireAt})
-      sessionStorage.setItem(xsrfHeaderName,auth.token)
+    case AUTH_TYPE.BEARER: {
+      const expires = resolveCookieExpires(auth.expireAt)
+      const cookieOpts = expires != null ? { expires } : undefined
+      Cookie.set(xsrfHeaderName, auth.token, cookieOpts)
+      sessionStorage.setItem(xsrfHeaderName, auth.token)
       break
+    }
     case AUTH_TYPE.BASIC:
       break
     case AUTH_TYPE.AUTH1: {

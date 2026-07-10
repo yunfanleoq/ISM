@@ -128,6 +128,11 @@ function loadRoutes(routesConfig) {
       router.matcher = new Router({...router.options, routes:[]}).matcher
       // 逐个 addRoute 替代已废弃的 addRoutes（Vue Router 4 已移除）
       finalRoutes.forEach(route => router.addRoute(route))
+      // matcher 重置后强制按当前 URL 重匹配，避免短暂停留在 * → 404
+      const current = router.currentRoute
+      if (current && current.fullPath) {
+        router.replace(current.fullPath).catch(() => {})
+      }
     }
   }
   // 提取路由国际化数据
@@ -136,7 +141,15 @@ function loadRoutes(routesConfig) {
   const rootRoute = router.options.routes.find(item => item.path === '/')
   const menuRoutes = rootRoute && rootRoute.children
   if (menuRoutes) {
+    // 触发 getter 从 localStorage 回填 roles/permissions，避免 filterMenu 读到 null
+    store.getters['account/roles']
+    store.getters['account/permissions']
     store.commit('setting/setMenuData', menuRoutes)
+    const homeName = store.state.setting.systemHomeDashboard &&
+      store.state.setting.systemHomeDashboard.dashboardName
+    if (homeName) {
+      store.commit('setting/patchScadaMonitorMenuName', homeName)
+    }
   }
 }
 
@@ -149,7 +162,7 @@ function dedupRoutesByName(routes, seen) {
     if (route.name && seen.has(route.name)) return false
     if (route.name) seen.add(route.name)
     if (route.children && route.children.length > 0) {
-      route.children = dedupRoutesByName(route.children)  // 子级用独立的 Set，避免被顶层路由名字影响
+      route.children = dedupRoutesByName(route.children, seen)
     }
     return true
   })

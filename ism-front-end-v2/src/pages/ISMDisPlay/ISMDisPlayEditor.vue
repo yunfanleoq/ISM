@@ -25,6 +25,14 @@
                   </a-tooltip>
 
                 </a-menu-item>
+                <a-menu-item key="ISMEditorDeviceTree">
+                  <a-tooltip placement="right">
+                    <template #title>
+                      <span>设备树/模板</span>
+                    </template>
+                    <a-icon type="apartment" style="font-size: 20px"/>
+                  </a-tooltip>
+                </a-menu-item>
                 <a-menu-item key="ISMToolBox">
                   <a-tooltip placement="right">
                     <template #title>
@@ -62,6 +70,7 @@
             <a-layout-content>
               <ISMPageCanvas @drag-start="handleDragStart" ref="ISMPageCanvas"  v-show="selectMenuKey=='ISMPageCanvas'"/>
               <ISMResources ref="ISMResources"  v-show="selectMenuKey=='ISMResources'"/>
+              <ISMEditorDeviceTree ref="ISMEditorDeviceTree" v-show="selectMenuKey=='ISMEditorDeviceTree'"/>
               <ISMToolBox @drag-start="handleDragStart" ref="ISMToolBox"  v-show="selectMenuKey=='ISMToolBox'"/>
               <ISMDiyToolBox  @drag-start="handleDragStart" ref="ISMDiyToolBox"  v-show="selectMenuKey=='ISMDiyToolBox'"/>
               <ISMMesToolBox  @drag-start="handleDragStart" ref="ISMMESToolBox"  v-show="selectMenuKey=='ISMMESToolBox'"/>
@@ -107,6 +116,7 @@ import ISMCanvas from './ISMCanvas';
 import ISMToolBox from './ISMToolBox';
 import ISMPageCanvas from './ISMPageCanvas';
 import ISMResources from './ISMResources';
+import ISMEditorDeviceTree from './ISMEditorDeviceTree';
 import ISMMesToolBox from './ISMMesBox';
 import ISMDiyToolBox from './ISMDiyBox';
 import ISMProperties from './ISMProperties';
@@ -122,6 +132,7 @@ export default {
     ISMProperties,
     ISMHeader,
     ISMResources,
+    ISMEditorDeviceTree,
     ISMMesToolBox,
     ISMDiyToolBox
     // ISMLogger

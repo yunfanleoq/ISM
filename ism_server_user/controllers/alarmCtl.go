@@ -10,11 +10,13 @@ package controllers
 
 import (
 	"ISMServer/models"
+	protocol_common "ISMServer/protocol/common"
 	protocolCommonFunc "ISMServer/protocol/commFunc"
 	alarmTask "ISMServer/task/alarm"
 	triggerAlarmTask "ISMServer/task/triggerAlarm"
 	"ISMServer/utils/errmsg"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -155,6 +157,9 @@ func (c *AlarmController) AlarmOpt() {
 			ClearAlarm.DataUuid = getParams.Data.Uuid
 			ClearAlarm.DeviceUuid = getParams.Data.DeviceUuid
 			code = models.AlarmUpdate(ClearAlarm)
+			if code == errmsg.SUCCSECODE && getParams.Data.Uuid == "sys.suid.device.status" {
+				models.ResyncOfflineDeviceAlarms(ProjectUuid, []string{getParams.Data.DeviceUuid})
+			}
 			WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "alarm.trigger.Journal.ClearAlarm&"+getParams.Data.Name, errmsg.JournalLevelInfo, c.Ctx.Input)
 			if getParams.Type == 2 {
 				code = models.AlarmShield(getParams.Data)
@@ -178,6 +183,39 @@ func (c *AlarmController) AlarmOpt() {
 	c.Data["json"] = result
 
 	c.ServeJSON() //返回json格式
+}
+
+func (c *AlarmController) AlarmClearAll() {
+	var params = make(map[string]interface{})
+	var code int
+	var count int64
+
+	rawData := c.Ctx.Input.RequestBody
+	ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
+	if ProjectUuid != "" {
+		if len(rawData) > 0 {
+			if err := json.Unmarshal(rawData, &params); err != nil {
+				code = errmsg.NOTJSON
+			}
+		}
+		if code == 0 {
+			count, code = models.AlarmClearAll(params, ProjectUuid)
+			if code == errmsg.SUCCSECODE {
+				WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "alarm.trigger.Journal.ClearAllAlarm&"+fmt.Sprintf("%d", count), errmsg.JournalLevelInfo, c.Ctx.Input)
+				alarmTask.DeviceAlarmTemp = make(map[string]protocol_common.PushAlarm, protocol_common.AlarmCacheCount)
+			}
+		}
+	} else {
+		code = -2
+	}
+
+	result := map[string]interface{}{
+		"code":  code,
+		"count": count,
+	}
+
+	c.Data["json"] = result
+	c.ServeJSON()
 }
 
 func (c *AlarmController) GetCurrentAlarmList() {
@@ -209,6 +247,69 @@ func (c *AlarmController) GetCurrentAlarmList() {
 
 	c.ServeJSON() //返回json格式
 }
+
+func (c *AlarmController) GetAlarmEventFeed() {
+	var params = make(map[string]interface{})
+	var code int
+	var data interface{}
+
+	rawData := c.Ctx.Input.RequestBody
+	ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
+	if ProjectUuid != "" {
+		if len(rawData) > 0 {
+			if err := json.Unmarshal(rawData, &params); err != nil {
+				code = errmsg.NOTJSON
+			}
+		}
+		if code == 0 {
+			limit := 50
+			if v, ok := params["recoveredLimit"].(float64); ok && v > 0 {
+				limit = int(v)
+			}
+			data, code = models.GetAlarmEventFeed(params, ProjectUuid, limit)
+		}
+	} else {
+		code = -2
+	}
+
+	result := map[string]interface{}{
+		"code": code,
+		"list": data,
+	}
+	c.Data["json"] = result
+	c.ServeJSON()
+}
+
+func (c *AlarmController) AlarmTriggerExport() {
+	var list []models.AlarmTrigger
+	code := 0
+	ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
+	if ProjectUuid != "" {
+		list = models.AlarmTriggerGetAll(ProjectUuid)
+	} else {
+		code = -1
+	}
+	c.Data["json"] = map[string]interface{}{"code": code, "list": list}
+	c.ServeJSON()
+}
+
+func (c *AlarmController) AlarmTriggerImport() {
+	var triggers []models.AlarmTrigger
+	code := 0
+	count := 0
+	ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
+	if ProjectUuid == "" {
+		code = -1
+	} else if err := json.Unmarshal(c.Ctx.Input.RequestBody, &triggers); err != nil {
+		code = errmsg.NOTJSON
+	} else {
+		count, code = models.AlarmTriggerImportBatch(triggers, ProjectUuid)
+		triggerAlarmTask.AlarmTriggerCloseChan()
+	}
+	c.Data["json"] = map[string]interface{}{"code": code, "count": count}
+	c.ServeJSON()
+}
+
 func (c *AlarmController) GetCurrentShieldAlarmList() {
 
 	var data interface{}

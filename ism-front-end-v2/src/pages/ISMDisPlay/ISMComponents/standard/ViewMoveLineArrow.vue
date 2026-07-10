@@ -33,17 +33,33 @@
 </template>
 
 <script>
-import canvasView from '../View';
 import store from "../../../../store";
 import { mapActions, mapState, mapMutations } from 'vuex'
 import ISMChildAutoMixin from '@/mixins/ISMChildAutoMixin'
 export default {
   mixins: [ISMChildAutoMixin],
+  // X6 vue-shape 通过 getNode() 注入数据，勿声明为 props（created 里赋值会触发 prop mutation 警告）
+  props: {},
     name: 'ViewCanvasMoveLineArrow',
     inject: ['getNode'],
     i18n: require('@/i18n/language'),
     data() {
         return {
+          editMode: false,
+          selected: false,
+          showDeviceUuid: '',
+          IsToolBox: false,
+          detail: {
+            identifier: '',
+            style: {
+              position: { x: 0, y: 0, w: 600, h: 50 },
+              points: [],
+              visible: 1,
+              diy: [],
+            },
+            animate: { selected: [], animateElement: [] },
+            action: [],
+          },
           spinDirection:0,
           timer:null,
           DeletePointIndex:-1,
@@ -482,6 +498,9 @@ export default {
         let h = this.detail.style.position.h;
         let refObj = this.detail.identifier
         let el = this.$refs[refObj];
+        if (!el || typeof el.getContext !== 'function') {
+          return
+        }
         let ctx = el.getContext("2d");
 
         ctx.clearRect(0, 0, w, h);
@@ -493,10 +512,14 @@ export default {
         }
       },
       onResize() {
+        this.$nextTick(() => {
           this.reDraw();
+        });
       },
       intervalTimer () {
-        this.reDraw()
+        if (this.$refs[this.detail.identifier]) {
+          this.reDraw()
+        }
         this.timer = requestAnimationFrame(this.intervalTimer)
       },
       arrowPassDown(pass, event, index) {
@@ -613,47 +636,48 @@ export default {
           return
         }
         let i=0
-        for( i=0;i<option.style.diy.length;i++)
+        const diyList = (option.style && option.style.diy) || []
+        for( i=0;i<diyList.length;i++)
         {
-          if(option.style.diy[i].key=="strokeWidth")
+          if(diyList[i].key=="strokeWidth")
           {
-            this.strokeWidth=option.style.diy[i].value
+            this.strokeWidth=diyList[i].value
           }
-          else if(option.style.diy[i].key=="MoveBrokenLineBackColor")
+          else if(diyList[i].key=="MoveBrokenLineBackColor")
           {
-            this.backColor=option.style.diy[i].value
+            this.backColor=diyList[i].value
           }
-          else if(option.style.diy[i].key=="MoveBrokenLineInterval")
+          else if(diyList[i].key=="MoveBrokenLineInterval")
           {
-            this.MoveBrokenLineInterval=option.style.diy[i].value
+            this.MoveBrokenLineInterval=diyList[i].value
           }
-          else if(option.style.diy[i].key=="strokeFill")
+          else if(diyList[i].key=="strokeFill")
           {
-            this.fill=option.style.diy[i].value
+            this.fill=diyList[i].value
           }
-          else if(option.style.diy[i].key=="strokeColor")
+          else if(diyList[i].key=="strokeColor")
           {
-            this.strokeColor=option.style.diy[i].value
+            this.strokeColor=diyList[i].value
           }
-          else if(option.style.diy[i].key=="fillOpacity")
+          else if(diyList[i].key=="fillOpacity")
           {
-            this.fillOpacity=option.style.diy[i].value
+            this.fillOpacity=diyList[i].value
           }
-          else if(option.style.diy[i].key=="strokeOpacity")
+          else if(diyList[i].key=="strokeOpacity")
           {
-            this.strokeOpacity=option.style.diy[i].value
+            this.strokeOpacity=diyList[i].value
           }
-          else if(option.style.diy[i].key=="spinDirection")
+          else if(diyList[i].key=="spinDirection")
           {
-            this.spinDirection=option.style.diy[i].value
+            this.spinDirection=diyList[i].value
           }
-          else if(option.style.diy[i].key=="MoveBrokenLineConditionEnable")
+          else if(diyList[i].key=="MoveBrokenLineConditionEnable")
           {
-            this.MoveBrokenLineConditionEnable=option.style.diy[i].value
+            this.MoveBrokenLineConditionEnable=diyList[i].value
           }
         }
         this.strokeColor = option.style.foreColor
-        this.animateType = option.animate.selected
+        this.animateType = (option.animate && option.animate.selected) || []
         if(this.detail.style.points.length==0)
         {
           let points=[
@@ -719,7 +743,10 @@ export default {
     this.editMode = this.GetNodeObj.getData().editMode
     this.showDeviceUuid = this.GetNodeObj.getData().showDeviceUuid
     this.IsToolBox = this.GetNodeObj.getData().IsToolBox
-    this.initComponents(this.detail);
+    const nodeSelected = this.GetNodeObj.getData().selected
+    if (typeof nodeSelected === 'boolean') {
+      this.selected = nodeSelected
+    }
   }
 }
 </script>

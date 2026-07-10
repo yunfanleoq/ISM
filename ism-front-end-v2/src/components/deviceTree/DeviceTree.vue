@@ -1,9 +1,12 @@
 <template>
   <div style="padding: 5px;height: 85vh;overflow-y: scroll;" class="TreeBox">
+    <a-spin :spinning="treeLoading" tip="Loading...">
     <a-input-search style="margin-bottom: 8px" placeholder="Search" @change="onTreeChange" />
     <a-directory-tree
         :tree-data="treeData"
+        :load-data="treeLazy ? onLoadTreeData : null"
         :expanded-keys="expandedKeys"
+        :selected-keys="selectedKeys"
         :auto-expand-parent="autoExpandParent"
         :replace-fields="{ value: 'key',title:'text'}"
         @expand="onExpand"
@@ -19,12 +22,14 @@
         <span v-else>{{ title }}</span>
       </template>
     </a-directory-tree>
+    </a-spin>
   </div>
 
 </template>
 <script>
 
 import {getMonitorTree} from "../../services/device";
+import {sortMonitorTreeByName} from "@/utils/naturalSort";
 
 export default {
   name: 'deviceTree',
@@ -34,21 +39,36 @@ export default {
       defaultSelectKey:[],
       selectNode:null,
       selectKey:null,
+      selectedKeys: [],
       expandedKeys: [],
       searchValue: '',
       dataList: [],
       findResult:false,
       autoExpandParent: true,
-      treeData:[]
+      treeData:[],
+      treeLoading: false,
+      treeLazy: true,
     };
   },
   watch: {
-    '$route'() {
-      this.getMonitorTree()
+    // keep-alive 多页签下，$route 每次切菜单都会触发；若整树重载会丢掉懒加载子节点，
+    // 回来只剩 RootZone，表现为「请选择区域」。仅在树为空时拉取。
+    '$route'(to) {
+      if (!to || !to.path || to.path.indexOf('DataWarehouse') === -1) {
+        return
+      }
+      if (!this.treeData || this.treeData.length === 0) {
+        this.getMonitorTree()
+      }
     }
   },
   mounted(){
     this.getMonitorTree()
+  },
+  activated() {
+    if (!this.treeData || this.treeData.length === 0) {
+      this.getMonitorTree()
+    }
   },
   methods: {
     generateList(data) {
@@ -63,14 +83,13 @@ export default {
     },
     getMonitorTree(){
       let _t = this
-      getMonitorTree().then(function (res){
+      _t.treeLoading = true
+      const params = _t.treeLazy ? {lazy: true, pid: 0} : {}
+      getMonitorTree(params).then(function (res){
         if(res.data.code==0)
         {
-          if(res.data.list.length>0)
-          {
-           // _t.$refs.deviceTree.selectNode(res.data.list[0]);
-          }
-          _t.treeData =res.data.list
+          const list = res.data.list || []
+          _t.treeData = _t.normalizeTreeNodes(list)
           if(_t.selectKey!=null)
           {
             _t.dataSource=[]
@@ -84,6 +103,53 @@ export default {
           }
           _t.generateList(_t.treeData);
         }
+        else
+        {
+          _t.treeData = []
+        }
+      }).catch(function () {
+        _t.treeData = []
+      }).finally(function () {
+        _t.treeLoading = false
+      })
+    },
+    normalizeTreeNodes(list) {
+      if (!list || !list.length) {
+        return []
+      }
+      let nodes = list
+      if (this.treeLazy) {
+        nodes = list.map(node => {
+          const copy = Object.assign({}, node)
+          if (copy.value && copy.value.type === 1) {
+            copy.isLeaf = true
+          } else if (typeof copy.isLeaf === 'boolean') {
+            copy.isLeaf = copy.isLeaf
+          } else {
+            copy.isLeaf = false
+          }
+          if (!copy.children) {
+            copy.children = undefined
+          }
+          return copy
+        })
+      }
+      return sortMonitorTreeByName(nodes)
+    },
+    onLoadTreeData(treeNode) {
+      const _t = this
+      return new Promise(function (resolve) {
+        const nodeValue = treeNode.dataRef && treeNode.dataRef.value
+        const parentSid = nodeValue ? nodeValue.sid : 0
+        getMonitorTree({lazy: true, pid: parentSid}).then(function (res) {
+          if (res.data.code == 0) {
+            treeNode.dataRef.children = _t.normalizeTreeNodes(res.data.list || [])
+            _t.treeData = [..._t.treeData]
+          }
+          resolve()
+        }).catch(function () {
+          resolve()
+        })
       })
     },
     checkHavedDevice(key,treeNode){
@@ -203,12 +269,15 @@ export default {
       }
     },
     onSelect(keys,event) {
+      this.selectedKeys = keys && keys.length ? [keys[0]] : []
       if(event.node.value.type==0)
       {
         this.editIsDevice=false
         this.selectKey = keys[0]
         this.dataSource=[]
         this.getTreeChildren(this.selectKey,this.treeData)
+      } else {
+        this.selectKey = keys[0]
       }
 
       const onSelectData = {

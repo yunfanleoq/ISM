@@ -34,6 +34,23 @@ disable-model-invocation: false
    复制模型时用 DB 里的真实值，否则 JOIN 断裂、设备不显示。
 3. **列名用下划线小写**（GORM 映射）；保留字（如 `interval`/`status`）加反引号。
 4. **MD5 只用 Python 算**（`hashlib.md5`），shell `echo|md5` 带换行符会算错。
+5. **⚠️ 先核对"活的"模型/项目，别信脚本里写死的默认 UUID**（本次最大坑）。
+   数据一旦被**重新导入**就会落到**新的 `project_uuid` + 新的 `display_model_uid`**，
+   而 `build_ncc_dashboard.py` 顶部写死的 `MODEL_ID`/`PROJECT_UUID` 会**变陈旧**，
+   照默认跑会把**用户根本没在看的旧模型**重建成空页（曾把总览覆盖成 76 cells 空版）。
+   **重建前必做三连查**，选"设备最多的项目 + 它的 display_model_uid + 图层最多的 model"：
+   ```sql
+   SELECT id,name,project_uuid,display_model_uid FROM display_models WHERE deleted_at IS NULL;
+   SELECT project_uuid,count(*) FROM monitor_list WHERE deleted_at IS NULL GROUP BY project_uuid;
+   SELECT model_id,count(*) FROM display_model_layer WHERE deleted_at IS NULL GROUP BY model_id;
+   ```
+   然后**用环境变量覆盖**再跑（脚本支持 `NCC_MODEL_ID` / `NCC_PROJECT_UUID`）：
+   ```bash
+   NCC_MODEL_ID='<display_model_uid>' NCC_PROJECT_UUID='<project_uuid>' \
+     python3 build_ncc_dashboard.py
+   ```
+   （OceanBase 连接：`root@ism_tenant` / `ism2024!` / db `ism` / 127.0.0.1:2881。
+   判据：`monitor_list` 行数最多的项目就是真数据；`display_model_layer` 图层最多的 model 就是在看的那张大屏。）
 
 ---
 
@@ -138,12 +155,14 @@ python3 scripts/backfill_device_data.py
 ## 六、标准工作流
 
 ```
-0. 读 app.conf 确认 dbtype；确认 PROJECT_UUID / MODEL_ID
+0. 读 app.conf 确认 dbtype；【铁律〇.5】三连查锁定"活的" MODEL_ID(display_model_uid)+PROJECT_UUID
+   （设备最多的项目 / 图层最多的 model），绝不照脚本写死的默认值跑
 1. 从 monitor_list 拉真实设备树（type=1 按 project 过滤），统计各机柜/设备组台数
 2. build_ncc_dashboard.py：生成 Level 0~3 cells（确定性 page_id + click/link 钻探 + 每设备绑点）
    - 字体分级、深空蓝配色、每分区最多 1 层发光边框、view-svg-time 实时钟
    - find_text_overlaps 自检无重叠、无越界(x+w≤1920)
-3. python3 build_ncc_dashboard.py 写库
+   - 居中文字传 align='center'；趋势图传 show_title=False；卡片网格传 reserve_rect 避让拓扑
+3. NCC_MODEL_ID=<uid> NCC_PROJECT_UUID=<uuid> python3 build_ncc_dashboard.py 写库
 4. （增强）Vue 层：hover 浮层 / 可折叠树（新组件勿放进 ISMComponents 自动扫描目录，见坑点）
 5. 备份：python3 scripts/backup_project.py
 6. 浏览器硬刷新 http://localhost:7080/#/AppRun/<MODEL_ID> 验证：
@@ -166,6 +185,14 @@ python3 scripts/backfill_device_data.py
 | 查不到新写数据 | dbtype=4 却连了 SQLite | 先读 app.conf，OceanBase 用 pymysql:2881 |
 | SQL 语法错 | 保留字列名 | `` `interval` ``/`` `status` `` 加反引号 |
 | 误删找不回 | 物理删除无回收站 | 先 backup_project.py；用 restore_project.py 回填 |
+| **重建后大屏变空/设备 0/0** | 跑了脚本写死的**陈旧** MODEL_ID/PROJECT_UUID（数据已迁到新项目）| 见〇.5：三连查 + `NCC_MODEL_ID/NCC_PROJECT_UUID` 环境变量覆盖 |
+| **文字永远靠左、传 textAlign 也不居中** | `ViewSvgText.vue` 是 `display:flex; align-items:center` 但**没有 `justify-content`**，flex 单行文本下 `text-align` 无效 | 渲染器加 `justifyContent` computed（**仅显式 `textAlign` 时生效，默认 `flex-start` 不变**，避免全局回归）；`make_text` 加 `align=` 参数，需居中处传 `align='center'` |
+| 文本框设成全宽后反而"贴左/超框" | 文本左对齐 + 全宽框 → 文字顶到左边框 | 配合上一行的 `justifyContent` 才能真居中；KPI 用 `x=cx,w=card_w,align='center'` 居中堆叠（图标/数值/标签） |
+| 趋势图**标题与图例重叠** | 图上方有 `make_panel_title` 彩色标题 + ECharts 内部白字 `ChartTitle` **双标题** | `make_smooth_chart(..., show_title=False)` 省略内部标题，只留上方彩色标题 |
+| 卡片矩阵没铺满 / 只占左上 / 撞到左下角拓扑 | 旧逻辑用全局 `bottom_reserve` 砍行数，浪费右下空间 | 传 `reserve_rect=(topo_x,topo_y,w,h)`，网格行优先生成并用 `rects_overlap` **跳过被拓扑遮挡的左下角槽位**，6 列×4 行铺满，"+更多"挪到拓扑右侧底部 |
+| 侧栏"● 实时监测"角标压边框线 | 角标贴在 box13 顶边/图表上 | 顶部预留 `hdr_h≈34` 标题带，角标下移，三段图表栈按新起点 `power_y` 重算高度 |
+| Modbus 刷屏 `response data size does not match` / `size 0` | 导入器把设备 `timeout`/`interval` 写成 **5ms**，读 100 寄存器读不完、残包串读 | DB 批量改 `timeout>=500`(本次设 3000)/`interval=500`；后端 `ModbusEffectiveTimeout()` 兜底下限 500ms；`import_hx_dc.py` 默认改 3000/500 |
+| 导航树面板宽度初次加载后**自己逐帧变宽到撞上限** | `ISMRunTreeNav.vue` 的 `ResizeObserver` 观察的是**被自己宽度控制的** `.rt-body`（自反馈）+ `.rt-label flex:1 1 auto` 撑满 | 删掉观察受控元素的 RO；`measureWidth` 幂等(<2px 不更新)；`.rt-label` 改 `flex:0 1 auto` |
 
 ---
 
@@ -176,7 +203,7 @@ python3 scripts/backfill_device_data.py
 | `build_ncc_dashboard.py` | 重建 display 全部页面（Level 0~3），确定性 page_id |
 | `scripts/backup_project.py` / `restore_project.py` / `ism_project_backup_core.py` | 项目级备份/幂等恢复/共享核心 |
 | `scripts/backfill_device_data.py` / `diag_device_layer.py` | 设备数据层回填 / 只读诊断 |
-| `ism-front-end-v2/src/pages/ISMDisPlay/ViewSvgText...` | 文字单元渲染 + onTextClick(GoPage) + hover 触发 |
+| `ism-front-end-v2/src/pages/ISMDisPlay/ViewSvgText...` | 文字单元渲染 + onTextClick(GoPage) + hover 触发 + `justifyContent`(显式 textAlign 才生效) |
 | `ism-front-end-v2/src/pages/ISMDisPlay/DeviceHoverTooltip.vue` | hover 测点浮层 |
 | `ism-front-end-v2/src/pages/ISMDisPlay/ISMRunTreeNav.vue` / `ISMRunTreeNode.vue` | 可折叠导航树 |
 | `ism-front-end-v2/src/pages/ISMDisPlay/ISMBase.vue` | 组态组件自动注册（safeBaseOf 容错）|

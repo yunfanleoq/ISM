@@ -906,7 +906,7 @@ export default {
         if(res.data.code == 200)
         {
           let uid = _t.$route.params.uid
-          _t.updateAllLayerDataStruct({pageType:_t.isMobile,uuid:uid,cb:function (){}});
+          _t.updateAllLayerDataStruct({pageType:_t.isMobile,uuid:uid,metaOnly:true,cb:function (){}});
           // _t.SyncLayerData(LayerData)
           _t.isCharge=false
           _t.$message.success(_t.$t('displayModel.SaveDataSuccess'))

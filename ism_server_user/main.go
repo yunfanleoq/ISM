@@ -25,23 +25,12 @@ import (
 	"runtime"
 	"syscall"
 	"time"
-	"unsafe"
 
 	"github.com/beego/beego/v2/core/config"
 	"github.com/beego/beego/v2/core/logs"
 	ISMServer "github.com/beego/beego/v2/server/web"
 	"github.com/fsnotify/fsnotify"
 )
-
-/*
-#include<stdint.h>
-#include<string.h>
-void getCompileDateTime(uint8_t  dt[12],uint8_t tm[9]){
-  strcpy(dt, __DATE__); //Mmm dd yyyy
-  strcpy(tm,__TIME__);  //hh:mm:ss
-}
-*/
-import "C"
 
 // 不同平台启动指令不同
 var commands = map[string]string{
@@ -138,8 +127,9 @@ func licenseConfigCheck() {
 					license.CheckLicense()
 					break
 				case fsnotify.Remove:
-					logs.Info("授权文件已经删除")
-					protocol_common.IsLicense = false
+					logs.Info("授权文件已经删除（源码企业版仍保持已授权）")
+					protocol_common.IsLicense = true
+					protocol_common.IsOem = true
 				}
 			}
 		case err := <-watcher.Errors:
@@ -166,15 +156,27 @@ func main() {
 
 	runtime.SetBlockProfileRate(1)
 
-	dt := make([]byte, 12)
-	tm := make([]byte, 10)
-	C.getCompileDateTime((*C.uint8_t)(unsafe.Pointer(&dt[0])), (*C.uint8_t)(unsafe.Pointer(&tm[0])))
-	dts, tms := string(dt), string(tm)
+	dts, tms := fetchCompileDateTime()
 
 	logFilesSavaDays, logFilesSavaDaysErr_ := config.Int("logFilesSavaDays")
 	if logFilesSavaDaysErr_ != nil {
-		logFilesSavaDays = 3
+		logFilesSavaDays = 2
 	}
+	logLevel, logLevelErr := config.Int("loglevel")
+	if logLevelErr != nil {
+		// 正式环境默认只落 Error 及以上，减少写盘
+		logLevel = 3
+	}
+	logMaxSizeMB, logMaxSizeErr := config.Int("logmaxsize_mb")
+	if logMaxSizeErr != nil || logMaxSizeMB <= 0 {
+		logMaxSizeMB = 20
+	}
+	logThrottleSec, _ := config.Int("log_throttle_seconds")
+	if logThrottleSec <= 0 {
+		logThrottleSec = 60
+	}
+	protocol_common.SetLogThrottleInterval(logThrottleSec)
+
 	//是否打开调试界面
 	IsDebug, IsDebugerr := config.Bool("IsDebug")
 	if IsDebugerr != nil {
@@ -189,8 +191,12 @@ func main() {
 		logs.EnableFuncCallDepth(false)
 		logs.SetLogFuncCallDepth(2)
 	}
-	//日志初始化
-	err := logs.SetLogger(logs.AdapterFile, "{\"rotate\": true,\"filename\":\"logs/ism.log\",\"level\":3,\"daily\":true,\"maxdays\":"+fmt.Sprintf("%d", logFilesSavaDays)+",\"color\":true}")
+	//日志初始化：按天 + 单文件大小双限制，避免无谓写爆磁盘
+	logCfg := fmt.Sprintf(
+		`{"rotate":true,"filename":"logs/ism.log","level":%d,"daily":true,"maxdays":%d,"maxsize":%d,"color":false}`,
+		logLevel, logFilesSavaDays, logMaxSizeMB*1024*1024,
+	)
+	err := logs.SetLogger(logs.AdapterFile, logCfg)
 	if err != nil {
 		panic(err)
 	}
@@ -256,10 +262,7 @@ func main() {
 		//授权验证
 		go SoftAuthIsExpired()
 	}
-	if !protocol_common.IsOem {
-		logs.Error("目前使用的是个人免费版本,购买企业版本，请访问 www.ismctl.com 咨询购买。")
-		Open("http://www.ismctl.com")
-	}
+	// 源码企业版：默认已授权，不再提示个人免费版 / 打开官网
 	//定时清理内存
 	// go freeMemory()
 	//go lisceseConfigCheck()

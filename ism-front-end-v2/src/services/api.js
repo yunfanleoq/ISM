@@ -40,6 +40,9 @@ module.exports = {
   DISPLAYMODELADD: `${BASE_URL}displayModelAdd`,
   DISPLAYMODELLIST: `${BASE_URL}displayModelList`,
   DISPLAYMODELDELETE: `${BASE_URL}displayModelDel`,
+  DISPLAYMODELDELETEDLIST: `${BASE_URL}displayModelDeletedList`,
+  DISPLAYMODELRESTORE: `${BASE_URL}displayModelRestore`,
+  DISPLAYMODELFORCEDEL: `${BASE_URL}displayModelForceDel`,
   DISPLAYMODELEDIT: `${BASE_URL}displayModelEdit`,
   DISPLAYMODELSINGLE: `${BASE_URL}displayModelGet`,
   DISPLAYLOGINPAGE: `${BASE_URL}DisplayLoginPage`,
@@ -53,6 +56,8 @@ module.exports = {
   DISPLAYMODELPAGEEDIT: `${BASE_URL}DisplayModelPageEdit`,
   DISPLAYMODELPAGESETHOME: `${BASE_URL}DisplayModelPageSetHome`,
   DISPLAYMODELPAGECOPY: `${BASE_URL}DisplayModelPageCopy`,
+  DISPLAYMODELPAGEBINDTEMPLATE: `${BASE_URL}DisplayModelPageBindTemplate`,
+  DISPLAYMODELTEMPLATEMAP: `${BASE_URL}displayModelTemplateMap`,
   DISPLAYTEMPLETELIST: `${BASE_URL}DisplayTempleteList`,
   DISPLAYTEMPLETEGET: `${BASE_URL}DisplayTempleteGet`,
   GETDISPLAYMODELLAYERDATABYTOKEN:`${BASE_URL}getDisplayModelLayerDataByToken`,
@@ -159,6 +164,7 @@ module.exports = {
   DNP3MODELNODEIDLIST: `${BASE_URL}dnp3ModelNodeIDList`,
 
   GETDEVICEMODELDATALIST: `${BASE_URL}GetDeviceModelDataList`,
+  GETMODELDATAPOINTS: `${BASE_URL}getModelDataPoints`,
   SETDEVICESTARTORSTOP: `${BASE_URL}SetDeviceStartOrStop`,
 
   GETHISTORYALARMLIST: `${BASE_URL}GetAlarmHistoryList`,
@@ -196,6 +202,10 @@ module.exports = {
   CURRENTALARMLIST: `${BASE_URL}GetCurrentAlarmList`,
   SHIELDALARMLIST: `${BASE_URL}AlarmShieldList`,
   UPDATECURRENTALARM: `${BASE_URL}AlarmOpt`,
+  CLEARALLCURRENTALARM: `${BASE_URL}AlarmClearAll`,
+  ALARMEVENTFEED: `${BASE_URL}GetAlarmEventFeed`,
+  ALARMTRIGGEREXPORT: `${BASE_URL}AlarmTriggerExport`,
+  ALARMTRIGGERIMPORT: `${BASE_URL}AlarmTriggerImport`,
 
   UPLOADUSERAVATAR:`${BASE_URL}uploadUserAvatar`,
   GETUSERINFO:`${BASE_URL}GetUserInfo`,
@@ -361,6 +371,8 @@ module.exports = {
   GETINCONNECT:`${BASE_URL}GetInConnectList`,
 
   //系统参数
+  GETSYSTEMHOME:`${BASE_URL}GetSystemHomeDashboard`,
+  SETSYSTEMHOME:`${BASE_URL}SetSystemHomeDashboard`,
   GETSYSTEMPARAMS:`${BASE_URL}GetSystemWebData`,
   SAVESYSTEMPARAMS:`${BASE_URL}SaveSystemWebData`,
   GETSYSTEMMQTTDATA:`${BASE_URL}GetSystemMqttData`,
@@ -390,4 +402,5 @@ module.exports = {
   DIYPICUPLOAD:`${BASE_URL}DiyUpload`,
 //实时数据表格
   GETREALDATATOTABLE:`${BASE_URL}GetRealDataByName`,
+  GETREALDATABYBINDINGS:`${BASE_URL}GetRealDataByBindings`,
 }

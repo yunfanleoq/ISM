@@ -40,6 +40,9 @@ export default {
 
   },
   watch:{
+    pageLayerLoading(val) {
+      this.spinning = val
+    },
     'configData.layer': {
       handler(newVal,oldvalue) {
         let _t=this
@@ -119,6 +122,7 @@ export default {
       UnSelectedComponent: state => store.state.ISMDisPlayEditorTool.UnSelectedComponent,
       selectedComponentMap: state => store.state.ISMDisPlayEditorTool.selectedComponentMap,
       configData: state => store.state.ISMDisPlayEditorTool.LayerData,
+      pageLayerLoading: state => store.state.ISMDisPlayEditorTool.pageLayerLoading,
       selectedNode: state => store.state.ISMDisPlayEditorTool.selectedNode,
     }),
     ContainerStyle() {
@@ -3093,7 +3097,7 @@ export default {
     let _t = this
     let uid = this.$route.params.uid
     _t.spinning = true
-    this.getLayerDataStruct({pageType:this.isMobile,uuid:uid,cb:function (){
+    this.getLayerDataStruct({pageType:this.isMobile,uuid:uid,metaOnly:true,cb:function (){
         _t.initCavasContainer()
         _t.spinning = false
       }});

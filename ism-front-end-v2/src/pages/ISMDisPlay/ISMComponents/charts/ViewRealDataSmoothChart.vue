@@ -456,9 +456,7 @@ export default {
           axisLabel: {
             show: true,
             rotate:40,
-            textStyle: {
-              color: '#fff'
-            }
+            color: '#fff',
           },
           data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
         },
@@ -468,9 +466,7 @@ export default {
           max:1000,
           axisLabel: {
             show: true,
-            textStyle: {
-              color: '#fff'
-            }
+            color: '#fff',
           },
         },
         series: [
@@ -580,67 +576,64 @@ export default {
       this.option.legend.textStyle.fontSize = option.style.fontSize
       this.option.legend.textStyle.fontFamily  = option.style.fontFamily
 
-      this.option.xAxis.axisLabel.textStyle.color = option.style.foreColor
-      this.option.xAxis.axisLabel.textStyle.fontSize = option.style.fontSize
-      this.option.xAxis.axisLabel.textStyle.fontFamily  = option.style.fontFamily
+      this.option.xAxis.axisLabel.color = option.style.foreColor
+      this.option.xAxis.axisLabel.fontSize = option.style.fontSize
+      this.option.xAxis.axisLabel.fontFamily = option.style.fontFamily
 
-      this.option.yAxis.axisLabel.textStyle.color = option.style.foreColor
-      this.option.yAxis.axisLabel.textStyle.fontSize = option.style.fontSize
-      this.option.yAxis.axisLabel.textStyle.fontFamily  = option.style.fontFamily
+      this.option.yAxis.axisLabel.color = option.style.foreColor
+      this.option.yAxis.axisLabel.fontSize = option.style.fontSize
+      this.option.yAxis.axisLabel.fontFamily = option.style.fontFamily
 
-      for( i=0;i<option.style.diy.length;i++)
+      const diy = option.style.diy || []
+      for( i=0;i<diy.length;i++)
       {
-        if(option.style.diy[i].key=="ChartTitle")
+        if(diy[i].key=="ChartTitle")
         {
-          this.option.title.text=option.style.diy[i].value
+          this.option.title.text=diy[i].value
         }
-        else if(option.style.diy[i].key=="ChartTimelyRefresh")
+        else if(diy[i].key=="ChartTimelyRefresh")
         {
-          this.ChartTimelyRefresh = parseInt(option.style.diy[i].value)
+          this.ChartTimelyRefresh = parseInt(diy[i].value)
         }
-        else if(option.style.diy[i].key=="YMax")
+        else if(diy[i].key=="YMax")
         {
-          if(option.style.diy[i].value==0)
+          if(diy[i].value==0)
           {
             this.option.yAxis.max = 'dataMax'
           }
           else {
-            this.option.yAxis.max = option.style.diy[i].value
+            this.option.yAxis.max = diy[i].value
           }
         }
-        else if(option.style.diy[i].key=="TimelyInitEcharts")
+        else if(diy[i].key=="TimelyInitEcharts")
         {
-            this.TimelyInitEcharts = parseInt(option.style.diy[i].value)
+            this.TimelyInitEcharts = parseInt(diy[i].value)
         }
-        else if(option.style.diy[i].key=="YMin")
+        else if(diy[i].key=="YMin")
         {
-          if(option.style.diy[i].value==0)
+          if(diy[i].value==0)
           {
             this.option.yAxis.min = 'dataMin'
           }
           else {
-            this.option.yAxis.min = option.style.diy[i].value
+            this.option.yAxis.min = diy[i].value
           }
         }
-        else if(option.style.diy[i].key=="EchartsWidth")
+        else if(diy[i].key=="EchartsWidth")
         {
-          this.EchartsWidth = parseInt(option.style.diy[i].value)
+          this.EchartsWidth = parseInt(diy[i].value)
         }
-        else if(option.style.diy[i].key=="EchartsXRotate")
+        else if(diy[i].key=="EchartsXRotate")
         {
-          this.option.xAxis.axisLabel.rotate = parseInt(option.style.diy[i].value)
+          this.option.xAxis.axisLabel.rotate = parseInt(diy[i].value)
         }
-        else if(option.style.diy[i].key=="EchartsXRotate")
+        else if(diy[i].key=="EchartsXFormat")
         {
-          this.option.xAxis.axisLabel.rotate = parseInt(option.style.diy[i].value)
+          this.EchartsXFormat = diy[i].value
         }
-        else if(option.style.diy[i].key=="EchartsXFormat")
+        else if(diy[i].key=="EchartsXTheme")
         {
-          this.EchartsXFormat = option.style.diy[i].value
-        }
-        else if(option.style.diy[i].key=="EchartsXTheme")
-        {
-          this.EchartsTheme = option.style.diy[i].value
+          this.EchartsTheme = diy[i].value
           if(this.echartsView) {
             this.echartsView.dispose()
             this.echartsView = null
@@ -652,8 +645,8 @@ export default {
         this.echartsView = echarts.init(view, this.EchartsTheme);
       }
       i=0
-      this.animateType = option.animate.selected
-      if(option.animate.isExpression)
+      this.animateType = (option.animate && option.animate.selected) || []
+      if(option.animate && option.animate.isExpression)
       {
         this.isStart = false
       }
@@ -661,42 +654,43 @@ export default {
       {
         this.isStart = true
       }
-      for( i=0;i<option.animate.animateElement.length;i++)
+      const animateElement = (option.animate && option.animate.animateElement) || []
+      for( i=0;i<animateElement.length;i++)
       {
-        if(option.animate.animateElement[i].id=="millcolorGrad")
+        if(animateElement[i].id=="millcolorGrad")
         {
-          for(let k =0;k<option.animate.animateElement[i].elementList.length;k++)
+          for(let k =0;k<animateElement[i].elementList.length;k++)
           {
-            if(option.animate.animateElement[i].elementList[k].key=="startColor")
+            if(animateElement[i].elementList[k].key=="startColor")
             {
-              this.startColor=option.animate.animateElement[i].elementList[k].value
+              this.startColor=animateElement[i].elementList[k].value
             }
-            else if(option.animate.animateElement[i].elementList[k].key=="stopColor")
+            else if(animateElement[i].elementList[k].key=="stopColor")
             {
-              this.stopColor=option.animate.animateElement[i].elementList[k].value
+              this.stopColor=animateElement[i].elementList[k].value
             }
-            else if(option.animate.animateElement[i].elementList[k].key=="animateSpeed")
+            else if(animateElement[i].elementList[k].key=="animateSpeed")
             {
-              this.animateSpeed=option.animate.animateElement[i].elementList[k].value
+              this.animateSpeed=animateElement[i].elementList[k].value
             }
           }
         }
-        else if(option.animate.animateElement[i].id=="blink")
+        else if(animateElement[i].id=="blink")
         {
-          for(let k =0;k<option.animate.animateElement[i].elementList.length;k++) {
-            if (option.animate.animateElement[i].elementList[k].key == "blinkSpeed") {
-              this.blinkSpeed = option.animate.animateElement[i].elementList[k].value
+          for(let k =0;k<animateElement[i].elementList.length;k++) {
+            if (animateElement[i].elementList[k].key == "blinkSpeed") {
+              this.blinkSpeed = animateElement[i].elementList[k].value
             }
           }
         }
-        else if(option.animate.animateElement[i].id=="animateSpin")
+        else if(animateElement[i].id=="animateSpin")
         {
-          for(let k =0;k<option.animate.animateElement[i].elementList.length;k++) {
-            if (option.animate.animateElement[i].elementList[k].key == "spinSpeed") {
-              this.animateSpinSpeed = option.animate.animateElement[i].elementList[k].value
+          for(let k =0;k<animateElement[i].elementList.length;k++) {
+            if (animateElement[i].elementList[k].key == "spinSpeed") {
+              this.animateSpinSpeed = animateElement[i].elementList[k].value
             }
-            else if (option.animate.animateElement[i].elementList[k].key == "spinDirection") {
-              this.spinDirection = option.animate.animateElement[i].elementList[k].value
+            else if (animateElement[i].elementList[k].key == "spinDirection") {
+              this.spinDirection = animateElement[i].elementList[k].value
             }
           }
         }
@@ -726,12 +720,8 @@ export default {
             smooth: true,
             dataID:this.detail.active[i].condition.deviceSN+this.detail.active[i].condition.dataID,
             data: [],
-            itemStyle: {
-              normal: {
-                lineStyle: {
-                  width:this.EchartsWidth
-                }
-              }
+            lineStyle: {
+              width: this.EchartsWidth,
             },
             symbolSize: this.EchartsWidth,
           }
@@ -809,9 +799,7 @@ export default {
           axisLabel: {
             show: true,
             rotate:40,
-            textStyle: {
-              color: '#fff'
-            }
+            color: '#fff',
           },
           data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
         },
@@ -821,9 +809,7 @@ export default {
           max:1000,
           axisLabel: {
             show: true,
-            textStyle: {
-              color: '#fff'
-            }
+            color: '#fff',
           },
         },
         series: [

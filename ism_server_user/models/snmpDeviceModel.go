@@ -75,6 +75,7 @@ type DeviceRealData struct {
 	DeviceType           int    `gorm:"type:int;not null"  validate:"required" label:"设备类型"`
 	DataUnit             string `gorm:"type:varchar(250);" json:"unit" validate:"required" label:"数据单位"`
 	IsAlarm              int    `gorm:"index;type:int;" json:"alarm" validate:"required" label:"是否是告警"`
+	AlarmOnValue         int    `gorm:"type:int;default:1" json:"alarmOnValue" label:"告警触发值(0或1)"`
 	AlarmLevel           int    `gorm:"index;type:int;" json:"alarmLevel" validate:"required" label:"告警等级 0:提示,1:次要,2:重要,3:严重,4:致命"`
 	AlarmMessage         string `gorm:"type:text;" json:"AlarmMessage" validate:"required" label:"告警显示信息"`
 	AlarmClearMessage    string `gorm:"type:text;" json:"AlarmClearMessage" validate:"required" label:"消除显示信息"`
@@ -462,6 +463,41 @@ func SnmpModelHistoryMibsGet(muid string, modelType int) []SnmpDevicesDataModel 
 		Db.Model(&BacnetDevicesDataModel{}).Where("muid = ?", muid).Select("*").Find(&getMibs)
 	}
 	return getMibs
+}
+
+// ModelDataPointsByMuid 按物模型 uuid 返回测点 name→uuid（供模板页相对绑点解析）
+func ModelDataPointsByMuid(muid string) []map[string]string {
+	out := make([]map[string]string, 0)
+	if muid == "" {
+		return out
+	}
+	var model DevicesModel
+	err := Db.Model(&DevicesModel{}).Select("uuid, type").Where("uuid = ? AND deleted_at IS NULL", muid).First(&model).Error
+	modelType := 2
+	if err == nil && model.Type > 0 {
+		modelType = model.Type
+	}
+	mibs := SnmpModelMibsGet(muid, modelType)
+	if len(mibs) == 0 && modelType != 2 {
+		mibs = SnmpModelMibsGet(muid, 2)
+	}
+	for _, m := range mibs {
+		if m.Name == "" || m.Uuid == "" {
+			continue
+		}
+		item := map[string]string{
+			"name": m.Name,
+			"uuid": m.Uuid,
+		}
+		if m.DataUnit != "" {
+			item["unit"] = m.DataUnit
+		}
+		if m.OidType != "" {
+			item["type"] = m.OidType
+		}
+		out = append(out, item)
+	}
+	return out
 }
 
 // mib删除

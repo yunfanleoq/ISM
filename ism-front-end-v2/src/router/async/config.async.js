@@ -20,6 +20,7 @@ const routesConfig = [
   'DisPlayRunApp',
   'ShareApp',
   'AppLogin',
+  'AutoGenWorkbench',
   'root',
 ]
 

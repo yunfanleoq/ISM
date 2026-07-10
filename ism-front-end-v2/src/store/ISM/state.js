@@ -85,8 +85,15 @@ export default {
   ISMCavasDND:null,
   selectedNode:null,
   curPageUuid:"",
+  pageLayerLoading: false,
   UnSelectedComponent:null,
   isLocked: false,
+  // 层级模板页运行时上下文（导航注入）
+  navContext: null,
+  // 导航树索引（bySid / byOldPageId，槽位重映射与 GoPage 兜底用）
+  navTreeIndex: null,
+  // 层级模板页映射（/displayModelTemplateMap 结果）
+  navTemplateMap: null,
   // 存储用户真实密码（实际项目需从接口获取或加密存储，此处仅为示例）
   realPassword: '123456' // 实际项目需替换为用户登录后的加密密码
 }

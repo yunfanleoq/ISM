@@ -44,7 +44,7 @@
                       </a-form-item>
                       <a-form-item style="margin-bottom: 5px;">
                         <a-checkbox style="float: left"
-                                    v-decorator="['autologin']"
+                                    v-decorator="['autologin', { valuePropName: 'checked' }]"
                         >{{$t('loginPage.AutoLogin')}}</a-checkbox>
                       </a-form-item>
                       <a-form-item>
@@ -85,9 +85,11 @@ import CommonLayout from '@/layouts/CommonLayout'
 import {login, getRoutesConfig} from '@/services/user'
 import {AUTH_TYPE, checkAuthorization, setAuthorization} from '@/utils/request'
 import {loadRoutes} from '@/utils/routerUtil'
-import {mapState, mapMutations} from 'vuex'
+import {mapState, mapMutations, mapGetters} from 'vuex'
 import md5 from 'js-md5';
 import {GetSystemParams} from "@/services/system";
+import {ProjectList} from "@/services/project";
+import {applyHomeProjectAuth} from '@/config/homeDashboard'
 export default {
   name: 'Login',
   components: {},
@@ -101,6 +103,7 @@ export default {
   },
   computed: {
     ...mapState('setting', ['langList','isMobile','lang','skeletonLoading']),
+    ...mapGetters('setting', ['homeDashboardPath']),
     systemName () {
       return this.$store.state.setting.systemName
     },
@@ -120,10 +123,6 @@ export default {
   mounted() {
   },
   created(){
-    if(this.isMobile)
-    {
-      this.$router.push('/loginPhone')
-    }
     this.GetSystemCas()
     let autologin = localStorage.getItem("autologin")
     let User =  localStorage.getItem("User")
@@ -176,27 +175,51 @@ export default {
         this.setRoles(roles)
         this.setRoutesConfig(user.Menu)
         localStorage.setItem("LoginFrom",'/login')
-        loadRoutes(user.Menu)
         setAuthorization({token: loginRes.data.token, expireAt: loginRes.data.expireAt})
-        if(roles[0].id=="User")
-        {
-          setAuthorization({token: user.ProjectUUID},AUTH_TYPE.AUTH1)
-          this.$router.push('/UserDisplayList/'+user.Uuid)
-        }
-        else if(roles[0].id=="Operator")
-        {
-          setAuthorization({token: user.ProjectUUID},AUTH_TYPE.AUTH1)
-          this.$router.push('/dashboard')
-        }
-        else
-        {
-          this.$router.push('/project')
-        }
-
         this.$message.success(this.$t('loginPage.logonSuccess'), 3)
+        const _t = this
+        const proceedAfterLogin = () => {
+          loadRoutes(user.Menu)
+          _t.enterAfterAuth(roles, user)
+        }
+        this.$store.dispatch('setting/fetchSystemHomeDashboard')
+          .then(proceedAfterLogin)
+          .catch(function () {
+            proceedAfterLogin()
+          })
       } else {
         this.$message.error(this.$t('loginPage.logonFailed'), 3)
       }
+    },
+    // 根据当前用户可访问项目数量决定登录落地页：
+    //  - User/Operator：已绑定单一项目，写入 ProjectUuid 后直接进大屏
+    //  - Admin/其它：仅 1 个项目则自动选中并进大屏；多个项目则进项目选择页
+    enterAfterAuth(roles, user) {
+      const _t = this
+      const roleId = (roles && roles[0]) ? roles[0].id : ''
+      const goHome = () => {
+        applyHomeProjectAuth(_t.$store)
+        _t.$router.push(_t.homeDashboardPath)
+      }
+      if (roleId == "User" || roleId == "Operator") {
+        if (user && user.ProjectUUID) {
+          setAuthorization({token: user.ProjectUUID}, AUTH_TYPE.AUTH1)
+        }
+        goHome()
+        return
+      }
+      ProjectList().then(function (res) {
+        const list = (res && res.data && res.data.code == 0 && res.data.list) ? res.data.list : []
+        if (list.length == 1 && list[0].ProjectInfo) {
+          setAuthorization({token: list[0].ProjectInfo.uuid}, AUTH_TYPE.AUTH1)
+          goHome()
+        } else {
+          _t.$router.push('/project')
+        }
+      }).catch(function () {
+        applyHomeProjectAuth(_t.$store)
+        goHome()
+      })
     },
     GetSystemCas(){
       let _t = this
@@ -210,7 +233,10 @@ export default {
           loadRoutes(user.Menu)
           if(roles[0].id=="Admin")
           {
-            _t.$router.push('/project')
+            _t.$store.dispatch('setting/fetchSystemHomeDashboard').then(function () {
+              loadRoutes(user.Menu)
+              _t.enterAfterAuth(roles, user)
+            })
           }
         }
       }).catch(function(e){

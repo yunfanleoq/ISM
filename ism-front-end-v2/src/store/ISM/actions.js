@@ -3,6 +3,91 @@ import {GetDisplayLoginPage} from "@/services/system";
 import { uuid } from 'vue-uuid';
 import {getDisplayModelPagerLayerData} from "../../services/displayModel";
 import {normalizeISMScene} from "@/pages/ISMDisPlay/utils/ismSceneNormalizer";
+import {ismDebug} from "@/utils/ismDebug";
+import {resolvePageComponentsAsync, ensureTemplatePageLayer} from "@/pages/ISMDisPlay/utils/navContextBinding";
+import {applyDeviceListPagination, isDeviceListNav, resolveDeviceListTemplateId} from "@/pages/ISMDisPlay/utils/deviceListPager";
+import {resolveDeviceSignalTemplateId} from "@/pages/ISMDisPlay/utils/deviceSignalTemplate";
+import {resolveOldPageTarget} from "@/pages/ISMDisPlay/utils/navTreeIndex";
+import {applyDeviceDetailPagination} from "@/pages/ISMDisPlay/utils/deviceDetailPager";
+import {sanitizeGraphComponents} from "@/pages/ISMDisPlay/utils/graphCellSanitizer";
+import {applyDatapointPagination} from "@/pages/ISMDisPlay/utils/navContext";
+
+/**
+ * 若存在 navContext，对页 components 做相对绑点解析（不写回缓存原页，避免污染模板）。
+ */
+async function applyNavContextToPageConfig(ctx, tempConfigData) {
+    if (!tempConfigData) {
+        return tempConfigData
+    }
+    ensureTemplatePageLayer(tempConfigData)
+    if (!tempConfigData.components) {
+        tempConfigData.components = { cells: [] }
+    }
+    const finish = (cfg) => ({
+        ...cfg,
+        components: sanitizeGraphComponents(cfg.components, { tag: 'applyNavContextToPageConfig' }),
+    })
+    let nav = ctx.state.navContext
+    if (!nav) {
+        return finish(tempConfigData)
+    }
+    try {
+        if (isDeviceListNav(nav)) {
+            nav = applyDeviceListPagination(nav)
+        } else if (nav.signalMode || nav.routeMode === 'signal') {
+            // 信号层测点表：不要走设备详情行分页，否则会冲掉 datapoint 分页元数据
+            nav = applyDatapointPagination(nav)
+        } else if (nav.kind === 'device' || nav.kind === 'registerGroup') {
+            const peek = applyDeviceDetailPagination(
+                JSON.parse(JSON.stringify(tempConfigData.components.cells)),
+                { ...nav, detailPageIndex: nav.detailPageIndex || 0 },
+            )
+            nav = peek.nav
+        }
+        try {
+            ctx.commit('setNavContext', nav)
+        } catch (e) { /* ignore */ }
+        const resolved = await resolvePageComponentsAsync(tempConfigData.components, nav, {
+            treeIndex: ctx.state.navTreeIndex,
+            templateMap: ctx.state.navTemplateMap,
+        })
+        // resolve 内可能再次分页，把最新 total/pageIndex 写回 store
+        try {
+            const latest = ctx.state.navContext
+            if (latest && (latest.signalMode || latest.routeMode === 'signal')) {
+                ctx.commit('setNavContext', applyDatapointPagination({
+                    ...latest,
+                    datapointPageIndex: (nav && nav.datapointPageIndex) || latest.datapointPageIndex || 0,
+                }))
+            }
+        } catch (e) { /* ignore */ }
+        return finish({ ...tempConfigData, components: resolved })
+    } catch (e) {
+        console.warn('[applyNavContextToPageConfig]', e && e.message)
+        return finish(tempConfigData)
+    }
+}
+
+/**
+ * 安全收集 active 条件绑定，避免 condition 缺失时抛错打断大屏加载。
+ */
+function collectActiveBindings(activeList, bangDingData, bangDingDeviceSN) {
+    if (!activeList || !activeList.length) {
+        return
+    }
+    for (let kv = 0; kv < activeList.length; kv++) {
+        const condition = activeList[kv] && activeList[kv].condition
+        if (!condition) {
+            continue
+        }
+        if (condition.dataID) {
+            bangDingData.push(condition.dataID)
+        }
+        if (condition.deviceSN) {
+            bangDingDeviceSN.push(condition.deviceSN)
+        }
+    }
+}
 
 function pascalToKebab(str) {
     if (!str) return ''
@@ -12,6 +97,59 @@ function pascalToKebab(str) {
         .replace(/([a-z0-9])([A-Z])/g, '$1-$2')
         .replace(/([A-Z]+)([A-Z][a-z])/g, '$1-$2')
         .toLowerCase()
+}
+
+/**
+ * 安全收集 animate 绑定。旧组态数据常有 animate 但缺 condition，
+ * 直接读 animate.condition.dataID 会抛错，导致大屏 callback 中断、pageLoading 永不关闭。
+ */
+function collectAnimateBindings(animate, bangDingData, bangDingDeviceSN) {
+    if (!animate || typeof animate !== 'object') {
+        return
+    }
+    const condition = animate.condition
+    if (condition && condition.dataID) {
+        if (condition.deviceSN) {
+            bangDingDeviceSN.push(condition.deviceSN)
+        }
+        bangDingData.push(condition.dataID)
+    }
+    const move = animate.move
+    if (!move || typeof move !== 'object') {
+        return
+    }
+    if (move.x) {
+        if (move.x.deviceSN) {
+            bangDingDeviceSN.push(move.x.deviceSN)
+        }
+        if (move.x.dataID) {
+            bangDingData.push(move.x.dataID)
+        }
+    }
+    if (move.y) {
+        if (move.y.deviceSN) {
+            bangDingDeviceSN.push(move.y.deviceSN)
+        }
+        if (move.y.dataID) {
+            bangDingData.push(move.y.dataID)
+        }
+    }
+}
+
+/** 解析 API 返回的 layer/components 原始字段（metaOnly 模板页 layer 可能为空字符串） */
+function parseRawPageLayerFields(pageData) {
+    if (typeof pageData.layer === 'string') {
+        pageData.layer = pageData.layer !== '' ? JSON.parse(pageData.layer) : {}
+    } else if (!pageData.layer || typeof pageData.layer !== 'object') {
+        pageData.layer = {}
+    }
+    if (pageData.components === '' || pageData.components == null) {
+        pageData.components = { cells: [] }
+    } else if (typeof pageData.components === 'string') {
+        pageData.components = JSON.parse(pageData.components)
+    }
+    ensureTemplatePageLayer(pageData)
+    return pageData
 }
 
 function normalizePageConfigData(pageData) {
@@ -51,6 +189,20 @@ function normalizePageConfigData(pageData) {
         componentsInput = pageData.components
     }
 
+    // metaOnly 占位页：无 cells 时跳过重型 normalize，减少首屏 CPU
+    if (!componentsInput.cells || componentsInput.cells.length === 0) {
+        if (typeof pageData.layer === 'string') {
+            try {
+                pageData.layer = pageData.layer ? JSON.parse(pageData.layer) : {}
+            } catch (e) {
+                pageData.layer = {}
+            }
+        }
+        pageData.layer = pageData.layer || {}
+        pageData.components = { cells: [] }
+        return pageData
+    }
+
     const normalized = normalizeISMScene({
         layer: pageData.layer,
         components: componentsInput
@@ -68,17 +220,409 @@ function isDisplayPagesLoaded(ctx, displayUUID) {
     return pageList.some(page => page.pageModelUuid == displayUUID)
 }
 
+function buildPageTreeChildren(tempConfigData) {
+    const children = []
+    const cells = tempConfigData && tempConfigData.components && tempConfigData.components.cells
+    if (!cells || !cells.length) {
+        return children
+    }
+    for (let k = 0; k < cells.length; k++) {
+        if (typeof cells[k].data === 'undefined' || typeof cells[k].data.detail === 'undefined') {
+            continue
+        }
+        children.push({
+            isComponents: true,
+            title: cells[k].data.detail.name,
+            key: cells[k].id,
+            cellid: cells[k].data.detail.identifier
+        })
+    }
+    return children
+}
+
+function markMetaOnlyLazyState(pageInfo, tempConfigData, metaOnly, isHome) {
+    const hasCells = tempConfigData.components && tempConfigData.components.cells && tempConfigData.components.cells.length > 0
+    const isLazyPlaceholder = metaOnly && !hasCells && isHome != 1
+    pageInfo._lazyLoaded = !isLazyPlaceholder
+    if (isLazyPlaceholder) {
+        tempConfigData.components = {cells: []}
+    } else if (!metaOnly) {
+        pageInfo._lazyLoaded = true
+    }
+    return tempConfigData
+}
+
+function mergePageLayerFromExisting(pageInfo, oldPc, oldPhone) {
+    const lists = [oldPc || [], oldPhone || []]
+    for (let li = 0; li < lists.length; li++) {
+        const oldList = lists[li]
+        for (let j = 0; j < oldList.length; j++) {
+            if (oldList[j].pageUuid === pageInfo.pageUuid && oldList[j]._lazyLoaded && oldList[j].pageLayerData) {
+                pageInfo.pageLayerData = oldList[j].pageLayerData
+                pageInfo._lazyLoaded = true
+                pageInfo.children = buildPageTreeChildren(oldList[j].pageLayerData)
+                return
+            }
+        }
+    }
+}
+
+function findPageInLists(ctx, pageid) {
+    const lists = [ctx.state.PCPageList || [], ctx.state.PhonePageList || []]
+    for (let i = 0; i < lists.length; i++) {
+        const hit = lists[i].find(p => p && p.pageUuid === pageid)
+        if (hit) return hit
+    }
+    return null
+}
+
+function upsertPCPageInfo(ctx, pageInfo) {
+    const list = ctx.state.PCPageList ? ctx.state.PCPageList.slice() : []
+    const idx = list.findIndex(p => p && p.pageUuid === pageInfo.pageUuid)
+    if (idx >= 0) {
+        list[idx] = { ...list[idx], ...pageInfo }
+    } else {
+        list.push(pageInfo)
+    }
+    ctx.state.PCPageList = list
+    return pageInfo
+}
+
+function buildPageInfoFromConfig(pageid, displayUUID, cfg) {
+    return {
+        id: cfg.ID || 0,
+        key: 0,
+        isEdit: false,
+        pageUuid: pageid,
+        pageModelUuid: displayUUID || cfg.modelId || '',
+        isNewItem: false,
+        title: cfg.PageName || cfg.name || pageid,
+        depth: 1,
+        pageType: cfg.PageType != null ? cfg.PageType : 1,
+        scopedSlots: { title: 'custom' },
+        isComponents: false,
+        IsHome: cfg.IsHome || 0,
+        IsLogin: cfg.IsLogin || 0,
+        templateKind: cfg.templateKind || cfg.TemplateKind || '',
+        templateModelUuid: cfg.templateModelUuid || cfg.TemplateModelUuid || '',
+        children: buildPageTreeChildren(cfg),
+        _lazyLoaded: true,
+        pageLayerData: cfg,
+    }
+}
+
+/** PCPageList 缺页或整表为空时，按需拉取并注入条目（导航模板页 fallback 依赖此路径） */
+function ensurePageRegistered(ctx, pageid, displayUUID) {
+    if (!pageid) return Promise.resolve(null)
+    const existing = findPageInLists(ctx, pageid)
+    if (existing) return Promise.resolve(existing)
+    return loadSinglePageLayer(pageid).then(function (cfg) {
+        if (!cfg) return null
+        const pageInfo = buildPageInfoFromConfig(pageid, displayUUID, cfg)
+        if (pageInfo.pageType === 1) {
+            upsertPCPageInfo(ctx, pageInfo)
+        }
+        return pageInfo
+    })
+}
+
+// 按需加载: 运行态(AppRun)与编辑器首屏只拉取页面元数据 + 首页 components，
+// 其余页面在下钻/点选时按 page_id 单独拉取(见 loadSinglePageLayer / selectDisplayPageDataStruct)。
+// 禁止 metaOnly 失败后回退全量加载（会导致 30s 超时与内存打满）。
+const pendingPageLayerLoads = new Map()
+
+function loadSinglePageLayer(pageid) {
+    if (pendingPageLayerLoads.has(pageid)) {
+        return pendingPageLayerLoads.get(pageid)
+    }
+    const promise = getDisplayModelPagerLayerData({pageid: pageid}).then(function (res) {
+        if (!res || !res.data || res.data.code != 0) {
+            return null
+        }
+        let cfg = res.data.layer
+        try {
+            cfg = parseRawPageLayerFields(cfg)
+            cfg = normalizePageConfigData(cfg)
+        } catch (e) {
+            console.error('[loadSinglePageLayer] parse error:', e && e.message)
+            return null
+        }
+        return cfg
+    }).catch(function (e) {
+        console.error('[loadSinglePageLayer] request error:', e && e.message)
+        return null
+    }).finally(function () {
+        pendingPageLayerLoads.delete(pageid)
+    })
+    pendingPageLayerLoads.set(pageid, promise)
+    return promise
+}
+
+// ---------- 大屏按需加载 + 空闲 LRU 预取 ----------
+// 原则：用户展开/下钻时才同步拉取；浏览器空闲时按链接关系预测下一页并静默预取。
+// 预取失败不重试，避免打爆后端；候选数压到 3，降低并发。
+const PREFETCH_MAX_CANDIDATES = 3
+const PREFETCH_TRIGGER_DELAY_MS = 800
+let prefetchQueue = []
+let prefetchTimer = null
+let prefetchRunning = false
+
+function cancelIdlePrefetch() {
+    if (prefetchTimer) {
+        clearTimeout(prefetchTimer)
+        prefetchTimer = null
+    }
+    prefetchQueue = []
+    prefetchRunning = false
+}
+
+function scheduleIdleTask(fn) {
+    if (typeof requestIdleCallback === 'function') {
+        requestIdleCallback(fn, {timeout: 2500})
+    } else {
+        setTimeout(fn, 150)
+    }
+}
+
+function collectPageUUIDs(obj, out, depth) {
+    if (!obj || depth > 10) {
+        return
+    }
+    if (typeof obj !== 'object') {
+        return
+    }
+    if (typeof obj.pageUUID === 'string' && obj.pageUUID) {
+        out.push(obj.pageUUID)
+    }
+    if (typeof obj.pageUuid === 'string' && obj.pageUuid) {
+        out.push(obj.pageUuid)
+    }
+    if (typeof obj.PageID === 'string' && obj.PageID) {
+        out.push(obj.PageID)
+    }
+    const keys = Object.keys(obj)
+    for (let i = 0; i < keys.length; i++) {
+        collectPageUUIDs(obj[keys[i]], out, depth + 1)
+    }
+}
+
+function extractPageLinkTargets(pageLayerData) {
+    const targets = []
+    const cells = pageLayerData && pageLayerData.components && pageLayerData.components.cells
+    if (!cells || !cells.length) {
+        return targets
+    }
+    for (let i = 0; i < cells.length; i++) {
+        const detail = cells[i] && cells[i].data && cells[i].data.detail
+        if (detail) {
+            collectPageUUIDs(detail, targets, 0)
+        }
+    }
+    return targets
+}
+
+function applyLoadedPageLayer(ctx, pageid, cfg) {
+    if (!cfg) {
+        return
+    }
+    const lists = [ctx.state.PCPageList || [], ctx.state.PhonePageList || []]
+    for (let li = 0; li < lists.length; li++) {
+        const pageList = lists[li]
+        for (let i = 0; i < pageList.length; i++) {
+            if (pageList[i].pageUuid === pageid) {
+                pageList[i]._lazyLoaded = true
+                pageList[i].pageLayerData = cfg
+                pageList[i].children = buildPageTreeChildren(cfg)
+                return
+            }
+        }
+    }
+}
+
+function isPagePrefetchable(ctx, pageid) {
+    const pageList = [...(ctx.state.PCPageList || []), ...(ctx.state.PhonePageList || [])]
+    for (let i = 0; i < pageList.length; i++) {
+        const page = pageList[i]
+        if (page.pageUuid !== pageid) {
+            continue
+        }
+        if (page.IsHome == 1 || page._lazyLoaded) {
+            return false
+        }
+        if (pendingPageLayerLoads.has(pageid)) {
+            return false
+        }
+        return true
+    }
+    return false
+}
+
+function scorePrefetchCandidates(ctx, anchorPageId) {
+    const pageList = [...(ctx.state.PCPageList || []), ...(ctx.state.PhonePageList || [])]
+    const scores = new Map()
+    const addScore = (pageid, score) => {
+        if (!pageid) {
+            return
+        }
+        scores.set(pageid, (scores.get(pageid) || 0) + score)
+    }
+
+    const anchor = pageList.find(p => p.pageUuid === anchorPageId)
+    if (anchor && anchor.pageLayerData) {
+        extractPageLinkTargets(anchor.pageLayerData).forEach((pid, idx) => addScore(pid, 100 - idx))
+    }
+    const home = pageList.find(p => p.IsHome == 1)
+    if (home && home.pageLayerData) {
+        extractPageLinkTargets(home.pageLayerData).forEach((pid, idx) => addScore(pid, 60 - idx))
+    }
+    const anchorIdx = pageList.findIndex(p => p.pageUuid === anchorPageId)
+    if (anchorIdx >= 0) {
+        for (let d = 1; d <= 3; d++) {
+            if (pageList[anchorIdx + d]) {
+                addScore(pageList[anchorIdx + d].pageUuid, 24 - d)
+            }
+            if (pageList[anchorIdx - d]) {
+                addScore(pageList[anchorIdx - d].pageUuid, 24 - d)
+            }
+        }
+    }
+    for (let i = 0; i < lazyPageLRU.length; i++) {
+        const entry = lazyPageLRU[i]
+        const recent = pageList.find(p => p.pageUuid === entry.pageid)
+        if (recent && recent.pageLayerData) {
+            extractPageLinkTargets(recent.pageLayerData).forEach((pid, idx) => addScore(pid, 18 - idx - i))
+        }
+    }
+    return scores
+}
+
+function pumpIdlePrefetch(ctx, anchorPageId) {
+    if (prefetchRunning) {
+        return
+    }
+    const scores = scorePrefetchCandidates(ctx, anchorPageId)
+    prefetchQueue = [...scores.entries()]
+        .filter(([pageid]) => isPagePrefetchable(ctx, pageid))
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, PREFETCH_MAX_CANDIDATES)
+        .map(([pageid]) => pageid)
+    if (!prefetchQueue.length) {
+        return
+    }
+    prefetchRunning = true
+
+    const runSlice = (deadline) => {
+        while (prefetchQueue.length > 0) {
+            const timeLeft = deadline && typeof deadline.timeRemaining === 'function'
+                ? deadline.timeRemaining()
+                : 50
+            if (timeLeft < 4 && !(deadline && deadline.didTimeout)) {
+                scheduleIdleTask(runSlice)
+                return
+            }
+            const pageid = prefetchQueue.shift()
+            if (!pageid || !isPagePrefetchable(ctx, pageid)) {
+                continue
+            }
+            loadSinglePageLayer(pageid).then(function (cfg) {
+                applyLoadedPageLayer(ctx, pageid, cfg)
+            }).finally(function () {
+                if (prefetchQueue.length > 0) {
+                    scheduleIdleTask(runSlice)
+                } else {
+                    prefetchRunning = false
+                }
+            })
+            return
+        }
+        prefetchRunning = false
+    }
+    scheduleIdleTask(runSlice)
+}
+
+function triggerIdlePrefetch(ctx, anchorPageId) {
+    if (!anchorPageId) {
+        return
+    }
+    if (prefetchTimer) {
+        clearTimeout(prefetchTimer)
+    }
+    prefetchTimer = setTimeout(function () {
+        prefetchTimer = null
+        pumpIdlePrefetch(ctx, anchorPageId)
+    }, PREFETCH_TRIGGER_DELAY_MS)
+}
+
+// 按需加载页面的 LRU 缓存：下钻访问过的非主页页面会把 components 常驻内存，
+// 页面极多时(数千页)会持续累积。这里按"最久未访问"顺序逐步释放，只保留主页 +
+// 当前页 + 最近 LAZY_PAGE_CACHE_LIMIT 个页面，被释放的页面下次访问会重新按需拉取。
+const LAZY_PAGE_CACHE_LIMIT = 12
+let lazyPageLRU = [] // [{pageid, at}] 访问记录。自封顶: 超限即按最久未访问回收, 切换大屏后旧 id 也会被优先淘汰
+
+function touchAndReleaseLazyPages(ctx, currentPageId, isHome) {
+    if (isHome) {
+        return // 主页常驻, 不纳入回收
+    }
+    const now = Date.now()
+    let hit = null
+    for (let i = 0; i < lazyPageLRU.length; i++) {
+        if (lazyPageLRU[i].pageid === currentPageId) { hit = lazyPageLRU[i]; break }
+    }
+    if (hit) {
+        hit.at = now
+    } else {
+        lazyPageLRU.push({pageid: currentPageId, at: now})
+    }
+    if (lazyPageLRU.length <= LAZY_PAGE_CACHE_LIMIT) {
+        return
+    }
+    lazyPageLRU.sort((a, b) => a.at - b.at) // 旧 → 新
+    const pcList = ctx.state.PCPageList || []
+    while (lazyPageLRU.length > LAZY_PAGE_CACHE_LIMIT) {
+        const victim = lazyPageLRU[0]
+        if (victim.pageid === currentPageId) {
+            break // 当前页不释放
+        }
+        lazyPageLRU.shift()
+        for (let i = 0; i < pcList.length; i++) {
+            if (pcList[i].pageUuid === victim.pageid && pcList[i].IsHome != 1) {
+                if (pcList[i].pageLayerData && pcList[i].pageLayerData.components) {
+                    pcList[i].pageLayerData.components = {cells: []} // 释放组件, GC 回收
+                }
+                pcList[i]._lazyLoaded = false // 下次访问重新按需拉取
+                break
+            }
+        }
+    }
+}
+
 export const getLayerDataStruct = (ctx,data) => {
+    // 兼容旧调用：直接传 displayUUID 字符串
+    if (typeof data === 'string') {
+        data = { uuid: data, metaOnly: true, cb: function () {} }
+    } else if (!data || typeof data !== 'object') {
+        data = { uuid: '', metaOnly: true, cb: function () {} }
+    }
+    // 默认走 metaOnly 按需加载；仅显式 metaOnly:false 才全量（一般禁止）
+    if (data.metaOnly !== false) {
+        data.metaOnly = true
+    }
     let params={
-        muid:data.uuid
+        muid:data.uuid,
+        metaOnly: !!data.metaOnly
     }
     let bangDingData=[]
     let bangDingDeviceSN=[]
     let isPopUp = data.isPopUp?data.isPopUp:false
+    if (!isPopUp) {
+        lazyPageLRU = []
+        pendingPageLayerLoads.clear()
+        cancelIdlePrefetch()
+    }
     getDisplayModelLayerData(params).then(function (res){
         if(res.data.code==0)
         {
-            let pageLayer = res.data.layer
+            let pageLayer = res.data.layer || []
             let is_find_home = 0
             if(pageLayer.length>0)
             {
@@ -109,44 +653,24 @@ export const getLayerDataStruct = (ctx,data) => {
                     pageInfo.pageUuid = pageLayer[i].PageId
                     pageInfo.pageType = pageLayer[i].PageType
                     pageInfo.pageModelUuid = pageLayer[i].modelId
+                    pageInfo.templateKind = pageLayer[i].templateKind || pageLayer[i].TemplateKind || ''
+                    pageInfo.templateModelUuid = pageLayer[i].templateModelUuid || pageLayer[i].TemplateModelUuid || ''
                     pageInfo.children=[]
 
                     pageLayer[i].name = pageLayer[i].PageName
                     let tempConfigData = pageLayer[i]
                     try{
-                        tempConfigData.layer = JSON.parse(tempConfigData.layer)
-                        if (tempConfigData.components=="")
-                        {
-                            tempConfigData.components=[]
-                        }
-                        else{
-                            tempConfigData.components = JSON.parse(tempConfigData.components)
-                        }
+                        tempConfigData = parseRawPageLayerFields(tempConfigData)
                         tempConfigData = normalizePageConfigData(tempConfigData)
+                        tempConfigData = markMetaOnlyLazyState(pageInfo, tempConfigData, !!data.metaOnly, pageLayer[i].IsHome)
 
                     }catch (e) {
                         console.error('[getLayerDataStruct] parse/normalize error:', e.message || e, 'stack:', (e.stack || '').slice(0,400))
-                        tempConfigData.components.cells=[]
-                        continue
+                        tempConfigData.layer = {}
+                        tempConfigData.components = { cells: [] }
+                        tempConfigData = markMetaOnlyLazyState(pageInfo, tempConfigData, !!data.metaOnly, pageLayer[i].IsHome)
                     }
-                    for(let k=0;k<tempConfigData.components.cells.length;k++)
-                    {
-                        if(typeof(tempConfigData.components.cells[k].data)=="undefined")
-                        {
-                            continue
-                        }
-                        if(typeof(tempConfigData.components.cells[k].data.detail)=="undefined")
-                        {
-                            continue
-                        }
-                        let components = {
-                            isComponents:true,
-                            title:tempConfigData.components.cells[k].data.detail.name,
-                            key:tempConfigData.components.cells[k].id,
-                            cellid:tempConfigData.components.cells[k].data.detail.identifier
-                        }
-                        pageInfo.children.push(components)
-                    }
+                    pageInfo.children = buildPageTreeChildren(tempConfigData)
 
                     if(pageLayer[i].IsHome==1&!isPopUp)
                     {
@@ -166,59 +690,10 @@ export const getLayerDataStruct = (ctx,data) => {
                                     {
                                         continue
                                     }
-                                    if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                                        for (let kv = 0; kv < tempConfigData.components.cells[k].data.detail.active.length; kv++) {
-                                            if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                                                bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                                            }
-                                            if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                                            }
-                                        }
-                                    }
+                                    collectActiveBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                                    if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
-                                    {
-                                        if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                                        }
-                                        bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                                    }
+                                    collectAnimateBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
 
-                                    if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                                    {
-                                        if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!="") {
-                                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                                        }
-                                        bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                                        if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                                        }
-                                        bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                                    }
-                                    else{
-                                        if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                                            tempConfigData.components.cells[k].data.detail.animate.move = {
-                                                x: {
-                                                    deviceSN: "",
-                                                    selectVideoType: 0,
-                                                    isBandDevice: false,
-                                                    bandType: 1,
-                                                    dataID: "",
-                                                    dataName: "",
-                                                },
-                                                y: {
-                                                    deviceSN: "",
-                                                    selectVideoType: 0,
-                                                    isBandDevice: false,
-                                                    bandType: 1,
-                                                    dataID: "",
-                                                    dataName: "",
-                                                },
-                                            }
-                                        }
-                                    }
                                 }
                                 ctx.state.LayerData = tempConfigData
                             }
@@ -238,58 +713,9 @@ export const getLayerDataStruct = (ctx,data) => {
                                     {
                                         continue
                                     }
-                                    if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                                        for (let kv = 0; kv < tempConfigData.components.cells[k].data.detail.active.length; kv++) {
-                                            if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                                                bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                                            }
-                                            if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                                            }
-                                        }
-                                    }
+                                    collectActiveBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                                    if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
-                                    {
-                                        if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                                        }
-                                        bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                                    }
-                                    if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                                    {
-                                        if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!=="") {
-                                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                                        }
-                                        bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                                        if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                                        }
-                                        bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                                    }
-                                    else{
-                                        if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                                            tempConfigData.components.cells[k].data.detail.animate.move = {
-                                                x: {
-                                                    deviceSN: "",
-                                                    selectVideoType: 0,
-                                                    isBandDevice: false,
-                                                    bandType: 1,
-                                                    dataID: "",
-                                                    dataName: "",
-                                                },
-                                                y: {
-                                                    deviceSN: "",
-                                                    selectVideoType: 0,
-                                                    isBandDevice: false,
-                                                    bandType: 1,
-                                                    dataID: "",
-                                                    dataName: "",
-                                                },
-                                            }
-                                        }
-                                    }
+                                    collectAnimateBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
                                 }
                                 ctx.state.LayerData = tempConfigData
                             }
@@ -307,72 +733,27 @@ export const getLayerDataStruct = (ctx,data) => {
                 }
                 if(is_find_home==0&!isPopUp)
                 {
-                    let tempConfigData = pageLayer[0]
-                    ctx.state.selectPageUuid = pageLayer[0].PageId
-                    for(let k=0;k<tempConfigData.components.cells.length;k++)
-                    {
-                        if(typeof(tempConfigData.components.cells[k].data)=="undefined")
+                    const fallbackPage = pcPageData[0] || phonePageData[0]
+                    const tempConfigData = fallbackPage && fallbackPage.pageLayerData
+                    if (tempConfigData) {
+                        ctx.state.selectPageUuid = fallbackPage.pageUuid || pageLayer[0].PageId
+                        const cells = (tempConfigData.components && tempConfigData.components.cells) ? tempConfigData.components.cells : []
+                        for(let k=0;k<cells.length;k++)
                         {
-                            continue
-                        }
-                        if(typeof(tempConfigData.components.cells[k].data.detail)=="undefined")
-                        {
-                            continue
-                        }
-                        if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                            for (let kv = 0; kv < tempConfigData.components.cells[k].data.detail.active.length; kv++) {
-                                if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                                    bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                                }
-                                if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                                    bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                                }
+                            if(typeof(cells[k].data)=="undefined")
+                            {
+                                continue
                             }
-                        }
+                            if(typeof(cells[k].data.detail)=="undefined")
+                            {
+                                continue
+                            }
+                            collectActiveBindings((cells[k].data && cells[k].data.detail) ? cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                        if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
-                        {
-                            if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
+                            collectAnimateBindings((cells[k].data && cells[k].data.detail) ? cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
                         }
-                        if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                        {
-                            if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                            if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                        }
-                        else{
-                            if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                                tempConfigData.components.cells[k].data.detail.animate.move = {
-                                    x: {
-                                        deviceSN: "",
-                                        selectVideoType: 0,
-                                        isBandDevice: false,
-                                        bandType: 1,
-                                        dataID: "",
-                                        dataName: "",
-                                    },
-                                    y: {
-                                        deviceSN: "",
-                                        selectVideoType: 0,
-                                        isBandDevice: false,
-                                        bandType: 1,
-                                        dataID: "",
-                                        dataName: "",
-                                    },
-                                }
-                            }
-                        }
+                        ctx.state.LayerData = tempConfigData
                     }
-                    ctx.state.LayerData = tempConfigData
                 }
                 ctx.state.PCPageList = pcPageData
                 ctx.state.PhonePageList = phonePageData
@@ -383,25 +764,36 @@ export const getLayerDataStruct = (ctx,data) => {
             }
             let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
             data.cb(0,res.data.Display.project_uuid,bangDingData,newbangDingDeviceSN)
+            if (data.metaOnly && !isPopUp) {
+                triggerIdlePrefetch(ctx, ctx.state.selectPageUuid)
+            }
         }
         else
         {
+            // 禁止 metaOnly 失败后回退全量加载：大屏页多时会 30s+ 超时并打满内存
+            console.error('[getLayerDataStruct] metaOnly/full response code!=0, code=', res && res.data && res.data.code)
             data.cb(-1,"",bangDingData,bangDingDeviceSN)
         }
 
+    }).catch(function (e) {
+        console.error('[getLayerDataStruct] request error:', e && e.message)
+        data.cb(-1,"",bangDingData,bangDingDeviceSN)
     })
 }
 export const updateAllLayerDataStruct = (ctx,data) => {
+    const useMetaOnly = data.metaOnly !== false
     let params={
-        muid:data.uuid
+        muid:data.uuid,
+        metaOnly: useMetaOnly
     }
     let bangDingData=[]
     let bangDingDeviceSN=[]
-    let isPopUp = data.isPopUp?data.isPopUp:false
+    const oldPc = ctx.state.PCPageList || []
+    const oldPhone = ctx.state.PhonePageList || []
     getDisplayModelLayerData(params).then(function (res){
         if(res.data.code==0)
         {
-            let pageLayer = res.data.layer
+            let pageLayer = res.data.layer || []
             let is_find_home = 0
             if(pageLayer.length>0)
             {
@@ -432,44 +824,25 @@ export const updateAllLayerDataStruct = (ctx,data) => {
                     pageInfo.pageUuid = pageLayer[i].PageId
                     pageInfo.pageType = pageLayer[i].PageType
                     pageInfo.pageModelUuid = pageLayer[i].modelId
+                    pageInfo.templateKind = pageLayer[i].templateKind || pageLayer[i].TemplateKind || ''
+                    pageInfo.templateModelUuid = pageLayer[i].templateModelUuid || pageLayer[i].TemplateModelUuid || ''
                     pageInfo.children=[]
 
                     pageLayer[i].name = pageLayer[i].PageName
                     let tempConfigData = pageLayer[i]
                     try{
-                        tempConfigData.layer = JSON.parse(tempConfigData.layer)
-                        if (tempConfigData.components=="")
-                        {
-                            tempConfigData.components=[]
-                        }
-                        else{
-                            tempConfigData.components = JSON.parse(tempConfigData.components)
-                        }
+                        tempConfigData = parseRawPageLayerFields(tempConfigData)
                         tempConfigData = normalizePageConfigData(tempConfigData)
+                        tempConfigData = markMetaOnlyLazyState(pageInfo, tempConfigData, useMetaOnly, pageLayer[i].IsHome)
 
                     }catch (e) {
                         console.error('[getLayerDataStruct] parse/normalize error:', e.message || e, 'stack:', (e.stack || '').slice(0,400))
-                        tempConfigData.components.cells=[]
-                        continue
+                        tempConfigData.layer = {}
+                        tempConfigData.components = { cells: [] }
+                        tempConfigData = markMetaOnlyLazyState(pageInfo, tempConfigData, useMetaOnly, pageLayer[i].IsHome)
                     }
-                    for(let k=0;k<tempConfigData.components.cells.length;k++)
-                    {
-                        if(typeof(tempConfigData.components.cells[k].data)=="undefined")
-                        {
-                            continue
-                        }
-                        if(typeof(tempConfigData.components.cells[k].data.detail)=="undefined")
-                        {
-                            continue
-                        }
-                        let components = {
-                            isComponents:true,
-                            title:tempConfigData.components.cells[k].data.detail.name,
-                            key:tempConfigData.components.cells[k].id,
-                            cellid:tempConfigData.components.cells[k].data.detail.identifier
-                        }
-                        pageInfo.children.push(components)
-                    }
+                    pageInfo.children = buildPageTreeChildren(tempConfigData)
+                    mergePageLayerFromExisting(pageInfo, oldPc, oldPhone)
                     pageInfo.pageLayerData = tempConfigData
                     if(pageLayer[i].PageType==1)
                     {
@@ -477,9 +850,9 @@ export const updateAllLayerDataStruct = (ctx,data) => {
                     }else{
                         phonePageData.push(pageInfo)
                     }
-                    if(pageInfo.id==ctx.state.selectPageUuid)
+                    if(pageInfo.pageUuid==ctx.state.selectPageUuid)
                     {
-                        ctx.state.LayerData = tempConfigData
+                        ctx.state.LayerData = pageInfo.pageLayerData
                     }
                 }
                 ctx.state.PCPageList = pcPageData
@@ -511,14 +884,7 @@ export const getLayerPagerContainerDataStruct = (ctx,data) => {
             let pageLayer = res.data.layer
             let tempConfigData = pageLayer
             try{
-                tempConfigData.layer = JSON.parse(tempConfigData.layer)
-                if (tempConfigData.components=="")
-                {
-                    tempConfigData.components=[]
-                }
-                else{
-                    tempConfigData.components = JSON.parse(tempConfigData.components)
-                }
+                tempConfigData = parseRawPageLayerFields(tempConfigData)
                 tempConfigData = normalizePageConfigData(tempConfigData)
                 for(let k=0;k<tempConfigData.components.cells.length;k++)
                 {
@@ -530,58 +896,9 @@ export const getLayerPagerContainerDataStruct = (ctx,data) => {
                     {
                         continue
                     }
-                    if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                        for (let kv = 0; kv < tempConfigData.components.cells[k].data.detail.active.length; kv++) {
-                            if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                                bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                            }
-                            if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                            }
-                        }
-                    }
+                    collectActiveBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                    if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
-                    {
-                        if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                        }
-                        bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                    }
-                    if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                    {
-                        if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!="") {
-                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                        }
-                        bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                        if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                        }
-                        bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                    }
-                    else{
-                        if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                            tempConfigData.components.cells[k].data.detail.animate.move = {
-                                x: {
-                                    deviceSN: "",
-                                    selectVideoType: 0,
-                                    isBandDevice: false,
-                                    bandType: 1,
-                                    dataID: "",
-                                    dataName: "",
-                                },
-                                y: {
-                                    deviceSN: "",
-                                    selectVideoType: 0,
-                                    isBandDevice: false,
-                                    bandType: 1,
-                                    dataID: "",
-                                    dataName: "",
-                                },
-                            }
-                        }
-                    }
+                    collectAnimateBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
                 }
                 ctx.state.LayerContainerData = tempConfigData
                 let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
@@ -615,58 +932,9 @@ export const selectPopUpPagerContainerDisplayPageDataStruct = (ctx,page) => {
             tempConfigData.name = page.page.title
             for(let k=0,componentsLen=tempConfigData.components.cells.length;k<componentsLen;k++)
             {
-                if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                    for (let kv = 0,componentsAlen=tempConfigData.components.cells[k].data.detail.active.length; kv < componentsAlen; kv++) {
-                        if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                        }
-                        if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                        }
-                    }
-                }
+                collectActiveBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
-                {
-                    if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                }
-                if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                {
-                    if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                    if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                }
-                else{
-                    if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                        tempConfigData.components.cells[k].data.detail.animate.move = {
-                            x: {
-                                deviceSN: "",
-                                selectVideoType: 0,
-                                isBandDevice: false,
-                                bandType: 1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                            y: {
-                                deviceSN: "",
-                                selectVideoType: 0,
-                                isBandDevice: false,
-                                bandType: 1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                        }
-                    }
-                }
+                collectAnimateBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
             }
             let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
             page.callback(0,tempConfigData,bangDingData,newbangDingDeviceSN)
@@ -681,58 +949,9 @@ export const selectPopUpPagerContainerDisplayPageDataStruct = (ctx,page) => {
             tempConfigData.name = page.page.title
             for(let k=0,componentsLen=tempConfigData.components.cells.length;k<componentsLen;k++)
             {
-                if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                    for (let kv = 0,componentsAlen= tempConfigData.components.cells[k].data.detail.active.length; kv <componentsAlen; kv++) {
-                        if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                        }
-                        if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                        }
-                    }
-                }
+                collectActiveBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
-                {
-                    if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                }
-                if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                {
-                    if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                    if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                }
-                else{
-                    if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                        tempConfigData.components.cells[k].data.detail.animate.move = {
-                            x: {
-                                deviceSN: "",
-                                selectVideoType: 0,
-                                isBandDevice: false,
-                                bandType: 1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                            y: {
-                                deviceSN: "",
-                                selectVideoType: 0,
-                                isBandDevice: false,
-                                bandType: 1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                        }
-                    }
-                }
+                collectAnimateBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
             }
             let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
             page.callback(0,tempConfigData,bangDingData,newbangDingDeviceSN)
@@ -740,7 +959,7 @@ export const selectPopUpPagerContainerDisplayPageDataStruct = (ctx,page) => {
         }
     }
 
-    getLayerDataStruct(ctx,{uuid:page.page.displayUUID,isPopUp:true,cb:function () {
+    getLayerDataStruct(ctx,{uuid:page.page.displayUUID,isPopUp:true,metaOnly:true,cb:function () {
             let PCPageInfo = ctx.state.PCPageList
             let PhonePageInfo = ctx.state.PhonePageList
 
@@ -752,55 +971,9 @@ export const selectPopUpPagerContainerDisplayPageDataStruct = (ctx,page) => {
                     let tempConfigData = PCPageInfo[i].pageLayerData
                     tempConfigData.name = page.page.title
                     for (let k = 0, componentsLen = tempConfigData.components.cells.length; k < componentsLen; k++) {
-                        if (typeof tempConfigData.components.cells[k].data.detail.active != "undefined") {
-                            for (let kv = 0, componentsAlen = tempConfigData.components.cells[k].data.detail.active.length; kv < componentsAlen; kv++) {
-                                if (tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID != "") {
-                                    bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                                }
-                                if (tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN != "") {
-                                    bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                                }
-                            }
-                        }
+                        collectActiveBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                        if ((typeof tempConfigData.components.cells[k].data.detail.animate != "undefined") && tempConfigData.components.cells[k].data.detail.animate.condition.dataID != "") {
-                            if (tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN != "") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                        }
-                        if ((typeof tempConfigData.components.cells[k].data.detail.animate != "undefined") && typeof tempConfigData.components.cells[k].data.detail.animate.move != "undefined") {
-                            if (tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN != "") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                            if (tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN != "") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                        } else {
-                            if (typeof tempConfigData.components.cells[k].data.detail.animate != "undefined") {
-                                tempConfigData.components.cells[k].data.detail.animate.move = {
-                                    x: {
-                                        deviceSN: "",
-                                        selectVideoType: 0,
-                                        isBandDevice: false,
-                                        bandType: 1,
-                                        dataID: "",
-                                        dataName: "",
-                                    },
-                                    y: {
-                                        deviceSN: "",
-                                        selectVideoType: 0,
-                                        isBandDevice: false,
-                                        bandType: 1,
-                                        dataID: "",
-                                        dataName: "",
-                                    },
-                                }
-                            }
-                        }
+                        collectAnimateBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
                     }
                     let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
                     page.callback(0,tempConfigData, bangDingData, newbangDingDeviceSN)
@@ -813,52 +986,9 @@ export const selectPopUpPagerContainerDisplayPageDataStruct = (ctx,page) => {
                     let tempConfigData = PhonePageInfo[i].pageLayerData
                     tempConfigData.name = page.page.title
                     for (let k = 0, componentsLen = tempConfigData.components.cells.length; k < componentsLen; k++) {
-                        if (typeof tempConfigData.components.cells[k].data.detail.active != "undefined") {
-                            for (let kv = 0, componentsAlen = tempConfigData.components.cells[k].data.detail.active.length; kv < componentsAlen; kv++) {
-                                if (tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID != "") {
-                                    bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                                }
-                            }
-                        }
+                        collectActiveBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                        if ((typeof tempConfigData.components.cells[k].data.detail.animate != "undefined") && tempConfigData.components.cells[k].data.detail.animate.condition.dataID != "") {
-                            if (tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN != "") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                        }
-                        if ((typeof tempConfigData.components.cells[k].data.detail.animate != "undefined") && typeof tempConfigData.components.cells[k].data.detail.animate.move != "undefined") {
-                            if (tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN != "") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                            if (tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN != "") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                        } else {
-                            if (typeof tempConfigData.components.cells[k].data.detail.animate != "undefined") {
-                                tempConfigData.components.cells[k].data.detail.animate.move = {
-                                    x: {
-                                        deviceSN: "",
-                                        selectVideoType: 0,
-                                        isBandDevice: false,
-                                        bandType: 1,
-                                        dataID: "",
-                                        dataName: "",
-                                    },
-                                    y: {
-                                        deviceSN: "",
-                                        selectVideoType: 0,
-                                        isBandDevice: false,
-                                        bandType: 1,
-                                        dataID: "",
-                                        dataName: "",
-                                    },
-                                }
-                            }
-                        }
+                        collectAnimateBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
                     }
                     let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
                     page.callback(0, tempConfigData,bangDingData, newbangDingDeviceSN)
@@ -884,58 +1014,9 @@ export const selectDisplayPageContainerDataStruct = (ctx,page) => {
             tempConfigData.name = page.page.title
             for(let k=0,componentsLen=tempConfigData.components.cells.length;k<componentsLen;k++)
             {
-                if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                    for (let kv = 0,componentsALen=tempConfigData.components.cells[k].data.detail.active.length; kv < componentsALen; kv++) {
-                        if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                        }
-                        if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                        }
-                    }
-                }
+                collectActiveBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
-                {
-                    if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                }
-                if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                {
-                    if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                    if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                }
-                else{
-                    if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                        tempConfigData.components.cells[k].data.detail.animate.move = {
-                            x: {
-                                deviceSN: "",
-                                selectVideoType: 0,
-                                isBandDevice: false,
-                                bandType: 1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                            y: {
-                                deviceSN: "",
-                                selectVideoType: 0,
-                                isBandDevice: false,
-                                bandType: 1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                        }
-                    }
-                }
+                collectAnimateBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
             }
             let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
             page.callback(0,tempConfigData,bangDingData,newbangDingDeviceSN)
@@ -951,58 +1032,9 @@ export const selectDisplayPageContainerDataStruct = (ctx,page) => {
             ctx.state.selectPageUuid = tempConfigData.PageId
             for(let k=0,componentsLen=tempConfigData.components.cells.length;k<componentsLen;k++)
             {
-                if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                    for (let kv = 0,componentsALen=tempConfigData.components.cells[k].data.detail.active.length; kv < componentsALen; kv++) {
-                        if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                        }
-                        if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                        }
-                    }
-                }
+                collectActiveBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
-                {
-                    if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                }
-                if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                {
-                    if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                    if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                }
-                else{
-                    if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                        tempConfigData.components.cells[k].data.detail.animate.move = {
-                            x: {
-                                deviceSN: "",
-                                selectVideoType: 0,
-                                isBandDevice: false,
-                                bandType: 1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                            y: {
-                                deviceSN: "",
-                                selectVideoType: 0,
-                                isBandDevice: false,
-                                bandType: 1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                        }
-                    }
-                }
+                collectAnimateBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
             }
             let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
             page.callback(0,tempConfigData,bangDingData,newbangDingDeviceSN)
@@ -1010,7 +1042,7 @@ export const selectDisplayPageContainerDataStruct = (ctx,page) => {
         }
     }
 
-    getLayerDataStruct(ctx,{uuid:page.page.displayUUID,cb:function (){
+    getLayerDataStruct(ctx,{uuid:page.page.displayUUID,metaOnly:true,cb:function (){
             let PCPageInfo = ctx.state.PCPageList
             let PhonePageInfo = ctx.state.PhonePageList
 
@@ -1025,58 +1057,9 @@ export const selectDisplayPageContainerDataStruct = (ctx,page) => {
                     tempConfigData.name = page.page.title
                     for(let k=0,componentsLen=tempConfigData.components.cells.length;k<componentsLen;k++)
                     {
-                        if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                            for (let kv = 0,componentsALen=tempConfigData.components.cells[k].data.detail.active.length; kv < componentsALen; kv++) {
-                                if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                                    bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                                }
-                                if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                                    bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                                }
-                            }
-                        }
+                        collectActiveBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                        if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
-                        {
-                            if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                        }
-                        if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                        {
-                            if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                            if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                        }
-                        else{
-                            if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                                tempConfigData.components.cells[k].data.detail.animate.move = {
-                                    x: {
-                                        deviceSN: "",
-                                        selectVideoType: 0,
-                                        isBandDevice: false,
-                                        bandType: 1,
-                                        dataID: "",
-                                        dataName: "",
-                                    },
-                                    y: {
-                                        deviceSN: "",
-                                        selectVideoType: 0,
-                                        isBandDevice: false,
-                                        bandType: 1,
-                                        dataID: "",
-                                        dataName: "",
-                                    },
-                                }
-                            }
-                        }
+                        collectAnimateBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
                     }
                     let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
                     page.callback(0,tempConfigData,bangDingData,newbangDingDeviceSN)
@@ -1091,58 +1074,9 @@ export const selectDisplayPageContainerDataStruct = (ctx,page) => {
                     tempConfigData.name = page.page.title
                     for(let k=0,componentsLen=tempConfigData.components.cells.length;k<componentsLen;k++)
                     {
-                        if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                            for (let kv = 0,componentsALen=tempConfigData.components.cells[k].data.detail.active.length; kv < componentsALen; kv++) {
-                                if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                                    bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                                }
-                                if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                                    bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                                }
-                            }
-                        }
+                        collectActiveBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                        if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
-                        {
-                            if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                        }
-                        if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                        {
-                            if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                            if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                        }
-                        else{
-                            if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                                tempConfigData.components.cells[k].data.detail.animate.move = {
-                                    x: {
-                                        deviceSN: "",
-                                        selectVideoType: 0,
-                                        isBandDevice: false,
-                                        bandType: 1,
-                                        dataID: "",
-                                        dataName: "",
-                                    },
-                                    y: {
-                                        deviceSN: "",
-                                        selectVideoType: 0,
-                                        isBandDevice: false,
-                                        bandType: 1,
-                                        dataID: "",
-                                        dataName: "",
-                                    },
-                                }
-                            }
-                        }
+                        collectAnimateBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
                     }
                     let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
                     page.callback(0,tempConfigData,bangDingData,newbangDingDeviceSN)
@@ -1164,7 +1098,7 @@ export const getLayerDataStructByTokenData = (ctx,data) => {
     getLayerDataStructByToken(params).then(function (res){
         if(res.data.code==0)
         {
-            let pageLayer = res.data.layer
+            let pageLayer = res.data.layer || []
             let is_find_home = 0
             let PC_home_index = 0
             let Phone_home_index = 0
@@ -1197,19 +1131,14 @@ export const getLayerDataStructByTokenData = (ctx,data) => {
                     pageInfo.pageUuid = pageLayer[i].PageId
                     pageInfo.pageType = pageLayer[i].PageType
                     pageInfo.pageModelUuid = pageLayer[i].modelId
+                    pageInfo.templateKind = pageLayer[i].templateKind || pageLayer[i].TemplateKind || ''
+                    pageInfo.templateModelUuid = pageLayer[i].templateModelUuid || pageLayer[i].TemplateModelUuid || ''
                     pageInfo.children=[]
 
                     pageLayer[i].name = pageLayer[i].PageName
                     let tempConfigData = pageLayer[i]
                     try{
-                        tempConfigData.layer = JSON.parse(tempConfigData.layer)
-                        if (tempConfigData.components=="")
-                        {
-                            tempConfigData.components=[]
-                        }
-                        else{
-                            tempConfigData.components = JSON.parse(tempConfigData.components)
-                        }
+                        tempConfigData = parseRawPageLayerFields(tempConfigData)
                         tempConfigData = normalizePageConfigData(tempConfigData)
 
                     }catch (e) {
@@ -1245,58 +1174,9 @@ export const getLayerDataStructByTokenData = (ctx,data) => {
                                     {
                                         continue
                                     }
-                                    if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                                        for (let kv = 0; kv < tempConfigData.components.cells[k].data.detail.active.length; kv++) {
-                                            if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                                                bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                                            }
-                                            if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                                            }
-                                        }
-                                    }
+                                    collectActiveBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                                    if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
-                                    {
-                                        if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                                        }
-                                        bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                                    }
-                                    if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                                    {
-                                        if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!="") {
-                                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                                        }
-                                        bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                                        if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                                        }
-                                        bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                                    }
-                                    else{
-                                        if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                                            tempConfigData.components.cells[k].data.detail.animate.move = {
-                                                x: {
-                                                    deviceSN: "",
-                                                    selectVideoType: 0,
-                                                    isBandDevice: false,
-                                                    bandType: 1,
-                                                    dataID: "",
-                                                    dataName: "",
-                                                },
-                                                y: {
-                                                    deviceSN: "",
-                                                    selectVideoType: 0,
-                                                    isBandDevice: false,
-                                                    bandType: 1,
-                                                    dataID: "",
-                                                    dataName: "",
-                                                },
-                                            }
-                                        }
-                                    }
+                                    collectAnimateBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
                                 }
                                 ctx.state.LayerData = tempConfigData
                             }
@@ -1317,58 +1197,9 @@ export const getLayerDataStructByTokenData = (ctx,data) => {
                                     {
                                         continue
                                     }
-                                    if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                                        for (let kv = 0; kv < tempConfigData.components.cells[k].data.detail.active.length; kv++) {
-                                            if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                                                bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                                            }
-                                            if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                                            }
-                                        }
-                                    }
+                                    collectActiveBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                                    if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
-                                    {
-                                        if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                                        }
-                                        bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                                    }
-                                    if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                                    {
-                                        if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!="") {
-                                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                                        }
-                                        bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                                        if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                                        }
-                                        bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                                    }
-                                    else{
-                                        if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                                            tempConfigData.components.cells[k].data.detail.animate.move = {
-                                                x: {
-                                                    deviceSN: "",
-                                                    selectVideoType: 0,
-                                                    isBandDevice: false,
-                                                    bandType: 1,
-                                                    dataID: "",
-                                                    dataName: "",
-                                                },
-                                                y: {
-                                                    deviceSN: "",
-                                                    selectVideoType: 0,
-                                                    isBandDevice: false,
-                                                    bandType: 1,
-                                                    dataID: "",
-                                                    dataName: "",
-                                                },
-                                            }
-                                        }
-                                    }
+                                    collectAnimateBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
                                 }
                                 ctx.state.LayerData = tempConfigData
                             }
@@ -1397,58 +1228,9 @@ export const getLayerDataStructByTokenData = (ctx,data) => {
                     }
                     for(let k=0,componentsLen =tempConfigData.components.cells.length ;k<componentsLen;k++)
                     {
-                        if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                            for (let kv = 0,componentsALen=tempConfigData.components.cells[k].data.detail.active.length; kv < componentsALen; kv++) {
-                                if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                                    bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                                }
-                                if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                                    bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                                }
-                            }
-                        }
+                        collectActiveBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                        if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
-                        {
-                            if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                        }
-                        if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                        {
-                            if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                            if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                        }
-                        else{
-                            if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                                tempConfigData.components.cells[k].data.detail.animate.move = {
-                                    x: {
-                                        deviceSN: "",
-                                        selectVideoType: 0,
-                                        isBandDevice: false,
-                                        bandType: 1,
-                                        dataID: "",
-                                        dataName: "",
-                                    },
-                                    y: {
-                                        deviceSN: "",
-                                        selectVideoType: 0,
-                                        isBandDevice: false,
-                                        bandType: 1,
-                                        dataID: "",
-                                        dataName: "",
-                                    },
-                                }
-                            }
-                        }
+                        collectAnimateBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
                     }
                     ctx.state.LayerData = tempConfigData
                 }
@@ -1510,14 +1292,7 @@ export const getLoginLayerDataStruct = (ctx,data) => {
                 pageLayer.name = pageLayer.PageName
                 let tempConfigData = pageLayer
                 try{
-                    tempConfigData.layer = JSON.parse(tempConfigData.layer)
-                    if (tempConfigData.components=="")
-                    {
-                        tempConfigData.components=[]
-                    }
-                    else{
-                        tempConfigData.components = JSON.parse(tempConfigData.components)
-                    }
+                    tempConfigData = parseRawPageLayerFields(tempConfigData)
                     tempConfigData = normalizePageConfigData(tempConfigData)
 
                 }catch (e) {
@@ -1582,6 +1357,63 @@ export const saveLayerDataStruct = (ctx,page) => {
     })
 }
 
+function applyEditorPageLayer(ctx, tempConfigData, page) {
+    tempConfigData.name = page.title
+    for(let k=0,componentsLen =tempConfigData.components.cells.length ;k<componentsLen;k++)
+    {
+        if(typeof(tempConfigData.components.cells[k].data)=="undefined")
+        {
+            continue
+        }
+        if(typeof(tempConfigData.components.cells[k].data.detail)=="undefined")
+        {
+            continue
+        }
+        if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined"&& typeof tempConfigData.components.cells[k].data.detail.animate.move=="undefined")
+        {
+            tempConfigData.components.cells[k].data.detail.animate.move = {
+                x:{
+                    deviceSN:"",
+                    selectVideoType:0,
+                    isBandDevice:false,
+                    bandType:1,
+                    dataID: "",
+                    dataName: "",
+                },
+                y:{
+                    deviceSN:"",
+                    selectVideoType:0,
+                    isBandDevice:false,
+                    bandType:1,
+                    dataID: "",
+                    dataName: "",
+                },
+            }
+        }
+    }
+    ctx.state.selectPageUuid = tempConfigData.PageId
+    ctx.state.LayerData = tempConfigData
+}
+
+function ensureEditorPageLoaded(ctx, list, idx, page, pageid) {
+    if (list[idx]._lazyLoaded) {
+        return false
+    }
+    ctx.state.pageLayerLoading = true
+    loadSinglePageLayer(pageid).then(function(cfg){
+        ctx.state.pageLayerLoading = false
+        list[idx]._lazyLoaded = true
+        if(cfg){
+            list[idx].pageLayerData = cfg
+            list[idx].children = buildPageTreeChildren(cfg)
+        }
+        selectLayerDataStruct(ctx, page)
+    }).catch(function(){
+        ctx.state.pageLayerLoading = false
+    })
+    return true
+}
+
 export const selectLayerDataStruct = (ctx,page) => {
     let PCPageInfo = ctx.state.PCPageList
     let PhonePageInfo = ctx.state.PhonePageList
@@ -1599,42 +1431,12 @@ export const selectLayerDataStruct = (ctx,page) => {
         {
             if(PCPageInfo[i].pageUuid==pageid)
             {
-                let tempConfigData = PCPageInfo[i].pageLayerData
-                tempConfigData.name = page.title
-                for(let k=0,componentsLen =tempConfigData.components.cells.length ;k<componentsLen;k++)
-                {
-                    if(typeof(tempConfigData.components.cells[k].data)=="undefined")
-                    {
-                        continue
-                    }
-                    if(typeof(tempConfigData.components.cells[k].data.detail)=="undefined")
-                    {
-                        continue
-                    }
-                    if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined"&& typeof tempConfigData.components.cells[k].data.detail.animate.move=="undefined")
-                    {
-                        tempConfigData.components.cells[k].data.detail.animate.move = {
-                            x:{
-                                deviceSN:"",
-                                selectVideoType:0,
-                                isBandDevice:false,
-                                bandType:1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                            y:{
-                                deviceSN:"",
-                                selectVideoType:0,
-                                isBandDevice:false,
-                                bandType:1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                        }
-                    }
+                if(ensureEditorPageLoaded(ctx, PCPageInfo, i, page, pageid)) {
+                    return
                 }
-                ctx.state.selectPageUuid = tempConfigData.PageId
-                ctx.state.LayerData = tempConfigData
+                let tempConfigData = PCPageInfo[i].pageLayerData
+                applyEditorPageLayer(ctx, tempConfigData, page)
+                touchAndReleaseLazyPages(ctx, pageid, PCPageInfo[i].IsHome==1)
             }
         }
     }else if(pagetype==0)
@@ -1642,41 +1444,19 @@ export const selectLayerDataStruct = (ctx,page) => {
         for(let i=0,PhonePageInfoLen=PhonePageInfo.length;i<PhonePageInfoLen;i++)
         {
             if(PhonePageInfo[i].pageUuid==pageid) {
-                let tempConfigData = PhonePageInfo[i].pageLayerData
-                tempConfigData.name = page.title
-                for(let k=0,componentsLen =tempConfigData.components.cells.length ;k<componentsLen;k++)
-                {
-                    if(typeof tempConfigData.components.cells[k].data.detail.animate!=="undefined"&&typeof tempConfigData.components.cells[k].data.detail.animate.move=="undefined")
-                    {
-                        tempConfigData.components.cells[k].data.detail.animate.move = {
-                            x:{
-                                deviceSN:"",
-                                selectVideoType:0,
-                                isBandDevice:false,
-                                bandType:1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                            y:{
-                                deviceSN:"",
-                                selectVideoType:0,
-                                isBandDevice:false,
-                                bandType:1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                        }
-                    }
+                if(ensureEditorPageLoaded(ctx, PhonePageInfo, i, page, pageid)) {
+                    return
                 }
-                ctx.state.selectPageUuid = tempConfigData.PageId
-                ctx.state.LayerData = tempConfigData
+                let tempConfigData = PhonePageInfo[i].pageLayerData
+                applyEditorPageLayer(ctx, tempConfigData, page)
+                touchAndReleaseLazyPages(ctx, pageid, PhonePageInfo[i].IsHome==1)
             }
         }
     }
 }
 
 export const selectDisplayPageDataStructFromDb = (ctx,page) => {
-    getLayerDataStruct(ctx,{uuid:page.page.displayUUID,cb:function (){
+    getLayerDataStruct(ctx,{uuid:page.page.displayUUID,metaOnly:true,cb:function (){
             let PCPageInfo = ctx.state.PCPageList
             let PhonePageInfo = ctx.state.PhonePageList
 
@@ -1692,58 +1472,9 @@ export const selectDisplayPageDataStructFromDb = (ctx,page) => {
                     ctx.state.selectPageUuid = tempConfigData.PageId
                     for(let k=0,componentsLen=tempConfigData.components.cells.length;k<componentsLen;k++)
                     {
-                        if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                            for (let kv = 0,componentsALen=tempConfigData.components.cells[k].data.detail.active.length; kv < componentsALen; kv++) {
-                                if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                                    bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                                }
-                                if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                                    bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                                }
-                            }
-                        }
+                        collectActiveBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                        if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
-                        {
-                            if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                        }
-                        if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                        {
-                            if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                            if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                        }
-                        else{
-                            if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                                tempConfigData.components.cells[k].data.detail.animate.move = {
-                                    x: {
-                                        deviceSN: "",
-                                        selectVideoType: 0,
-                                        isBandDevice: false,
-                                        bandType: 1,
-                                        dataID: "",
-                                        dataName: "",
-                                    },
-                                    y: {
-                                        deviceSN: "",
-                                        selectVideoType: 0,
-                                        isBandDevice: false,
-                                        bandType: 1,
-                                        dataID: "",
-                                        dataName: "",
-                                    },
-                                }
-                            }
-                        }
+                        collectAnimateBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
                     }
                     ctx.state.LayerData = tempConfigData
                     let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
@@ -1760,58 +1491,9 @@ export const selectDisplayPageDataStructFromDb = (ctx,page) => {
                     ctx.state.selectPageUuid = tempConfigData.PageId
                     for(let k=0,componentsLen=tempConfigData.components.cells.length;k<componentsLen;k++)
                     {
-                        if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                            for (let kv = 0,componentsALen=tempConfigData.components.cells[k].data.detail.active.length; kv < componentsALen; kv++) {
-                                if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                                    bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                                }
-                                if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                                    bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                                }
-                            }
-                        }
+                        collectActiveBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                        if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
-                        {
-                            if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                        }
-                        if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                        {
-                            if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                            if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                                bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                            }
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                        }
-                        else{
-                            if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                                tempConfigData.components.cells[k].data.detail.animate.move = {
-                                    x: {
-                                        deviceSN: "",
-                                        selectVideoType: 0,
-                                        isBandDevice: false,
-                                        bandType: 1,
-                                        dataID: "",
-                                        dataName: "",
-                                    },
-                                    y: {
-                                        deviceSN: "",
-                                        selectVideoType: 0,
-                                        isBandDevice: false,
-                                        bandType: 1,
-                                        dataID: "",
-                                        dataName: "",
-                                    },
-                                }
-                            }
-                        }
+                        collectAnimateBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
                     }
                     ctx.state.LayerData = tempConfigData
                     let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
@@ -1827,23 +1509,49 @@ export const selectDisplayPageDataStruct = (ctx,page) => {
     let PhonePageInfo = ctx.state.PhonePageList
 
     let pageid = page.page ? (page.page.pageUuid || page.page.pageUUID || '') : ''
+    ismDebug('SCADA.selectPage.enter', {
+        pageid,
+        displayUUID: page.page && page.page.displayUUID,
+        pcPages: PCPageInfo.length,
+        phonePages: PhonePageInfo.length,
+    })
+    console.log('[selectDisplayPageDataStruct] pageid=', pageid, 'displayUUID=', page.page?.displayUUID, 'PCPageInfo.length=', PCPageInfo.length)
+    if (PCPageInfo.length > 0) {
+        console.log('[selectDisplayPageDataStruct] PCPageInfo pageUuids=', PCPageInfo.map(p => ({ name: p.title, pageUuid: p.pageUuid, pageModelUuid: p.pageModelUuid })))
+    }
     let bangDingData=[]
     let bangDingDeviceSN=[]
     if(!pageid)
     {
-        getLayerDataStruct(ctx,{uuid:page.page.displayUUID,cb:function (errno, project_uuid, uuids, devices){
+        console.log('[selectDisplayPageDataStruct] pageid is empty, calling getLayerDataStruct with metaOnly')
+        ismDebug('SCADA.selectPage.emptyPageId', {displayUUID: page.page && page.page.displayUUID})
+        getLayerDataStruct(ctx,{uuid:page.page.displayUUID,metaOnly:true,cb:function (errno, project_uuid, uuids, devices){
+                ismDebug('SCADA.selectPage.emptyPageId.cb', {errno, uuids: (uuids||[]).length, devices: (devices||[]).length})
                 page.callback(uuids,devices,errno == 0)
         }});
         return
     }
     if(!isDisplayPagesLoaded(ctx, page.page.displayUUID))
     {
-        getLayerDataStruct(ctx,{uuid:page.page.displayUUID,cb:function (errno){
+        ismDebug('SCADA.selectPage.notLoaded', {displayUUID: page.page.displayUUID, pageid})
+        getLayerDataStruct(ctx,{uuid:page.page.displayUUID,metaOnly:true,cb:function (errno){
                 if(errno == 0 && isDisplayPagesLoaded(ctx, page.page.displayUUID))
                 {
                     selectDisplayPageDataStruct(ctx,page)
                     return
                 }
+                if (errno == 0 && pageid) {
+                    ensurePageRegistered(ctx, pageid, page.page.displayUUID).then(function (pageInfo) {
+                        if (pageInfo) {
+                            selectDisplayPageDataStruct(ctx, page)
+                            return
+                        }
+                        ismDebug('SCADA.selectPage.notLoaded.fail', {errno, reason: 'lazyRegisterFailed'})
+                        page.callback(bangDingData, bangDingDeviceSN, false)
+                    })
+                    return
+                }
+                ismDebug('SCADA.selectPage.notLoaded.fail', {errno})
                 page.callback(bangDingData,bangDingDeviceSN,false)
         }});
         return
@@ -1852,141 +1560,158 @@ export const selectDisplayPageDataStruct = (ctx,page) => {
     {
         if(PCPageInfo[i].pageUuid==pageid)
         {
-            let tempConfigData = PCPageInfo[i].pageLayerData
-            tempConfigData.name = page.page.title
-            ctx.state.selectPageUuid = tempConfigData.PageId
-            for(let k=0,componentsLen=tempConfigData.components.cells.length;k<componentsLen;k++)
+            console.log('[selectDisplayPageDataStruct] FOUND pageUuid=', pageid, 'at index=', i, 'title=', PCPageInfo[i].title)
+            // 按需加载: 元数据模式下非首页 components 为空, 首次下钻时单独拉取目标页
+            if(!PCPageInfo[i]._lazyLoaded && PCPageInfo[i].IsHome!=1
+                && PCPageInfo[i].pageLayerData && PCPageInfo[i].pageLayerData.components
+                && PCPageInfo[i].pageLayerData.components.cells
+                && PCPageInfo[i].pageLayerData.components.cells.length===0)
             {
-                if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                    for (let kv = 0,componentsALen=tempConfigData.components.cells[k].data.detail.active.length; kv < componentsALen; kv++) {
-                        if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                        }
-                        if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                        }
+                let _idx = i
+                ctx.state.pageLayerLoading = true
+                ismDebug('SCADA.selectPage.lazyLoad', {pageid, title: PCPageInfo[i].title})
+                loadSinglePageLayer(pageid).then(function(cfg){
+                    ctx.state.pageLayerLoading = false
+                    PCPageInfo[_idx]._lazyLoaded = true
+                    if(cfg){
+                        PCPageInfo[_idx].pageLayerData = cfg
                     }
-                }
-
-                if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
-                {
-                    if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                }
-                if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                {
-                    if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                    if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                }
-                else{
-                    if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                        tempConfigData.components.cells[k].data.detail.animate.move = {
-                            x: {
-                                deviceSN: "",
-                                selectVideoType: 0,
-                                isBandDevice: false,
-                                bandType: 1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                            y: {
-                                deviceSN: "",
-                                selectVideoType: 0,
-                                isBandDevice: false,
-                                bandType: 1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                        }
-                    }
-                }
+                    selectDisplayPageDataStruct(ctx,page)
+                    triggerIdlePrefetch(ctx, pageid)
+                }).catch(function(err){
+                    ctx.state.pageLayerLoading = false
+                    ismDebug('SCADA.selectPage.lazyLoad.fail', {message: err && err.message})
+                    page.callback(bangDingData,bangDingDeviceSN,false)
+                })
+                return
             }
-            ctx.state.LayerData = tempConfigData
-            let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
-            page.callback(bangDingData,newbangDingDeviceSN)
+            let tempConfigData = PCPageInfo[i].pageLayerData
+            applyNavContextToPageConfig(ctx, tempConfigData).then(function (resolvedCfg) {
+            try {
+                tempConfigData = resolvedCfg
+                tempConfigData.name = page.page.title
+                ctx.state.selectPageUuid = tempConfigData.PageId
+                const cells = (tempConfigData.components && tempConfigData.components.cells) ? tempConfigData.components.cells : []
+                for(let k=0,componentsLen=cells.length;k<componentsLen;k++)
+                {
+                    const detail = cells[k] && cells[k].data && cells[k].data.detail
+                    if (!detail) {
+                        continue
+                    }
+                    collectActiveBindings(detail.active, bangDingData, bangDingDeviceSN)
+                    collectAnimateBindings(detail.animate, bangDingData, bangDingDeviceSN)
+                }
+                ctx.state.LayerData = tempConfigData
+                let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
+                touchAndReleaseLazyPages(ctx, pageid, PCPageInfo[i].IsHome==1)
+                triggerIdlePrefetch(ctx, pageid)
+                ismDebug('SCADA.selectPage.ok', {
+                    pageid,
+                    cells: cells.length,
+                    bindData: bangDingData.length,
+                    bindDevices: newbangDingDeviceSN.length,
+                })
+                page.callback(bangDingData,newbangDingDeviceSN)
+            } catch (e) {
+                ismDebug('SCADA.selectPage.crash', {
+                    pageid,
+                    message: e && e.message,
+                    stack: e && e.stack,
+                })
+                page.callback(bangDingData,bangDingDeviceSN,false)
+            }
+            })
             return
         }
+    }
+    console.log('[selectDisplayPageDataStruct] NOT FOUND pageUuid=', pageid, 'in PCPageInfo, total pages=', PCPageInfo.length)
+
+    const navCtx = ctx.state.navContext
+    const navIndex = ctx.state.navTreeIndex
+    const templateMap = ctx.state.navTemplateMap
+
+    // 合成 uuid5 page_id（导航树 legacy）→ 模板页 + navContext
+    const oldTarget = resolveOldPageTarget(pageid, navIndex, templateMap)
+    if (oldTarget && oldTarget.pageUuid && oldTarget.pageUuid !== pageid) {
+      console.log('[selectDisplayPageDataStruct] oldPageId remap →', oldTarget.pageUuid)
+      if (oldTarget.navContext) {
+        try {
+          ctx.commit('setNavContext', oldTarget.navContext)
+        } catch (e) { /* ignore */ }
+      }
+      page.page.pageUuid = oldTarget.pageUuid
+      selectDisplayPageDataStruct(ctx, page)
+      return
+    }
+
+    const displayUUID = page.page && page.page.displayUUID
+    let targetPageId = pageid
+    if (navCtx && (isDeviceListNav(navCtx) || navCtx.routeMode === 'childrenList' || navCtx.routeMode === 'org')) {
+      const fallbackId = resolveDeviceListTemplateId(templateMap, PCPageInfo)
+      if (fallbackId) {
+        targetPageId = fallbackId
+        if (fallbackId !== pageid) {
+          console.log('[selectDisplayPageDataStruct] nav template fallback →', fallbackId)
+          page.page.pageUuid = fallbackId
+        }
+      }
+    } else if (navCtx && (navCtx.signalMode || navCtx.routeMode === 'signal')) {
+      const fallbackId = resolveDeviceSignalTemplateId(templateMap, PCPageInfo, navCtx.modelUuid || navCtx.muid || '')
+      if (fallbackId) {
+        targetPageId = fallbackId
+        if (fallbackId !== pageid) {
+          console.log('[selectDisplayPageDataStruct] device signal template fallback →', fallbackId)
+          page.page.pageUuid = fallbackId
+        }
+      }
     }
 
     for(let i=0,PhonePageInfoLen=PhonePageInfo.length;i<PhonePageInfoLen;i++)
     {
         if(PhonePageInfo[i].pageUuid==pageid) {
             let tempConfigData = PhonePageInfo[i].pageLayerData
-            tempConfigData.name = page.page.title
-            ctx.state.selectPageUuid = tempConfigData.PageId
-            for(let k=0,componentsLen=tempConfigData.components.cells.length;k<componentsLen;k++)
-            {
-                if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                    for (let kv = 0,componentsALen=tempConfigData.components.cells[k].data.detail.active.length; kv < componentsALen; kv++) {
-                        if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                        }
-                        if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                        }
-                    }
-                }
-
-                if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
+            applyNavContextToPageConfig(ctx, tempConfigData).then(function (resolvedCfg) {
+            try {
+                tempConfigData = resolvedCfg
+                tempConfigData.name = page.page.title
+                ctx.state.selectPageUuid = tempConfigData.PageId
+                const cells = (tempConfigData.components && tempConfigData.components.cells) ? tempConfigData.components.cells : []
+                for(let k=0,componentsLen=cells.length;k<componentsLen;k++)
                 {
-                    if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
+                    const detail = cells[k] && cells[k].data && cells[k].data.detail
+                    if (!detail) {
+                        continue
                     }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
+                    collectActiveBindings(detail.active, bangDingData, bangDingDeviceSN)
+                    collectAnimateBindings(detail.animate, bangDingData, bangDingDeviceSN)
                 }
-                if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                {
-                    if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                    if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                }
-                else{
-                    if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                        tempConfigData.components.cells[k].data.detail.animate.move = {
-                            x: {
-                                deviceSN: "",
-                                selectVideoType: 0,
-                                isBandDevice: false,
-                                bandType: 1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                            y: {
-                                deviceSN: "",
-                                selectVideoType: 0,
-                                isBandDevice: false,
-                                bandType: 1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                        }
-                    }
-                }
+                ctx.state.LayerData = tempConfigData
+                let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
+                ismDebug('SCADA.selectPage.phone.ok', {
+                    pageid,
+                    cells: cells.length,
+                    bindData: bangDingData.length,
+                })
+                page.callback(bangDingData,newbangDingDeviceSN)
+            } catch (e) {
+                ismDebug('SCADA.selectPage.phone.crash', {pageid, message: e && e.message})
+                page.callback(bangDingData,bangDingDeviceSN,false)
             }
-            ctx.state.LayerData = tempConfigData
-            let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
-            page.callback(bangDingData,newbangDingDeviceSN)
+            })
             return
         }
     }
 
-    ctx.state.selectPageUuid=""
-    page.callback(bangDingData,bangDingDeviceSN,false)
+    ensurePageRegistered(ctx, targetPageId, displayUUID).then(function (pageInfo) {
+        if (pageInfo) {
+            console.log('[selectDisplayPageDataStruct] lazy register →', targetPageId)
+            selectDisplayPageDataStruct(ctx, page)
+            return
+        }
+        ctx.state.selectPageUuid = ""
+        ismDebug('SCADA.selectPage.notFound', {pageid: targetPageId, pcPages: PCPageInfo.length, phonePages: PhonePageInfo.length})
+        page.callback(bangDingData, bangDingDeviceSN, false)
+    })
 }
 
 export const selectPopUpDisplayPageDataStruct = (ctx,page) => {
@@ -1998,14 +1723,14 @@ export const selectPopUpDisplayPageDataStruct = (ctx,page) => {
     let bangDingDeviceSN=[]
     if(!pageid)
     {
-        getLayerDataStruct(ctx,{uuid:page.page.displayUUID,isPopUp:true,cb:function (errno, project_uuid, uuids, devices){
+        getLayerDataStruct(ctx,{uuid:page.page.displayUUID,isPopUp:true,metaOnly:true,cb:function (errno, project_uuid, uuids, devices){
                 page.callback(errno == 0 ? 0 : -1,uuids,devices)
         }});
         return
     }
     if(!isDisplayPagesLoaded(ctx, page.page.displayUUID))
     {
-        getLayerDataStruct(ctx,{uuid:page.page.displayUUID,isPopUp:true,cb:function (errno){
+        getLayerDataStruct(ctx,{uuid:page.page.displayUUID,isPopUp:true,metaOnly:true,cb:function (errno){
                 if(errno == 0 && isDisplayPagesLoaded(ctx, page.page.displayUUID))
                 {
                     selectPopUpDisplayPageDataStruct(ctx,page)
@@ -2026,58 +1751,9 @@ export const selectPopUpDisplayPageDataStruct = (ctx,page) => {
             ctx.state.PopUpConfigData = tempConfigData
             for(let k=0,componentsLen=tempConfigData.components.cells.length;k<componentsLen;k++)
             {
-                if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                    for (let kv = 0,componentsAlen=tempConfigData.components.cells[k].data.detail.active.length; kv < componentsAlen; kv++) {
-                        if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                        }
-                        if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                        }
-                    }
-                }
+                collectActiveBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
-                {
-                    if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                }
-                if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                {
-                    if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                    if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                }
-                else{
-                    if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                        tempConfigData.components.cells[k].data.detail.animate.move = {
-                            x: {
-                                deviceSN: "",
-                                selectVideoType: 0,
-                                isBandDevice: false,
-                                bandType: 1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                            y: {
-                                deviceSN: "",
-                                selectVideoType: 0,
-                                isBandDevice: false,
-                                bandType: 1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                        }
-                    }
-                }
+                collectAnimateBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
             }
             let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
             page.callback(0,bangDingData,newbangDingDeviceSN)
@@ -2094,58 +1770,9 @@ export const selectPopUpDisplayPageDataStruct = (ctx,page) => {
             ctx.state.PopUpConfigData = tempConfigData
             for(let k=0,componentsLen=tempConfigData.components.cells.length;k<componentsLen;k++)
             {
-                if(typeof tempConfigData.components.cells[k].data.detail.active!="undefined") {
-                    for (let kv = 0,componentsAlen= tempConfigData.components.cells[k].data.detail.active.length; kv <componentsAlen; kv++) {
-                        if(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID!="") {
-                            bangDingData.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.dataID)
-                        }
-                        if(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN!="") {
-                            bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.active[kv].condition.deviceSN)
-                        }
-                    }
-                }
+                collectActiveBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.active : null, bangDingData, bangDingDeviceSN)
 
-                if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&tempConfigData.components.cells[k].data.detail.animate.condition.dataID!="")
-                {
-                    if(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.condition.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.condition.dataID)
-                }
-                if((typeof tempConfigData.components.cells[k].data.detail.animate!="undefined")&&typeof tempConfigData.components.cells[k].data.detail.animate.move!="undefined")
-                {
-                    if(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.x.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.x.dataID)
-
-                    if(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN!="") {
-                        bangDingDeviceSN.push(tempConfigData.components.cells[k].data.detail.animate.move.y.deviceSN)
-                    }
-                    bangDingData.push(tempConfigData.components.cells[k].data.detail.animate.move.y.dataID)
-                }
-                else{
-                    if(typeof tempConfigData.components.cells[k].data.detail.animate!="undefined") {
-                        tempConfigData.components.cells[k].data.detail.animate.move = {
-                            x: {
-                                deviceSN: "",
-                                selectVideoType: 0,
-                                isBandDevice: false,
-                                bandType: 1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                            y: {
-                                deviceSN: "",
-                                selectVideoType: 0,
-                                isBandDevice: false,
-                                bandType: 1,
-                                dataID: "",
-                                dataName: "",
-                            },
-                        }
-                    }
-                }
+                collectAnimateBindings((tempConfigData.components.cells[k].data && tempConfigData.components.cells[k].data.detail) ? tempConfigData.components.cells[k].data.detail.animate : null, bangDingData, bangDingDeviceSN)
             }
             let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
             page.callback(0,bangDingData,newbangDingDeviceSN)
@@ -2288,10 +1915,8 @@ export const SyncLayerData = (ctx,data) => {
     ctx.state.LayerData = data
 }
 export const setLayerData = (ctx,data) => {
-    if (data && data.cells && Array.isArray(data.cells)) {
-      data = { ...data, cells: data.cells.filter(cell => cell && cell.shape) }
-    }
-    ctx.state.ISMCavasContainer.fromJSON(data)
+    const safe = sanitizeGraphComponents(data, { tag: 'setLayerData' })
+    ctx.state.ISMCavasContainer.fromJSON(safe)
 }
 export const SetEquidistantStateValue = (ctx,data) => {
 

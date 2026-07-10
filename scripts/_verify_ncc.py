@@ -7,6 +7,14 @@ cur = conn.cursor()
 
 MODEL_ID = '043135ad-44be-e5d8-89be-3e54883c23a8'
 PROJECT_UUID = '31bc90be-ebc4-dd61-ba9d-ce6e075e40e2'
+APPRUN_BASE = 'http://localhost:7080'
+
+
+def apprun_url(model_id, page_id=None, base=APPRUN_BASE):
+    url = f"{base}/#/AppRun/{model_id}"
+    if page_id and page_id != model_id:
+        url += f"?pageId={page_id}"
+    return url
 
 def page_id_building(sid):
     return _uuid.uuid5(_uuid.NAMESPACE_DNS, f'ncc-dash-bldg-{sid}').hex
@@ -105,6 +113,7 @@ if rr:
             if ln: rlinks.add(ln)
     cab_links = sum(1 for tgt in (page_id_building(s) for s in ['1083784365','170900667','1603862331']) if tgt in rlinks)
     print(f"[ROOM PAGE] exists=True  cabinets_shown(1A1/1A3/UPS in text)={'1A1_U11柜' in rtxt},{'1A3_U11柜' in rtxt},{'UPS柜' in rtxt}  cabinet_links={cab_links}/3")
+    print(f"[ROOM PAGE] preview URL: {apprun_url(MODEL_ID, rpage)}")
 else:
     print("[ROOM PAGE] MISSING")
 

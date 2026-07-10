@@ -47,6 +47,15 @@ func (c *ISMJournal) GetJournalList() {
 
 	c.ServeJSON() //返回json格式
 }
+
+func formatClientInfo(client *context.BeegoInput) string {
+	ua := client.UserAgent()
+	if len(ua) > 240 {
+		ua = ua[:240] + "..."
+	}
+	return "协议:" + client.Protocol() + ",请求地址:" + client.URL() + ",方法:" + client.Method() + ",来源:" + client.IP() + ",浏览器:" + ua
+}
+
 func WriteOperationJournal(Authorization string, projectUuid string, content string, JournalLevel int, client *context.BeegoInput) {
 
 	var params models.SystemJournal
@@ -64,16 +73,17 @@ func WriteOperationJournal(Authorization string, projectUuid string, content str
 	params.Time = time.Now()
 	params.Operator = Name
 	params.UserName = UserName
-	params.ClientInfo = "协议:" + client.Protocol() + ",请求地址:" + client.URL() + ",方法:" + client.Method() + ",来源:" + client.IP() + ",浏览器:" + client.UserAgent()
+	params.ClientInfo = formatClientInfo(client)
 	params.ProjectUuid = projectUuid
 	models.WriteJournalModel(params)
 }
+
 func WriteSystemJournal(username string, Operator string, content string, JournalLevel int, client *context.BeegoInput) {
 
 	var params models.SystemJournal
 
 	params.Content = content
-	params.ClientInfo = "协议:" + client.Protocol() + ",请求地址:" + client.URL() + ",方法:" + client.Method() + ",来源:" + client.IP() + ",浏览器:" + client.UserAgent()
+	params.ClientInfo = formatClientInfo(client)
 	params.JournalType = errmsg.JournalSystemType
 	params.JournalLevel = JournalLevel
 	params.Time = time.Now()

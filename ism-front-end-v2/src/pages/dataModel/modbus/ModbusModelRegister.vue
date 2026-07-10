@@ -24,12 +24,12 @@
           {{$t('dataModel.delete')}}
         </a-button>
         <a-divider type="vertical" />
-        <a-button type="link" @click="registerGroupListTable=true"> <a-icon type="backward" />
+        <a-button type="link" @click="registerGroupListTable=true; dataPagination.current = 1"> <a-icon type="backward" />
           {{$t("dataModel.modbusModel.Back")}}</a-button>
 
       </a-space>
       <a-spin style="padding: 1px;"  :spinning="messageShowLoad" tip="Loading...">
-        <a-table :loading="false" :pagination="pagination" row-key="uuid" :row-selection="rowSelection" :columns="columns" :data-source="dataSource" class="ant-table-tbody">
+        <a-table :loading="false" :pagination="dataPagination" row-key="uuid" :row-selection="rowSelection" :columns="columns" :data-source="dataSource" class="ant-table-tbody">
           <template v-for="(item, index) in columns" :slot="item.slotName">
             <span :key="index">{{ $t(item.slotName) }}</span>
           </template>
@@ -309,6 +309,20 @@
                   </a-input>
                 </a-form-item>
               </a-col>
+              <a-col :span="12">
+                <a-form-item label="报警触发值(0/1)">
+                  <a-select autocomplete="autocomplete" v-decorator="[
+                  'alarmOnValue',
+                  {
+                    rules: [{ required: true, message: '报警触发值' }],
+                    initialValue: '1',
+                  },
+                ]">
+                    <a-select-option value="1">1 报警</a-select-option>
+                    <a-select-option value="0">0 报警</a-select-option>
+                  </a-select>
+                </a-form-item>
+              </a-col>
             </div>
 
 
@@ -424,7 +438,7 @@
 
       </a-space>
       <a-spin style="padding: 1px;"  :spinning="messageShowLoad" tip="Loading...">
-        <a-table  :pagination="pagination" row-key="uuid" :columns="registerGroupColumns" :data-source="registerGroupDataSource" class="ant-table-tbody">
+        <a-table  :pagination="groupPagination" row-key="uuid" :columns="registerGroupColumns" :data-source="registerGroupDataSource" class="ant-table-tbody">
           <template v-for="(item, index) in registerGroupColumns" :slot="item.slotName">
             <span :key="index">{{ $t(item.slotName) }}</span>
           </template>
@@ -553,6 +567,16 @@ export default {
         pageSize:15,
         showSizeChanger:true
       },
+      groupPagination:{
+        pageSize:15,
+        showSizeChanger:true,
+        current:1
+      },
+      dataPagination:{
+        pageSize:15,
+        showSizeChanger:true,
+        current:1
+      },
       localUpgradeUrl:LOCALUPGATEDATAMODEL+"/"+this.$route.params.uid,
       DataRecordType:0,
       dataRecordExactlyInterval:0,
@@ -623,6 +647,10 @@ export default {
         },
         "告警消息": "AlarmMessage",
         "告警消除消息": "AlarmClearMessage",
+        "报警触发值(0,1)": {
+          field: "alarmOnValue",
+          callback: value => (value === 0 || value === '0') ? '0' : '1'
+        },
         "是否存储(是,否)": {
           field: "record",
           //自定义回调函数
@@ -991,6 +1019,7 @@ export default {
                   {
                     dataAlarm:item.alarm.toString(),
                     AlarmLevel:item.alarmLevel.toString(),
+                    alarmOnValue:(item.alarmOnValue === 0 || item.alarmOnValue === '0') ? '0' : '1',
                     dataRecord:item.record.toString(),
                     AlarmMessage :item.AlarmMessage,
                     AlarmClearMessage : item.AlarmClearMessage,
@@ -1035,6 +1064,7 @@ export default {
               unit:this.EditForm.getFieldValue('dataUnit'),
               conversionExpression:this.EditForm.getFieldValue('ConversionExpression'),
               alarm:parseInt(this.EditForm.getFieldValue('dataAlarm')),
+              alarmOnValue:parseInt(this.EditForm.getFieldValue('alarmOnValue') || '1'),
               alarmLevel:parseInt(this.EditForm.getFieldValue('AlarmLevel')),
               AlarmMessage:this.EditForm.getFieldValue('AlarmMessage'),
               AlarmClearMessage:this.EditForm.getFieldValue('AlarmClearMessage'),
@@ -1098,6 +1128,7 @@ export default {
               unit:this.EditForm.getFieldValue('dataUnit'),
               conversionExpression:this.EditForm.getFieldValue('ConversionExpression'),
               alarm:parseInt(this.EditForm.getFieldValue('dataAlarm')),
+              alarmOnValue:parseInt(this.EditForm.getFieldValue('alarmOnValue') || '1'),
               alarmLevel:parseInt(this.EditForm.getFieldValue('AlarmLevel')),
               AlarmMessage:this.EditForm.getFieldValue('AlarmMessage'),
               AlarmClearMessage:this.EditForm.getFieldValue('AlarmClearMessage'),

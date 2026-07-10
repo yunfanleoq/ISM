@@ -38,9 +38,9 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 
-	"github.com/beego/beego/v2/core/config"
 	beego "github.com/beego/beego/v2/server/web"
 	"gorm.io/gorm"
 )
@@ -168,8 +168,32 @@ func (c *DeviceLibraryController) MonitorTree() {
 	var getLists []*models.TreeList
 	var code int64 = 0
 	ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
+	lazy := false
+	var parentPid int32 = 0
+	if len(c.Ctx.Input.RequestBody) > 0 {
+		var req map[string]interface{}
+		if err := json.Unmarshal(c.Ctx.Input.RequestBody, &req); err == nil {
+			if v, ok := req["lazy"].(bool); ok && v {
+				lazy = true
+			}
+			switch pv := req["pid"].(type) {
+			case float64:
+				parentPid = int32(pv)
+			case int:
+				parentPid = int32(pv)
+			case int32:
+				parentPid = pv
+			case int64:
+				parentPid = int32(pv)
+			}
+		}
+	}
 	if ProjectUuid != "" {
-		getLists = models.GetAllDevices(0, ProjectUuid, false)
+		if lazy {
+			getLists = models.GetMonitorTreeLazy(parentPid, ProjectUuid, false)
+		} else {
+			getLists = models.GetAllDevices(0, ProjectUuid, false)
+		}
 	} else {
 		code = -1
 		getLists = nil
@@ -224,7 +248,7 @@ func (c *DeviceLibraryController) AddDeviceOrZone() {
 	if getParams.DeviceType == 1 {
 		go snmpprotocols.SnmpCloseChan()
 	} else if getParams.DeviceType == 2 {
-		go modbusprotocols.ModbusCloseChan()
+		go modbusprotocols.ModbusReloadDevice(getParams.Uuid)
 	} else if getParams.DeviceType == 3 {
 		go opcuaprotocols.OpcuaCloseChan()
 	} else if getParams.DeviceType == 15 {
@@ -301,6 +325,7 @@ func (c *DeviceLibraryController) DelDeviceOrZone() {
 
 	var code int = 0
 	var DeviceType int = 0
+	var deletedUuid string
 
 	data := c.Ctx.Input.RequestBody
 
@@ -309,8 +334,8 @@ func (c *DeviceLibraryController) DelDeviceOrZone() {
 	if err != nil {
 		code = errmsg.NOTJSON
 	} else {
-		uuid := fmt.Sprintf("%s", paramsJson["uuid"])
-		code, DeviceType = models.DelDeviceOrZone(uuid)
+		deletedUuid = fmt.Sprintf("%s", paramsJson["uuid"])
+		code, DeviceType = models.DelDeviceOrZone(deletedUuid)
 		if code == 0 {
 			go opcuapub.RefreshPublishedNodes()
 		}
@@ -327,7 +352,7 @@ func (c *DeviceLibraryController) DelDeviceOrZone() {
 	if DeviceType == 1 {
 		go snmpprotocols.SnmpCloseChan()
 	} else if DeviceType == 2 {
-		go modbusprotocols.ModbusCloseChan()
+		go modbusprotocols.ModbusStopDevice(deletedUuid)
 	} else if DeviceType == 3 {
 		go opcuaprotocols.OpcuaCloseChan()
 	} else if DeviceType == 15 {
@@ -446,7 +471,7 @@ func (c *DeviceLibraryController) EditDeviceOrZone() {
 	if getParams.UpdateData.DeviceType == 1 {
 		go snmpprotocols.SnmpCloseChan()
 	} else if getParams.UpdateData.DeviceType == 2 {
-		go modbusprotocols.ModbusCloseChan()
+		go modbusprotocols.ModbusReloadDevice(getParams.Uuid)
 	} else if getParams.UpdateData.DeviceType == 3 {
 		go opcuaprotocols.OpcuaCloseChan()
 	} else if getParams.UpdateData.DeviceType == 15 {
@@ -504,7 +529,7 @@ func (c *DeviceLibraryController) SetDeviceStartOrStop() {
 	if getParams.UpdateData.DeviceType == 1 {
 		go snmpprotocols.SnmpCloseChan()
 	} else if getParams.UpdateData.DeviceType == 2 {
-		go modbusprotocols.ModbusCloseChan()
+		go modbusprotocols.ModbusReloadDevice(getParams.Uuid)
 	} else if getParams.UpdateData.DeviceType == 3 {
 		go opcuaprotocols.OpcuaCloseChan()
 	} else if getParams.UpdateData.DeviceType == 15 {
@@ -535,6 +560,9 @@ func (c *DeviceLibraryController) GetRealData() {
 	var IsRemoveGW bool
 	var getParams = make(map[string]interface{})
 	var realData []models.DeviceRealData
+	var total int64 = 0
+	var page int = 0
+	var pageSize int = models.RealDataDefaultPageSize
 
 	data := c.Ctx.Input.RequestBody
 	SProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
@@ -554,15 +582,77 @@ func (c *DeviceLibraryController) GetRealData() {
 		code = errmsg.NOTJSON
 	} else {
 		uuid := fmt.Sprintf("%s", getParams["uuid"])
-		IsRemoveGW = getParams["IsRemoveGW"].(bool)
+		namePrefix := ""
+		if v, ok := getParams["namePrefix"].(string); ok {
+			namePrefix = strings.TrimSpace(v)
+		}
+		if namePrefix == "" {
+			if v, ok := getParams["deviceLabel"].(string); ok {
+				namePrefix = strings.TrimSpace(v)
+			}
+		}
+		muid := ""
+		if v, ok := getParams["muid"].(string); ok {
+			muid = strings.TrimSpace(v)
+		}
+		fetchAll := false
+		if v, ok := getParams["fetchAll"].(bool); ok {
+			fetchAll = v
+		}
+		if v, ok := getParams["IsRemoveGW"].(bool); ok {
+			IsRemoveGW = v
+		}
+		switch pv := getParams["page"].(type) {
+		case float64:
+			page = int(pv)
+		case int:
+			page = pv
+		case int64:
+			page = int(pv)
+		}
+		switch ps := getParams["pageSize"].(type) {
+		case float64:
+			pageSize = int(ps)
+		case int:
+			pageSize = ps
+		case int64:
+			pageSize = int(ps)
+		}
 		// ProjectUuid := getParams["ProjectUuid"].(string)
 		if !IsRemoveGW {
-			realData, code = models.GetRealData(uuid)
-			dbtype, _ := config.Int("dbtype")
-			if dbtype == 1 {
-				for key, v := range realData {
-					DeviceDataValue, isExist := protocol_common.DeviceRealDataMapByUUID.Load(v.Uuid)
-					if isExist {
+			// 正式环境强制分页：未传 page 时默认第 1 页，禁止一次拉全量上万点
+			if page < 1 {
+				page = 1
+			}
+			if pageSize < 1 {
+				pageSize = models.RealDataDefaultPageSize
+			}
+			if pageSize > models.RealDataMaxPageSize {
+				pageSize = models.RealDataMaxPageSize
+			}
+			// 大屏信号层：按测点名前缀取库内元数据（名称/单位），与设备管理同源
+			if fetchAll && (namePrefix != "" || uuid != "") {
+				realData, code = models.GetRealDataAllByNamePrefix(muid, uuid, namePrefix)
+				total = int64(len(realData))
+				page = 1
+				pageSize = len(realData)
+				if pageSize < 1 {
+					pageSize = models.RealDataDefaultPageSize
+				}
+			} else if namePrefix != "" {
+				realData, total, code = models.GetRealDataPagedByNamePrefix(muid, uuid, namePrefix, page, pageSize)
+			} else {
+				realData, total, code = models.GetRealDataPaged(uuid, page, pageSize)
+			}
+			// 实时值一律从内存 Map 覆盖（socket/采集写入），与 dbtype 无关；库里的 value 只是落盘快照
+			for key, v := range realData {
+				if DeviceDataValue, isExist := protocol_common.DeviceRealDataMapByUUID.Load(v.Uuid); isExist {
+					realData[key].Value = DeviceDataValue.(string)
+					continue
+				}
+				// 兼容：采集侧常用 deviceName->dataName 写入
+				if v.DeviceName != "" && v.Name != "" {
+					if DeviceDataValue, isExist := protocol_common.DeviceRealDataMap.Load(v.DeviceName + "->" + v.Name); isExist {
 						realData[key].Value = DeviceDataValue.(string)
 					}
 				}
@@ -581,16 +671,17 @@ func (c *DeviceLibraryController) GetRealData() {
 	result := map[string]interface{}{
 		"code":     code,
 		"realData": realData,
+		"total":    total,
+		"page":     page,
+		"pageSize": pageSize,
+		"hasMore":  int64(page*pageSize) < total,
 	}
 
-	c.Ctx.Output.Header("Content-Encoding", "gzip")
-	gw := gzip.NewWriter(c.Ctx.ResponseWriter)
-	defer gw.Close()
-
-	err1 := json.NewEncoder(gw).Encode(result)
-	if err1 != nil {
-		fmt.Println("encode err: ", err1)
-	}
+	// 不要手写 gzip：app.conf 已 enablegzip=true，再手动 Content-Encoding+gzip.Writer
+	// 会导致双重压缩/响应未正常结束，浏览器 Network 能看到 JSON，但 axios Promise 不 settle，
+	// 前端 messageShowLoad 一直为 true（数据仓库一直 Loading）。
+	c.Data["json"] = result
+	c.ServeJSON()
 }
 func (c *DeviceLibraryController) GetRealDataByUuid() {
 
@@ -963,6 +1054,28 @@ func (c *DeviceLibraryController) GetDeviceModelDataList() {
 	}
 }
 
+func (c *DeviceLibraryController) GetModelDataPoints() {
+	var code int = 0
+	type reqStu struct {
+		Muid string `json:"muid"`
+	}
+	var req reqStu
+	data := c.Ctx.Input.RequestBody
+	err := json.Unmarshal(data, &req)
+	list := []map[string]string{}
+	if err != nil || req.Muid == "" {
+		code = -1
+	} else {
+		list = models.ModelDataPointsByMuid(req.Muid)
+	}
+	result := map[string]interface{}{
+		"code": code,
+		"list": list,
+	}
+	c.Data["json"] = result
+	c.ServeJSON()
+}
+
 func (c *DeviceLibraryController) GetDataModelData() {
 	var code int64 = 0
 	var getModelByType = struct {
@@ -1052,6 +1165,71 @@ func (c *DeviceLibraryController) GetRealDataByName() {
 				}
 				totalData = append(totalData, singleData)
 			}
+		}
+	}
+	result := map[string]interface{}{
+		"code":     code,
+		"realData": totalData,
+	}
+
+	c.Ctx.Output.Header("Content-Encoding", "gzip")
+	gw := gzip.NewWriter(c.Ctx.ResponseWriter)
+	defer gw.Close()
+
+	err1 := json.NewEncoder(gw).Encode(result)
+	if err1 != nil {
+		fmt.Println("encode err: ", err1)
+	}
+}
+
+func (c *DeviceLibraryController) GetRealDataByBindings() {
+	var code int = 0
+	type QueryParams struct {
+		Bindings [][]string `json:"bindings"`
+	}
+	var totalData []any
+
+	var getParams QueryParams
+	data := c.Ctx.Input.RequestBody
+	SProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
+	if SProjectUuid == "" {
+		result := map[string]interface{}{
+			"code":     -6,
+			"realData": nil,
+		}
+		c.Ctx.Output.Header("Content-Encoding", "gzip")
+		gw := gzip.NewWriter(c.Ctx.ResponseWriter)
+		defer gw.Close()
+		_ = json.NewEncoder(gw).Encode(&result)
+		return
+	}
+	err := json.Unmarshal(data, &getParams)
+	if err != nil {
+		code = errmsg.NOTJSON
+	} else if len(getParams.Bindings) == 0 {
+		code = -7
+	} else {
+		// 单次绑定行数硬上限，与前端分批一致，防止大屏表格一次打满
+		bindings := getParams.Bindings
+		if len(bindings) > models.RealDataMaxPageSize {
+			bindings = bindings[:models.RealDataMaxPageSize]
+		}
+		idx := ISMScriptFunc.BuildDeviceDataLookupIndex()
+		for _, row := range bindings {
+			var singleData []any
+			for _, pointRef := range row {
+				if strings.TrimSpace(pointRef) == "" {
+					singleData = append(singleData, '-')
+					continue
+				}
+				singleDataTemp := ISMScriptFunc.ResolvePointReference(pointRef, idx)
+				if singleDataTemp == nil {
+					singleData = append(singleData, '-')
+				} else {
+					singleData = append(singleData, singleDataTemp)
+				}
+			}
+			totalData = append(totalData, singleData)
 		}
 	}
 	result := map[string]interface{}{

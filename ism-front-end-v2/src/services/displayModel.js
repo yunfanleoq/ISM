@@ -1,7 +1,9 @@
 import {
   DISPLAYMODELADD,DISPLAYMODELSINGLE,DISPLAYMODELEDIT, DISPLAYMODELLIST,DISPLAYMODELDELETE,
+  DISPLAYMODELDELETEDLIST,DISPLAYMODELRESTORE,DISPLAYMODELFORCEDEL,
   GETDISPLAYMODELLAYERDATA,SAVEDISPLAYMODELLAYERDATA,DISPLAYMODELPAGEADD,DISPLAYMODELPAGEDEL,DISPLAYMODELPAGEEDIT,GETDISPLAYMODELPAGERLAYERDATA,
-  DISPLAYMODELPAGESETHOME,GETUSERDISPLAYLIST,DISPLAYMODELPAGECOPY,GETDISPLAYMODELLAYERDATABYTOKEN,MODELADDUSER,MODELDELUSER,GETMODELUSERS
+  DISPLAYMODELPAGESETHOME,GETUSERDISPLAYLIST,DISPLAYMODELPAGECOPY,GETDISPLAYMODELLAYERDATABYTOKEN,MODELADDUSER,MODELDELUSER,GETMODELUSERS,
+  DISPLAYMODELPAGEBINDTEMPLATE,DISPLAYMODELTEMPLATEMAP
 } from '@/services/api'
 import {request, METHOD} from '@/utils/request'
 
@@ -34,18 +36,42 @@ export async function displayModelList(params) {
 }
 
 /**
- * 模型删除
+ * 模型删除（软删除，可在回收站恢复）
  */
 export async function displayModelDelete(params) {
   return request(DISPLAYMODELDELETE, METHOD.POST,params)
 }
 
 /**
+ * 回收站：已删除模型列表
+ */
+export async function displayModelDeletedList(params) {
+  return request(DISPLAYMODELDELETEDLIST, METHOD.POST,params)
+}
+
+/**
+ * 回收站：恢复已删除模型
+ */
+export async function displayModelRestore(params) {
+  return request(DISPLAYMODELRESTORE, METHOD.POST,params)
+}
+
+/**
+ * 回收站：彻底删除（物理删除，不可恢复）
+ */
+export async function displayModelForceDelete(params) {
+  return request(DISPLAYMODELFORCEDEL, METHOD.POST,params)
+}
+
+/**
  * 模型图层数据
  */
+// 全量大屏(4000+ 页)经 cpolar 外网传输可达 90s+，需单独加长 timeout
+const DISPLAY_LAYER_TIMEOUT = 300000
+
 export async function getDisplayModelPagerLayerData(params) {
   return request(GETDISPLAYMODELPAGERLAYERDATA, METHOD.POST,params,{
-    timeout:60000
+    timeout: DISPLAY_LAYER_TIMEOUT
   })
 }
 /**
@@ -53,7 +79,7 @@ export async function getDisplayModelPagerLayerData(params) {
  */
 export async function getDisplayModelLayerData(params) {
   return request(GETDISPLAYMODELLAYERDATA, METHOD.POST,params,{
-    timeout:60000
+    timeout: DISPLAY_LAYER_TIMEOUT
   })
 }
 /**
@@ -61,7 +87,7 @@ export async function getDisplayModelLayerData(params) {
  */
 export async function getLayerDataStructByToken(params) {
   return request(GETDISPLAYMODELLAYERDATABYTOKEN, METHOD.POST,params,{
-    timeout:60000
+    timeout: DISPLAY_LAYER_TIMEOUT
   })
 }
 /**
@@ -105,6 +131,20 @@ export async function DisplayModelPageCopy(params) {
   return request(DISPLAYMODELPAGECOPY, METHOD.POST,params)
 }
 
+/**
+ * 绑定/解绑层级模板角色
+ */
+export async function DisplayModelPageBindTemplate(params) {
+  return request(DISPLAYMODELPAGEBINDTEMPLATE, METHOD.POST, params)
+}
+
+/**
+ * 查询大屏模板页映射
+ */
+export async function displayModelTemplateMap(params) {
+  return request(DISPLAYMODELTEMPLATEMAP, METHOD.POST, params)
+}
+
 //获取用户模型
 export async function GetUserDisplayList(params) {
   return request(GETUSERDISPLAYLIST, METHOD.POST,params)
@@ -131,11 +171,16 @@ export default {
   getDisplayModelPagerLayerData,
   setDisplayModelLayerData,
   displayModelDelete,
+  displayModelDeletedList,
+  displayModelRestore,
+  displayModelForceDelete,
   DisplayModelPageAdd,
   DisplayModelPageDel,
   DisplayModelPageEdit,
   DisplayModelPageSetHome,
   DisplayModelPageCopy,
+  DisplayModelPageBindTemplate,
+  displayModelTemplateMap,
   getLayerDataStructByToken,
   DisplayModelAddUser,
   DisplayModelDelUser,

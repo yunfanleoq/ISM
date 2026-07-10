@@ -37,6 +37,44 @@ type User struct {
 	Uuid     string `gorm:"index;type:varchar(250);" json:"uuid" validate:"required" label:"uuid"`
 }
 
+// userTable 显式指定保留表名 `user`（OceanBase 下 GORM 默认 Model 查询可能匹配不到行）
+func userTable() *gorm.DB {
+	return Db.Model(&User{}).Table("`user`")
+}
+
+type userLoginRow struct {
+	ID       uint   `gorm:"column:id"`
+	Username string `gorm:"column:username"`
+	Password string `gorm:"column:password"`
+	Role     string `gorm:"column:role"`
+	Uuid     string `gorm:"column:uuid"`
+	Name     string `gorm:"column:name"`
+}
+
+// lookupUserByUsername OceanBase 下 GORM Model/First 可能扫不到行，Raw 最小字段集兜底
+func lookupUserByUsername(username string) (User, bool) {
+	var user User
+	if err := userTable().Where("username = ?", username).Limit(1).Find(&user).Error; err == nil && user.ID != 0 {
+		return user, true
+	}
+	var row userLoginRow
+	if err := Db.Raw(
+		"SELECT id, username, password, role, uuid, name FROM `user` WHERE username = ? AND deleted_at IS NULL LIMIT 1",
+		username,
+	).Scan(&row).Error; err != nil || row.ID == 0 {
+		return user, false
+	}
+	user = User{
+		Model:    gorm.Model{ID: row.ID},
+		Username: row.Username,
+		Password: row.Password,
+		Role:     row.Role,
+		Uuid:     row.Uuid,
+		Name:     row.Name,
+	}
+	return user, true
+}
+
 type UserApiAccessToken struct {
 	gorm.Model
 	Uuid        string `gorm:"index;type:varchar(250);" json:"uuid" validate:"required" label:"uuid"`
@@ -80,7 +118,7 @@ type UserInfo struct {
 func CheckUser(username string) (code int) {
 	var users User
 
-	Db.Select("id").Where("username = ?", username).First(&users)
+	userTable().Select("id").Where("username = ?", username).First(&users)
 	if users.ID > 0 {
 		return errmsg.ERROR_USERNAME_USED //1001
 	}
@@ -91,7 +129,7 @@ func CheckUser(username string) (code int) {
 func CheckUpUser(id int, username string) (code int) {
 	var users User
 
-	Db.Select("id").Where("username = ?", username).First(&users)
+	userTable().Select("id").Where("username = ?", username).First(&users)
 	if users.ID == uint(id) {
 		return errmsg.SUCCSE
 	}
@@ -136,7 +174,7 @@ func GetProjectUserInfo(name string, ProjectUuid string, AdminUuid string) (User
 // 查询单个用户
 func GetUserInfo(name string) (UserInfo, int) {
 	var user UserInfo
-	err := Db.Model(&User{}).Where("username = ?", name).First(&user)
+	err := userTable().Where("username = ?", name).First(&user)
 
 	if !errors.Is(err.Error, gorm.ErrRecordNotFound) {
 		return user, errmsg.SUCCSE
@@ -147,7 +185,7 @@ func GetUserInfo(name string) (UserInfo, int) {
 // 更新单个用户
 func SetUserInfo(name string, userInfo User) int {
 
-	err := Db.Model(&User{}).Where("username = ?", name).Updates(userInfo).Error
+	err := userTable().Where("username = ?", name).Updates(userInfo).Error
 	if err != nil {
 		return errmsg.ERROR
 	}
@@ -179,14 +217,12 @@ func GetUsers(username string, pageSize int, pageNum int) ([]User, int64) {
 	var total int64
 
 	if username != "" {
-		Db.Select("id,username,role").Where("username LIKE ?", "%"+username+"%").Limit(pageSize).Offset((pageNum - 1) * pageSize).Find(&users)
-		Db.Model(&users).Where(
-			"username LIKE ?", "%"+username+"%",
-		).Count(&total)
+		userTable().Select("id,username,role").Where("username LIKE ?", "%"+username+"%").Limit(pageSize).Offset((pageNum - 1) * pageSize).Find(&users)
+		userTable().Where("username LIKE ?", "%"+username+"%").Count(&total)
 		return users, total
 	}
-	Db.Select("id,username,role").Limit(pageSize).Offset((pageNum - 1) * pageSize).Find(&users)
-	Db.Model(&users).Count(&total)
+	userTable().Select("id,username,role").Limit(pageSize).Offset((pageNum - 1) * pageSize).Find(&users)
+	userTable().Count(&total)
 
 	var dberr error
 	if dberr == gorm.ErrRecordNotFound {
@@ -218,11 +254,10 @@ func GetDisplayAllUsers(ProjectUuid string, AdminUuid string) ([]UserInfo, int64
 
 // 编辑用户
 func EditUser(id int, data *User) int {
-	var user User
 	var maps = make(map[string]interface{})
 	maps["username"] = data.Username
 	maps["role"] = data.Role
-	err := Db.Model(&user).Where("id = ?", id).Updates(maps).Error
+	err := userTable().Where("id = ?", id).Updates(maps).Error
 	if err != nil {
 		return errmsg.ERROR
 	}
@@ -231,7 +266,7 @@ func EditUser(id int, data *User) int {
 
 // 重置密码
 func ResetPwd(id int) int {
-	err := Db.Model(&User{}).Where("id = ?", id).Update("password", ScryptPw("123456")).Error
+	err := userTable().Where("id = ?", id).Update("password", ScryptPw("123456")).Error
 	if err != nil {
 		return errmsg.ERROR
 	}
@@ -245,7 +280,7 @@ func SetUserPassword(username string, Password string, NewPassword string) int {
 		return errmsg.ERROR_PASSWORD_WRONG
 	}
 
-	err := Db.Model(&User{}).Where("username = ?", username).Update("password", ScryptPw(NewPassword)).Error
+	err := userTable().Where("username = ?", username).Update("password", ScryptPw(NewPassword)).Error
 	if err != nil {
 		return errmsg.ERROR
 	}
@@ -308,10 +343,8 @@ func ScryptPw(password string) string {
 
 // 登录验证
 func CheckLoginAdminUser(username string) (int, User) {
-	var user User
-
-	Db.Where("username = ?", username).First(&user)
-	if user.ID == 0 {
+	user, ok := lookupUserByUsername(username)
+	if !ok {
 		return errmsg.ERROR_USERNAME_NOT_EXIST, user //用户不存在
 	}
 	return errmsg.LOGIN_SUCCSE, user //
@@ -319,10 +352,8 @@ func CheckLoginAdminUser(username string) (int, User) {
 
 // 登录验证
 func CheckLogin(username string, password string) (int, User) {
-	var user User
-
-	Db.Where("username = ?", username).First(&user)
-	if user.ID == 0 {
+	user, ok := lookupUserByUsername(username)
+	if !ok {
 		return errmsg.ERROR_USERNAME_NOT_EXIST, user //用户不存在
 	}
 	pwdMatch := comparePasswords(user.Password, []byte(password))
@@ -392,7 +423,7 @@ func CheckProjectLogin(ProjectUuid string, AdminUuid string, username string, pa
 // 头像更新
 func UserAvatarUpdate(username string, path string) int {
 
-	result := Db.Model(&User{}).Where("username = ?", username).Update("avatar", path)
+	result := userTable().Where("username = ?", username).Update("avatar", path)
 
 	if result.Error != nil {
 		return errmsg.SNMP_MODEL_ADD_FAILED

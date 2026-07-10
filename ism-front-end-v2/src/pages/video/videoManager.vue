@@ -109,7 +109,7 @@
           <a-checkbox
                    v-decorator="[
                 'IsRecord',
-                { rules: [{ required: false}] },
+                { valuePropName: 'checked', rules: [{ required: false}] },
               ]"
           />
         </a-form-item>

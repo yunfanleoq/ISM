@@ -1,0 +1,178 @@
+# 工业配电室四级钻探大屏模板
+# 适用于多柜/多设备组场景
+
+template:
+  id: "industrial_4level"
+  name: "工业配电室四级钻探大屏"
+  description: "适用于多柜/多设备组场景，含概览、柜、设备组、设备详情四层"
+  category: "industrial"
+  version: "1.0"
+
+  # 画布配置
+  canvas:
+    width: 1920
+    height: 1080
+    bg_color: "#0a0e17"
+    theme: "dark"
+
+  # 布局区域定义
+  layout:
+    left_sidebar:
+      x: 0
+      y: 0
+      width: 230
+      height: 1080
+      components:
+        - type: "breadcrumb"
+          position: { x: 10, y: 5, w: 210, h: 30 }
+        - type: "device_tree"
+          position: { x: 10, y: 40, w: 210, h: 1030 }
+
+    header:
+      x: 240
+      y: 0
+      width: 1680
+      height: 80
+      components:
+        - type: "title"
+          text: "电力监控系统"
+          position: { x: 20, y: 20, w: 800, h: 40 }
+          style: { fontSize: 28, bold: true, align: "left" }
+        - type: "clock"
+          position: { x: 1400, y: 20, w: 260, h: 40 }
+
+    stats_cards:
+      x: 290
+      y: 100
+      width: 1560
+      height: 110
+      count: 4
+      gap: 10
+      card_height: 110
+      components:
+        - title: "总设备数"
+          data_source: "device_total_count"
+          unit: "台"
+          color: "#00d4aa"
+        - title: "在线设备"
+          data_source: "device_online_count"
+          unit: "台"
+          color: "#00d4aa"
+        - title: "告警设备"
+          data_source: "device_alarm_count"
+          unit: "台"
+          color: "#ff6b6b"
+        - title: "配电室数"
+          data_source: "room_count"
+          unit: "个"
+          color: "#ff9f43"
+
+    left_panel:
+      x: 290
+      y: 230
+      width: 780
+      height: 400
+      components:
+        - type: "chart-line"
+          title: "功率趋势图"
+          data_source: "power_trend"
+
+    right_upper:
+      x: 1090
+      y: 230
+      width: 400
+      height: 400
+      components:
+        - type: "chart-pie"
+          title: "设备状态分布"
+          data_source: "device_status_pie"
+
+    right_lower:
+      x: 1090
+      y: 650
+      width: 400
+      height: 220
+      components:
+        - type: "table"
+          title: "实时告警"
+          columns: ["时间", "设备", "告警内容", "等级"]
+
+    bottom_panel:
+      x: 290
+      y: 650
+      width: 780
+      height: 220
+      components:
+        - type: "table"
+          title: "设备运行状态"
+          columns: ["设备名称", "状态", "A相电压", "A相电流", "功率"]
+
+  # 子页面定义
+  sub_pages:
+    - level: 1
+      name: "building"
+      title_template: "{cabinet_name} — 设备组概览"
+      layout:
+        grid:
+          cols: 4
+          gap_x: 20
+          gap_y: 20
+          card_width: 350
+          card_height: 180
+      components:
+        - type: "card-grid"
+          data_source: "floor_groups"
+
+    - level: 2
+      name: "floor"
+      title_template: "{group_name} — 设备列表"
+      layout:
+        table:
+          x: 290
+          y: 100
+          width: 1400
+          height: 800
+      components:
+        - type: "table"
+          data_source: "devices"
+          columns: ["设备名称", "状态", "A相电压", "B相电压", "C相电压", "A相电流", "功率"]
+
+    - level: 3
+      name: "device-detail"
+      title_template: "{device_name} — 参数详情"
+      layout:
+        grid:
+          cols: 7
+          rows: 13
+          gap_x: 10
+          gap_y: 10
+          card_width: 180
+          card_height: 60
+      components:
+        - type: "param-grid"
+          data_source: "device_params"
+          count: 91
+
+  # 主题配色
+  theme:
+    dark:
+      bg: "#0a0e17"
+      card_bg: "#1a2332"
+      card_border: "#2a3a4a"
+      text_primary: "#e0e6ed"
+      text_secondary: "#8a94a6"
+      accent: "#00d4aa"
+      accent_warning: "#ff9f43"
+      accent_danger: "#ff6b6b"
+      chart_colors: ["#00d4aa", "#3498db", "#9b59b6", "#e74c3c", "#f1c40f"]
+
+    light:
+      bg: "#f5f7fa"
+      card_bg: "#ffffff"
+      card_border: "#e0e6ed"
+      text_primary: "#2c3e50"
+      text_secondary: "#7f8c8d"
+      accent: "#3498db"
+      accent_warning: "#e67e22"
+      accent_danger: "#e74c3c"
+      chart_colors: ["#3498db", "#2ecc71", "#9b59b6", "#e74c3c", "#f1c40f"]

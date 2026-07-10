@@ -13,10 +13,12 @@ import (
 	protocolCommon "ISMServer/protocol/common"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -89,6 +91,7 @@ type modbusDeviceDataStu struct {
 	DataUnit             string
 	AlarmClearMessage    string
 	AlarmShield          int
+	AlarmOnValue         int
 	IsRecord             int
 	RecordInterval       int
 	RecordType           int
@@ -111,6 +114,8 @@ var ModbusUartModelList sync.Map
 
 var ModbusClientExternData sync.Map
 
+var ModbusDeviceStopChans sync.Map
+
 var ReMutex sync.Mutex
 
 var ModbusClientListRWMutex sync.Mutex
@@ -119,6 +124,23 @@ var ModbusUartClientMutexRWMutex sync.Mutex
 
 var ModbusTcpClientConnMutexRWMutex sync.Mutex
 var ModbusTcpServerConnRWMutex sync.Mutex
+
+// ModbusEffectiveTimeout 采集超时(毫秒)。导入器曾写入 5ms，无法完成 100 寄存器批量读。
+func ModbusEffectiveTimeout(timeoutMs int) time.Duration {
+	if timeoutMs < 500 {
+		return 500 * time.Millisecond
+	}
+	return time.Duration(timeoutMs) * time.Millisecond
+}
+
+func ModbusTcpClientKey(modbus map[string]interface{}) string {
+	ip := fmt.Sprintf("%v", modbus["IPAddress"])
+	port := fmt.Sprintf("%v", modbus["Port"])
+	if strings.Contains(port, ".") {
+		port = strings.TrimSuffix(strings.TrimSuffix(port, ".0"), ".00")
+	}
+	return ip + port
+}
 
 func ModbusClientListRWMutexFunc(mapKey, what string, value modbus.Client) modbus.Client {
 	ModbusClientListRWMutex.Lock()
@@ -278,7 +300,7 @@ func ModbusModelReConnect(muid string) bool {
 		ModbusClientNew.SetTCPTimeout(time.Millisecond * time.Duration(device.Timeout))
 		err := ModbusClientNew.Connect()
 		if err != nil {
-			logs.Error("connect failed, ", err)
+			protocolCommon.ErrorThrottled("modbus:connect:"+fmt.Sprint(err), "connect failed, %v", err)
 			ReMutex.Unlock()
 			time.Sleep(time.Second * 5)
 			return false
@@ -326,19 +348,22 @@ func waitForGather() {
 func ModbusGatherStart() {
 
 	var is_starting = 0
-	//创建日志文件
-	_, err := os.Stat("logs/modbus")
-
-	if os.IsNotExist(err) {
-		os.Mkdir("logs/modbus", os.ModePerm)
+	// 正式环境默认不写 modbus 协议明细日志，避免无谓写盘；仅 ModbusDebug=true 时落盘
+	if protocolCommon.ModbusDebug {
+		_, err := os.Stat("logs/modbus")
+		if os.IsNotExist(err) {
+			os.Mkdir("logs/modbus", os.ModePerm)
+		}
+		fileName := fmt.Sprintf("logs/modbus/modbus_log_%s.log", time.Now().Format("2006-01-02"))
+		logFile, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0744)
+		if err != nil {
+			logs.Error(err)
+			return
+		}
+		ProviderLoger = defaultLogger{log.New(logFile, "", log.LstdFlags)}
+	} else {
+		ProviderLoger = defaultLogger{log.New(io.Discard, "", 0)}
 	}
-	fileName := fmt.Sprintf("logs/modbus/modbus_log_%s.log", time.Now().Format("2006-01-02"))
-	logFile, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0744)
-	if err != nil {
-		logs.Error(err)
-		return
-	}
-	ProviderLoger = defaultLogger{log.New(logFile, "", log.LstdFlags)}
 
 	for {
 
@@ -426,14 +451,14 @@ func ModbusGatherStart() {
 							ModbusClientListRWMutexFunc(device.Uuid, "read", nil).SetTCPTimeout(time.Millisecond * time.Duration(device.Timeout))
 
 							if err != nil {
-								logs.Error("connect failed, ", err, device.ModbusConnectCOMName)
+								protocolCommon.ErrorThrottled("modbus:com:"+device.ModbusConnectCOMName, "connect failed, %v %s", err, device.ModbusConnectCOMName)
 								time.Sleep(time.Second * 5)
 								continue
 							} else {
 								ModbusUartModelList.Store(device.ModbusConnectCOMName, modbusTempClient)
 							}
 						} else {
-							logs.Error("connect failed, ", err, device.ModbusConnectCOMName)
+							protocolCommon.ErrorThrottled("modbus:com:"+device.ModbusConnectCOMName, "connect failed, client nil %s", device.ModbusConnectCOMName)
 							time.Sleep(time.Second * 5)
 							continue
 						}
@@ -453,7 +478,7 @@ func ModbusGatherStart() {
 				var deviceGather []modbusDeviceDataStu
 				var getExtraData extraData
 				var getRegisterGroupList []models.ModbusDevicesRegisterGroup
-				models.Db.Raw("SELECT  modbus_devices_register_group.uuid as register_group_uuid,modbus_devices_data_model.register_address,modbus_devices_data_model.record_data_timely,modbus_devices_data_model.float_accuracy,modbus_devices_data_model.conversion_expression,modbus_devices_data_model.is_alarm,modbus_devices_data_model.alarm_level,modbus_devices_data_model.byte_order,modbus_devices_data_model.name,modbus_devices_data_model.alarm_message,modbus_devices_data_model.alarm_clear_message,modbus_devices_data_model.data_unit,modbus_devices_data_model.record_type,modbus_devices_data_model.record_data_charge,modbus_devices_data_model.is_record,modbus_devices_data_model.record_interval,device_real_data.uuid as real_data_uuid ,device_real_data.alarm_shield,device_real_data.model_data_uuid,modbus_devices_data_model.type FROM modbus_devices_data_model, modbus_devices_register_group,device_real_data WHERE device_real_data.device_uuid=? and device_real_data.muid=modbus_devices_register_group.muid and modbus_devices_register_group.muid = ? and modbus_devices_data_model.register_group_uuid=modbus_devices_register_group.uuid and device_real_data.model_data_uuid=modbus_devices_data_model.uuid", device.Uuid, device.Muid).Scan(&deviceGather)
+				models.Db.Raw("SELECT  modbus_devices_register_group.uuid as register_group_uuid,modbus_devices_data_model.register_address,modbus_devices_data_model.record_data_timely,modbus_devices_data_model.float_accuracy,modbus_devices_data_model.conversion_expression,modbus_devices_data_model.is_alarm,modbus_devices_data_model.alarm_level,modbus_devices_data_model.byte_order,modbus_devices_data_model.name,modbus_devices_data_model.alarm_message,modbus_devices_data_model.alarm_clear_message,modbus_devices_data_model.data_unit,modbus_devices_data_model.record_type,modbus_devices_data_model.record_data_charge,modbus_devices_data_model.is_record,modbus_devices_data_model.record_interval,device_real_data.uuid as real_data_uuid ,device_real_data.alarm_shield,device_real_data.model_data_uuid,modbus_devices_data_model.type,COALESCE(device_real_data.alarm_on_value, modbus_devices_data_model.alarm_on_value, 1) as alarm_on_value FROM modbus_devices_data_model, modbus_devices_register_group,device_real_data WHERE device_real_data.device_uuid=? and device_real_data.muid=modbus_devices_register_group.muid and modbus_devices_register_group.muid = ? and modbus_devices_data_model.register_group_uuid=modbus_devices_register_group.uuid and device_real_data.model_data_uuid=modbus_devices_data_model.uuid", device.Uuid, device.Muid).Scan(&deviceGather)
 				models.Db.Model(&models.ModbusDevicesRegisterGroup{}).Select("*").Where("muid = ?", device.Muid).Find(&getRegisterGroupList)
 				if len(getRegisterGroupList) == 0 || len(deviceGather) == 0 {
 					time.Sleep(time.Second * 5)
@@ -555,4 +580,54 @@ func ModbusGatherStart() {
 		is_starting = 1
 	}
 
+}
+
+// ModbusStopDevice 停止单设备采集协程（TCP）；串口设备回退全量重启
+func ModbusStopDevice(deviceUuid string) {
+	if deviceUuid == "" {
+		return
+	}
+	if ch, ok := ModbusDeviceStopChans.Load(deviceUuid); ok {
+		select {
+		case <-ch.(chan struct{}):
+		default:
+			close(ch.(chan struct{}))
+		}
+		ModbusDeviceStopChans.Delete(deviceUuid)
+	}
+}
+
+// ModbusReloadDevice 单设备热更新：TCP 仅重启目标协程，串口仍全量重启
+func ModbusReloadDevice(deviceUuid string) {
+	if deviceUuid == "" {
+		ModbusCloseChan()
+		return
+	}
+	var device modbusDeviceStu
+	models.Db.Raw("SELECT monitor_list.offline_clear,monitor_list.offline_default_value,monitor_list.project_uuid,monitor_list.uuid,monitor_list.name, monitor_list.is_enable,monitor_list.extra_data,monitor_list.muid ,devices_model.modbus_connect_type,monitor_list.interval,monitor_list.timeout,devices_model.gather_number,monitor_list.failed_times,devices_model.modbus_connect_mode,devices_model.modbus_connect_com_name,devices_model.modbus_serial_baud,devices_model.data_format,devices_model.modbus_serial_bits,devices_model.modbus_serial_parity,devices_model.modbus_serial_stop_bits,devices_model.modbus_serial_flow FROM monitor_list, devices_model WHERE monitor_list.uuid = ? and monitor_list.muid = devices_model.uuid and devices_model.type=2", deviceUuid).Scan(&device)
+	if device.Uuid == "" || device.IsEnable == 0 {
+		ModbusStopDevice(deviceUuid)
+		return
+	}
+	if device.ModbusConnectType == "Serial" {
+		ModbusCloseChan()
+		return
+	}
+	ModbusStopDevice(deviceUuid)
+	time.Sleep(300 * time.Millisecond)
+	modbusStartTCPDevice(device)
+}
+
+func modbusStartTCPDevice(device modbusDeviceStu) {
+	var deviceGather []modbusDeviceDataStu
+	var getRegisterGroupList []models.ModbusDevicesRegisterGroup
+	models.Db.Raw("SELECT  modbus_devices_register_group.uuid as register_group_uuid,modbus_devices_data_model.register_address,modbus_devices_data_model.record_data_timely,modbus_devices_data_model.float_accuracy,modbus_devices_data_model.conversion_expression,modbus_devices_data_model.is_alarm,modbus_devices_data_model.alarm_level,modbus_devices_data_model.byte_order,modbus_devices_data_model.name,modbus_devices_data_model.alarm_message,modbus_devices_data_model.alarm_clear_message,modbus_devices_data_model.data_unit,modbus_devices_data_model.record_type,modbus_devices_data_model.record_data_charge,modbus_devices_data_model.is_record,modbus_devices_data_model.record_interval,device_real_data.uuid as real_data_uuid ,device_real_data.alarm_shield,device_real_data.model_data_uuid,modbus_devices_data_model.type,COALESCE(device_real_data.alarm_on_value, modbus_devices_data_model.alarm_on_value, 1) as alarm_on_value FROM modbus_devices_data_model, modbus_devices_register_group,device_real_data WHERE device_real_data.device_uuid=? and device_real_data.muid=modbus_devices_register_group.muid and modbus_devices_register_group.muid = ? and modbus_devices_data_model.register_group_uuid=modbus_devices_register_group.uuid and device_real_data.model_data_uuid=modbus_devices_data_model.uuid", device.Uuid, device.Muid).Scan(&deviceGather)
+	models.Db.Model(&models.ModbusDevicesRegisterGroup{}).Select("*").Where("muid = ?", device.Muid).Find(&getRegisterGroupList)
+	if len(getRegisterGroupList) == 0 || len(deviceGather) == 0 {
+		return
+	}
+	d := &ModbusCtl{waitGroup: &modbusWg, failedTimes: 0, deviceStatus: 0, isReady: true}
+	d.InitDeviceInfo(ModbusClientListRWMutexFunc(device.Muid, "read", nil), device, getRegisterGroupList, deviceGather)
+	modbusWg.Add(1)
+	go d.GatherModbusDeviceData()
 }

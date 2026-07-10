@@ -10,6 +10,7 @@ package ISMScript
 
 import (
 	"ISMServer/models"
+	protocolCommon "ISMServer/protocol/common"
 	protocolCommonFunc "ISMServer/protocol/commFunc"
 	"ISMServer/utils/errmsg"
 	"encoding/base64"
@@ -98,7 +99,7 @@ func StartSysScript() {
 					_, scripterr := vm.Execute(GoSysSctVm, nil, string(content))
 
 					if scripterr != nil {
-						logs.Error("%s,Execute error: %v", filepath, scripterr)
+						protocolCommon.ErrorThrottled("sysscript:"+filepath, "%s,Execute error: %v", filepath, scripterr)
 					}
 				}(systemScriptPath + file.Name())
 

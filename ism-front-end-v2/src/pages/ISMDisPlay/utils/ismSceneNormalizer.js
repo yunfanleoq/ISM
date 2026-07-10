@@ -140,9 +140,16 @@ export function createISMNode({
 }
 
 export function normalizeISMCell(cell, options = {}) {
-  if (!cell || typeof cell !== 'object' || !cell.shape) {
+  if (!cell || typeof cell !== 'object') {
     return null
   }
+  const inferredShape = cell.shape
+    || (cell.data && cell.data.detail && cell.data.detail.type)
+    || (cell.detail && cell.detail.type)
+  if (!inferredShape) {
+    return null
+  }
+  cell = { ...cell, shape: inferredShape }
   const allowedShapes = options.allowedShapes || []
   const isEdge = cell.shape === 'edge'
   if (!isEdge && allowedShapes.length > 0 && !allowedShapes.includes(cell.shape)) {

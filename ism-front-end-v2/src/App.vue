@@ -295,8 +295,17 @@ export default {
     },
     setHtmlTitle() {
       const route = this.$route
-      const key = route.path === '/' ? 'home.name' : getI18nKey(route.matched[route.matched.length - 1].path)
-      document.title = this.$store.state.setting.SystemAuthAPPName?this.$store.state.setting.SystemAuthAPPName + ' | ' + this.$t(key):"Loading" + ' | ' + this.$t(key)
+      if (!route || !route.path) {
+        return
+      }
+      const matched = route.matched
+      const last = matched && matched.length ? matched[matched.length - 1] : null
+      const key = route.path === '/'
+        ? 'home.name'
+        : getI18nKey((last && last.path) || route.path)
+      document.title = this.$store.state.setting.SystemAuthAPPName
+        ? this.$store.state.setting.SystemAuthAPPName + ' | ' + this.$t(key)
+        : 'Loading' + ' | ' + this.$t(key)
     },
     popContainer() {
       return document.getElementById("popContainer")

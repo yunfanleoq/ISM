@@ -60,11 +60,16 @@ func init() {
 	beego.Router("/SetDeviceStartOrStop", &controllers.DeviceLibraryController{}, "*:SetDeviceStartOrStop")
 
 	beego.Router("/getDataModelData", &controllers.DeviceLibraryController{}, "*:GetDataModelData")
+	beego.Router("/GetRealDataByName", &controllers.DeviceLibraryController{}, "*:GetRealDataByName")
+	beego.Router("/GetRealDataByBindings", &controllers.DeviceLibraryController{}, "*:GetRealDataByBindings")
 
 	//显示模型
 	beego.Router("/displayModelAdd", &controllers.DisplayModelController{}, "*:ModelAdd")
 	beego.Router("/displayModelList", &controllers.DisplayModelController{}, "*:ModelList")
 	beego.Router("/displayModelDel", &controllers.DisplayModelController{}, "*:ModelDel")
+	beego.Router("/displayModelDeletedList", &controllers.DisplayModelController{}, "*:ModelDeletedList")
+	beego.Router("/displayModelRestore", &controllers.DisplayModelController{}, "*:ModelRestore")
+	beego.Router("/displayModelForceDel", &controllers.DisplayModelController{}, "*:ModelForceDel")
 	beego.Router("/displayModelGet", &controllers.DisplayModelController{}, "*:ModelGet")
 	beego.Router("/displayModelEdit", &controllers.DisplayModelController{}, "*:ModelEdit")
 	beego.Router("/getDisplayModelLayerData", &controllers.DisplayModelController{}, "*:ModelLayerGet")
@@ -74,6 +79,8 @@ func init() {
 	beego.Router("/DisplayModelPageDel", &controllers.DisplayModelController{}, "*:ModelPageDel")
 	beego.Router("/DisplayModelPageEdit", &controllers.DisplayModelController{}, "*:ModelPageEdit")
 	beego.Router("/DisplayModelPageSetHome", &controllers.DisplayModelController{}, "*:ModelPageSetHome")
+	beego.Router("/DisplayModelPageBindTemplate", &controllers.DisplayModelController{}, "*:ModelPageBindTemplate")
+	beego.Router("/displayModelTemplateMap", &controllers.DisplayModelController{}, "*:ModelTemplateMap")
 	beego.Router("/GetUserDisplayList", &controllers.DisplayModelController{}, "*:GetUserModelList")
 	beego.Router("/displayImageUpload/:suuid", &controllers.DisplayModelController{}, "*:DisplayImageUpload")
 	beego.Router("/DisplayModelPageCopy", &controllers.DisplayModelController{}, "*:ModelLayerCopy")
@@ -91,6 +98,7 @@ func init() {
 
 	//设备模型
 	beego.Router("/GetDeviceModelDataList", &controllers.DeviceLibraryController{}, "*:GetDeviceModelDataList")
+	beego.Router("/getModelDataPoints", &controllers.DeviceLibraryController{}, "*:GetModelDataPoints")
 
 	//modbus
 	beego.Router("/Comlist", &controllers.ModbusDeviceModelController{}, "*:Comlist")
@@ -216,13 +224,17 @@ func init() {
 	beego.Router("/GetDiyDataHistoryList", &controllers.ReportController{}, "*:GetDiyDataHistoryList")
 	//实时告警
 	beego.Router("/GetCurrentAlarmList", &controllers.AlarmController{}, "*:GetCurrentAlarmList")
+	beego.Router("/GetAlarmEventFeed", &controllers.AlarmController{}, "*:GetAlarmEventFeed")
 	beego.Router("/AlarmOpt", &controllers.AlarmController{}, "*:AlarmOpt")
+	beego.Router("/AlarmClearAll", &controllers.AlarmController{}, "*:AlarmClearAll")
 	beego.Router("/AlarmShieldList", &controllers.AlarmController{}, "*:GetCurrentShieldAlarmList")
 	//告警联动
 	beego.Router("/AlarmTriggerAdd", &controllers.AlarmController{}, "*:AlarmTriggerAdd")
 	beego.Router("/AlarmTriggerDel", &controllers.AlarmController{}, "*:AlarmTriggerDel")
 	beego.Router("/AlarmTriggerEdit", &controllers.AlarmController{}, "*:AlarmTriggerEdit")
 	beego.Router("/GetAlarmTriggerList", &controllers.AlarmController{}, "*:GetAlarmTriggerList")
+	beego.Router("/AlarmTriggerExport", &controllers.AlarmController{}, "*:AlarmTriggerExport")
+	beego.Router("/AlarmTriggerImport", &controllers.AlarmController{}, "*:AlarmTriggerImport")
 
 	//用户
 	beego.Router("/uploadUserAvatar", &controllers.UserController{}, "*:UploadAvatar")
@@ -288,6 +300,8 @@ func init() {
 	beego.Router("/GetSystemDeviceInfo", &controllers.ISMSystem{}, "*:GetSystemDeviceInfo")
 	beego.Router("/GetSystemParams", &controllers.ISMSystem{}, "*:GetSystemParams")
 	beego.Router("/GetSystemParamsList", &controllers.ISMSystem{}, "*:GetSystemParamsList")
+	beego.Router("/GetSystemHomeDashboard", &controllers.SystemHomeController{}, "*:GetSystemHomeDashboard")
+	beego.Router("/SetSystemHomeDashboard", &controllers.SystemHomeController{}, "*:SetSystemHomeDashboard")
 	beego.Router("/GetPhysicalIDCheck", &controllers.ISMSystem{}, "*:GetPhysicalIDCheck")
 	beego.Router("/WitePhysicalID", &controllers.ISMSystem{}, "*:WitePhysicalID")
 	beego.Router("/GetAuthLicenseInfo", &controllers.ISMSystem{}, "*:GetAuthLicenseInfo")
@@ -353,6 +367,18 @@ func init() {
 	beego.Router("/EditReportTemplete", &controllers.ReportTempleteController{}, "*:EditReportTemplete")
 	beego.Router("/SaveReportTemplete", &controllers.ReportTempleteController{}, "*:SaveReportTemplete")
 	beego.Router("/HandExport", &controllers.ReportTempleteController{}, "*:HandExport")
+
+	// SQL报表模板
+	beego.Router("/AddSQLReportTemplete", &controllers.SQLReportTempleteController{}, "*:AddReportTemplete")
+	beego.Router("/DelSQLReportTemplete", &controllers.SQLReportTempleteController{}, "*:DelReportTemplete")
+	beego.Router("/GetSQLReportTemplete", &controllers.SQLReportTempleteController{}, "*:GetReportTemplete")
+	beego.Router("/EditSQLReportTemplete", &controllers.SQLReportTempleteController{}, "*:EditReportTemplete")
+	beego.Router("/UpdateSQLTemplate", &controllers.SQLReportTempleteController{}, "*:UpdateSQLTemplate")
+	beego.Router("/ExportSQLTemplate", &controllers.SQLReportTempleteController{}, "*:HandExport")
+	beego.Router("/SQLCreateAndView", &controllers.SQLReportTempleteController{}, "*:SQLCreateAndView")
+
+	// SSE 实时推送（EventSource 走根路径，不经 /api）
+	beego.Router("/SSEPushData", &controllers.SSEController{}, "*:SSEStream")
 
 	//
 	beego.Router("/UpdateDataModel/:muid", &controllers.ISMSystem{}, "*:UpdateDataModel")
@@ -436,6 +462,18 @@ func init() {
 // 	beego.Router("/api/v1/open/excel/preview", &controllers.OpenApiController{}, "*:ExcelPreview")
 // 	// ===== end AI OpenAPI =====
 
+	// ===== 自动化批量导入 API =====
+	beego.Router("/autoGen/modelImport", &controllers.AutoGenController{}, "*:ModelImport")
+	beego.Router("/autoGen/deviceImport", &controllers.AutoGenController{}, "*:DeviceImport")
+	beego.Router("/autoGen/dashboardGenerate", &controllers.AutoGenController{}, "*:DashboardGenerate")
+	beego.Router("/autoGen/projectImport", &controllers.AutoGenController{}, "*:ProjectImport")
+	beego.Router("/autoGen/taskStatus", &controllers.AutoGenController{}, "*:TaskStatus")
+	beego.Router("/autoGen/taskList", &controllers.AutoGenController{}, "*:TaskList")
+	beego.Router("/autoGen/taskRollback", &controllers.AutoGenController{}, "*:TaskRollback")
+	beego.Router("/autoGen/templateList", &controllers.AutoGenController{}, "*:TemplateList")
+	beego.Router("/autoGen/templateGet", &controllers.AutoGenController{}, "*:TemplateGet")
+	// ===== end 自动化批量导入 API =====
+
 	// 验证用户是否已经登录
 	beego.InsertFilter("/*", beego.BeforeExec, FilterUser)
 
@@ -495,10 +533,13 @@ var FilterUser = func(ctx *context.Context) {
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateModbusTcpPushDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/setData") &&
 				!strings.Contains(ctx.Request.RequestURI, "/GetSystemParams") &&
+				!strings.Contains(ctx.Request.RequestURI, "/GetSystemHomeDashboard") &&
 				!strings.Contains(ctx.Request.RequestURI, "/GetSystemDeviceInfo") &&
 				!strings.Contains(ctx.Request.RequestURI, "/getDisplayModelLayerData") &&
 				!strings.Contains(ctx.Request.RequestURI, "/getDisplayModelLayerDataByToken") &&
+				!strings.Contains(ctx.Request.RequestURI, "/getDisplayModelPagerLayerData") &&
 				!strings.Contains(ctx.Request.RequestURI, "/getRealDataByUuid") &&
+				!strings.Contains(ctx.Request.RequestURI, "/monitortree") &&
 				!strings.Contains(ctx.Request.RequestURI, "/GetCustomPel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/DisplayLoginPage") &&
 				!strings.Contains(ctx.Request.RequestURI, "/LocalUpgrade") &&
@@ -511,6 +552,7 @@ var FilterUser = func(ctx *context.Context) {
 				!strings.Contains(ctx.Request.RequestURI, "/opcuaNodeidImport") &&
 				!strings.Contains(ctx.Request.RequestURI, "/displayImageUpload") &&
 				!strings.Contains(ctx.Request.RequestURI, "/GetAuthLicenseInfo") &&
+				!strings.Contains(ctx.Request.RequestURI, "/SSEPushData") &&
 				ctx.Request.RequestURI != "/login" &&
 				ctx.Request.RequestURI != "/snmpmodelimportxml" &&
 				ctx.Request.RequestURI != "/snmpmodelimport" &&
@@ -538,10 +580,13 @@ var FilterUser = func(ctx *context.Context) {
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateModbusTcpPushDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/setData") &&
 				!strings.Contains(ctx.Request.RequestURI, "/GetSystemParams") &&
+				!strings.Contains(ctx.Request.RequestURI, "/GetSystemHomeDashboard") &&
 				!strings.Contains(ctx.Request.RequestURI, "/GetSystemDeviceInfo") &&
 				!strings.Contains(ctx.Request.RequestURI, "/getDisplayModelLayerData") &&
 				!strings.Contains(ctx.Request.RequestURI, "/getDisplayModelLayerDataByToken") &&
+				!strings.Contains(ctx.Request.RequestURI, "/getDisplayModelPagerLayerData") &&
 				!strings.Contains(ctx.Request.RequestURI, "/getRealDataByUuid") &&
+				!strings.Contains(ctx.Request.RequestURI, "/monitortree") &&
 				!strings.Contains(ctx.Request.RequestURI, "/GetCustomPel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/DisplayLoginPage") &&
 				!strings.Contains(ctx.Request.RequestURI, "/LocalUpgrade") &&
@@ -554,6 +599,7 @@ var FilterUser = func(ctx *context.Context) {
 				!strings.Contains(ctx.Request.RequestURI, "/opcuaNodeidImport") &&
 				!strings.Contains(ctx.Request.RequestURI, "/displayImageUpload") &&
 				!strings.Contains(ctx.Request.RequestURI, "/GetAuthLicenseInfo") &&
+				!strings.Contains(ctx.Request.RequestURI, "/SSEPushData") &&
 				result != errmsg.SUCCSE &&
 				ctx.Request.RequestURI != "/snmpmodelimportxml" &&
 				ctx.Request.RequestURI != "/snmpmodelimport" &&

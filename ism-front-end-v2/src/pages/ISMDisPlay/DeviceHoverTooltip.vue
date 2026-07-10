@@ -79,6 +79,10 @@ export default {
   methods: {
     onShow(payload) {
       if (!payload || !payload.deviceUuid) return
+      const nav = this.$store && this.$store.state.ISMDisPlayEditorTool
+        ? this.$store.state.ISMDisPlayEditorTool.navContext
+        : null
+      if (nav && nav.kind === 'device') return
       if (this.hideTimer) { clearTimeout(this.hideTimer); this.hideTimer = null }
       this.deviceName = payload.deviceName || ''
       this.computePosition(payload.clientX, payload.clientY)

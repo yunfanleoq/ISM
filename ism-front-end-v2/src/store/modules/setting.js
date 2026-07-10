@@ -1,9 +1,14 @@
 import config from '@/config'
 import {ADMIN} from '@/config/default'
+import {
+  getHomeDashboardConfig,
+  getHomeDashboardPath,
+} from '@/config/homeDashboard'
 import {formatFullPath} from '@/utils/i18n'
 import {filterMenu} from '@/utils/authority-utils'
 import {getLocalSetting} from '@/utils/themeUtil'
 import deepClone from 'lodash.clonedeep'
+import {GetSystemHomeDashboard, SetSystemHomeDashboard} from '@/services/system'
 
 const localSetting = getLocalSetting(true)
 const customTitlesStr = sessionStorage.getItem(process.env.VUE_APP_TBAS_TITLES_KEY)
@@ -26,13 +31,15 @@ export default {
     ],
     activatedFirst: undefined,
     customTitles,
+    systemHomeDashboard: null,
     ...config,
     ...localSetting
   },
   getters: {
-    menuData(state, getters, rootState) {
+    menuData(state, getters, rootState, rootGetters) {
       if (state.filterMenu) {
-        const {permissions, roles} = rootState.account
+        const permissions = rootGetters['account/permissions'] || []
+        const roles = rootGetters['account/roles'] || []
         return filterMenu(deepClone(state.menuData), permissions, roles)
       }
       return state.menuData
@@ -55,7 +62,19 @@ export default {
       }
       const current = menuData.find(menu => menu.fullPath === activatedFirst)
       return current && current.children || []
-    }
+    },
+    homeDashboardConfig(state) {
+      return getHomeDashboardConfig({state: {setting: state}})
+    },
+    homeDashboardUuid(state, getters) {
+      return getters.homeDashboardConfig.dashboardUuid
+    },
+    homeDashboardProjectUuid(state, getters) {
+      return getters.homeDashboardConfig.projectUuid
+    },
+    homeDashboardPath(state, getters) {
+      return getHomeDashboardPath({state: {setting: state}})
+    },
   },
   mutations: {
     setDevice (state, isMobile) {
@@ -117,6 +136,57 @@ export default {
         }
         sessionStorage.setItem(process.env.VUE_APP_TBAS_TITLES_KEY, JSON.stringify(state.customTitles))
       }
+    },
+    setSystemHomeDashboard(state, payload) {
+      state.systemHomeDashboard = payload || null
+    },
+    patchScadaMonitorMenuName(state, name) {
+      if (!name) return
+      const patch = (routes) => {
+        if (!routes || !routes.length) return
+        routes.forEach(route => {
+          if (route.path === '/SCADAMonitor') {
+            route.name = name
+          }
+          if (route.children && route.children.length) {
+            patch(route.children)
+          }
+        })
+      }
+      patch(state.menuData)
+    }
+  },
+  actions: {
+    fetchSystemHomeDashboard({commit}) {
+      return GetSystemHomeDashboard().then(res => {
+        if (res.data && res.data.code === 0) {
+          commit('setSystemHomeDashboard', {
+            dashboardUuid: res.data.dashboardUuid,
+            projectUuid: res.data.projectUuid,
+            dashboardName: res.data.dashboardName || '',
+          })
+          commit('patchScadaMonitorMenuName', res.data.dashboardName)
+        }
+        return res
+      })
+    },
+    saveSystemHomeDashboard({commit, dispatch}, payload) {
+      return SetSystemHomeDashboard(payload).then(res => {
+        if (res.data && res.data.code === 0) {
+          commit('setSystemHomeDashboard', {
+            dashboardUuid: payload.dashboardUuid,
+            projectUuid: payload.projectUuid,
+            dashboardName: '',
+          })
+          return dispatch('fetchSystemHomeDashboard').then(fetchRes => {
+            if (fetchRes && fetchRes.data && fetchRes.data.code === 0) {
+              return fetchRes
+            }
+            return res
+          })
+        }
+        return res
+      })
     }
   }
 }

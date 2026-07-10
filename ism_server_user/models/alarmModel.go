@@ -90,6 +90,217 @@ func GetCurrentAlarmList(params map[string]interface{}, ProjectUuid string) ([]D
 	return getAlarmHistorys, errmsg.SUCCSECODE
 }
 
+// AlarmEventFeedItem 告警事件流（含告警中与已恢复）
+type AlarmEventFeedItem struct {
+	DevicesAlarmList
+	EventStatus string `json:"EventStatus"` // alarm | recovered
+}
+
+// GetAlarmEventFeed 合并未消除告警 + 近 N 条已恢复记录
+func GetAlarmEventFeed(params map[string]interface{}, ProjectUuid string, recoveredLimit int) ([]AlarmEventFeedItem, int) {
+	if recoveredLimit <= 0 {
+		recoveredLimit = 50
+	}
+
+	activeAlarms, code := GetCurrentAlarmList(params, ProjectUuid)
+	if code != errmsg.SUCCSECODE {
+		return nil, code
+	}
+
+	var deviceList []string
+	var dataList []string
+	for k, v := range params {
+		switch value := v.(type) {
+		case []interface{}:
+			if k == "deviceList" {
+				for _, u := range value {
+					deviceList = append(deviceList, u.(string))
+				}
+			} else if k == "dataList" {
+				for _, u := range value {
+					dataList = append(dataList, u.(string))
+				}
+			}
+		}
+	}
+
+	var recovered []DevicesAlarmList
+	recoveredQuery := Db.Model(&DevicesAlarmList{}).
+		Where("clear_time >= ? AND project_uuid = ?", alarmActiveClearThreshold, ProjectUuid)
+	if len(deviceList) != 0 && len(dataList) != 0 {
+		recoveredQuery = recoveredQuery.Where("device_uuid IN ? AND model_data_uuid IN ?", deviceList, dataList)
+	} else if len(deviceList) != 0 {
+		recoveredQuery = recoveredQuery.Where("device_uuid IN ?", deviceList)
+	} else if len(dataList) != 0 {
+		recoveredQuery = recoveredQuery.Where("model_data_uuid IN ?", dataList)
+	}
+	if err := recoveredQuery.Order("clear_time desc").Limit(recoveredLimit).Find(&recovered).Error; err != nil {
+		return nil, errmsg.ERROR_DATABASE
+	}
+
+	feed := make([]AlarmEventFeedItem, 0, len(activeAlarms)+len(recovered))
+	for _, item := range activeAlarms {
+		feed = append(feed, AlarmEventFeedItem{DevicesAlarmList: item, EventStatus: "alarm"})
+	}
+	for _, item := range recovered {
+		feed = append(feed, AlarmEventFeedItem{DevicesAlarmList: item, EventStatus: "recovered"})
+	}
+
+	// 按时间倒序：告警用 happen_time，恢复用 clear_time
+	for i := 0; i < len(feed); i++ {
+		for j := i + 1; j < len(feed); j++ {
+			ti := feed[i].HappenTime
+			if feed[i].EventStatus == "recovered" {
+				ti = feed[i].ClearTime
+			}
+			tj := feed[j].HappenTime
+			if feed[j].EventStatus == "recovered" {
+				tj = feed[j].ClearTime
+			}
+			if tj.After(ti) {
+				feed[i], feed[j] = feed[j], feed[i]
+			}
+		}
+	}
+
+	return feed, errmsg.SUCCSECODE
+}
+
+// AlarmTriggerImportBatch 批量导入触发器（跳过已存在绑定）
+func AlarmTriggerImportBatch(triggers []AlarmTrigger, ProjectUuid string) (int, int) {
+	success := 0
+	for _, trig := range triggers {
+		trig.ProjectUuid = ProjectUuid
+		if trig.Uuid == "" {
+			trig.Uuid = uuid.New()
+		}
+		if trig.TriggerName == "" || trig.TriggerDeviceModelUuid == "" || trig.TriggerModelDataUuid == "" {
+			continue
+		}
+		code := AlarmTriggerAdd(trig)
+		if code == errmsg.SUCCSECODE {
+			success++
+		}
+	}
+	return success, errmsg.SUCCSECODE
+}
+
+// AlarmClearAll 批量清除当前项目下未消除的实时告警（支持按设备/数据筛选，与 GetCurrentAlarmList 条件一致）
+const deviceStatusDataUuid = "sys.suid.device.status"
+const alarmActiveClearThreshold = "2007-01-02 15:04:05"
+
+// ResyncOfflineDeviceAlarms 清除告警后，为仍处于离线状态的设备补建实时离线告警。
+// deviceUuids 为空时处理项目下全部离线设备；否则仅处理指定设备（仍须 status=0）。
+func ResyncOfflineDeviceAlarms(projectUuid string, deviceUuids []string) int64 {
+	clearSentinel, _ := time.Parse("2006-01-02 15:04:05", alarmActiveClearThreshold)
+
+	query := Db.Model(&MonitorList{}).
+		Where("project_uuid = ? AND status = 0 AND is_enable = 1 AND type = 1 AND muid != '' AND muid IS NOT NULL", projectUuid)
+	if len(deviceUuids) > 0 {
+		query = query.Where("uuid IN ?", deviceUuids)
+	}
+
+	var devices []MonitorList
+	if err := query.Find(&devices).Error; err != nil {
+		return 0
+	}
+
+	var synced int64
+	for _, device := range devices {
+		var getRealData DeviceRealData
+		if err := Db.Model(&DeviceRealData{}).
+			Where("uuid = ? AND device_uuid = ? AND project_uuid = ?", deviceStatusDataUuid, device.Uuid, projectUuid).
+			First(&getRealData).Error; err != nil {
+			continue
+		}
+		if getRealData.IsAlarm != 1 || getRealData.AlarmShield == 1 {
+			continue
+		}
+
+		var existing DevicesAlarmList
+		result := Db.Model(&DevicesAlarmList{}).
+			Where("device_uuid = ? AND data_uuid = ? AND clear_time < ?", device.Uuid, getRealData.Uuid, alarmActiveClearThreshold).
+			First(&existing)
+		if result.Error == nil {
+			continue
+		}
+
+		alarm := DevicesAlarmList{
+			AlarmName:         getRealData.Name,
+			DeviceUuid:        device.Uuid,
+			ProjectUuid:       projectUuid,
+			DeviceName:        device.Name,
+			DataUuid:          getRealData.Uuid,
+			ModelDataUuid:     getRealData.ModelDataUuid,
+			HappenTime:        time.Now(),
+			ClearTime:         clearSentinel,
+			KeepTime:          0,
+			AlarmMessage:      getRealData.AlarmMessage,
+			AlarmClearMessage: getRealData.AlarmClearMessage,
+			AlarmLevel:        getRealData.AlarmLevel,
+		}
+		if err := Db.Model(&DevicesAlarmList{}).Create(&alarm).Error; err != nil {
+			continue
+		}
+		synced++
+	}
+	return synced
+}
+
+func AlarmClearAll(params map[string]interface{}, ProjectUuid string) (int64, int) {
+	var deviceList []string
+	var dataList []string
+
+	for k, v := range params {
+		switch value := v.(type) {
+		case []interface{}:
+			if k == "deviceList" {
+				for _, u := range value {
+					deviceList = append(deviceList, u.(string))
+				}
+			} else if k == "dataList" {
+				for _, u := range value {
+					dataList = append(dataList, u.(string))
+				}
+			}
+		}
+	}
+
+	clearTime := time.Now()
+	query := Db.Model(&DevicesAlarmList{}).
+		Where("clear_time < ? AND project_uuid = ?", "2007-01-02 15:04:05", ProjectUuid)
+
+	if len(deviceList) != 0 && len(dataList) != 0 {
+		query = query.Where("device_uuid IN ? AND model_data_uuid IN ?", deviceList, dataList)
+	} else if len(deviceList) != 0 {
+		query = query.Where("device_uuid IN ?", deviceList)
+	} else if len(dataList) != 0 {
+		query = query.Where("model_data_uuid IN ?", dataList)
+	}
+
+	var alarms []DevicesAlarmList
+	if err := query.Find(&alarms).Error; err != nil {
+		return 0, errmsg.ERROR_DATABASE
+	}
+	if len(alarms) == 0 {
+		return 0, errmsg.SUCCSECODE
+	}
+
+	for _, alarm := range alarms {
+		keepTime := float64((clearTime.UnixMilli() - alarm.HappenTime.UnixMilli()) / 1000.0)
+		if err := Db.Model(&DevicesAlarmList{}).
+			Where("id = ?", alarm.ID).
+			Updates(DevicesAlarmList{ClearTime: clearTime, KeepTime: keepTime}).Error; err != nil {
+			return 0, errmsg.ERROR
+		}
+	}
+
+	// 离线设备告警被清除后，采集线程不会再次上报；补建仍离线设备的告警记录
+	ResyncOfflineDeviceAlarms(ProjectUuid, nil)
+
+	return int64(len(alarms)), errmsg.SUCCSECODE
+}
+
 func GetCurrentShieldAlarmList(params map[string]interface{}, ProjectUuid string) ([]DeviceRealData, int) {
 
 	var getAlarm []DeviceRealData

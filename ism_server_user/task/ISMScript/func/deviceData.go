@@ -759,6 +759,160 @@ func BitSet(deviceData string, bitSize uint8, bitValue uint8) int8 {
 	}
 	return 0
 }
+// DeviceDataLookupIndex indexes DeviceRealDataMap for flexible point reference resolution.
+type DeviceDataLookupIndex struct {
+	ByDirectKey    map[string]interface{} // key: "device->data"
+	ByCompositeKey map[string]interface{} // key: "device_data"
+	ByDataName     map[string][]string    // dataName -> []directKeys
+}
+
+// BuildDeviceDataLookupIndex scans DeviceRealDataMap and builds lookup indexes.
+func BuildDeviceDataLookupIndex() *DeviceDataLookupIndex {
+	idx := &DeviceDataLookupIndex{
+		ByDirectKey:    make(map[string]interface{}),
+		ByCompositeKey: make(map[string]interface{}),
+		ByDataName:     make(map[string][]string),
+	}
+	protocol_common.DeviceRealDataMap.Range(func(k, v interface{}) bool {
+		key, ok := k.(string)
+		if !ok {
+			return true
+		}
+		idx.ByDirectKey[key] = v
+		parts := strings.SplitN(key, "->", 2)
+		if len(parts) == 2 {
+			device := parts[0]
+			dataName := parts[1]
+			composite := device + "_" + dataName
+			idx.ByCompositeKey[composite] = v
+			idx.ByDataName[dataName] = append(idx.ByDataName[dataName], key)
+		}
+		return true
+	})
+	return idx
+}
+
+func resolveToDirectKey(pointRef string, idx *DeviceDataLookupIndex) string {
+	pointRef = strings.TrimSpace(pointRef)
+	if pointRef == "" || idx == nil {
+		return ""
+	}
+
+	// 1. Try device->data format directly
+	if strings.Contains(pointRef, "->") {
+		if _, ok := idx.ByDirectKey[pointRef]; ok {
+			return pointRef
+		}
+		parts := strings.SplitN(pointRef, "->", 2)
+		if len(parts) == 2 {
+			logicalDevice := strings.TrimSpace(parts[0])
+			dataName := strings.TrimSpace(parts[1])
+			// 共享物模型：测点全名挂在网关设备上，导航用的是逻辑设备名
+			// 优先按测点全名唯一匹配；多候选时优先 dataName 带逻辑设备前缀的网关键
+			if dataName != "" {
+				if keys, ok := idx.ByDataName[dataName]; ok {
+					if len(keys) == 1 {
+						return keys[0]
+					}
+					prefix := logicalDevice + "_"
+					for _, key := range keys {
+						if strings.HasPrefix(key, logicalDevice+"->") {
+							return key
+						}
+					}
+					for _, key := range keys {
+						dn := strings.SplitN(key, "->", 2)
+						if len(dn) == 2 && (dn[1] == dataName || strings.HasPrefix(dn[1], prefix)) {
+							return key
+						}
+					}
+					if len(keys) > 0 {
+						return keys[0]
+					}
+				}
+				// 直接用测点全名当 composite / dataName
+				if _, ok := idx.ByCompositeKey[dataName]; ok {
+					if underscorePos := strings.Index(dataName, "_"); underscorePos > 0 {
+						return dataName[:underscorePos] + "->" + dataName[underscorePos+1:]
+					}
+				}
+			}
+		}
+		composite := strings.Replace(pointRef, "->", "_", 1)
+		if _, ok := idx.ByCompositeKey[composite]; ok {
+			return strings.Replace(composite, "_", "->", 1)
+		}
+	}
+
+	// 2. Try composite index device_data
+	if _, ok := idx.ByCompositeKey[pointRef]; ok {
+		if underscorePos := strings.Index(pointRef, "_"); underscorePos > 0 {
+			return pointRef[:underscorePos] + "->" + pointRef[underscorePos+1:]
+		}
+	}
+
+	// 2b. Unique full data name (共享模型测点全名)
+	if keys, ok := idx.ByDataName[pointRef]; ok && len(keys) == 1 {
+		return keys[0]
+	}
+
+	// 3. Try device_data split with prefix heuristics
+	if strings.Contains(pointRef, "_") {
+		parts := strings.SplitN(pointRef, "_", 2)
+		if len(parts) == 2 {
+			directKey := parts[0] + "->" + parts[1]
+			if _, ok := idx.ByDirectKey[directKey]; ok {
+				return directKey
+			}
+			composite := parts[0] + "_" + parts[1]
+			if _, ok := idx.ByCompositeKey[composite]; ok {
+				return directKey
+			}
+		}
+		// suffix match: keys whose data name equals suffix part
+		suffixPart := parts[len(parts)-1]
+		if keys, ok := idx.ByDataName[suffixPart]; ok {
+			if len(keys) == 1 {
+				return keys[0]
+			}
+			prefixPart := parts[0]
+			for _, key := range keys {
+				devicePart := strings.SplitN(key, "->", 2)[0]
+				if strings.HasPrefix(devicePart, prefixPart) || strings.HasSuffix(devicePart, prefixPart) || strings.Contains(devicePart, prefixPart) {
+					return key
+				}
+			}
+		}
+	}
+
+	// Suffix match on data name
+	var suffixCandidates []string
+	for dataName, keys := range idx.ByDataName {
+		if dataName == pointRef || strings.HasSuffix(dataName, pointRef) || strings.HasSuffix(pointRef, dataName) {
+			suffixCandidates = append(suffixCandidates, keys...)
+		}
+	}
+	if len(suffixCandidates) == 1 {
+		return suffixCandidates[0]
+	}
+
+	// 4. Unique data name lookup
+	if keys, ok := idx.ByDataName[pointRef]; ok && len(keys) == 1 {
+		return keys[0]
+	}
+
+	return ""
+}
+
+// ResolvePointReference resolves a point reference string to a formatted real-time value.
+func ResolvePointReference(pointRef string, idx *DeviceDataLookupIndex) interface{} {
+	directKey := resolveToDirectKey(pointRef, idx)
+	if directKey == "" {
+		return nil
+	}
+	return GetDeviceData(directKey)
+}
+
 func SaveDeviceData(deviceData string) int8 {
 	data := strings.Split(deviceData, "->")
 	if len(data) != 2 {

@@ -1117,6 +1117,11 @@ func GetAllClientStatus() int {
 		logs.Error("MQTT配置文件丢失")
 		return -4
 	}
+	// 内置 mochi-mqtt Broker 已通过 ISMHook 推送上下线，不再依赖 EMQX 管理 API
+	enabled, err := iniconf.Bool("EmqxWeb::Enabled")
+	if err != nil || !enabled {
+		return 0
+	}
 	Host, err := iniconf.String("EmqxWeb::Host")
 	if err != nil {
 		Host = "127.0.0.1"

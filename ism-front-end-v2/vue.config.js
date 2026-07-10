@@ -40,6 +40,15 @@ module.exports = {
   parallel: false, // Windows 下多 worker 并发读文件会导致 EMFILE，强制关闭
   runtimeCompiler: true,
   devServer: {
+    // 0.0.0.0 允许局域网访问页面；sockHost 强制 HMR 走本机回环，避免用 10.x IP 连 sockjs 超时
+    host: '0.0.0.0',
+    port: 7080,
+    public: '127.0.0.1:7080',
+    sockHost: '127.0.0.1',
+    sockPort: 7080,
+    disableHostCheck: true,
+    // 始终用本机地址打开，防止书签/历史记录里的局域网 IP 触发 sockjs 错连
+    open: 'http://127.0.0.1:7080',
     writeToDisk: true,
     watchOptions: {
       poll: 2000,        // 改大轮询间隔，进一步降低句柄占用
@@ -59,8 +68,6 @@ module.exports = {
         }
       }
     },
-    open: true, // 自动打开浏览器
-    port: 7080 // 端口号
   },
   pluginOptions: {
     'style-resources-loader': {

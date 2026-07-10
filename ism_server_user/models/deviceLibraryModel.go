@@ -14,8 +14,11 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/go-basic/uuid"
 	"gorm.io/gorm"
@@ -209,6 +212,7 @@ type TreeList struct {
 	Value       MonitorList            `json:"value"`
 	ScopedSlots map[string]interface{} `json:"scopedSlots"`
 	Children    []*TreeList            `json:"children"`
+	IsLeaf      bool                   `json:"isLeaf,omitempty"`
 }
 type GetTreeAndConfig struct {
 	MonitorList
@@ -230,6 +234,56 @@ func GetSupportDeviceList() []DevicesSupportList {
 
 	return getDevicesSupputList
 }
+// naturalNameLess 按名称升序比较：数字按数值、中英文按字典序（不区分大小写）
+// 例：配电室2A1_1 < 配电室2A1_2 < 配电室10A1
+func naturalNameLess(a, b string) bool {
+	ia, ib := 0, 0
+	ra, rb := []rune(strings.ToLower(a)), []rune(strings.ToLower(b))
+	for ia < len(ra) && ib < len(rb) {
+		da, db := unicode.IsDigit(ra[ia]), unicode.IsDigit(rb[ib])
+		if da && db {
+			ja, jb := ia, ib
+			for ja < len(ra) && unicode.IsDigit(ra[ja]) {
+				ja++
+			}
+			for jb < len(rb) && unicode.IsDigit(rb[jb]) {
+				jb++
+			}
+			na, _ := strconv.ParseUint(string(ra[ia:ja]), 10, 64)
+			nb, _ := strconv.ParseUint(string(rb[ib:jb]), 10, 64)
+			if na != nb {
+				return na < nb
+			}
+			// 同数值时短数字串优先（"2" < "02" 的稳定处理：长度短者先）
+			if (ja - ia) != (jb - ib) {
+				return (ja - ia) < (jb - ib)
+			}
+			ia, ib = ja, jb
+			continue
+		}
+		if ra[ia] != rb[ib] {
+			return ra[ia] < rb[ib]
+		}
+		ia++
+		ib++
+	}
+	return len(ra) < len(rb)
+}
+
+func sortMonitorTreeNodes(nodes []*TreeList) {
+	if len(nodes) <= 1 {
+		return
+	}
+	sort.SliceStable(nodes, func(i, j int) bool {
+		return naturalNameLess(nodes[i].Text, nodes[j].Text)
+	})
+	for _, n := range nodes {
+		if len(n.Children) > 0 {
+			sortMonitorTreeNodes(n.Children)
+		}
+	}
+}
+
 func monitTree(menu []*GetTreeAndConfig, pid int32, IsRemoteGw bool, ProjectUUID string) []*TreeList {
 	treeList := []*TreeList{}
 	for _, v := range menu {
@@ -253,6 +307,7 @@ func monitTree(menu []*GetTreeAndConfig, pid int32, IsRemoteGw bool, ProjectUUID
 			treeList = append(treeList, node)
 		}
 	}
+	sortMonitorTreeNodes(treeList)
 	return treeList
 }
 
@@ -263,10 +318,62 @@ func monitTree(menu []*GetTreeAndConfig, pid int32, IsRemoteGw bool, ProjectUUID
 func GetAllDevices(pid int32, ProjectUuid string, IsRemoteGw bool) []*TreeList {
 	var ZoneMenu []*GetTreeAndConfig
 	var DeviceMenu []*GetTreeAndConfig
-	Db.Raw("SELECT * FROM  monitor_list WHERE project_uuid=? and type=0", ProjectUuid).Scan(&ZoneMenu)
-	Db.Raw("SELECT monitor_list.*,devices_model.configuration_uid,devices_model.page_uuid FROM devices_model, monitor_list WHERE monitor_list.muid = devices_model.uuid and monitor_list.project_uuid=? and monitor_list.type=1", ProjectUuid).Scan(&DeviceMenu)
+	Db.Raw("SELECT * FROM  monitor_list WHERE project_uuid=? and type=0 ORDER BY name ASC", ProjectUuid).Scan(&ZoneMenu)
+	Db.Raw("SELECT monitor_list.*,devices_model.configuration_uid,devices_model.page_uuid FROM devices_model, monitor_list WHERE monitor_list.muid = devices_model.uuid and monitor_list.project_uuid=? and monitor_list.type=1 ORDER BY monitor_list.name ASC", ProjectUuid).Scan(&DeviceMenu)
 	DeviceMenu = append(DeviceMenu, ZoneMenu...)
 	treeList := monitTree(DeviceMenu, pid, IsRemoteGw, ProjectUuid)
+	return treeList
+}
+
+// monitorHasChildren 判断某节点下是否还有子节点（区域或设备）
+func monitorHasChildren(projectUuid string, parentSid int32) bool {
+	var cnt int64
+	Db.Model(&MonitorList{}).Where("project_uuid = ? AND pid = ?", projectUuid, parentSid).Count(&cnt)
+	return cnt > 0
+}
+
+func buildMonitorTreeNode(v *GetTreeAndConfig, IsRemoteGw bool, ProjectUUID string, lazy bool) *TreeList {
+	ScopedSlots := make(map[string]interface{}, 1)
+	ScopedSlots["title"] = v.Name
+	v.MonitorList.ConfigurationUid = v.ConfigurationUid
+	v.MonitorList.PageUUID = v.PageUUID
+	v.MonitorList.ProjectUUID = ProjectUUID
+	v.MonitorList.IsRemoteGw = IsRemoteGw
+	node := &TreeList{
+		Id:          int(v.ID),
+		Key:         v.Uuid,
+		IconCls:     "icon-remove-3",
+		Text:        v.Name,
+		ScopedSlots: ScopedSlots,
+		Value:       v.MonitorList,
+	}
+	if v.Type == 1 {
+		node.IsLeaf = true
+	} else if lazy {
+		node.IsLeaf = !monitorHasChildren(ProjectUUID, v.Sid)
+	}
+	if !lazy {
+		node.Children = []*TreeList{}
+	}
+	return node
+}
+
+/*
+*
+懒加载：仅返回 parentPid 下一级子节点（不递归），供设备树按需展开加载
+*/
+func GetMonitorTreeLazy(parentPid int32, ProjectUuid string, IsRemoteGw bool) []*TreeList {
+	var ZoneMenu []*GetTreeAndConfig
+	var DeviceMenu []*GetTreeAndConfig
+	Db.Raw("SELECT * FROM monitor_list WHERE project_uuid=? AND type=0 AND pid=? ORDER BY name ASC", ProjectUuid, parentPid).Scan(&ZoneMenu)
+	Db.Raw("SELECT monitor_list.*,devices_model.configuration_uid,devices_model.page_uuid FROM devices_model, monitor_list WHERE monitor_list.muid = devices_model.uuid AND monitor_list.project_uuid=? AND monitor_list.type=1 AND monitor_list.pid=? ORDER BY monitor_list.name ASC", ProjectUuid, parentPid).Scan(&DeviceMenu)
+	all := append(ZoneMenu, DeviceMenu...)
+	treeList := make([]*TreeList, 0, len(all))
+	for _, item := range all {
+		v := item
+		treeList = append(treeList, buildMonitorTreeNode(v, IsRemoteGw, ProjectUuid, true))
+	}
+	sortMonitorTreeNodes(treeList)
 	return treeList
 }
 
@@ -421,6 +528,7 @@ func AddDeviceOrZone(params MonitorList) int {
 				tempDeviceRealData.RecordType = getDeviceData[key].RecordType
 
 				tempDeviceRealData.IsAlarm = getDeviceData[key].IsAlarm
+				tempDeviceRealData.AlarmOnValue = getDeviceData[key].AlarmOnValue
 				tempDeviceRealData.AlarmLevel = getDeviceData[key].AlarmLevel
 				tempDeviceRealData.AlarmMessage = getDeviceData[key].AlarmMessage
 				tempDeviceRealData.AlarmClearMessage = getDeviceData[key].AlarmClearMessage
@@ -1118,7 +1226,140 @@ func SetDeviceEnable(uuid string, updateData MonitorList) int {
 func GetRealData(uuid string) ([]DeviceRealData, int) {
 
 	var readDataList []DeviceRealData
-	err := Db.Model(&DeviceRealData{}).Where("device_uuid = ?", uuid).Find(&readDataList).Error
+	err := Db.Model(&DeviceRealData{}).
+		Select("id", "name", "value", "uuid", "data_unit", "model_data_uuid", "updated_at").
+		Where("device_uuid = ?", uuid).
+		Find(&readDataList).Error
+	if err != nil {
+		return nil, errmsg.ERROR
+	}
+	return readDataList, errmsg.SUCCSECODE
+}
+
+const (
+	// 数据仓库/大屏点位分页：默认 30，硬上限 100，避免上万点一次打满浏览器内存
+	RealDataDefaultPageSize = 30
+	RealDataMaxPageSize     = 100
+)
+
+/*
+*
+分页获取设备实时数据（数据仓库首屏快显 + 翻页懒加载）
+*/
+func GetRealDataPaged(uuid string, page, pageSize int) ([]DeviceRealData, int64, int) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = RealDataDefaultPageSize
+	}
+	if pageSize > RealDataMaxPageSize {
+		pageSize = RealDataMaxPageSize
+	}
+	var total int64
+	if err := Db.Model(&DeviceRealData{}).Where("device_uuid = ?", uuid).Count(&total).Error; err != nil {
+		return nil, 0, errmsg.ERROR
+	}
+	var readDataList []DeviceRealData
+	offset := (page - 1) * pageSize
+	err := Db.Model(&DeviceRealData{}).
+		Select("id", "name", "value", "uuid", "data_unit", "model_data_uuid", "updated_at", "device_uuid", "device_name", "muid").
+		Where("device_uuid = ?", uuid).
+		Order("id ASC").
+		Limit(pageSize).Offset(offset).
+		Find(&readDataList).Error
+	if err != nil {
+		return nil, 0, errmsg.ERROR
+	}
+	return readDataList, total, errmsg.SUCCSECODE
+}
+
+/*
+*
+大屏信号层 / 共享物模型：按测点名前缀分页取元数据（名称、单位来自库），
+实时值由调用方从 DeviceRealDataMapByUUID 覆盖。
+
+匹配规则（与导航逻辑设备一致）：
+  name = label OR name LIKE label || '_%'
+可选限定 muid；若同时给了 deviceUuid，则并上该设备下的测点（去重由调用方处理，这里用 OR）。
+*/
+func GetRealDataPagedByNamePrefix(muid, deviceUuid, namePrefix string, page, pageSize int) ([]DeviceRealData, int64, int) {
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = RealDataDefaultPageSize
+	}
+	if pageSize > RealDataMaxPageSize {
+		pageSize = RealDataMaxPageSize
+	}
+	namePrefix = strings.TrimSpace(namePrefix)
+	muid = strings.TrimSpace(muid)
+	deviceUuid = strings.TrimSpace(deviceUuid)
+	if namePrefix == "" && deviceUuid == "" {
+		return nil, 0, errmsg.ERROR
+	}
+
+	q := Db.Model(&DeviceRealData{})
+	if muid != "" {
+		q = q.Where("muid = ?", muid)
+	}
+	if namePrefix != "" && deviceUuid != "" {
+		like := namePrefix + "_%"
+		q = q.Where("(device_uuid = ? OR name = ? OR name LIKE ?)", deviceUuid, namePrefix, like)
+	} else if namePrefix != "" {
+		like := namePrefix + "_%"
+		q = q.Where("(name = ? OR name LIKE ?)", namePrefix, like)
+	} else {
+		q = q.Where("device_uuid = ?", deviceUuid)
+	}
+
+	var total int64
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, errmsg.ERROR
+	}
+	var readDataList []DeviceRealData
+	offset := (page - 1) * pageSize
+	err := q.Select("id", "name", "value", "uuid", "data_unit", "model_data_uuid", "updated_at", "device_uuid", "device_name", "muid").
+		Order("id ASC").
+		Limit(pageSize).Offset(offset).
+		Find(&readDataList).Error
+	if err != nil {
+		return nil, 0, errmsg.ERROR
+	}
+	return readDataList, total, errmsg.SUCCSECODE
+}
+
+/*
+*
+一次性拉取前缀匹配的全部测点元数据（仅用于大屏信号层缓存；硬上限 5000）
+*/
+func GetRealDataAllByNamePrefix(muid, deviceUuid, namePrefix string) ([]DeviceRealData, int) {
+	const maxAll = 5000
+	namePrefix = strings.TrimSpace(namePrefix)
+	muid = strings.TrimSpace(muid)
+	deviceUuid = strings.TrimSpace(deviceUuid)
+	if namePrefix == "" && deviceUuid == "" {
+		return nil, errmsg.ERROR
+	}
+	q := Db.Model(&DeviceRealData{})
+	if muid != "" {
+		q = q.Where("muid = ?", muid)
+	}
+	if namePrefix != "" && deviceUuid != "" {
+		like := namePrefix + "_%"
+		q = q.Where("(device_uuid = ? OR name = ? OR name LIKE ?)", deviceUuid, namePrefix, like)
+	} else if namePrefix != "" {
+		like := namePrefix + "_%"
+		q = q.Where("(name = ? OR name LIKE ?)", namePrefix, like)
+	} else {
+		q = q.Where("device_uuid = ?", deviceUuid)
+	}
+	var readDataList []DeviceRealData
+	err := q.Select("id", "name", "value", "uuid", "data_unit", "model_data_uuid", "updated_at", "device_uuid", "device_name", "muid").
+		Order("id ASC").
+		Limit(maxAll).
+		Find(&readDataList).Error
 	if err != nil {
 		return nil, errmsg.ERROR
 	}
@@ -1130,6 +1371,14 @@ func GetRealData(uuid string) ([]DeviceRealData, int) {
 获取设备实时数据
 */
 func GetRealDataByUuid(uuid, devices []string) ([]DeviceRealData, int) {
+	// 大屏绑点：点位 UUID 单次硬上限 100（前端应分批）；设备列表通常很少，不截断
+	const maxBatch = RealDataMaxPageSize
+	if len(uuid) > maxBatch {
+		uuid = uuid[:maxBatch]
+	}
+	if len(uuid) == 0 || len(devices) == 0 {
+		return []DeviceRealData{}, errmsg.SUCCSECODE
+	}
 
 	var readDataList []DeviceRealData
 	err := Db.Model(&DeviceRealData{}).Select("model_data_uuid,device_uuid,uuid,project_uuid,value").Where("model_data_uuid in ? and device_uuid in ?", uuid, devices).Find(&readDataList).Error

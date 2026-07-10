@@ -76,11 +76,11 @@ var RecordPath string
 
 var ModbusDebug bool = false
 var IEC104Debug bool = false
-var IsLicense = false
-var IsOem = false
+var IsLicense = true
+var IsOem = true
 var ISMProtectedID = ""
-var ConfigPageCount int = 2
-var ConfigAppCount int = 1
+var ConfigPageCount int = 100000
+var ConfigAppCount int = 100000
 var IsAuthLimit bool = false
 var IsAuthTimeLimit bool = false
 var AuthorizationDays int = 30
@@ -135,7 +135,26 @@ type PushAlarm struct {
 	AlarmLevel        int
 	AlarmMessage      string
 	AlarmClearMessage string
+	AlarmOnValue      int // 0 或 1：实时值等于该字符串时触发告警，默认 1
 }
+
+// ResolveAlarmOnValue 未配置时默认 1 报警
+func ResolveAlarmOnValue(v int) int {
+	if v == 0 || v == 1 {
+		return v
+	}
+	return 1
+}
+
+// IsAlarmValueActive 判断当前值是否处于告警态
+func IsAlarmValueActive(value string, alarmOnValue int) bool {
+	trigger := ResolveAlarmOnValue(alarmOnValue)
+	if trigger == 0 {
+		return value == "0"
+	}
+	return value == "1"
+}
+
 type TriggerRealData struct {
 	DeviceName        string
 	DataName          string
@@ -308,14 +327,14 @@ func ProtocolCommonInit() {
 
 	GSaveHistoryDataQueue = middleware.NewQueue(GSaveHistoryDataQueueLength)
 
-	// 初始化历史数据批量写入缓冲区
+	// 初始化历史数据批量写入缓冲区（正式环境默认更大批量、更长间隔，降低刷盘）
 	historyDataBufferSize, err := config.Int("HistoryDataBufferSize")
 	if err != nil {
-		historyDataBufferSize = 50000 // 默认缓冲区大小
+		historyDataBufferSize = 10000
 	}
 	historyDataFlushInterval, err := config.Int("HistoryDataFlushInterval")
 	if err != nil {
-		historyDataFlushInterval = 500 // 默认刷新间隔（毫秒）
+		historyDataFlushInterval = 2000
 	}
 	initHistoryDataBuffer(historyDataBufferSize, historyDataFlushInterval)
 

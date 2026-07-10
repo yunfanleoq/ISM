@@ -50,7 +50,7 @@ func CheckAllTables() {
 	// 自动迁移
 	r := time.Now()
 	gormlog.Info("正在检查系统表,请稍等......")
-	err := Db.AutoMigrate(&BacnetDevicesDataModel{}, &SQLReportTemplete{}, &CJT188DevicesDataModel{}, &VirtualDeviceDataModel{}, &ModbusTcpDataPushModel{}, &IEC104DataPushModel{}, &SystemDataInterface{}, &SystemDataTemplete{}, &DisplayModelsUserList{}, &HJ212DevicesDataModel{}, &OutConnectList{}, &IEC61850DevicesDataModel{}, &IEC104DevicesDataModel{}, &Dlt645DevicesDataModel{}, &MqttDevicesDataModel{}, &ISMScript{}, &ReportTemplete{}, &TaskPlanList{}, &SimS7DataModel{}, &UserApiAccessToken{}, &RESTFulDataModel{}, &CustomData{}, &SystemDataModel{}, &OpcuaDevicesDataModel{}, &RolesList{}, &AlarmNotice{}, &SystemJournal{}, &StaticData{}, &ProjectVideoList{}, &ProjectUser{}, &ProjectLists{}, &AlarmTrigger{}, &DevicesHistoryDataList{}, &DevicesAlarmList{}, &SystemImge{}, &ModbusDevicesDataModel{}, &ModbusDevicesRegisterGroup{}, &User{}, &DisplayModelLayer{}, &DevicesModel{}, &SnmpDevicesDataModel{}, &MonitorList{}, &DeviceRealData{}, &DevicesSupportList{}, &DisplayModels{})
+	err := Db.AutoMigrate(&BacnetDevicesDataModel{}, &SQLReportTemplete{}, &CJT188DevicesDataModel{}, &VirtualDeviceDataModel{}, &ModbusTcpDataPushModel{}, &IEC104DataPushModel{}, &SystemDataInterface{}, &SystemDataTemplete{}, &DisplayModelsUserList{}, &HJ212DevicesDataModel{}, &OutConnectList{}, &IEC61850DevicesDataModel{}, &IEC104DevicesDataModel{}, &Dlt645DevicesDataModel{}, &MqttDevicesDataModel{}, &ISMScript{}, &ReportTemplete{}, &TaskPlanList{}, &SimS7DataModel{}, &UserApiAccessToken{}, &RESTFulDataModel{}, &CustomData{}, &SystemDataModel{}, &OpcuaDevicesDataModel{}, &RolesList{}, &AlarmNotice{}, &SystemJournal{}, &StaticData{}, &ProjectVideoList{}, &ProjectUser{}, &ProjectLists{}, &AlarmTrigger{}, &DevicesHistoryDataList{}, &DevicesAlarmList{}, &SystemImge{}, &ModbusDevicesDataModel{}, &ModbusDevicesRegisterGroup{}, &User{}, &DisplayModelLayer{}, &DevicesModel{}, &SnmpDevicesDataModel{}, &MonitorList{}, &DeviceRealData{}, &DevicesSupportList{}, &DisplayModels{}, &AutoGenTask{}, &AutoGenTemplate{})
 	if err != nil {
 		gormlog.Info(err)
 	}
@@ -149,7 +149,7 @@ func ReconnectDbServer() {
 		panic("达梦数据库不支持当前平台，请使用 SQLite(dbtype=1)、MySQL(dbtype=0) 或 PostgreSQL(dbtype=2)")
 	} else if dbtype == 4 {
 		// OceanBase MySQL 兼容模式
-		connstr := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&timeout=10s&readTimeout=30s&writeTimeout=30s",
+		connstr := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&timeout=10s&readTimeout=120s&writeTimeout=30s",
 			oceanbaseuser,
 			oceanbasepwd,
 			oceanbasehost,
@@ -211,7 +211,7 @@ func ReconnectDbServer() {
 		}
 	}
 	//单机版初始化超级管理员数据
-	AdminUserError := Db.Model(&User{}).Where("username = 'admin'").First(&adminUser)
+	AdminUserError := userTable().Where("username = 'admin'").First(&adminUser)
 
 	if errors.Is(AdminUserError.Error, gorm.ErrRecordNotFound) {
 		adminUser.Username = "admin"
@@ -220,7 +220,7 @@ func ReconnectDbServer() {
 		adminUser.Name = "超级管理员"
 		adminUser.Uuid = uuid.New()
 
-		Db.Model(&User{}).Create(&adminUser) // 通过数据的指针来创建
+		userTable().Create(&adminUser) // 通过数据的指针来创建
 	}
 
 	AdminUserError = Db.Model(&RolesList{}).Where("role_id = ?", "Admin").First(&adminRole)

@@ -1064,3 +1064,33 @@ export const  UNLOCK_SCREEN = (state) => {
 export const  UPDATE_REAL_PASSWORD = (state, password) =>{
   Vue.set(state, "realPassword", false);
 }
+
+/** 运行态导航注入的层级模板上下文 */
+export const setNavContext = (state, ctx) => {
+  Vue.set(state, 'navContext', ctx || null)
+}
+
+/** 设备列表/详情翻页：更新 pageIndex 或 detailPageIndex */
+export const setNavContextPage = (state, payload) => {
+  const nav = state.navContext
+  if (!nav) return
+  const next = { ...nav }
+  if (typeof payload === 'number') {
+    next.pageIndex = Math.max(0, payload)
+  } else if (payload && typeof payload === 'object') {
+    if (payload.pageIndex != null) next.pageIndex = Math.max(0, payload.pageIndex)
+    if (payload.detailPageIndex != null) next.detailPageIndex = Math.max(0, payload.detailPageIndex)
+    if (payload.datapointPageIndex != null) next.datapointPageIndex = Math.max(0, payload.datapointPageIndex)
+  }
+  Vue.set(state, 'navContext', next)
+}
+
+/** 导航树索引（ISMRunTreeNav 加载设备树后写入） */
+export const setNavTreeIndex = (state, index) => {
+  Vue.set(state, 'navTreeIndex', index || null)
+}
+
+/** 层级模板页映射 */
+export const setNavTemplateMap = (state, map) => {
+  Vue.set(state, 'navTemplateMap', map || null)
+}

@@ -1,7 +1,11 @@
 <template>
   <div style="padding: 10px">
     <a-card class="project-list" :loading="loading" style="padding: 0px;min-height: 400px;" :bordered="false" :title="$t('displayModel.DisplayList')" >
-      <a slot="extra"> <a-button type="primary" icon="plus" @click="visible=true;isEditStatus=0">
+      <a slot="extra">
+        <a-button icon="rest" style="margin-right: 10px" @click="openRecycleBin">
+          {{$t('displayModel.RecycleBin')}}
+        </a-button>
+        <a-button type="primary" icon="plus" @click="visible=true;isEditStatus=0">
         {{$t('displayModel.AddModel')}}
       </a-button></a>
       <a-list  :grid="{ gutter: 16, column: 3 }" :dataSource="modelList" :pagination="pagination">
@@ -45,6 +49,12 @@
                 </a>
                 <template #overlay>
                   <a-menu>
+                    <a-menu-item v-if="isAdmin" :disabled="item.uuid === homeDashboardUuid">
+                      <a @click="setAsSystemHome(item)" style="color: #565c64;font-size: 13px">
+                        <a-icon type="home" />
+                        {{ item.uuid === homeDashboardUuid ? $t('displayModel.AlreadySystemHome') : $t('displayModel.SetSystemHome') }}
+                      </a>
+                    </a-menu-item>
                     <a-menu-item>
                       <a v-auth:role="`edit`"   @click="ShowModelUser(item.uuid)" style="color: #565c64;font-size: 13px"><icon-font type="icon-authority" style="color: #565c64;font-size: 15px"/> {{$t('displayModel.Auth')}}</a>
                     </a-menu-item>
@@ -61,7 +71,13 @@
                 </template>
               </a-dropdown>
             </template>
-            <a-card-meta :title="item.name" :description=" item.description">
+            <a-card-meta :description="item.description">
+              <template slot="title">
+                <span>{{ item.name }}</span>
+                <a-tag v-if="item.uuid === homeDashboardUuid" color="blue" style="margin-left: 8px; vertical-align: middle">
+                  <a-icon type="home" /> {{$t('displayModel.SystemHomeBadge')}}
+                </a-tag>
+              </template>
             </a-card-meta>
           </a-card>
         </a-list-item>
@@ -108,6 +124,29 @@
           @search="handleSearch"
       />
     </a-modal>
+    <a-modal v-model="recycleVisible" :title="$t('displayModel.RecycleBinTitle')" :footer="null" width="640px">
+      <a-list :loading="recycleLoading" :dataSource="deletedList" item-layout="horizontal">
+        <div slot="header" style="text-align: right">
+          <a-button size="small" icon="reload" @click="getDeletedList">{{$t('displayModel.RecycleBinRefresh')}}</a-button>
+        </div>
+        <div slot="empty-text" v-if="!recycleLoading">{{$t('displayModel.RecycleBinEmpty')}}</div>
+        <a-list-item slot="renderItem" slot-scope="item">
+          <a-list-item-meta :title="item.name" :description="item.description">
+          </a-list-item-meta>
+          <div slot="extra" style="text-align: right">
+            <div style="color:#999;font-size:12px;margin-bottom:6px">
+              {{$t('displayModel.DeletedTime')}}: {{ item.deletedAt | formatDeletedAt }}
+            </div>
+            <a-button type="link" size="small" @click="restoreModel(item.displayUid)">
+              <a-icon type="undo" /> {{$t('displayModel.Restore')}}
+            </a-button>
+            <a-button type="link" size="small" style="color:#ff4d4f" @click="forceDeleteModel(item.displayUid)">
+              <a-icon type="delete" /> {{$t('displayModel.ForceDelete')}}
+            </a-button>
+          </div>
+        </a-list-item>
+      </a-list>
+    </a-modal>
   </div>
 </template>
 
@@ -117,12 +156,19 @@ import {
   getDisplayModelDetail,
   displayModelList,
   displayModelDelete,
+  displayModelDeletedList,
+  displayModelRestore,
+  displayModelForceDelete,
   displayModelEdit, DisplayModelAddUser, DisplayModelDelUser, GetDisplayModelUser
 } from "@/services/displayModel";
 import difference from 'lodash/difference';
 import VueHoverMask from "@/components/VueHoverMask/VueHoverMask"
 import {DISPLAYIMAGEUPLOAD} from "@/services/api";
 import {SystemUserList} from "@/services/user";
+import {mapGetters} from 'vuex'
+import {AUTH_TYPE, getAuthorization} from '@/utils/request'
+import {applyHomeProjectAuth} from '@/config/homeDashboard'
+import {loadRoutes} from '@/utils/routerUtil'
 export default {
   name: 'DisplayModelList',
   i18n: require('../../i18n/language'),
@@ -136,6 +182,9 @@ export default {
         selectDisplayUuid:"",
         showSearch:true,
         addAuthVisible:false,
+        recycleVisible:false,
+        recycleLoading:false,
+        deletedList:[],
         AddModelForm:this.$form.createForm(this),
         loading: false,
         uploadDisPlayUrl:DISPLAYIMAGEUPLOAD,
@@ -152,6 +201,16 @@ export default {
   components: {
     VueHoverMask,
   },
+  filters: {
+    formatDeletedAt(time) {
+      if (!time) return '-'
+      let date = new Date(time)
+      if (isNaN(date.getTime())) return time
+      const pad = n => (n < 10 ? '0' + n : '' + n)
+      return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) +
+        ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes()) + ':' + pad(date.getSeconds())
+    },
+  },
   mounted(){
 
   },
@@ -161,6 +220,7 @@ export default {
   created(){
     this.getModelList()
     this.SystemUserList()
+    this.$store.dispatch('setting/fetchSystemHomeDashboard')
   },
   watch: {
     '$route' () {
@@ -169,9 +229,54 @@ export default {
       this.getModelList()
     }
   },
+  computed: {
+    ...mapGetters('account', ['roles']),
+    ...mapGetters('setting', ['homeDashboardPath', 'homeDashboardUuid']),
+    isAdmin() {
+      const roles = this.roles || []
+      return roles.some(r => r && r.id === 'Admin')
+    },
+  },
   methods: {
     filterOption(inputValue, option) {
       return option.description.indexOf(inputValue) > -1;
+    },
+    setAsSystemHome(item) {
+      if (item.uuid === this.homeDashboardUuid) {
+        return
+      }
+      const projectUuid = getAuthorization(AUTH_TYPE.AUTH1)
+      if (!projectUuid) {
+        this.$message.error(this.$t('displayModel.SetSystemHomeNoProject'))
+        return
+      }
+      const prevHomeUuid = this.homeDashboardUuid
+      const _t = this
+      this.$store.dispatch('setting/saveSystemHomeDashboard', {
+        dashboardUuid: item.uuid,
+        projectUuid,
+      }).then(function (res) {
+        if (res && res.data && res.data.code === 0) {
+          applyHomeProjectAuth(_t.$store)
+          const routesConfig = _t.$store.getters['account/routesConfig']
+          if (routesConfig && routesConfig.length) {
+            loadRoutes(routesConfig)
+          }
+          _t.$message.success(_t.$t('displayModel.SetSystemHomeSuccess'), 3)
+          const newPath = _t.homeDashboardPath
+          const route = _t.$route
+          const onHomeRoute = route.path === '/SCADAMonitor' ||
+            (route.path.indexOf('/AppRun/') === 0 &&
+              (route.params.uid === prevHomeUuid || route.params.uid === item.uuid))
+          if (onHomeRoute && route.path !== newPath) {
+            _t.$router.replace(newPath)
+          }
+        } else {
+          _t.$message.error(_t.$t('displayModel.SetSystemHomeFailed'), 3)
+        }
+      }).catch(function () {
+        _t.$message.error(_t.$t('displayModel.SetSystemHomeFailed'), 3)
+      })
     },
     handleChange(targetKeys, direction, moveKeys) {
       this.targetKeys=[]
@@ -421,7 +526,9 @@ export default {
       let _t = this
       this.$confirm({
         title: _t.$t('displayModel.DelModelConfirm'),
+        content: _t.$t('displayModel.DelModelConfirmTips'),
         okText: _t.$t('displayModel.ConfirmOk'),
+        okType: 'danger',
         onOk() {
           const params={
             displayUid:uuid
@@ -445,6 +552,57 @@ export default {
         onCancel() {
 
         },
+      });
+    },
+    openRecycleBin(){
+      this.recycleVisible = true
+      this.getDeletedList()
+    },
+    getDeletedList(){
+      let _t = this
+      _t.recycleLoading = true
+      _t.deletedList = []
+      displayModelDeletedList({}).then(function (res){
+        if(res.data.code == 200 && res.data.list != null){
+          _t.deletedList = res.data.list
+        }
+      }).finally(function (){
+        _t.recycleLoading = false
+      })
+    },
+    restoreModel(uuid){
+      let _t = this
+      const params = { displayUid: uuid }
+      displayModelRestore(params).then(function (res){
+        if(res.data.code == 200){
+          _t.$message.success(_t.$t('displayModel.RestoreSuccess'), 3)
+          _t.getDeletedList()
+          _t.getModelList()
+        } else {
+          _t.$message.error(_t.$t('displayModel.RestoreFailed'), 3)
+        }
+      })
+    },
+    forceDeleteModel(uuid){
+      let _t = this
+      this.$confirm({
+        title: _t.$t('displayModel.ForceDelete'),
+        content: _t.$t('displayModel.ForceDelConfirm'),
+        okText: _t.$t('displayModel.ConfirmOk'),
+        okType: 'danger',
+        cancelText: _t.$t('displayModel.ConfirmCancel'),
+        onOk() {
+          const params = { displayUid: uuid }
+          displayModelForceDelete(params).then(function (res){
+            if(res.data.code == 200){
+              _t.$message.success(_t.$t('displayModel.ForceDelSuccess'), 3)
+              _t.getDeletedList()
+            } else {
+              _t.$message.error(_t.$t('displayModel.ForceDelFailed'), 3)
+            }
+          })
+        },
+        onCancel() {},
       });
     },
     handleCancel(e) {

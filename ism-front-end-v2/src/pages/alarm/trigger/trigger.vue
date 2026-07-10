@@ -311,10 +311,21 @@
       <a-space class="operator">
         <a-button @click="ShowAddTrigger('add')" type="primary" icon="plus">{{$t('dataModel.newModel')}}</a-button>
         <a-button @click="GetTriggerList"  type="default" icon="sync" :loading="messageShowLoad">{{$t("dataModel.refModel")}}</a-button>
+        <a-button type="default" icon="download" @click="handleTriggerExport">{{$t('dataModel.exportExcel')}}</a-button>
+        <a-upload :show-upload-list="false" accept=".xlsx,.xls" :customRequest="handleTriggerImport">
+          <a-button type="default" icon="upload">{{$t('dataModel.importExcel')}}</a-button>
+        </a-upload>
+        <a-input-search
+          v-model="searchKeyword"
+          allow-clear
+          style="width: 240px"
+          :placeholder="$t('alarm.trigger.searchPlaceholder')"
+          @search="onTriggerSearch"
+        />
       </a-space>
       <div>
       <a-spin style="padding: 1px;"  :spinning="messageShowLoad" tip="Loading...">
-        <a-table :pagination="pagination" :columns="columns" :data-source="dataSource" rowKey="TriggerName" >
+        <a-table :pagination="pagination" :columns="columns" :data-source="filteredTriggerList" rowKey="TriggerName" >
         <template v-for="(item, index) in columns" :slot="item.slotName">
           <span :key="index">{{ $t(item.slotName) }}</span>
         </template>
@@ -351,8 +362,10 @@
 <script>
 import {getSupportDeviceList} from "../../../services/device";
 import {getDatasByUuid,snmpModelList} from "../../../services/snmpmodel";
-import {AlarmTriggerAdd,GetAlarmTriggerList,AlarmTriggerDel,AlarmTriggerEdit} from "../../../services/alarm";
+import {AlarmTriggerAdd,GetAlarmTriggerList,AlarmTriggerDel,AlarmTriggerEdit,AlarmTriggerImport} from "../../../services/alarm";
 import {formatDate} from '@/utils/common';
+import { exportExcelWithStyle } from "@/services/excelExport.js"
+import ExcelJS from 'exceljs'
 export default {
   name: 'trigger',
   i18n: require('../../../i18n/language'),
@@ -411,8 +424,35 @@ export default {
         }
       ],
       dataSource: [],
+      allTriggerList: [],
+      searchKeyword: '',
+      triggerExportFields: {
+        "触发器名称": "TriggerName",
+        "设备类型": "TriggerDeviceType",
+        "设备模型UUID": "TriggerDeviceModelUuid",
+        "模型数据UUID": "TriggerModelDataUuid",
+        "告警条件": "TriggerCondition",
+        "X值": "TriggerXValue",
+        "Y值": "TriggerYValue",
+        "告警等级": "TriggerAlarmLevel",
+        "满足时间(秒)": "TriggerKeepTime",
+        "告警显示": "TriggerAlarmShowText",
+        "告警消除": "TriggerAlarmHideText",
+        "触发器类型": "TriggerType",
+      },
       conditionExpress:"",
       selectedRows: []
+    }
+  },
+  computed: {
+    filteredTriggerList() {
+      const kw = (this.searchKeyword || '').trim().toLowerCase()
+      if (!kw) return this.dataSource
+      return this.dataSource.filter(item => {
+        const name = (item.TriggerName || '').toLowerCase()
+        const model = (item.TriggerDeviceModelUuid || '').toLowerCase()
+        return name.indexOf(kw) >= 0 || model.indexOf(kw) >= 0
+      })
     }
   },
   authorize: {
@@ -747,6 +787,66 @@ export default {
           })
         }
       })
+    },
+    onTriggerSearch() {
+      // filteredTriggerList 计算属性自动过滤
+    },
+    async handleTriggerExport() {
+      const data = this.dataSource.map(item => {
+        const row = {}
+        for (const key in this.triggerExportFields) {
+          row[key] = item[this.triggerExportFields[key]]
+        }
+        return row
+      })
+      await exportExcelWithStyle(data, this.triggerExportFields, 'alarm-triggers', '', false)
+    },
+    handleTriggerImport({ file, onSuccess, onError }) {
+      const _t = this
+      const reader = new FileReader()
+      reader.onload = async function(e) {
+        try {
+          const workbook = new ExcelJS.Workbook()
+          await workbook.xlsx.load(e.target.result)
+          const sheet = workbook.worksheets[0]
+          if (!sheet) throw new Error('empty sheet')
+          const headers = []
+          sheet.getRow(1).eachCell((cell, col) => { headers[col] = String(cell.value || '') })
+          const triggers = []
+          sheet.eachRow((row, rowNumber) => {
+            if (rowNumber === 1) return
+            const rowObj = {}
+            row.eachCell((cell, col) => { rowObj[headers[col]] = cell.value })
+            triggers.push({
+              TriggerName: rowObj['触发器名称'] || rowObj.TriggerName,
+              TriggerDeviceType: parseInt(rowObj['设备类型'] || rowObj.TriggerDeviceType || 0),
+              TriggerDeviceModelUuid: rowObj['设备模型UUID'] || rowObj.TriggerDeviceModelUuid,
+              TriggerModelDataUuid: rowObj['模型数据UUID'] || rowObj.TriggerModelDataUuid,
+              TriggerCondition: String(rowObj['告警条件'] || rowObj.TriggerCondition || '='),
+              TriggerXValue: String(rowObj['X值'] || rowObj.TriggerXValue || ''),
+              TriggerYValue: String(rowObj['Y值'] || rowObj.TriggerYValue || ''),
+              TriggerAlarmLevel: parseInt(rowObj['告警等级'] || rowObj.TriggerAlarmLevel || 0),
+              TriggerKeepTime: parseInt(rowObj['满足时间(秒)'] || rowObj.TriggerKeepTime || 0),
+              TriggerAlarmShowText: rowObj['告警显示'] || rowObj.TriggerAlarmShowText || '',
+              TriggerAlarmHideText: rowObj['告警消除'] || rowObj.TriggerAlarmHideText || '',
+              TriggerType: parseInt(rowObj['触发器类型'] || rowObj.TriggerType || 2),
+            })
+          })
+          const res = await AlarmTriggerImport(triggers)
+          if (res.data.code === 0) {
+            _t.$message.success(_t.$t('dataModel.importSuccess'))
+            _t.GetTriggerList()
+            onSuccess && onSuccess(res)
+          } else {
+            _t.$message.error(_t.$t('dataModel.importFailed'))
+            onError && onError(new Error('import failed'))
+          }
+        } catch (err) {
+          _t.$message.error(_t.$t('dataModel.FormatError'))
+          onError && onError(err)
+        }
+      }
+      reader.readAsArrayBuffer(file)
     },
     GetTriggerList(){
       let _t = this

@@ -2,7 +2,9 @@ import {
   DEVICESNMPADD,MONITORTREE,MONITORADD,SUPPORTDEVICELIST,
   GETDEVICEMODELDATALIST,PINGICMP,MONITORCOPY,
   MONITORDEL,MONITOREDIT,MONITORREALDATA,SETDATA,MONITORREALDATABYUUID,SETDEVICESTARTORSTOP,MONITORDELALL,
-  GETREALDATATOTABLE
+  GETREALDATATOTABLE,
+  GETREALDATABYBINDINGS,
+  GETMODELDATAPOINTS
 } from '@/services/api'
 import {request, METHOD} from '@/utils/request'
 
@@ -16,8 +18,8 @@ export async function deviceOrZoneAdd(params) {
 }
 
 
-export async function getMonitorTree(config) {
-  return request(MONITORTREE, METHOD.POST, {}, config)
+export async function getMonitorTree(params, config) {
+  return request(MONITORTREE, METHOD.POST, params || {}, config)
 }
 
 export async function addMonitor(params) {
@@ -45,7 +47,9 @@ export async function delMonitor(params) {
 }
 
 export async function getRealData(params) {
-  return request(MONITORREALDATA, METHOD.POST,params)
+  return request(MONITORREALDATA, METHOD.POST, params, {
+    timeout: 120000
+  })
 }
 
 export async function getRealDataByUuid(params) {
@@ -67,6 +71,9 @@ export async function GetDeviceModelDataList(params) {
   return request(GETDEVICEMODELDATALIST, METHOD.POST,params)
 }
 
+export async function getModelDataPoints(params) {
+  return request(GETMODELDATAPOINTS, METHOD.POST, params)
+}
 
 export async function SetDeviceStartOrStop(params) {
   return request(SETDEVICESTARTORSTOP, METHOD.POST,params)
@@ -87,6 +94,11 @@ export async function GetRealDataToTable(params) {
     timeout:12000000
   })
 }
+export async function GetRealDataByBindings(params) {
+  return request(GETREALDATABYBINDINGS, METHOD.POST, params, {
+    timeout: 12000000
+  })
+}
 export default {
   deviceOrZoneAdd,
   getMonitorTree,
@@ -97,10 +109,12 @@ export default {
   getRealData,
   setData,
   GetDeviceModelDataList,
+  getModelDataPoints,
   getRealDataByUuid,
   SetDeviceStartOrStop,
   TestConnect,
   CopyDevices,
   delAllMonitor,
-  GetRealDataToTable
+  GetRealDataToTable,
+  GetRealDataByBindings
 }

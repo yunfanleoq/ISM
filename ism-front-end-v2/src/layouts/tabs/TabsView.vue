@@ -259,10 +259,20 @@ export default {
      * @param route 页面对应的路由
      */
     setCachedKey(route) {
+      if (!route || !route.path) {
+        return
+      }
       const page = this.pageList.find(item => item.path === route.path)
+      if (!page) {
+        return
+      }
       page.unclose = route.meta && route.meta.page && (route.meta.page.closable === false)
       if (!page._init_) {
-        const vnode = this.$refs.tabContent.$vnode
+        const tabContent = this.$refs.tabContent
+        const vnode = tabContent && tabContent.$vnode
+        if (!vnode || !vnode.componentOptions) {
+          return
+        }
         page.cachedKey = vnode.key + vnode.componentOptions.Ctor.cid
         page._init_ = true
       }

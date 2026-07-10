@@ -7,6 +7,7 @@ const view = {
 import TabsView from '@/layouts/tabs/TabsView'
 // import PageView from '@/layouts/PageView'
 import BlankView from '@/layouts/BlankView'
+import {createHomeDashboardRedirect} from '@/config/homeDashboard'
 
 // 路由组件注册
 const routerMap = {
@@ -137,6 +138,17 @@ const routerMap = {
     },
     component: () => import('@/pages/ISMDisPlay/pageViewLogin')
   },
+  AutoGenWorkbench:{
+    path: '/AutoGenWorkbench',
+    name: '自动化工作台',
+    meta: {
+      icon: 'robot',
+      authority: {
+        role: ['Admin','Operator']
+      }
+    },
+    component: () => import('@/pages/automation/Workbench')
+  },
   root: {
     path: '/',
     name: '首页',
@@ -160,7 +172,8 @@ const routerMap = {
         role: ['Admin','Operator']
       }
     },
-    component: () => import('@/pages/SCADAMonitor/index')
+    // 菜单「电力监控大屏」直达系统首页大屏（动态读取 store）
+    redirect: createHomeDashboardRedirect()
   },
   DataWarehouse:{
     path: 'DataWarehouse',

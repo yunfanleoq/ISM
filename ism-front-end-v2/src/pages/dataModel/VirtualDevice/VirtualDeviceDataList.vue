@@ -7,6 +7,10 @@
         <a-button type="primary" @click="RegisterVisible=true;isEdit=false"> <a-icon type="plus" />
           {{$t("dataModel.RESTFulData.AddModelData")}}</a-button>
 
+        <a-button type="default" icon="download" @click="handleVirtualExport">{{$t('dataModel.exportExcel')}}</a-button>
+        <a-upload :show-upload-list="false" accept=".xlsx,.xls" :customRequest="handleVirtualImport">
+          <a-button type="default" icon="upload">{{$t('dataModel.importExcel')}}</a-button>
+        </a-upload>
 
         <a-button type="default" @click="onBlackCLK()"> <a-icon type="backward" />
           {{$t("dataModel.opcuaModel.Back")}}</a-button>
@@ -358,6 +362,8 @@ import {
   VirtualDeviceModelDataEdit,
   VirtualDeviceModelDataList
 } from "@/services/VirtualDeviceModel";
+import { exportExcelWithStyle } from "@/services/excelExport.js"
+import ExcelJS from 'exceljs'
 const dataSource= []
 const loadingKey = 'updatable'
 export default {
@@ -433,6 +439,17 @@ export default {
       dataSource,
       registerGroupDataSource:[],
       selectedRows: [],
+      virtualExportFields: {
+        "数据名称": "name",
+        "数据类型": "type",
+        "权限": "auth",
+        "单位": "unit",
+        "转换关系": "conversionExpression",
+        "是否告警(是,否)": { field: "alarm", callback: v => v === 1 ? '是' : '否' },
+        "告警等级": "alarmLevel",
+        "告警消息": "AlarmMessage",
+        "告警消除消息": "AlarmClearMessage",
+      },
     }
   },
   created(){
@@ -471,6 +488,65 @@ export default {
     handleReset(clearFilters) {
       clearFilters();
       this.searchText = '';
+    },
+    async handleVirtualExport() {
+      const data = this.registerGroupDataSource.map(item => {
+        const row = {}
+        for (const key in this.virtualExportFields) {
+          const fieldConfig = this.virtualExportFields[key]
+          if (typeof fieldConfig === 'string') {
+            row[key] = item[fieldConfig]
+          } else if (fieldConfig.callback) {
+            row[key] = fieldConfig.callback(item[fieldConfig.field])
+          }
+        }
+        return row
+      })
+      await exportExcelWithStyle(data, this.virtualExportFields, 'virtual-device-data', '', false)
+    },
+    handleVirtualImport({ file, onSuccess, onError }) {
+      const _t = this
+      const reader = new FileReader()
+      reader.onload = async function(e) {
+        try {
+          const workbook = new ExcelJS.Workbook()
+          await workbook.xlsx.load(e.target.result)
+          const sheet = workbook.worksheets[0]
+          const headers = []
+          sheet.getRow(1).eachCell((cell, col) => { headers[col] = String(cell.value || '') })
+          let ok = 0
+          for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++) {
+            const row = sheet.getRow(rowNumber)
+            const rowObj = {}
+            row.eachCell((cell, col) => { rowObj[headers[col]] = cell.value })
+            const name = rowObj['数据名称'] || rowObj.name
+            if (!name) continue
+            const params = {
+              muid: _t.$route.params.uid,
+              modeltype: 480,
+              name,
+              auth: rowObj['权限'] || rowObj.auth || 'ReadOnly',
+              type: parseInt(rowObj['数据类型'] || rowObj.type || 12),
+              unit: rowObj['单位'] || rowObj.unit || '',
+              conversionExpression: rowObj['转换关系'] || rowObj.conversionExpression || '',
+              alarm: (rowObj['是否告警(是,否)'] === '是' || rowObj.alarm === '是') ? 1 : 0,
+              alarmLevel: parseInt(rowObj['告警等级'] || rowObj.alarmLevel || 0),
+              AlarmMessage: rowObj['告警消息'] || rowObj.AlarmMessage || '',
+              AlarmClearMessage: rowObj['告警消除消息'] || rowObj.AlarmClearMessage || '',
+              record: 0,
+            }
+            const res = await VirtualDeviceModelDataAdd(params)
+            if (res.data && res.data.code === 0) ok++
+          }
+          _t.$message.success(_t.$t('dataModel.importSuccess') + ` (${ok})`)
+          _t.RESTFulDataList()
+          onSuccess && onSuccess()
+        } catch (err) {
+          _t.$message.error(_t.$t('dataModel.FormatError'))
+          onError && onError(err)
+        }
+      }
+      reader.readAsArrayBuffer(file)
     },
     chargeDataRecordType(value){
       this.DataRecordType = parseInt(value)

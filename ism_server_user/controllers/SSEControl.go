@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"ISMServer/middleware"
 	SSEConnManager "ISMServer/utils/SSE"
+	"ISMServer/utils/errmsg"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -17,6 +19,15 @@ type SSEController struct {
 func (c *SSEController) SSEStream() {
 	w := c.Ctx.ResponseWriter
 	r := c.Ctx.Request
+	token := c.GetString("token")
+	if token == "" {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+	if result, _, _, _, _ := middleware.JwtToken(token); result != errmsg.SUCCSE {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
 	// 1. 正确设置 SSE 响应头
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")

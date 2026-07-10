@@ -1,6 +1,7 @@
 import TabsView from '@/layouts/tabs/TabsView'
 // import PageView from '@/layouts/PageView'
 import BlankView from '@/layouts/BlankView'
+import {createHomeDashboardRedirect} from '@/config/homeDashboard'
 // 路由配置
 const options = {
   routes: [
@@ -78,7 +79,8 @@ const options = {
           role: ['Admin', 'Operator']
         }
       },
-      component: () => import('@/pages/SCADAMonitor/index')
+      // 菜单「电力监控大屏」直达系统首页大屏（动态读取 store）
+      redirect: createHomeDashboardRedirect()
     },
     {
       path: '/DisPlayEditor/:uid',

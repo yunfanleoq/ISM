@@ -4,7 +4,7 @@
   "homepage": "https://iczer.github.io/vue-antd-admin",
   "private": true,
   "scripts": {
-    "serve": "cross-env UV_THREADPOOL_SIZE=16 vue-cli-service serve",
+    "serve": "cross-env WDS_SOCKET_HOST=127.0.0.1 WDS_SOCKET_PORT=7080 UV_THREADPOOL_SIZE=16 vue-cli-service serve",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
     "predeploy": "yarn build",

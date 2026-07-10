@@ -67,6 +67,12 @@
           </a-spin>
         </a-tab-pane>
         <a-tab-pane key="1" v-if="DbType!=3" :tab="$t('DbBack.Backups')">
+          <a-alert
+            type="info"
+            show-icon
+            style="margin-bottom: 12px"
+            message="海量历史表（device_record_*）建议排除或使用 scripts/ism_project_backup_core.py 分批备份；全表 SQL 导出可能超时或内存不足。"
+          />
           <a-spin :tip="$t('DbBack.BackingUp')" :spinning="messageShowLoad">
           <a-checkbox-group
               style="margin-bottom: 10px"

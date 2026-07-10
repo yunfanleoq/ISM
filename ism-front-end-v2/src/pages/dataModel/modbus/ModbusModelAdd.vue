@@ -44,6 +44,7 @@
       </a-form-item>
 
       <a-form-item
+          v-if="false"
           :label="$t('device.deviceConfigurationPageName')"
           :labelCol="{span: 7}"
           :wrapperCol="{span: 10}"

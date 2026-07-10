@@ -54,6 +54,13 @@
                 <a-button :disabled="isLoadExecl" type="default" style="margin-left: 5px" @click="handleExport">{{$t('reporting.AlarmHistory.Export')}}</a-button>
               </span>
             </a-col>
+            <a-col  :md="2" :sm="24" >
+              <span style="float: left; margin-top: 3px;">
+                <a-popconfirm :title="$t('alarm.current.ClearAllTips')" @confirm="ClearAllAlarm">
+                  <a-button :disabled="messageShowLoad" type="danger" style="margin-left: 5px">{{$t('alarm.current.ClearAll')}}</a-button>
+                </a-popconfirm>
+              </span>
+            </a-col>
           </a-row>
           <a-row >
 
@@ -62,7 +69,7 @@
       </a-form>
     </div>
 
-    <a-spin style="padding: 1px;"  :spinning="messageShowLoad" tip="Loading...">
+    <a-spin style="padding: 1px;"  :spinning="messageShowLoad" :tip="loadTip">
       <a-table :pagination="pagination" :columns="columns" :data-source="dataSource" rowKey="DeviceName">
         <template v-for="(item, index) in columns" :slot="item.slotName">
           <span :key="index">{{ $t(item.slotName) }}</span>
@@ -116,7 +123,7 @@
 <script>
 import {getMonitorTree} from "@/services/device";
 import {GetDeviceModelDataList} from "@/services/device";
-import {GetCurrentAlarmList,UpdateCurrentAlarm} from "@/services/alarm";
+import {GetCurrentAlarmList,UpdateCurrentAlarm,ClearAllCurrentAlarm} from "@/services/alarm";
 import moment from 'moment';
 
 import {formatDate} from '@/utils/common';
@@ -254,6 +261,7 @@ export default {
       AlarmDataTree:[],
       form: this.$form.createForm(this),
       messageShowLoad:false,
+      loadTip:'Loading...',
       advanced: true,
       refIconLoading: false,
       columns: [
@@ -368,6 +376,105 @@ export default {
       }).catch(function(){
         _t.messageShowLoad=false
         _t.$message.error(_t.$t('loginPage.serverError'), 3)
+      })
+    },
+    ClearAllAlarm(){
+      let _t = this
+      const filterParams = {
+        deviceList: this.SelectDevice,
+        dataList: this.SelectAlarmData,
+      }
+      this.messageShowLoad = true
+      this.loadTip = 'Loading...'
+      ClearAllCurrentAlarm(filterParams).then(function (res) {
+        if (res.data && res.data.code === 0) {
+          _t.QueryAlarmList()
+          const count = res.data.count || 0
+          _t.$message.success(_t.$t('alarm.current.ClearAllSuccess') + ' (' + count + ')', 3)
+          _t.messageShowLoad = false
+        } else {
+          _t.clearAllAlarmFallback(filterParams)
+        }
+      }).catch(function () {
+        _t.clearAllAlarmFallback(filterParams)
+      })
+    },
+    clearAllAlarmFallback(filterParams){
+      let _t = this
+      _t.loadTip = _t.$t('alarm.current.ClearAllFallback') || '兼容模式：逐条清除...'
+      const useList = function (list) {
+        const maxUi = 500
+        if (list.length > maxUi) {
+          _t.messageShowLoad = false
+          _t.$message.warning(
+            _t.$t('alarm.current.ClearAllTooMany') || ('告警数量过大(' + list.length + ')，请使用 clear_all_alarms.py 脚本'),
+            6
+          )
+          return
+        }
+        if (list.length === 0) {
+          _t.messageShowLoad = false
+          _t.$message.info(_t.$t('alarm.current.ClearAllSuccess') + ' (0)', 3)
+          return
+        }
+        _t.clearAllBatch(list, 0, { cleared: 0, failed: 0 })
+      }
+      const cached = _t.dataSource || []
+      if (cached.length > 0) {
+        useList(cached)
+        return
+      }
+      GetCurrentAlarmList(filterParams).then(function (res) {
+        if (res.data.code !== 0 || !res.data.list) {
+          _t.messageShowLoad = false
+          _t.$message.error(_t.$t('alarm.current.ClearAllFailed'), 3)
+          return
+        }
+        useList(res.data.list)
+      }).catch(function () {
+        _t.messageShowLoad = false
+        _t.$message.error(_t.$t('loginPage.serverError'), 3)
+      })
+    },
+    clearAllBatch(list, startIndex, stats){
+      let _t = this
+      const batchSize = 50
+      const end = Math.min(startIndex + batchSize, list.length)
+      const batch = list.slice(startIndex, end)
+      _t.loadTip = (_t.$t('alarm.current.ClearAllProgress') || '正在清除') + ' ' + end + '/' + list.length
+      const promises = batch.map(function (item) {
+        const params = {
+          type: 1,
+          update: {
+            duid: item.DeviceUuid,
+            uuid: item.DataUuid,
+          }
+        }
+        return UpdateCurrentAlarm(params).then(function (res) {
+          if (res.data && res.data.code === 0) {
+            stats.cleared++
+          } else {
+            stats.failed++
+          }
+        }).catch(function () {
+          stats.failed++
+        })
+      })
+      Promise.all(promises).then(function () {
+        if (end < list.length) {
+          _t.clearAllBatch(list, end, stats)
+        } else {
+          _t.messageShowLoad = false
+          _t.QueryAlarmList()
+          if (stats.failed === 0) {
+            _t.$message.success(_t.$t('alarm.current.ClearAllSuccess') + ' (' + stats.cleared + ')', 3)
+          } else {
+            _t.$message.warning(
+              (_t.$t('alarm.current.ClearAllPartial') || '部分清除') + ': 成功 ' + stats.cleared + ', 失败 ' + stats.failed,
+              5
+            )
+          }
+        }
       })
     },
     ShieldAlarm(item,Shield){

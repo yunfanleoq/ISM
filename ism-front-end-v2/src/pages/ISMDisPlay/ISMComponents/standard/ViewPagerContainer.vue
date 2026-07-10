@@ -172,6 +172,7 @@ Vue.use(Contextmenu);
 import '@/utils/vmodalDrage'
 import AKeepAlive from "@/components/cache/AKeepAlive";
 import {getRealDataByUuid} from "@/services/device";
+import { fetchRealDataByUuidBatched, REAL_DATA_DEFAULT_PAGE_SIZE } from "@/utils/realDataBatch";
 import ISMGroupNode from "@/pages/ISMDisPlay/ISMGroupNode.vue";
 import {Graph} from "@antv/x6";
 import {getDisplayModelLayerData,getDisplayModelPagerLayerData,getLayerDataStructByToken} from "@/services/displayModel";
@@ -234,7 +235,8 @@ export default {
                         newdevices.push(devices[i])
                       }
                     }
-                    getRealDataByUuid({uuid:newuuids,devices:newdevices}).then(function (res){
+                    fetchRealDataByUuidBatched(getRealDataByUuid, {uuid:newuuids,devices:newdevices,batchSize:REAL_DATA_DEFAULT_PAGE_SIZE}).then(function (body){
+                      const res = { data: body }
                       _t.settingLoading=false
                       if(res.data.code==0)
                       {
@@ -610,7 +612,8 @@ export default {
               newdevices.push(devices[i])
             }
           }
-          getRealDataByUuid({uuid: newuuids,devices:newdevices}).then(function (res) {
+          fetchRealDataByUuidBatched(getRealDataByUuid, {uuid: newuuids,devices:newdevices,batchSize:REAL_DATA_DEFAULT_PAGE_SIZE}).then(function (body) {
+            const res = { data: body }
             _t.settingLoading = false
             if (res.data.code == 0) {
               for (let k = 0; k < res.data.realData.length; k++) {
@@ -663,7 +666,8 @@ export default {
                 newdevices.push(devices[i])
               }
             }
-            getRealDataByUuid({uuid:newuuids,devices:newdevices}).then(function (res){
+            fetchRealDataByUuidBatched(getRealDataByUuid, {uuid:newuuids,devices:newdevices,batchSize:REAL_DATA_DEFAULT_PAGE_SIZE}).then(function (body){
+              const res = { data: body }
               _t.settingLoading=false
               if(res.data.code==0)
               {
@@ -1114,7 +1118,7 @@ export default {
           }
         }
 
-        this.getLayerDataStruct({uuid:page.page.displayUUID,isPopUp:true,cb:function () {
+        this.getLayerDataStruct({uuid:page.page.displayUUID,isPopUp:true,metaOnly:true,cb:function () {
             let PCPageInfo = _t.PCPageList
             let PhonePageInfo = _t.PhonePageList
 
@@ -1385,7 +1389,7 @@ export default {
           }
         }
 
-        this.getLayerDataStruct({uuid:page.page.displayUUID,cb:function (){
+        this.getLayerDataStruct({uuid:page.page.displayUUID,metaOnly:true,cb:function (){
             let PCPageInfo = _t.PCPageList
             let PhonePageInfo = _t.PhonePageList
 

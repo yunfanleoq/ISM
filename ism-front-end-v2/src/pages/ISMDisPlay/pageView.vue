@@ -1,55 +1,16 @@
 <template>
-  <div class="ism-pageview">
-    <ISMRender :showUuid="$route.params.uid" showToken="" showDeviceUuid="" />
-    <DeviceHoverTooltip />
-    <!-- 航信机房 NCC 大屏：可折叠层级导航树（覆盖在静态侧栏区域之上） -->
-    <ISMRunTreeNav v-if="showRunTree" />
-    <PreviewWatermark />
-  </div>
+  <AppRunShell :uid="$route.params.uid" />
 </template>
 
 <script>
-
-import ISMRender from './ISMRender';
-import PreviewWatermark from '@/components/PreviewWatermark.vue'
-import DeviceHoverTooltip from './DeviceHoverTooltip.vue'
-import ISMRunTreeNav from './ISMRunTreeNav.vue'
-
-// 仅对航信机房 NCC 大屏启用折叠导航树
-const NCC_DASHBOARD_UUID = '043135ad-44be-e5d8-89be-3e54883c23a8'
-
+/**
+ * 路由入口：禁止 sync import 同目录任何 SFC（含 Loader），
+ * 否则与 ISMRender/ISMRunTreeNav 链形成循环依赖 → export default 为 undefined。
+ */
 export default {
   name: 'AppRun',
   components: {
-    ISMRender,
-    PreviewWatermark,
-    DeviceHoverTooltip,
-    ISMRunTreeNav
+    AppRunShell: () => import(/* webpackChunkName: "app-run-shell" */ './AppRunShell.vue'),
   },
-  computed: {
-    showRunTree() {
-      return this.$route.params.uid === NCC_DASHBOARD_UUID
-    }
-  },
-  methods: {
-
-  },
-  created() {
-
-  },
-  mounted() {
-
-  }
 }
 </script>
-
-<style lang="less">
-.ism-pageview {
-  height: 100vh;
-  width: 100%;
-  position: relative;
-  overflow: hidden;
-}
-</style>
-
-

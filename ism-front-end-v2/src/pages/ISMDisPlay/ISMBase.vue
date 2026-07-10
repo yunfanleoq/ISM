@@ -12,6 +12,20 @@
 
 import {mapMutations} from "vuex";
 import { register } from '@antv/x6-vue-shape'
+
+/** 单个 shape 注册失败不阻断后续组件（避免一个坏组件拖垮整页 fromJSON） */
+function registerShapeSafe(shape, component, tag) {
+  if (!shape || !component) {
+    return false
+  }
+  try {
+    register({ shape, component })
+    return true
+  } catch (e) {
+    console.warn('[ISMBase] register shape failed:', shape, tag || '', e && e.message)
+    return false
+  }
+}
 const toolStandardBoxList = {
   title: "displayConfig.ToolBox.Base.title",
   icon: "icon-standard-application",
@@ -141,10 +155,24 @@ const MesStandardComponentsDir = require.context('./ISMComponents/Mes/standard/'
 // TypeError，进而让整个 forEach 中断、ISMBase 模块加载失败，最终路由异步组件
 // 解析失败（"comp.default.data is not a function" 运行时回归）。
 // 这里对单个组件 try/catch 跳过，保证一个坏组件不会拖垮整张大屏的加载。
+function componentDataFn(comp) {
+  const d = comp && comp.default
+  if (!d) return null
+  if (typeof d.data === 'function') {
+    return d.data
+  }
+  // Vue.extend 构造器或 vue-loader 特殊导出
+  if (d.options && typeof d.options.data === 'function') {
+    return d.options.data
+  }
+  return null
+}
+
 function safeBaseOf(comp, filePath) {
   try {
-    if (comp && comp.default && typeof comp.default.data === 'function') {
-      return comp.default.data().base
+    const dataFn = componentDataFn(comp)
+    if (dataFn) {
+      return dataFn().base
     }
     console.error('[ISMBase] 跳过无效组态组件(缺少 data 函数): ' + filePath)
   } catch (e) {
@@ -157,23 +185,50 @@ componentsStandard.keys().forEach(filePath => {
   const keyArr = filePath.split('/')
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
-  let comp = componentsStandard(filePath)
+  let comp
+  try {
+    comp = componentsStandard(filePath)
+  } catch (e) {
+    console.error('[ISMBase] 跳过加载失败的组件: ' + filePath + ' -> ' + (e && e.message))
+    return
+  }
   let componentsInfo = safeBaseOf(comp, filePath)
+  const shapeName = comp && comp.default && comp.default.name
+  // 运行态 fromJSON 依赖 X6 shape 注册；base 仅编辑器工具箱需要，二者解耦
+  if (shapeName) {
+    registerShapeSafe(shapeName, comp.default, filePath)
+  }
   if(typeof componentsInfo!="undefined")
   {
-    register({
-      shape: comp.default.name,
-      component: comp.default,
-    })
-    componentsInfo.info.type=comp.default.name
+    componentsInfo.info.type=shapeName
     toolStandardBoxList.items.push(componentsInfo)
   }
   else
   {
-    console.error(filePath+"缺少base基本样式")
+    console.error(filePath+"缺少base基本样式(已尝试 register 供运行态渲染)")
   }
 
 })
+
+// 大屏最常用文本组件：扫描阶段 safeBaseOf 跳过时仍保证运行态可 fromJSON
+try {
+  const vt = componentsStandard('./ViewSvgText.vue')
+  if (vt && vt.default) {
+    registerShapeSafe('view-svg-text', vt.default, 'ViewSvgText-fallback')
+  }
+} catch (e) {
+  console.warn('[ISMBase] ViewSvgText fallback load failed:', e && e.message)
+}
+
+// 导航设备列表/测点表：跨 chunk 静态依赖可能导致 safeBaseOf 失败，单独兜底注册
+try {
+  const vrt = componentsStandard('./ViewRealTable.vue')
+  if (vrt && vrt.default) {
+    registerShapeSafe('ism-view-real-table', vrt.default, 'ViewRealTable-fallback')
+  }
+} catch (e) {
+  console.warn('[ISMBase] ViewRealTable fallback load failed:', e && e.message)
+}
 
 //视频控件
 componentsVideo.keys().forEach(filePath => {

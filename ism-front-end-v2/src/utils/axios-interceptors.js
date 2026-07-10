@@ -12,7 +12,11 @@ const resp401 = {
    */
   onFulfilled(response, options) {
     const {message} = options
-    if (response.code === 401) {
+    if (!response) {
+      return response
+    }
+    const code = response.data?.code ?? response.code
+    if (code === 401) {
       message.error('无此权限')
     }
     return response
@@ -25,8 +29,11 @@ const resp401 = {
    */
   onRejected(error, options) {
     const {message} = options
-    const {response} = error
-    if (response.status === 401) {
+    if (!error) {
+      return Promise.reject(error)
+    }
+    const status = error.response?.status
+    if (status === 401) {
       message.error('无此权限')
     }
     return Promise.reject(error)
@@ -36,19 +43,32 @@ const resp401 = {
 const resp403 = {
   onFulfilled(response, options) {
     const {message} = options
-    if (response.code === 403) {
+    if (!response) {
+      return response
+    }
+    const code = response.data?.code ?? response.code
+    if (code === 403) {
       message.error('请求被拒绝')
     }
     return response
   },
   onRejected(error, options) {
     const {message} = options
-    const {response} = error
-    if (response.status === 403) {
+    if (!error) {
+      return Promise.reject(error)
+    }
+    const status = error.response?.status
+    if (status === 403) {
       message.error('请求被拒绝')
     }
     return Promise.reject(error)
   }
+}
+
+/** 调用方在 config.headers 里显式传入的 ProjectUuid（大屏/AppRun 会按路由指定项目） */
+function getExplicitProjectUuid(config, headerName) {
+  const h = config.headers || {}
+  return h[headerName] || (h.common && h.common[headerName]) || null
 }
 
 const reqCommon = {
@@ -62,9 +82,20 @@ const reqCommon = {
     const {message} = options
     const projectHeaderName = 'ProjectUuid'
     const ShareAppHeaderName = 'ShareAppToken'
+    const authHeaderName = 'Authorization'
     const {url, xsrfCookieName} = config
+    if (!config.headers) config.headers = {}
+    if (!config.headers.common) config.headers.common = {}
 
-    if (getAuthorization(AUTH_TYPE.AUTH1)) {
+    // axios xsrf 只读 Cookie；Cookie 失效时从 sessionStorage 显式注入 Authorization
+    const bearerToken = getAuthorization(AUTH_TYPE.BEARER)
+    if (bearerToken && url.indexOf('login') === -1) {
+      config.headers.common[authHeaderName] = bearerToken
+    }
+
+    const explicitProjectUuid = getExplicitProjectUuid(config, projectHeaderName)
+
+    if (!explicitProjectUuid && getAuthorization(AUTH_TYPE.AUTH1)) {
       config.headers.common[projectHeaderName] =  getAuthorization(AUTH_TYPE.AUTH1)
     }
     if (getAuthorization(AUTH_TYPE.AUTH3)) {
@@ -83,7 +114,7 @@ const reqCommon = {
     {
       return config
     }
-    if(((url.indexOf('ImportProject')!==-1)||(url.indexOf('ExportProject')!==-1)||(url.indexOf('WitePhysicalID')!==-1)||(url.indexOf('GetPhysicalIDCheck')!==-1)||url.indexOf('setData')!==-1)||(url.indexOf('GetSystemParams')!==-1)|| (url.indexOf('GetSystemDeviceInfo')!==-1)||(url.indexOf('getDisplayModelLayerData')!==-1)||(url.indexOf('getDisplayModelLayerDataByToken')!==-1)||(url.indexOf('GetCustomPel')!==-1)||(url.indexOf('getRealDataByUuid')!==-1)||(url.indexOf('GetSystemMonitorList')!==-1))
+    if(((url.indexOf('ImportProject')!==-1)||(url.indexOf('ExportProject')!==-1)||(url.indexOf('WitePhysicalID')!==-1)||(url.indexOf('GetPhysicalIDCheck')!==-1)||url.indexOf('setData')!==-1)||(url.indexOf('GetSystemParams')!==-1)||(url.indexOf('GetSystemHomeDashboard')!==-1)||(url.indexOf('SetSystemHomeDashboard')!==-1)|| (url.indexOf('GetSystemDeviceInfo')!==-1)||(url.indexOf('getDisplayModelLayerData')!==-1)||(url.indexOf('getDisplayModelPagerLayerData')!==-1)||(url.indexOf('getDisplayModelLayerDataByToken')!==-1)||(url.indexOf('GetCustomPel')!==-1)||(url.indexOf('getRealDataByUuid')!==-1)||(url.indexOf('GetSystemMonitorList')!==-1)||(url.indexOf('monitortree')!==-1))
     {
       return config
     }
@@ -96,7 +127,9 @@ const reqCommon = {
       removeAuthorization(AUTH_TYPE.AUTH1)
     }
     else{
-      if (getAuthorization(AUTH_TYPE.AUTH1)) {
+      if (explicitProjectUuid) {
+        config.headers.common[projectHeaderName] = explicitProjectUuid
+      } else if (getAuthorization(AUTH_TYPE.AUTH1)) {
         config.headers.common[projectHeaderName] =  getAuthorization(AUTH_TYPE.AUTH1)
       }
       else{

@@ -43,14 +43,16 @@ type DisplayModelsUserList struct {
 type DisplayModelLayer struct {
 	gorm.Model
 
-	ModelId    string `gorm:"index;type:varchar(250);not null"  json:"modelId" validate:"required,min=4,max=250" label:"模型的ID标识"`
-	PageName   string `gorm:"type:varchar(250);not null"  json:"PageName" validate:"required,min=4,max=250" label:"页面名称"`
-	PageId     string `gorm:"index;type:varchar(250);not null"  json:"PageId" validate:"required,min=4,max=250" label:"页名称"`
-	IsHome     int    `gorm:"index;type:int;not null"  json:"IsHome" validate:"required,min=4,max=250" label:"是否为首页"`
-	IsLogin    int    `gorm:"index;type:int;"  json:"IsLogin" validate:"required,min=4,max=250" label:"是否为登录页"`
-	PageType   int    `gorm:"index;type:int;not null"  json:"PageType" validate:"required,min=4,max=250" label:"页面类型,0：手机 1：PC"`
-	Layer      string `gorm:"column:layer;type:longtext;not null" json:"layer" validate:"required" label:"图层信息"`
-	Components string `gorm:"column:components;type:longtext;not null" json:"components" validate:"required" label:"图层中的组件信息"`
+	ModelId           string `gorm:"index;index:idx_tpl_kind_model,priority:1;type:varchar(250);not null"  json:"modelId" validate:"required,min=4,max=250" label:"模型的ID标识"`
+	PageName          string `gorm:"type:varchar(250);not null"  json:"PageName" validate:"required,min=4,max=250" label:"页面名称"`
+	PageId            string `gorm:"index;type:varchar(250);not null"  json:"PageId" validate:"required,min=4,max=250" label:"页名称"`
+	IsHome            int    `gorm:"index;type:int;not null"  json:"IsHome" validate:"required,min=4,max=250" label:"是否为首页"`
+	IsLogin           int    `gorm:"index;type:int;"  json:"IsLogin" validate:"required,min=4,max=250" label:"是否为登录页"`
+	PageType          int    `gorm:"index;type:int;not null"  json:"PageType" validate:"required,min=4,max=250" label:"页面类型,0：手机 1：PC"`
+	Layer             string `gorm:"column:layer;type:longtext;not null" json:"layer" validate:"required" label:"图层信息"`
+	Components        string `gorm:"column:components;type:longtext;not null" json:"components" validate:"required" label:"图层中的组件信息"`
+	TemplateKind      string `gorm:"index:idx_tpl_kind_model,priority:2;type:varchar(64);default:''" json:"templateKind" label:"模板层级 home|zone|room|cabinet|device"`
+	TemplateModelUuid string `gorm:"index:idx_tpl_kind_model,priority:3;type:varchar(250);default:''" json:"templateModelUuid" label:"设备物模型覆盖(仅 device)"`
 }
 
 type layerStu struct {
@@ -107,7 +109,7 @@ func DisplayModelAdd(params DisplayModels) int {
 
 }
 
-// 模型删除
+// 模型删除（软删除：仅标记 deleted_at，可在回收站恢复，不做物理删除）
 func DisplayModelDel(key string) int {
 
 	var delModels DisplayModels
@@ -118,6 +120,72 @@ func DisplayModelDel(key string) int {
 	// if !errors.Is(err1.Error, gorm.ErrRecordNotFound) {
 	// 	return errmsg.MODEL_HAVED_BAND
 	// }
+
+	// 去掉 Unscoped()，GORM 会自动写入 deleted_at 实现软删除，默认查询会自动过滤
+	err := Db.Model(&DisplayModels{}).Where("display_model_uid = ?", key).Delete(&delModels).Error
+	if err != nil {
+		return errmsg.ERROR
+	}
+
+	err = Db.Model(&DisplayModelLayer{}).Where("model_id = ?", key).Delete(&delDisplayModelLayer).Error
+	if err != nil {
+		return errmsg.ERROR
+	}
+	return errmsg.SUCCSE
+}
+
+// DeletedDisplayModel 回收站列表项（仅暴露展示与回溯所需字段）
+type DeletedDisplayModel struct {
+	Name            string `json:"name"`
+	Description     string `json:"description"`
+	DisplayModelUid string `json:"displayUid"`
+	DisplayImage    string `json:"DisplayImage"`
+	DisplayType     int    `json:"DisplayType"`
+	DeletedAt       string `json:"deletedAt"`
+}
+
+// 回收站：列出某项目下已软删除的显示模型（deleted_at 非空）
+func DisplayModelDeletedList(ProjectUuid string) ([]DeletedDisplayModel, int) {
+
+	var list []DeletedDisplayModel
+	// 必须 Unscoped() 才能查到被软删除的记录
+	err := Db.Unscoped().Model(&DisplayModels{}).
+		Select("name, description, display_model_uid, display_image, display_type, deleted_at").
+		Where("project_uuid = ? AND deleted_at IS NOT NULL", ProjectUuid).
+		Order("deleted_at DESC").
+		Scan(&list).Error
+	if err != nil {
+		return nil, errmsg.ERROR
+	}
+	return list, errmsg.SUCCSE
+}
+
+// 回收站：恢复已软删除的显示模型（清空 deleted_at，连带恢复其图层页面）
+func DisplayModelRestore(key string) int {
+
+	// 清空 display_models 的 deleted_at
+	err := Db.Unscoped().Model(&DisplayModels{}).
+		Where("display_model_uid = ?", key).
+		Update("deleted_at", nil).Error
+	if err != nil {
+		return errmsg.ERROR
+	}
+
+	// 连带恢复其所有图层页面
+	err = Db.Unscoped().Model(&DisplayModelLayer{}).
+		Where("model_id = ?", key).
+		Update("deleted_at", nil).Error
+	if err != nil {
+		return errmsg.ERROR
+	}
+	return errmsg.SUCCSE
+}
+
+// 回收站：彻底删除（物理删除，不可恢复，需回收站二次确认后调用）
+func DisplayModelForceDel(key string) int {
+
+	var delModels DisplayModels
+	var delDisplayModelLayer DisplayModelLayer
 
 	err := Db.Unscoped().Model(&DisplayModels{}).Where("display_model_uid = ?", key).Delete(&delModels).Error
 	if err != nil {
@@ -221,8 +289,24 @@ func DisplayModelLayerGet(muid string) ([]DisplayModelLayer, int) {
 
 	var getDisplayModelLayer []DisplayModelLayer
 
-	result := Db.Raw("SELECT id, created_at, updated_at, deleted_at, model_id, page_name, page_id, is_home, is_login, page_type, layer, components FROM display_model_layer WHERE model_id = ? AND deleted_at IS NULL", muid).Scan(&getDisplayModelLayer)
+	result := Db.Raw("SELECT id, created_at, updated_at, deleted_at, model_id, page_name, page_id, is_home, is_login, page_type, layer, components, COALESCE(template_kind,'') AS template_kind, COALESCE(template_model_uuid,'') AS template_model_uuid FROM display_model_layer WHERE model_id = ? AND deleted_at IS NULL", muid).Scan(&getDisplayModelLayer)
 	
+	if result.Error != nil {
+		return getDisplayModelLayer, 0
+	}
+
+	return getDisplayModelLayer, 0
+}
+
+// 模型获取(仅元数据)：只对首页返回 components，其余页面 components 置空，
+// 避免一次性传输全部页面(大屏页面极多时单次响应可达数十/数百 MB)。
+// 配合前端按需加载：首屏渲染首页，下钻时按 page_id 单独拉取目标页。
+func DisplayModelLayerGetMeta(muid string) ([]DisplayModelLayer, int) {
+
+	var getDisplayModelLayer []DisplayModelLayer
+
+	result := Db.Raw("SELECT id, created_at, updated_at, deleted_at, model_id, page_name, page_id, is_home, is_login, page_type, layer, CASE WHEN is_home = 1 THEN components ELSE '' END AS components, COALESCE(template_kind,'') AS template_kind, COALESCE(template_model_uuid,'') AS template_model_uuid FROM display_model_layer WHERE model_id = ? AND deleted_at IS NULL ORDER BY is_home DESC, id ASC", muid).Scan(&getDisplayModelLayer)
+
 	if result.Error != nil {
 		return getDisplayModelLayer, 0
 	}
@@ -290,6 +374,8 @@ func DisplayModelLayerCopy(key string, pageid string) int {
 	getPage.IsHome = 0
 	getPage.PageId = createUuid.New()
 	getPage.PageName = getPage.PageName + " copy"
+	getPage.TemplateKind = ""
+	getPage.TemplateModelUuid = ""
 	getPage.CreatedAt = time.Now()
 	getPage.UpdatedAt = time.Now()
 
@@ -314,21 +400,17 @@ func DisplayModelLayerCopy(key string, pageid string) int {
 }
 
 // 模型页面添加
-func DisplayModelPageAdd(uuid string, name string, size string, pageType, islogin int) int {
+// templateKind / templateModelUuid 可选：用于层级模板页（home|zone|room|cabinet|device）
+// 同 model 下同 (templateKind, templateModelUuid) 已存在时返回已有页信息码 DISPLAY_MODEL_EXIST，并由调用方读 PageId
+func DisplayModelPageAdd(uuid string, name string, size string, pageType, islogin int, templateKind, templateModelUuid string) (int, string) {
 	var addDisplayModelLayer DisplayModelLayer
 
-	// var ConfigPageCount int64
-
 	if islogin == 1 && !protocolCommon.IsLicense {
-		return errmsg.LOGIN_NO_AUTH
+		return errmsg.LOGIN_NO_AUTH, ""
 	}
-	// err1 := Db.Model(&DisplayModelLayer{}).Count(&ConfigPageCount).Error
-	// if err1 != nil {
-	// 	ConfigPageCount = 0
-	// }
-	// if ConfigPageCount >= int64(protocolCommon.ConfigPageCount) {
-	// 	return errmsg.DISPLAY_MODEL_OUT
-	// }
+
+	templateKind = normalizeTemplateKind(templateKind)
+	templateModelUuid = normalizeTemplateModelUuid(templateKind, templateModelUuid)
 
 	layerInit := layerStu{BackColor: "#eee", BackgroundImage: "", WidthHeightRatio: "", Width: 867, Height: 765}
 
@@ -390,32 +472,162 @@ func DisplayModelPageAdd(uuid string, name string, size string, pageType, islogi
 
 	Db.Model(&DisplayModelLayer{}).Where("page_name = ? and model_id=? AND deleted_at IS NULL", name, uuid).First(&addDisplayModelLayer)
 	if addDisplayModelLayer.ID != 0 {
-		return errmsg.DISPLAY_MODEL_EXIST
+		return errmsg.DISPLAY_MODEL_EXIST, addDisplayModelLayer.PageId
 	}
 
+	if templateKind != "" {
+		var existTpl DisplayModelLayer
+		Db.Model(&DisplayModelLayer{}).Where(
+			"model_id = ? AND template_kind = ? AND COALESCE(template_model_uuid,'') = ? AND deleted_at IS NULL",
+			uuid, templateKind, templateModelUuid,
+		).First(&existTpl)
+		if existTpl.ID != 0 {
+			return errmsg.DISPLAY_MODEL_EXIST, existTpl.PageId
+		}
+	}
+
+	addDisplayModelLayer = DisplayModelLayer{}
 	addDisplayModelLayer.ModelId = uuid
 	addDisplayModelLayer.PageId = createUuid.New()
 	addDisplayModelLayer.PageName = name
 	addDisplayModelLayer.IsHome = 0
 	addDisplayModelLayer.PageType = pageType
 	addDisplayModelLayer.IsLogin = islogin
+	addDisplayModelLayer.TemplateKind = templateKind
+	addDisplayModelLayer.TemplateModelUuid = templateModelUuid
 	layer, jsonErr := json.Marshal(layerInit)
 	addDisplayModelLayer.Layer = base64.StdEncoding.EncodeToString(layer)
 
 	addDisplayModelLayer.Components = base64.StdEncoding.EncodeToString([]byte(`{"cells": []}`))
 
 	if jsonErr != nil {
-		return errmsg.DISPLAY_MODEL_ADD_FAILED
+		return errmsg.DISPLAY_MODEL_ADD_FAILED, ""
 	}
 
 	result := Db.Model(&DisplayModelLayer{}).Create(&addDisplayModelLayer)
 
 	if result.Error != nil {
-		return errmsg.DISPLAY_MODEL_ADD_FAILED
+		return errmsg.DISPLAY_MODEL_ADD_FAILED, ""
 	}
 
-	return errmsg.DISPLAY_MODEL_ADD_SUCCSE
+	return errmsg.DISPLAY_MODEL_ADD_SUCCSE, addDisplayModelLayer.PageId
 
+}
+
+func normalizeTemplateKind(kind string) string {
+	switch kind {
+	case "home", "zone", "room", "cabinet", "device":
+		return kind
+	default:
+		return ""
+	}
+}
+
+func normalizeTemplateModelUuid(kind, modelUuid string) string {
+	if kind != "device" {
+		return ""
+	}
+	return modelUuid
+}
+
+// DisplayModelPageBindTemplate 绑定/改绑/解绑页面的模板角色。
+// templateKind 为空表示解除模板角色。force=true 时覆盖同键已有页。
+func DisplayModelPageBindTemplate(modelId, pageId, templateKind, templateModelUuid string, force bool) (int, string) {
+	templateKind = normalizeTemplateKind(templateKind)
+	templateModelUuid = normalizeTemplateModelUuid(templateKind, templateModelUuid)
+
+	var page DisplayModelLayer
+	err := Db.Model(&DisplayModelLayer{}).Where("model_id = ? AND page_id = ? AND deleted_at IS NULL", modelId, pageId).First(&page).Error
+	if err != nil {
+		return errmsg.ERROR, ""
+	}
+
+	if templateKind == "" {
+		err = Db.Model(&DisplayModelLayer{}).Where("model_id = ? AND page_id = ? AND deleted_at IS NULL", modelId, pageId).
+			Updates(map[string]interface{}{"template_kind": "", "template_model_uuid": ""}).Error
+		if err != nil {
+			return errmsg.ERROR, ""
+		}
+		return errmsg.SUCCSE, pageId
+	}
+
+	var conflict DisplayModelLayer
+	Db.Model(&DisplayModelLayer{}).Where(
+		"model_id = ? AND template_kind = ? AND COALESCE(template_model_uuid,'') = ? AND page_id <> ? AND deleted_at IS NULL",
+		modelId, templateKind, templateModelUuid, pageId,
+	).First(&conflict)
+	if conflict.ID != 0 {
+		if !force {
+			return errmsg.DISPLAY_MODEL_EXIST, conflict.PageId
+		}
+		_ = Db.Model(&DisplayModelLayer{}).Where("id = ?", conflict.ID).
+			Updates(map[string]interface{}{"template_kind": "", "template_model_uuid": ""}).Error
+	}
+
+	err = Db.Model(&DisplayModelLayer{}).Where("model_id = ? AND page_id = ? AND deleted_at IS NULL", modelId, pageId).
+		Updates(map[string]interface{}{
+			"template_kind":        templateKind,
+			"template_model_uuid": templateModelUuid,
+		}).Error
+	if err != nil {
+		return errmsg.ERROR, ""
+	}
+	return errmsg.SUCCSE, pageId
+}
+
+// DisplayModelTemplateMap 返回大屏各层级模板页映射
+func DisplayModelTemplateMap(muid string) map[string]interface{} {
+	var rows []DisplayModelLayer
+	Db.Model(&DisplayModelLayer{}).
+		Select("page_id, page_name, template_kind, template_model_uuid, is_home").
+		Where("model_id = ? AND deleted_at IS NULL AND COALESCE(template_kind,'') <> ''", muid).
+		Find(&rows)
+
+	out := map[string]interface{}{
+		"home":          "",
+		"zone":          "",
+		"room":          "",
+		"cabinet":       "",
+		"floor":         "",
+		"deviceDefault": "",
+		"deviceByModel":  map[string]string{},
+		"pages":         []map[string]interface{}{},
+	}
+	deviceByModel := map[string]string{}
+	pages := make([]map[string]interface{}, 0, len(rows))
+
+	for _, r := range rows {
+		kind := r.TemplateKind
+		pageInfo := map[string]interface{}{
+			"pageId":             r.PageId,
+			"pageName":           r.PageName,
+			"templateKind":       kind,
+			"templateModelUuid":  r.TemplateModelUuid,
+			"isHome":             r.IsHome,
+		}
+		pages = append(pages, pageInfo)
+		switch kind {
+		case "home":
+			out["home"] = r.PageId
+		case "zone":
+			out["zone"] = r.PageId
+		case "room":
+			out["room"] = r.PageId
+		case "cabinet":
+			out["cabinet"] = r.PageId
+		case "floor":
+			out["floor"] = r.PageId
+		case "device":
+			if r.TemplateModelUuid == "" {
+				out["deviceDefault"] = r.PageId
+			} else {
+				deviceByModel[r.TemplateModelUuid] = r.PageId
+			}
+		}
+	}
+	out["deviceByModel"] = deviceByModel
+	out["pages"] = pages
+	return out
 }
 
 // 模型页面删除

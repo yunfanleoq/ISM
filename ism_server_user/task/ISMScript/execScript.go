@@ -10,6 +10,7 @@ package ISMScript
 
 import (
 	"ISMServer/models"
+	protocolCommon "ISMServer/protocol/common"
 	protocolCommonFunc "ISMServer/protocol/commFunc"
 	"time"
 
@@ -25,7 +26,7 @@ func ExecScript(sct models.ISMScript) {
 	GoSctVm := protocolCommonFunc.ScriptDefine()
 	_, err := vm.Execute(GoSctVm, nil, sct.ScriptContent)
 	if err != nil {
-		logs.Error("%s,Execute error: %v", sct.ScriptName, err)
+		protocolCommon.ErrorThrottled("script:"+sct.ScriptName, "%s,Execute error: %v", sct.ScriptName, err)
 	}
 	time.Sleep(time.Millisecond * time.Duration(sct.Delay))
 }

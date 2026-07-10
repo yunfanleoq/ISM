@@ -284,7 +284,7 @@ export default {
         if(res.data.code == 200)
         {
           let uid = _t.$route.params.uid
-          _t.updateAllLayerDataStruct({pageType:_t.isMobile,uuid:uid,cb:function (){}});
+          _t.updateAllLayerDataStruct({pageType:_t.isMobile,uuid:uid,metaOnly:true,cb:function (){}});
         }
         else
         {
@@ -345,7 +345,7 @@ export default {
           DisplayModelPageAdd(params).then(function (res){
             if (res.data.code == 4002) {
               _t.$message.success(_t.$t('ISMResources.PageAddSuccess'), 3)
-              _t.getLayerDataStruct({uuid:_t.$route.params.uid,cb:function (){
+              _t.getLayerDataStruct({uuid:_t.$route.params.uid,metaOnly:true,cb:function (){
                   _t.spinning = false
                 }});
               _t.AddPageVisible=false
@@ -448,7 +448,7 @@ export default {
       DisplayModelPageCopy(params).then(function (res){
         if (res.data.code == 200) {
           _t.$message.success(_t.$t('ISMResources.PageUpdateSuccess'), 3)
-          _t.getLayerDataStruct({uuid:_t.$route.params.uid,cb:function (){
+          _t.getLayerDataStruct({uuid:_t.$route.params.uid,metaOnly:true,cb:function (){
               _t.spinning = false
             }});
         }else if (res.data.code == 4005) {

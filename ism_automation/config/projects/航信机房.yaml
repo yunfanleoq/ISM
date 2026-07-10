@@ -1,0 +1,61 @@
+# 航信机房项目配置
+# ISM Automation 项目配置文件
+
+project:
+  name: "航信机房"
+  uuid: "31bc90be-ebc4-dd61-ba9d-ce6e075e40e2"
+  excel_path: "1A配电室 172.31.4.14 172.20.255.14.xlsx"
+  api_base_url: "http://127.0.0.1:8081"
+  
+  # 数据库连接（用于只读查询和辅助验证）
+  db_host: "127.0.0.1"
+  db_port: 2881
+  db_user: "root@ism_tenant"
+  db_password: "ism2024!"
+  db_name: "ism"
+
+  # 数据模型定义
+  models:
+    - name: "A20电力仪表"
+      template_sheet: "A20"
+      ai_count: 20
+      di_count: 8
+      protocol: "modbus"
+    
+    - name: "A40电力仪表"
+      template_sheet: "A40"
+      ai_count: 40
+      di_count: 16
+      protocol: "modbus"
+    
+    - name: "施耐德UPS"
+      template_sheet: "UPS"
+      ai_count: 10
+      di_count: 4
+      protocol: "modbus"
+
+  # 组态大屏配置
+  dashboard:
+    theme: "dark"
+    canvas_width: 1920
+    canvas_height: 1080
+    left_sidebar_width: 230
+    header_height: 80
+    drill_down_levels: 4
+    layout_template: "industrial_4level"
+    show_alarm_panel: true
+
+  # Excel 列映射规则
+  excel_mapping:
+    template_sheet_name: "模板"
+    model_name_col: "A"          # 模型名称所在列
+    ai_offset_col: "B"           # AI 偏移地址列
+    ai_name_col: "C"             # AI 名称列（实际在 B 列，见原脚本）
+    ai_coeff_col: "D"            # AI 系数列（实际在 C/D 列）
+    ai_parse_col: "E"            # AI 解析方式列
+    di_offset_col: "I"           # DI 偏移地址列
+    di_name_col: "J"             # DI 名称列
+    di_bit_col: "K"              # DI 位偏移列
+    device_name_col: "L"          # 设备名称列
+    ai_start_col: "O"            # AI 起始地址列
+    di_start_col: "P"            # DI 起始地址列

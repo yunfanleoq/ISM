@@ -59,6 +59,7 @@ type ModbusCtl struct {
 	rwMutex                      *sync.Mutex
 	TcpClientGroupID             string
 	timeout_connect              int
+	deviceStopChan               chan struct{}
 }
 
 func PutUint16(b []byte, v uint16) {
@@ -189,6 +190,9 @@ func (c *ModbusCtl) InitDeviceInfo(modbusClient modbus.Client, device modbusDevi
 	c.DeviceAlarmTemp = make(map[string]protocol_common.PushAlarm, protocol_common.AlarmCacheCount)
 	c.ModebusDeviceHistoryDataTemp = make(map[string]models.DevicesHistoryDataList, protocol_common.HistoryCacheCount)
 	ModbusClientMutexRWMutexFunc(device.Uuid, "read", &sync.Mutex{})
+	stopCh := make(chan struct{})
+	ModbusDeviceStopChans.Store(device.Uuid, stopCh)
+	c.deviceStopChan = stopCh
 }
 
 func getModbusTimedRecordDuration(recordDataTimely string) (time.Duration, bool) {
@@ -282,12 +286,12 @@ func (c *ModbusCtl) ModbusSetData(DataUuid string, SetValueStr string) int {
 		}
 		modbusClient = modbusClientMap.(modbus.Client)
 
-		if v, ok := ModbusClientMutexRWMutexFunc(setInfo.DeviceUuid, "read", nil); ok {
+		if v, ok := ModbusTcpClientConnMutexFunc(MutexKey, "read", nil); ok {
 			c.rwMutex = v
 		} else {
 			c.rwMutex = &sync.Mutex{}
 		}
-		modbusClient.SetTCPTimeout(time.Millisecond * time.Duration(setInfo.Timeout))
+		modbusClient.SetTCPTimeout(ModbusEffectiveTimeout(setInfo.Timeout))
 	} else if setInfo.ModbusConnectType == "Serial" {
 		if v, ok := ModbusClientMutexRWMutexFunc(setInfo.Uuid, "read", nil); ok {
 			c.rwMutex = v
@@ -295,7 +299,7 @@ func (c *ModbusCtl) ModbusSetData(DataUuid string, SetValueStr string) int {
 			c.rwMutex = &sync.Mutex{}
 		}
 		modbusClient = ModbusClientListRWMutexFunc(setInfo.Uuid, "read", nil)
-		modbusClient.SetTCPTimeout(time.Millisecond * time.Duration(setInfo.Timeout))
+		modbusClient.SetTCPTimeout(ModbusEffectiveTimeout(setInfo.Timeout))
 		if v, ok := ModbusUartClientMutexRWMutexFunc(setInfo.Uuid, "read", &sync.Mutex{}); ok {
 			c.rwMutex = v
 		} else {
@@ -312,7 +316,7 @@ func (c *ModbusCtl) ModbusSetData(DataUuid string, SetValueStr string) int {
 		}
 		conn, _ := ModbusTcpServerConnMutexFunc(ConnKey, "read", nil)
 		modbusClient.SetConnect(conn)
-		modbusClient.SetTCPTimeout(time.Millisecond * time.Duration(setInfo.Timeout))
+		modbusClient.SetTCPTimeout(ModbusEffectiveTimeout(setInfo.Timeout))
 	}
 
 	c.rwMutex.Lock()
@@ -541,34 +545,34 @@ func (c *ModbusCtl) ModbusTcpClientConnect(IPAddress string, port string) int {
 	if ModbusClientListRWMutexFunc(device.Uuid, "read", nil) != nil {
 		ModbusClientListRWMutexFunc(device.Uuid, "read", nil).Close()
 	}
+	var client modbus.Client
 	if device.ModbusConnectMode == "RTU" {
 		p := modbus.NewTCPClientProvider(device.Name, 1, fmt.Sprintf("%s:%s", IPAddress, port))
-		p.SetTCPTimeout(time.Millisecond * time.Duration(device.Timeout))
+		p.SetTCPTimeout(ModbusEffectiveTimeout(device.Timeout))
 		p.SetLogProvider(ProviderLoger)
 		p.LogMode(protocolCommon.ModbusDebug)
-		ModbusClientListRWMutexFunc(device.Uuid, "write", modbus.NewClient(p))
-		ModbusClientDeviceList.Store(tcpClientKey, modbus.NewClient(p))
+		client = modbus.NewClient(p)
 	} else if device.ModbusConnectMode == "TCP/IP" {
 		p := modbus.NewTCPClientProvider(device.Name, 2, fmt.Sprintf("%s:%s", IPAddress, port))
-		p.SetTCPTimeout(time.Millisecond * time.Duration(device.Timeout))
+		p.SetTCPTimeout(ModbusEffectiveTimeout(device.Timeout))
 		p.SetLogProvider(ProviderLoger)
 		p.LogMode(protocolCommon.ModbusDebug)
-		ModbusClientListRWMutexFunc(device.Uuid, "write", modbus.NewClient(p))
-		ModbusClientDeviceList.Store(tcpClientKey, modbus.NewClient(p))
+		client = modbus.NewClient(p)
 	} else if device.ModbusConnectMode == "ASCII" {
 		p := modbus.NewTCPClientProvider(device.Name, 3, fmt.Sprintf("%s:%s", IPAddress, port))
-		p.SetTCPTimeout(time.Millisecond * time.Duration(device.Timeout))
+		p.SetTCPTimeout(ModbusEffectiveTimeout(device.Timeout))
 		p.SetLogProvider(ProviderLoger)
 		p.LogMode(protocolCommon.ModbusDebug)
-		ModbusClientListRWMutexFunc(device.Uuid, "write", modbus.NewClient(p))
-		ModbusClientDeviceList.Store(tcpClientKey, modbus.NewClient(p))
+		client = modbus.NewClient(p)
 	}
-	err := ModbusClientListRWMutexFunc(device.Uuid, "read", nil).Connect()
+	ModbusClientListRWMutexFunc(device.Uuid, "write", client)
+	err := client.Connect()
 	if err != nil {
 		ReMutex.Unlock()
-		logs.Error("connect failed, ", err)
+		protocol_common.ErrorThrottled("modbus:tcp:connect", "connect failed, %v", err)
 		return -1
 	}
+	ModbusClientDeviceList.Store(tcpClientKey, client)
 
 	ReMutex.Unlock()
 	return 0
@@ -796,7 +800,7 @@ func (c *ModbusCtl) DealWithModbusAlarmData(AlarmData protocol_common.PushAlarm)
 		} else {
 			alarm.ID = updateAlarm.ID
 		}
-		if alarm.Value == "1" {
+		if protocol_common.IsAlarmValueActive(alarm.Value, alarm.AlarmOnValue) {
 			if protocol_common.ClearAlarmType == 0 {
 				ClearTime, _ := time.Parse("2006-01-02 15:04:05", "2006-01-02 15:04:05")
 				updateAlarm.ClearTime = ClearTime
@@ -843,7 +847,7 @@ func (c *ModbusCtl) DealWithModbusAlarmData(AlarmData protocol_common.PushAlarm)
 	} else {
 		if alarmTemp.Value != alarm.Value {
 			var status int = 0
-			if alarm.Value == "1" {
+			if protocol_common.IsAlarmValueActive(alarm.Value, alarm.AlarmOnValue) {
 				// ========== 修复点2：状态切换为告警时，确保旧告警已清除 ==========
 				var findOldAlarm models.DevicesAlarmList
 				oldAlarmResult := models.Db.Model(&models.DevicesAlarmList{}).
@@ -938,6 +942,7 @@ func (c *ModbusCtl) DealWithDeviceOff() {
 		signleAlarm.AlarmLevel = getRealData.AlarmLevel
 		signleAlarm.AlarmClearMessage = getRealData.AlarmClearMessage
 		signleAlarm.AlarmMessage = getRealData.AlarmMessage
+		signleAlarm.AlarmOnValue = getRealData.AlarmOnValue
 		signleAlarm.DataName = getRealData.Name
 		signleAlarm.DeviceName = device.Name
 		signleAlarm.HappenTime = time.Now()
@@ -979,6 +984,7 @@ func (c *ModbusCtl) DealWithSerialDeviceOff(g_device SerialModbusDeviceStu) {
 		signleAlarm.AlarmLevel = getRealData.AlarmLevel
 		signleAlarm.AlarmClearMessage = getRealData.AlarmClearMessage
 		signleAlarm.AlarmMessage = getRealData.AlarmMessage
+		signleAlarm.AlarmOnValue = getRealData.AlarmOnValue
 		signleAlarm.DataName = getRealData.Name
 		signleAlarm.DeviceName = device.Name
 		signleAlarm.HappenTime = time.Now()
@@ -1060,14 +1066,15 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 		}
 	}
 	slaveAddressInt = device.ModbusAddress
-	if v, ok := ModbusClientMutexRWMutexFunc(device.Uuid, "read", &sync.Mutex{}); ok {
-		c.rwMutex = v
-	} else {
-		c.rwMutex = &sync.Mutex{}
-	}
 
 	if device.ModbusConnectType == "TCPClient" {
-		MutexKey := fmt.Sprintf("%s", getExtraData.Modbus["IPAddress"]) + fmt.Sprintf("%s", getExtraData.Modbus["Port"])
+		MutexKey := ModbusTcpClientKey(getExtraData.Modbus)
+		if v, ok := ModbusTcpClientConnMutexFunc(MutexKey, "read", nil); ok {
+			c.rwMutex = v
+		} else {
+			ModbusTcpClientConnMutexFunc(MutexKey, "write", &sync.Mutex{})
+			c.rwMutex, _ = ModbusTcpClientConnMutexFunc(MutexKey, "read", nil)
+		}
 		res := c.ModbusTcpClientConnect(fmt.Sprintf("%s", getExtraData.Modbus["IPAddress"]), fmt.Sprintf("%s", getExtraData.Modbus["Port"]))
 		if res == -1 {
 			if modbusClient != nil {
@@ -1079,9 +1086,6 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 			modbusClientMap, isExist := ModbusClientDeviceList.Load(MutexKey)
 			if isExist {
 				modbusClient = modbusClientMap.(modbus.Client)
-				if device.ModbusConnectMode != "TCP/IP" {
-					c.rwMutex, _ = ModbusTcpClientConnMutexFunc(MutexKey, "read", nil)
-				}
 			} else {
 				if modbusClient != nil {
 					modbusClient.Close()
@@ -1106,19 +1110,19 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 	} else if device.ModbusConnectType == "TCPServer" {
 		if device.ModbusConnectMode == "RTU" {
 			p := modbus.NewModbusTCPServerProvider(device.Name, 1, time.Duration(device.Timeout)*time.Millisecond, device.Name)
-			p.SetTCPTimeout(time.Duration(device.Timeout) * time.Millisecond)
+			p.SetTCPTimeout(ModbusEffectiveTimeout(device.Timeout))
 			p.SetLogProvider(ProviderLoger)
 			p.LogMode(protocolCommon.ModbusDebug)
 			ModbusClientListRWMutexFunc(device.Uuid, "write", modbus.NewClient(p))
 		} else if device.ModbusConnectMode == "TCP/IP" {
 			p := modbus.NewModbusTCPServerProvider(device.Name, 2, time.Duration(device.Timeout)*time.Millisecond, device.Name)
-			p.SetTCPTimeout(time.Duration(device.Timeout) * time.Millisecond)
+			p.SetTCPTimeout(ModbusEffectiveTimeout(device.Timeout))
 			p.SetLogProvider(ProviderLoger)
 			p.LogMode(protocolCommon.ModbusDebug)
 			ModbusClientListRWMutexFunc(device.Uuid, "write", modbus.NewClient(p))
 		} else if device.ModbusConnectMode == "ASCII" {
 			p := modbus.NewModbusTCPServerProvider(device.Name, 3, time.Duration(device.Timeout)*time.Millisecond, device.Name)
-			p.SetTCPTimeout(time.Duration(device.Timeout) * time.Millisecond)
+			p.SetTCPTimeout(ModbusEffectiveTimeout(device.Timeout))
 			p.SetLogProvider(ProviderLoger)
 			p.LogMode(protocolCommon.ModbusDebug)
 			ModbusClientListRWMutexFunc(device.Uuid, "write", modbus.NewClient(p))
@@ -1155,6 +1159,14 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 			c.waitGroup.Done()
 			c.rwMutex.Unlock()
 			return
+		case <-c.deviceStopChan:
+			if c.TcpClientGroupID != "" {
+				ModbusClientDeviceListStatus.Delete(c.TcpClientGroupID)
+			}
+			ModbusClientExternData.Delete(device.Uuid)
+			ModbusDeviceStopChans.Delete(device.Uuid)
+			c.waitGroup.Done()
+			return
 		case <-GModbusDataFinishChan:
 			c.isReady = true
 		default:
@@ -1170,7 +1182,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 			if (modbusClient == nil) || (c.deviceStatus == 1 && c.timeout_connect == 1) {
 				tr := c.FindGroupDeviceStatus(c.TcpClientGroupID)
 				if !tr && modbusClient != nil {
-					MutexKey := fmt.Sprintf("%s", getExtraData.Modbus["IPAddress"]) + fmt.Sprintf("%s", getExtraData.Modbus["Port"])
+					MutexKey := ModbusTcpClientKey(getExtraData.Modbus)
 					modbusClientMap, modbusClientMapErr := ModbusClientDeviceList.Load(MutexKey)
 					if modbusClientMapErr {
 						modbusClient = modbusClientMap.(modbus.Client)
@@ -1179,13 +1191,16 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 					time.Sleep(time.Second * 1)
 					continue
 				}
+				c.rwMutex.Lock()
 				if modbusClient != nil {
 					modbusClient.Close()
 					modbusClient = nil
-					logs.Error(device.Name + "断开连接,10秒后准备重新连接")
+					protocol_common.ErrorThrottled("modbus:disc:"+device.Uuid, "%s断开连接,10秒后准备重新连接", device.Name)
+					c.rwMutex.Unlock()
 					time.Sleep(time.Second * 10)
+					c.rwMutex.Lock()
 				}
-				MutexKey := fmt.Sprintf("%s", getExtraData.Modbus["IPAddress"]) + fmt.Sprintf("%s", getExtraData.Modbus["Port"])
+				MutexKey := ModbusTcpClientKey(getExtraData.Modbus)
 				if c.timeout_connect == 1 {
 					ModbusClientDeviceList.Delete(MutexKey)
 				}
@@ -1196,31 +1211,26 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 						modbusClient.Close()
 					}
 					modbusClient = nil
+					c.rwMutex.Unlock()
 					if c.failedTimes >= device.FailedTimes {
 						c.DealWithDeviceOff()
 						c.failedTimes = 0
 						c.deviceStatus = 1
 						c.timeout_connect = 1
 						c.SetTcpClientGroupDeviceStatus(c.TcpClientGroupID, device.Uuid, c.deviceStatus)
-						logs.Error("设备:%s,连接断开,%d毫秒后尝试重连", device.Name, device.Interval)
+						protocol_common.ErrorThrottled("modbus:reconn:"+device.Uuid, "设备:%s,连接断开,%d毫秒后尝试重连", device.Name, device.Interval)
 					}
-					time.Sleep(time.Millisecond * time.Duration(device.Interval))
+					time.Sleep(protocol_common.ModbusReconnectSleep(device.Interval))
 					continue
-				} else {
-					modbusClientMap, modbusClientMapErr := ModbusClientDeviceList.Load(MutexKey)
-					if modbusClientMapErr {
-						modbusClient = modbusClientMap.(modbus.Client)
-						if device.ModbusConnectMode != "TCP/IP" {
-							c.rwMutex, _ = ModbusTcpClientConnMutexFunc(MutexKey, "read", nil)
-						}
-					} else {
-						if modbusClient != nil {
-							modbusClient.Close()
-						}
-						modbusClient = nil
-					}
-					c.timeout_connect = 0
 				}
+				modbusClientMap, modbusClientMapErr := ModbusClientDeviceList.Load(MutexKey)
+				if modbusClientMapErr {
+					modbusClient = modbusClientMap.(modbus.Client)
+				} else {
+					modbusClient = nil
+				}
+				c.timeout_connect = 0
+				c.rwMutex.Unlock()
 			}
 
 		} else if device.ModbusConnectType == "TCPServer" {
@@ -1238,30 +1248,30 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 				c.rwMutex = ModbusTcpServerConnMutex[ConnKey]
 				conn, _ := ModbusTcpServerConnMutexFunc(ConnKey, "read", nil)
 				modbusClient.SetConnect(conn)
-				modbusClient.SetTCPTimeout(time.Millisecond * time.Duration(device.Timeout))
+				modbusClient.SetTCPTimeout(ModbusEffectiveTimeout(device.Timeout))
 			} else {
 				c.failedTimes++
 				if c.failedTimes >= device.FailedTimes {
 					c.DealWithDeviceOff()
 					c.failedTimes = 0
 					c.deviceStatus = 1
-					logs.Error("设备:%s,连接断开,%d毫秒后尝试重连", device.Name, device.Interval)
-					time.Sleep(time.Millisecond * time.Duration(device.Interval))
+					protocol_common.ErrorThrottled("modbus:reconn:"+device.Uuid, "设备:%s,连接断开,%d毫秒后尝试重连", device.Name, device.Interval)
+					time.Sleep(protocol_common.ModbusReconnectSleep(device.Interval))
 					continue
 				}
-				time.Sleep(time.Millisecond * time.Duration(device.Interval))
+				time.Sleep(protocol_common.ModbusReconnectSleep(device.Interval))
 				continue
 			}
 		} else {
 			if modbusClient != nil && !modbusClient.IsConnected() {
 				if !ModbusModelReConnect(device.Muid) {
-					logs.Error("串口%s连接失败,5秒后尝试重连", c.UartName)
+					protocol_common.ErrorThrottled("modbus:uart:"+c.UartName, "串口%s连接失败,5秒后尝试重连", c.UartName)
 					time.Sleep(time.Millisecond * 5000)
 					continue
 				} else {
 					modbusClientTemp, isExit := ModbusUartModelList.Load(c.UartName)
 					if !isExit {
-						logs.Error("串口%s连接失败,5秒后尝试重连", c.UartName)
+						protocol_common.ErrorThrottled("modbus:uart:"+c.UartName, "串口%s连接失败,5秒后尝试重连", c.UartName)
 						time.Sleep(time.Millisecond * 5000)
 						continue
 					} else {
@@ -1277,9 +1287,9 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 				c.deviceStatus = 1
 				c.failedTimes = 0
 				c.SetTcpClientGroupDeviceStatus(c.TcpClientGroupID, device.Uuid, c.deviceStatus)
-				logs.Error("设备:%s,连接断开,%d毫秒后尝试重连", device.Name, device.Interval)
+				protocol_common.ErrorThrottled("modbus:reconn:"+device.Uuid, "设备:%s,连接断开,%d毫秒后尝试重连", device.Name, device.Interval)
 			}
-			time.Sleep(time.Millisecond * time.Duration(device.Interval))
+			time.Sleep(protocol_common.ModbusReconnectSleep(device.Interval))
 			continue
 		}
 
@@ -1305,7 +1315,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 					tempPushData.ProjectUuid = device.ProjectUuid
 					isResponse = 0
 					tempPushData.Cmd = "RealData"
-					modbusClient.SetTCPTimeout(time.Millisecond * time.Duration(device.Timeout))
+					modbusClient.SetTCPTimeout(ModbusEffectiveTimeout(device.Timeout))
 					for _, group := range c.registerGroup {
 						var registerAddress = group.RegisterStart
 						switch group.Function {
@@ -1320,7 +1330,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 
 								if err != nil {
 									time.Sleep(time.Millisecond * time.Duration(c.packTime))
-									logs.Error(device.Name + " " + err.Error())
+									protocol_common.ModbusReadErrorLog(device.Uuid, device.Name, err)
 									continue
 								}
 								isResponse = 1
@@ -1373,6 +1383,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 													signleAlarm.DataName = data.Name
 													signleAlarm.DeviceName = device.Name
 													signleAlarm.HappenTime = time.Now()
+													signleAlarm.AlarmOnValue = data.AlarmOnValue
 													c.DealWithModbusAlarmData(signleAlarm)
 													// protocol_common.GAlarmQueue.QueuePush(signleAlarm)
 												} else if data.IsRecord == 1 {
@@ -1411,7 +1422,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 								}
 								if err != nil {
 									time.Sleep(time.Millisecond * time.Duration(c.packTime))
-									logs.Error(device.Name + " " + err.Error())
+									protocol_common.ModbusReadErrorLog(device.Uuid, device.Name, err)
 									continue
 								}
 								isResponse = 1
@@ -1439,6 +1450,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 											signleAlarm.DataUuid = data.RealDataUuid
 											signleAlarm.ModelDataUuid = data.ModelDataUuid
 											signleAlarm.AlarmLevel = data.AlarmLevel
+											signleAlarm.AlarmOnValue = data.AlarmOnValue
 
 											signleHistoryData.DeviceUuid = device.Uuid
 											signleHistoryData.ProjectUuid = device.ProjectUuid
@@ -1668,7 +1680,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 															} else {
 																result, exler = expression.Evaluate(nil)
 																if exler != nil {
-																	logs.Error(data.Name + "转换表达式执行错误" + exler.Error())
+																	protocol_common.ErrorThrottled("modbus:expr:"+data.Name, "%s转换表达式执行错误%s", data.Name, exler.Error())
 																	exError = -3
 																}
 															}
@@ -1826,7 +1838,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 													} else {
 														result, exler = expression.Evaluate(nil)
 														if exler != nil {
-															logs.Error(data.Name + "转换表达式执行错误" + exler.Error())
+															protocol_common.ErrorThrottled("modbus:expr:"+data.Name, "%s转换表达式执行错误%s", data.Name, exler.Error())
 															exError = -3
 														}
 													}
@@ -2034,6 +2046,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 												signleAlarm.DataName = data.Name
 												signleAlarm.DeviceName = device.Name
 												signleAlarm.HappenTime = time.Now()
+												signleAlarm.AlarmOnValue = data.AlarmOnValue
 												c.DealWithModbusAlarmData(signleAlarm)
 												//protocol_common.GAlarmQueue.QueuePush(signleAlarm)
 											} else if data.IsRecord == 1 {
@@ -2069,8 +2082,6 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 						c.failedTimes++
 					} else {
 						if c.deviceStatus == 1 {
-							logs.Info("设备:%s,地址:%d,设备已连接", device.Name, slaveAddressInt)
-
 							var signleAlarm protocol_common.PushAlarm
 							var getRealData models.DeviceRealData
 							realErr := models.Db.Model(&models.DeviceRealData{}).Where("uuid = ? and device_uuid = ? and project_uuid = ? ", "sys.suid.device.status", device.Uuid, device.ProjectUuid).First(&getRealData).Error
@@ -2083,6 +2094,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 								signleAlarm.AlarmLevel = getRealData.AlarmLevel
 								signleAlarm.AlarmClearMessage = getRealData.AlarmClearMessage
 								signleAlarm.AlarmMessage = getRealData.AlarmMessage
+		signleAlarm.AlarmOnValue = getRealData.AlarmOnValue
 								signleAlarm.DataName = getRealData.Name
 								signleAlarm.DeviceName = device.Name
 								signleAlarm.HappenTime = time.Now()
@@ -2112,7 +2124,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 							}
 						}
 						c.timeout_connect = 1
-						logs.Error("设备:%s,连接断开,%d毫秒后尝试重连", device.Name, device.Interval)
+						protocol_common.ErrorThrottled("modbus:reconn:"+device.Uuid, "设备:%s,连接断开,%d毫秒后尝试重连", device.Name, device.Interval)
 					}
 					if len(tempPushData.Data) > 0 {
 						protocol_common.GGatherDataQueue.QueuePush(tempPushData)
@@ -2155,7 +2167,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 
 						if err != nil {
 							time.Sleep(time.Millisecond * time.Duration(c.packTime))
-							logs.Error(device.Name + " " + err.Error())
+							protocol_common.ModbusReadErrorLog(device.Uuid, device.Name, err)
 							continue
 						}
 						isResponse = 1
@@ -2216,6 +2228,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 											signleAlarm.DataName = data.Name
 											signleAlarm.DeviceName = device.Name
 											signleAlarm.HappenTime = time.Now()
+											signleAlarm.AlarmOnValue = data.AlarmOnValue
 											c.DealWithModbusAlarmData(signleAlarm)
 											// protocol_common.GAlarmQueue.QueuePush(signleAlarm)
 										} else if data.IsRecord == 1 {
@@ -2254,7 +2267,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 						}
 						if err != nil {
 							time.Sleep(time.Millisecond * time.Duration(c.packTime))
-							logs.Error(device.Name + " " + err.Error())
+							protocol_common.ModbusReadErrorLog(device.Uuid, device.Name, err)
 							continue
 						}
 						isResponse = 1
@@ -2282,6 +2295,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 									signleAlarm.DataUuid = data.RealDataUuid
 									signleAlarm.ModelDataUuid = data.ModelDataUuid
 									signleAlarm.AlarmLevel = data.AlarmLevel
+									signleAlarm.AlarmOnValue = data.AlarmOnValue
 
 									signleHistoryData.DeviceUuid = device.Uuid
 									signleHistoryData.ProjectUuid = device.ProjectUuid
@@ -2506,7 +2520,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 													} else {
 														result, exler = expression.Evaluate(nil)
 														if exler != nil {
-															logs.Error(data.Name + "转换表达式执行错误" + exler.Error())
+															protocol_common.ErrorThrottled("modbus:expr:"+data.Name, "%s转换表达式执行错误%s", data.Name, exler.Error())
 															exError = -3
 														}
 													}
@@ -2664,7 +2678,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 											} else {
 												result, exler = expression.Evaluate(nil)
 												if exler != nil {
-													logs.Error(data.Name + "转换表达式执行错误" + exler.Error())
+													protocol_common.ErrorThrottled("modbus:expr:"+data.Name, "%s转换表达式执行错误%s", data.Name, exler.Error())
 													exError = -3
 												}
 											}
@@ -2872,6 +2886,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 										signleAlarm.DataName = data.Name
 										signleAlarm.DeviceName = device.Name
 										signleAlarm.HappenTime = time.Now()
+										signleAlarm.AlarmOnValue = data.AlarmOnValue
 										c.DealWithModbusAlarmData(signleAlarm)
 										//protocol_common.GAlarmQueue.QueuePush(signleAlarm)
 									} else if data.IsRecord == 1 {
@@ -2907,7 +2922,6 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 				c.failedTimes++
 			} else {
 				if c.deviceStatus == 1 {
-					logs.Info("设备:%s,地址:%d,设备已连接", device.Name, slaveAddressInt)
 					var signleAlarm protocol_common.PushAlarm
 					var getRealData models.DeviceRealData
 					realErr := models.Db.Model(&models.DeviceRealData{}).Where("uuid = ? and device_uuid = ? and project_uuid = ? ", "sys.suid.device.status", device.Uuid, device.ProjectUuid).First(&getRealData).Error
@@ -2920,6 +2934,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 						signleAlarm.AlarmLevel = getRealData.AlarmLevel
 						signleAlarm.AlarmClearMessage = getRealData.AlarmClearMessage
 						signleAlarm.AlarmMessage = getRealData.AlarmMessage
+		signleAlarm.AlarmOnValue = getRealData.AlarmOnValue
 						signleAlarm.DataName = getRealData.Name
 						signleAlarm.DeviceName = device.Name
 						signleAlarm.HappenTime = time.Now()
@@ -2951,14 +2966,14 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 				}
 				c.SetTcpClientGroupDeviceStatus(c.TcpClientGroupID, device.Uuid, c.deviceStatus)
 				c.timeout_connect = 1
-				logs.Error("设备:%s,连接断开,%d毫秒后尝试重连", device.Name, device.Interval)
+				protocol_common.ErrorThrottled("modbus:reconn:"+device.Uuid, "设备:%s,连接断开,%d毫秒后尝试重连", device.Name, device.Interval)
 			}
 			if len(tempPushData.Data) > 0 {
 				protocol_common.GGatherDataQueue.QueuePush(tempPushData)
 				go ismWebsocket.WSSend(tempPushData, tempPushData.ProjectUuid, 2)
 			}
 			c.rwMutex.Unlock()
-			time.Sleep(time.Millisecond * time.Duration(device.Interval))
+			time.Sleep(protocol_common.ModbusReconnectSleep(device.Interval))
 		}
 
 	}

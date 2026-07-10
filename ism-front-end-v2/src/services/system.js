@@ -35,6 +35,8 @@ import {
   SAVESYSTEMMODBUSDATA,
   REBOOTISMSYSTEM,
   GETSYSTEMPARAMS,
+  GETSYSTEMHOME,
+  SETSYSTEMHOME,
   SAVESYSTEMPARAMS,
   GETSYSTEMHISTORYCONFIG,
   SAVESYSTEMHISTORYCONFIG,
@@ -136,6 +138,12 @@ export async function GetSystemAnalysis() {
 export async function GetSystemParams() {
   return request(SYSTEMPARAMS, METHOD.POST)
 }
+export async function GetSystemHomeDashboard() {
+  return request(GETSYSTEMHOME, METHOD.POST)
+}
+export async function SetSystemHomeDashboard(params) {
+  return request(SETSYSTEMHOME, METHOD.POST, params)
+}
 export async function GetSystemCodeCheck(params) {
   return request(SYSTECODE, METHOD.POST,params)
 }
@@ -228,6 +236,8 @@ export default {
   GetDeviceInfo,
   GetSystemNetwork,
   GetSystemParams,
+  GetSystemHomeDashboard,
+  SetSystemHomeDashboard,
   GetSystemAnalysis,
   GetSystemCodeCheck,
   WriteSystemCode,
