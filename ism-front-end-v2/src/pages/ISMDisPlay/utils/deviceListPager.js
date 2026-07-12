@@ -2,9 +2,9 @@
  * 纯设备容器列表分页（导航树与设备管理一致，无 floor/设备组 中间层）
  */
 
-import { REAL_DATA_DEFAULT_PAGE_SIZE } from '@/utils/realDataBatch'
-
-export const DEFAULT_DEVICE_PAGE_SIZE = 15
+// 1888×896 运行态内容区扣除外壳/边框/内边距后，可稳定容纳 7×7 张 240×110 卡片。
+// 底部分页已移除，49 是设备上下文、顶部页码和卡片切片的唯一容量口径。
+export const DEFAULT_DEVICE_PAGE_SIZE = 49
 
 /** 与 migrate_dashboard_to_templates.py TPL_PAGE['room'] 一致 */
 export const DEVICE_LIST_TEMPLATE_PAGE_ID = '89ea9d71b4ed5e16ae17c199049d416a'
@@ -30,7 +30,7 @@ export function resolveDeviceListTemplateId(templateMap, pageList) {
 export function deviceListPageSizeForNav(nav) {
   const n = nav && nav.pageSize
   if (n && n > 0) return n
-  return REAL_DATA_DEFAULT_PAGE_SIZE
+  return DEFAULT_DEVICE_PAGE_SIZE
 }
 
 /** 样本 floor/cabinet 页里的「设备组」面包屑/标题（纯设备列表应剔除） */
@@ -172,8 +172,10 @@ export function inferPageSizeFromTargets(targets) {
   return DEFAULT_DEVICE_PAGE_SIZE
 }
 
-const PAGE_PREV_RE = /^(‹|←|◀|上一页|上页|前一页)/
-const PAGE_NEXT_RE = /^(›|→|▶|下一页|下页|后一页)/
+// 仅带有明确页码语义的文案才是分页按钮。
+// 裸 ‹/›/→ 常用于面包屑层级分隔，不能被误判成翻页控件。
+const PAGE_PREV_RE = /^(?:(?:‹|←|◀)\s*)?(上一页|上页|前一页)\b/
+const PAGE_NEXT_RE = /^(?:(?:›|→|▶)\s*)?(下一页|下页|后一页)\b/
 
 export function detectPageNavRole(text) {
   const t = String(text || '').trim()

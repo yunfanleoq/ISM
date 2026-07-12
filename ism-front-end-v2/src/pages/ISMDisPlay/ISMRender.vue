@@ -185,11 +185,11 @@ import {snapdom} from "@/utils/snapdom.mjs";
 import LockScreen from "@/components/lockScreen/LockScreen";
 import Hammer from 'hammerjs';
 import {ismDebug} from "@/utils/ismDebug";
-import { sanitizeGraphComponents } from '@/pages/ISMDisPlay/utils/graphCellSanitizer'
-// 注意：navTreeIndex 不能在此静态 import —— 它已被主 chunk（store→navContextBinding→slotRemap）
-// 静态引用，再从 ism-render 异步 chunk 静态引用会触发 webpack4 scope-hoisting 的
-// 「unused reexport」bug，令本组件 export default 变成 undefined（同 ISMRenderLoader 注释的历史坑）。
-// 在 convertLegacyPageLink 内用惰性 require 获取。
+// 注意：navTreeIndex / graphCellSanitizer 等已被主 chunk（store→navContextBinding→…）静态引用，
+// 不可在此再静态 import —— 会触发 webpack4 scope-hoisting「unused reexport」bug，
+// 令本 chunk 内 Vue SFC（含 ViewRealTable/ViewSvgText）及主 chunk 命名导出变成 undefined
+// （同 ISMRenderLoader / convertLegacyPageLink 历史坑）。调用处用惰性 require。
+
 let isISMGroupNodeRegistered = false;
 export default {
   name: 'ISMRender',
@@ -3471,7 +3471,16 @@ export default {
         // （覆盖首页初载后卡片点击等未经槽位重映射的旧链接）
         linkInfo = this.convertLegacyPageLink(linkInfo)
         try {
-          if (linkInfo && linkInfo.navContext) {
+          const target = linkInfo && linkInfo.Inside
+          // 首页 pageUUID 与 displayUUID 相同。返回首页必须清空设备测点上下文，
+          // 否则会把上一设备页的 navDatapoints 表格再次注入首页画布并遮挡总览。
+          const isDashboardHome = target
+            && target.pageUUID
+            && target.pageUUID === target.displayUUID
+          if (isDashboardHome) {
+            this.$store.commit('ISMDisPlayEditorTool/setNavContext', null)
+            this.SelectDeviceUuid = ''
+          } else if (linkInfo && linkInfo.navContext) {
             this.$store.commit('ISMDisPlayEditorTool/setNavContext', linkInfo.navContext)
             if (linkInfo.navContext.kind === 'device' && linkInfo.navContext.uuid) {
               this.SelectDeviceUuid = linkInfo.navContext.uuid
@@ -3977,6 +3986,7 @@ export default {
         console.log("[RunCavasContainerInit] loading components from JSON, cells count=", _t.configData.components?.cells?.length)
         const hasObserver = !!_t.configData.components?.__ob__
         console.log("[RunCavasContainerInit] components has __ob__ (Vue Observer)=", hasObserver)
+        const { sanitizeGraphComponents } = require('@/pages/ISMDisPlay/utils/graphCellSanitizer')
         const components = sanitizeGraphComponents(_t.configData.components, { tag: 'RunCavasContainerInit' })
         _t.ISMRuningCavasContainer.fromJSON(components)
         console.log("[RunCavasContainerInit] fromJSON completed, graph cells count=", _t.ISMRuningCavasContainer.getCells()?.length)
@@ -4094,6 +4104,7 @@ export default {
       });
       //==============================
       try{
+        const { sanitizeGraphComponents } = require('@/pages/ISMDisPlay/utils/graphCellSanitizer')
         const components = sanitizeGraphComponents(_t.PopUpConfigData.components, { tag: 'RunPopUpCavasContainerInit' })
         _t.ISMPopUpRunningContainer.fromJSON(components)
       }catch (e){
@@ -4187,7 +4198,7 @@ export default {
       _t.$EventBus.$on("GoPage", _t.eventHandlers.GoPage);
 
       _t.eventHandlers.NavPageChange && _t.$EventBus.$off("NavPageChange", _t.eventHandlers.NavPageChange)
-      _t.eventHandlers.NavPageChange = (data) => {
+      _t.eventHandlers.NavPageChange = async (data) => {
         const nav = _t.$store && _t.$store.state.ISMDisPlayEditorTool
           ? _t.$store.state.ISMDisPlayEditorTool.navContext
           : null
@@ -4197,8 +4208,13 @@ export default {
         if (payload.datapointPageIndex != null
           && (nav.signalMode || nav.routeMode === 'signal' || nav.allDatapoints || nav.kind === 'device')) {
           let applyDatapointPagination
+          let fetchDeviceDatapointPage
+          let buildDeviceSignalContext
           try {
-            applyDatapointPagination = require('@/pages/ISMDisPlay/utils/navContext').applyDatapointPagination
+            const navContext = require('@/pages/ISMDisPlay/utils/navContext')
+            applyDatapointPagination = navContext.applyDatapointPagination
+            fetchDeviceDatapointPage = navContext.fetchDeviceDatapointPage
+            buildDeviceSignalContext = navContext.buildDeviceSignalContext
           } catch (e) {
             applyDatapointPagination = null
           }
@@ -4208,9 +4224,41 @@ export default {
             routeMode: 'signal',
             datapointPageIndex: payload.datapointPageIndex,
           }
-          const nextNav = typeof applyDatapointPagination === 'function'
+          const requestedPageUuid = _t.currentPageUUID
+          const requestedDeviceUuid = base.deviceUuid || base.uuid || ''
+          let nextNav = typeof applyDatapointPagination === 'function'
             ? applyDatapointPagination(base)
             : base
+          // 大设备的测点只保留当前服务端页；顶部翻页必须重新请求，
+          // 不能像旧模板那样仅修改页码后继续渲染上一页的内存数据。
+          if (base.serverPaged && typeof fetchDeviceDatapointPage === 'function'
+            && typeof buildDeviceSignalContext === 'function') {
+            try {
+              const pointPage = await fetchDeviceDatapointPage({
+                muid: base.modelUuid || base.muid || '',
+                deviceLabel: base.label || base.name || '',
+                deviceUuid: base.deviceUuid || base.uuid || '',
+                page: Number(payload.datapointPageIndex) + 1,
+                pageSize: base.datapointPageSize,
+                query: base.datapointQuery || '',
+                category: base.datapointCategory || '',
+              })
+              const activeNav = _t.$store.state.ISMDisPlayEditorTool.navContext
+              const activeDeviceUuid = activeNav && (activeNav.deviceUuid || activeNav.uuid || '')
+              if (!activeNav || _t.currentPageUUID !== requestedPageUuid
+                || activeDeviceUuid !== requestedDeviceUuid) {
+                return
+              }
+              nextNav = buildDeviceSignalContext(base, pointPage.points, base.ancestors || [], {
+                ...pointPage,
+                serverPaged: true,
+                query: base.datapointQuery || '',
+                category: base.datapointCategory || '',
+              })
+            } catch (e) {
+              console.warn('[NavPageChange] fetch datapoint page failed:', e && e.message)
+            }
+          }
           try {
             _t.$store.commit('ISMDisPlayEditorTool/setNavContext', nextNav)
           } catch (e) { /* ignore */ }
@@ -4269,6 +4317,8 @@ export default {
         }
         const muid = nav.modelUuid || nav.muid || ''
         const label = nav.label || nav.name || nav.rawLabel || ''
+        const requestedPageUuid = _t.currentPageUUID
+        const requestedDeviceUuid = nav.deviceUuid || nav.uuid || ''
         if (!muid) return
         let fetchDeviceDatapoints
         let buildDeviceSignalContext
@@ -4300,6 +4350,12 @@ export default {
             console.warn('[ISMRender] NavDatapointNeedHydrate: datapoints still empty', muid, label)
             return
           }
+          const activeNav = _t.$store.state.ISMDisPlayEditorTool.navContext
+          const activeDeviceUuid = activeNav && (activeNav.deviceUuid || activeNav.uuid || '')
+          if (!activeNav || _t.currentPageUUID !== requestedPageUuid
+            || activeDeviceUuid !== requestedDeviceUuid) {
+            return
+          }
           const nextNav = buildDeviceSignalContext(
             {
               label: nav.label || label,
@@ -4309,6 +4365,10 @@ export default {
               modelUuid: muid,
               muid,
               treeDepth: nav.treeDepth,
+              code: nav.code || '',
+              status: nav.status || '',
+              deviceListReturnContext: nav.deviceListReturnContext || null,
+              homePageUuid: nav.homePageUuid || '',
             },
             points,
             nav.ancestors || [],

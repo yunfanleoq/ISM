@@ -13,11 +13,12 @@ import {
 } from './deviceListPager'
 import { REAL_DATA_DEFAULT_PAGE_SIZE } from '@/utils/realDataBatch'
 import { isDeviceNode, isPureDeviceContainer } from './drillDepth'
+import { DASHBOARD_PERFORMANCE, normalizePageSize } from './dashboardPerformance'
 
 /** @typedef {'zone'|'room'|'device'|'datapoint'} NavLayer */
 
-/** 信号层测点表每页行数（单设备 5000+ 测点必须分页；20 便于大屏翻页与点击） */
-export const DEFAULT_DATAPOINT_PAGE_SIZE = 20
+/** 信号层测点每页容量（10×8 高密度卡片；单设备 5000+ 测点必须服务端分页） */
+export const DEFAULT_DATAPOINT_PAGE_SIZE = DASHBOARD_PERFORMANCE.datapointPageSize
 
 /** @deprecated 兼容旧模板 */
 export const MODBUS_TO_NAV_LAYER = {
@@ -189,6 +190,20 @@ export function applyGatewayListPagination(nav, pageSizeOverride) {
 
 /** 测点列表分页（信号层 ViewRealTable） */
 export function applyDatapointPagination(nav, pageSizeOverride) {
+  // 服务端已完成筛选与分页时，浏览器只保留当前页，不得再次切片或恢复全量缓存。
+  if (nav && nav.serverPaged) {
+    const size = normalizePageSize(pageSizeOverride || nav.datapointPageSize)
+    const total = Math.max(0, Number(nav.totalDatapoints) || 0)
+    const totalPages = Math.max(1, Math.ceil(total / size))
+    const pageIndex = Math.min(Math.max(0, Number(nav.datapointPageIndex) || 0), totalPages - 1)
+    return {
+      ...nav,
+      datapointPageIndex: pageIndex,
+      datapointPageSize: size,
+      datapointTotalPages: totalPages,
+      detailPointMode: total > size,
+    }
+  }
   const all = nav.allDatapoints || nav.datapoints || nav.childNodes || []
   const size = pageSizeOverride || nav.datapointPageSize || DEFAULT_DATAPOINT_PAGE_SIZE
   const p = paginateDevices(all, nav.datapointPageIndex, size)
@@ -495,8 +510,10 @@ export function buildSignalTablePageConfig(nav) {
  * @param {object[]} [datapoints] 已拉取的测点（可空，由 binding 异步补全）
  * @param {object[]} [ancestors]
  */
-export function buildDeviceSignalContext(deviceNode, datapoints = [], ancestors = []) {
+export function buildDeviceSignalContext(deviceNode, datapoints = [], ancestors = [], pageInfo = {}) {
   const points = datapointsToChildNodes(datapoints)
+  const pageSize = normalizePageSize(pageInfo.pageSize || DEFAULT_DATAPOINT_PAGE_SIZE)
+  const total = Math.max(points.length, Number(pageInfo.total) || 0)
   const base = {
     layer: 'device',
     modbusLayer: 'device',
@@ -510,19 +527,62 @@ export function buildDeviceSignalContext(deviceNode, datapoints = [], ancestors 
     gatewayUuid: deviceNode.uuid || '',
     name: deviceNode.label || deviceNode.name || '',
     label: deviceNode.label || deviceNode.name || '',
+    code: deviceNode.code || deviceNode.uuid || '',
+    status: deviceNode.status || 'off',
     modelUuid: deviceNode.modelUuid || deviceNode.muid || '',
     muid: deviceNode.modelUuid || deviceNode.muid || '',
     childNodes: points,
     datapoints: points,
-    allDatapoints: points,
+    allDatapoints: pageInfo.serverPaged ? [] : points,
     children: [],
     ancestors,
-    datapointPageIndex: 0,
-    datapointPageSize: DEFAULT_DATAPOINT_PAGE_SIZE,
-    totalDatapoints: points.length,
+    datapointPageIndex: Math.max(0, Number(pageInfo.page || 1) - 1),
+    datapointPageSize: pageSize,
+    totalDatapoints: total,
+    serverPaged: !!pageInfo.serverPaged,
+    datapointQuery: String(pageInfo.query || ''),
+    datapointCategory: String(pageInfo.category || ''),
+    deviceListReturnContext: deviceNode.deviceListReturnContext || null,
+    homePageUuid: deviceNode.homePageUuid || pageInfo.homePageUuid || '',
     childDevices: [],
   }
   return applyDatapointPagination(base)
+}
+
+/**
+ * 仅请求当前设备测点的当前筛选页。
+ * 不得使用 fetchAll：设备可能包含数千到数万测点。
+ */
+export async function fetchDeviceDatapointPage({
+  muid = '',
+  deviceLabel = '',
+  deviceUuid = '',
+  page = 1,
+  pageSize = DEFAULT_DATAPOINT_PAGE_SIZE,
+  query = '',
+  category = '',
+} = {}) {
+  const res = await getRealData({
+    uuid: deviceUuid || undefined,
+    muid: muid || undefined,
+    namePrefix: deviceLabel || undefined,
+    deviceLabel: deviceLabel || undefined,
+    page: Math.max(1, Number(page) || 1),
+    pageSize: normalizePageSize(pageSize),
+    query: String(query || '').trim() || undefined,
+    category: String(category || '').trim() || undefined,
+    IsRemoveGW: false,
+  })
+  const body = res && res.data
+  if (!body || body.code !== 0) {
+    return { points: [], total: 0, page: 1, pageSize: normalizePageSize(pageSize) }
+  }
+  return {
+    points: mapRealDataRows(body.realData),
+    total: Math.max(0, Number(body.total) || 0),
+    page: Math.max(1, Number(body.page) || 1),
+    pageSize: normalizePageSize(body.pageSize || pageSize),
+  }
 }
 
 /** @deprecated 寄存器组主链路已禁用 */

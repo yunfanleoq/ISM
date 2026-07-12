@@ -26,7 +26,7 @@ import {
 } from './deviceListPager'
 import {
   applyDatapointPagination,
-  fetchDeviceDatapoints,
+  fetchDeviceDatapointPage,
   buildDeviceSignalContext,
   buildSignalTablePageConfig,
   formatDatapointPageInfo,
@@ -53,6 +53,14 @@ const TPL_TITLE_Y = 72
 const TPL_SUBTITLE_Y = 112
 const TPL_TABLE_Y = 152
 const TPL_TABLE_H = 1080 - TPL_TABLE_Y - 32
+const SIGNAL_PAGER_Y = 72
+const SIGNAL_PAGER_LAYOUT = Object.freeze({
+  prev: { x: 1480, w: 88 },
+  info: { x: 1572, w: 176 },
+  next: { x: 1752, w: 88 },
+})
+const DEVICE_LIST_PAGER_Y = TPL_SUBTITLE_Y
+const DEVICE_LIST_PAGER_LAYOUT = SIGNAL_PAGER_LAYOUT
 
 export function ensureTemplatePageLayer(pageData) {
   if (!pageData) return pageData
@@ -125,6 +133,54 @@ function makeTemplateTextCell(id, x, y, w, h, text, opts = {}) {
   }
 }
 
+/** 测点页翻页控件按角色布局，不能继承旧模板的设备组坐标。 */
+function layoutSignalPagerChrome(cells) {
+  (cells || []).forEach(cell => {
+    const detail = cell && cell.data && cell.data.detail
+    const style = detail && detail.style
+    const diy = (style && style.diy) || []
+    const role = String((diy.find(d => d && d.key === 'labelRole') || {}).value || '')
+    const slot = /detailPagePrev/.test(role)
+      ? SIGNAL_PAGER_LAYOUT.prev
+      : (/detailPageNext/.test(role)
+        ? SIGNAL_PAGER_LAYOUT.next
+        : (role === 'detailPageInfo' ? SIGNAL_PAGER_LAYOUT.info : null))
+    if (!slot || !style) return
+    const h = Number(style.position && style.position.h) || 28
+    cell.x = slot.x
+    cell.y = SIGNAL_PAGER_Y
+    cell.width = slot.w
+    cell.height = h
+    cell.position = { ...(cell.position || {}), x: slot.x, y: SIGNAL_PAGER_Y }
+    cell.size = { ...(cell.size || {}), width: slot.w, height: h }
+    style.position = { ...(style.position || {}), x: slot.x, y: SIGNAL_PAGER_Y, w: slot.w, h }
+  })
+}
+
+/** 设备卡片页翻页控件统一靠右紧凑排列，与底部分页使用同一页码口径。 */
+function layoutDeviceListPagerChrome(cells) {
+  (cells || []).forEach(cell => {
+    const detail = cell && cell.data && cell.data.detail
+    const style = detail && detail.style
+    const diy = (style && style.diy) || []
+    const role = String((diy.find(d => d && d.key === 'labelRole') || {}).value || '')
+    const slot = /^pagePrev/.test(role)
+      ? DEVICE_LIST_PAGER_LAYOUT.prev
+      : (/^pageNext/.test(role)
+        ? DEVICE_LIST_PAGER_LAYOUT.next
+        : (role === 'pageInfo' ? DEVICE_LIST_PAGER_LAYOUT.info : null))
+    if (!slot || !style) return
+    const h = Number(style.position && style.position.h) || 28
+    cell.x = slot.x
+    cell.y = DEVICE_LIST_PAGER_Y
+    cell.width = slot.w
+    cell.height = h
+    cell.position = { ...(cell.position || {}), x: slot.x, y: DEVICE_LIST_PAGER_Y }
+    cell.size = { ...(cell.size || {}), width: slot.w, height: h }
+    style.position = { ...(style.position || {}), x: slot.x, y: DEVICE_LIST_PAGER_Y, w: slot.w, h }
+  })
+}
+
 function makeTemplateTableCell(id, x, y, w, h, diy, opts = {}) {
   const z = opts.z != null ? opts.z : 8
   return {
@@ -163,6 +219,39 @@ function makeTemplateTableCell(id, x, y, w, h, diy, opts = {}) {
       },
     },
   }
+}
+
+/** 将任意历史实时表 cell 收敛为运行态唯一卡片容器，避免模板差异泄漏到组织/设备页。 */
+function normalizeRuntimeTableCell(cell, id, rowSource, pageSize, name) {
+  const table = cell || makeTemplateTableCell(
+    id, TPL_MAIN_X, TPL_TABLE_Y, TPL_MAIN_W, TPL_TABLE_H, [], { name },
+  )
+  const detail = table.data && table.data.detail
+  if (!detail || !detail.style) return table
+  table.x = TPL_MAIN_X
+  table.y = TPL_TABLE_Y
+  table.width = TPL_MAIN_W
+  table.height = TPL_TABLE_H
+  table.position = { ...(table.position || {}), x: TPL_MAIN_X, y: TPL_TABLE_Y }
+  table.size = { ...(table.size || {}), width: TPL_MAIN_W, height: TPL_TABLE_H }
+  detail.name = name
+  detail.style.position = {
+    ...(detail.style.position || {}),
+    x: TPL_MAIN_X,
+    y: TPL_TABLE_Y,
+    w: TPL_MAIN_W,
+    h: TPL_TABLE_H,
+  }
+  if (!Array.isArray(detail.style.diy)) detail.style.diy = []
+  const setDiy = (key, value) => {
+    const item = detail.style.diy.find(d => d && d.key === key)
+    if (item) item.value = value
+    else detail.style.diy.push({ name: key, type: 9, value, key })
+  }
+  setDiy('rowSource', rowSource)
+  setDiy('ShowCount', pageSize)
+  setDiy('themeName', 'dark')
+  return table
 }
 
 export function clearNavDpCache() {
@@ -256,7 +345,7 @@ function collectDeviceChildren(node) {
       })
       return
     }
-    ;(n.children || []).forEach(walk)
+    (n.children || []).forEach(walk)
   }
   ;(node.children || []).forEach(walk)
   return out
@@ -339,6 +428,143 @@ function rewriteStaticNavTexts(style, navContext, stats) {
   }
 }
 
+/**
+ * 顶部 x≈833 的“全局总览”是固定系统入口，不属于随 nav.name 改写的面包屑。
+ * 统一写入独立角色和当前项目首页目标，绕开旧 page_id/静态模板重映射。
+ */
+function normalizeGlobalOverviewCell(cell, homePageUuid) {
+  if (!cell || !homePageUuid) return
+  const detail = cell.data && cell.data.detail
+  const style = detail && detail.style
+  if (!detail || !style || typeof style.text !== 'string') return
+  const diy = Array.isArray(style.diy) ? style.diy : (style.diy = [])
+  const roleItem = diy.find(d => d && d.key === 'labelRole')
+  const role = String((roleItem || {}).value || '')
+  const position = style.position || {}
+  // X6 top-level 坐标是运行态真实位置；部分旧模板的 style.position 被整组复用，不能用于区分相邻面包屑。
+  const x = Number(cell.x != null ? cell.x : position.x)
+  const y = Number(cell.y != null ? cell.y : position.y)
+  const width = Number(cell.width != null ? cell.width : position.w)
+  const isFixedHeaderSlot = y >= 0 && y <= 56 && x >= 720 && x < 840 && width >= 60
+  if (role !== 'globalOverview' && !isFixedHeaderSlot) return
+
+  style.text = '📊 全局总览'
+  if (roleItem) roleItem.value = 'globalOverview'
+  else diy.push({ name: 'labelRole', type: 9, value: 'globalOverview', key: 'labelRole' })
+  const homeItem = diy.find(d => d && d.key === 'homePageUuid')
+  if (homeItem) homeItem.value = homePageUuid
+  else diy.push({ name: 'homePageUuid', type: 9, value: homePageUuid, key: 'homePageUuid' })
+
+  if (!Array.isArray(detail.action)) detail.action = []
+  let action = detail.action.find(a => a && a.type === 'click' && a.action === 'link')
+  if (!action) {
+    action = { type: 'click', action: 'link', link: {} }
+    detail.action.push(action)
+  }
+  if (!action.link) action.link = {}
+  action.link.linkType = 'Inside'
+  action.link.isPopUp = false
+  action.link.autoClose = false
+  action.link.navContext = null
+  action.link.Inside = {
+    ...(action.link.Inside || {}),
+    displayUUID: homePageUuid,
+    pageUUID: homePageUuid,
+  }
+}
+
+function compactBreadcrumbSegment(value, maxLength = 24) {
+  const text = String(value || '').trim()
+  if (text.length <= maxLength) return text
+  const side = Math.max(6, Math.floor((maxLength - 1) / 2))
+  return `${text.slice(0, side)}…${text.slice(-side)}`
+}
+
+/** 点位页顶部路径：固定首页入口之后仅展示真实组织层级和当前设备。 */
+function buildDeviceBreadcrumb(nav) {
+  const organizations = []
+  const add = (value, kind = '') => {
+    const text = String(value || '').trim()
+    const normalizedKind = String(kind || '').trim().toLowerCase()
+    if (normalizedKind === 'root'
+      || normalizedKind === 'home'
+      || normalizedKind === 'devicelist'
+      || normalizedKind === 'device-list'
+      || /^(?:RootZone|root|home|📊\s*全局总览|全局总览|设备列表)$/i.test(text)) return
+    if (text && text !== nav.name && organizations[organizations.length - 1] !== text) {
+      organizations.push(text)
+    }
+  }
+  ;(nav.ancestors || []).forEach(item => add(item && (item.label || item.name), item && item.kind))
+  add(
+    nav.deviceListReturnContext && (nav.deviceListReturnContext.label || nav.deviceListReturnContext.name),
+    nav.deviceListReturnContext && nav.deviceListReturnContext.kind,
+  )
+
+  let visibleOrganizations = organizations
+  if (visibleOrganizations.length > 3) {
+    visibleOrganizations = [
+      visibleOrganizations[0],
+      '…',
+      visibleOrganizations[visibleOrganizations.length - 1],
+    ]
+  }
+  visibleOrganizations = visibleOrganizations.map(name => compactBreadcrumbSegment(name, 18))
+  const deviceName = compactBreadcrumbSegment(nav.name || nav.label || '未命名设备', 36)
+  return `› ${[...visibleOrganizations, deviceName].join(' › ')}`
+}
+
+function normalizeDeviceBreadcrumbCell(cells, nav) {
+  const candidate = (cells || []).find(cell => {
+    const detail = cell && cell.data && cell.data.detail
+    const style = detail && detail.style
+    const position = (style && style.position) || {}
+    const text = String((style && style.text) || '').trim()
+    return cell && cell.shape === 'view-svg-text'
+      && !text
+      && Number(cell.x != null ? cell.x : position.x) === 0
+      && Number(cell.y != null ? cell.y : position.y) === 0
+      && Number(cell.width != null ? cell.width : position.w) >= 1200
+      && Number(cell.height != null ? cell.height : position.h) <= 64
+  })
+  if (!candidate) return
+  const detail = candidate.data.detail
+  const style = detail.style
+  style.text = buildDeviceBreadcrumb(nav)
+  style.textAlign = 'left'
+  style.foreColor = '#8fb8cc'
+  style.fontSize = 12
+  style.fontWeight = 500
+  if (!Array.isArray(style.diy)) style.diy = []
+  const role = style.diy.find(d => d && d.key === 'labelRole')
+  if (role) role.value = 'deviceBreadcrumb'
+  else style.diy.push({ name: 'labelRole', type: 9, value: 'deviceBreadcrumb', key: 'labelRole' })
+  detail.name = '当前设备面包屑'
+}
+
+/**
+ * 设备详情模板由任一设备样本生成时，标题和“设备名称”字段会带有该样本名称。
+ * 信号层复用模板时，仅替换与标题样本完全相同的文本，避免误改测点名称或业务文案。
+ */
+function rewriteStaticDeviceName(style, templateDeviceName, currentDeviceName) {
+  if (!style || typeof style.text !== 'string' || !templateDeviceName || !currentDeviceName) return
+  if (style.text === templateDeviceName) {
+    style.text = currentDeviceName
+  } else if (style.text === `🔧 ${templateDeviceName}`) {
+    style.text = `🔧 ${currentDeviceName}`
+  }
+}
+
+function findTemplateDeviceName(cells) {
+  for (const cell of cells || []) {
+    const style = cell && cell.data && cell.data.detail && cell.data.detail.style
+    const text = style && style.text
+    const match = typeof text === 'string' && text.match(/^🔧\s+(.+?)\s*$/)
+    if (match && match[1]) return match[1]
+  }
+  return ''
+}
+
 function isViewRealTableCell(cell) {
   if (!cell) return false
   if (cell.shape === 'ism-view-real-table') return true
@@ -346,31 +572,47 @@ function isViewRealTableCell(cell) {
   return type === 'ism-view-real-table'
 }
 
+/** 清理模板在运行态页眉左侧写死的样本设备名，保留统一动态控件。 */
+function isLegacyRuntimeHeaderCell(cell, maxX) {
+  const style = ((((cell || {}).data || {}).detail || {}).style || {})
+  const text = String(style.text || '').trim()
+  const position = style.position || {}
+  const diy = style.diy || []
+  const labelRole = String((diy.find(d => d && d.key === 'labelRole') || {}).value || '')
+  return !!text
+    && Number(position.y) > 56
+    && Number(position.y) < 145
+    && Number(position.x) < maxX
+    && !/全局总览/.test(text)
+    && !/^(deviceListBack|deviceInfo)/.test(labelRole)
+}
+
 /**
  * 纯设备列表（childrenList）：无 room 模板槽位时注入标题 + ViewRealTable(navChildren) + 翻页控件
  */
 export function ensureDeviceListPageLayout(cells, nav) {
   if (!isDeviceListNav(nav)) return cells || []
-  const list = [...(cells || [])]
+  // x<180 的旧样本设备名与 x=210 开始的统一组织标题属于不同区域。
+  let list = (cells || []).filter(cell => {
+    const style = ((((cell || {}).data || {}).detail || {}).style || {})
+    const diy = style.diy || []
+    const role = String((diy.find(d => d && d.key === 'labelRole') || {}).value || '')
+    // 模板缓存可能刚被点位页注入动态 chrome；返回列表时必须清除点位专属控件。
+    if (/^(deviceListBack|deviceInfo|deviceBreadcrumb|detailPage)/.test(role)) return false
+    return !isLegacyRuntimeHeaderCell(cell, 180)
+  })
   const pageSize = deviceListPageSizeForNav(nav)
   const uid = nav.sid != null ? nav.sid : (nav.uuid || 'list')
 
-  if (!list.some(isViewRealTableCell)) {
-    const id = `devlist-vrt-${uid}`
-    list.push(makeTemplateTableCell(
-      id, TPL_MAIN_X, TPL_TABLE_Y, TPL_MAIN_W, TPL_TABLE_H,
-      [
-        { name: 'rowSource', type: 9, value: 'navChildren', key: 'rowSource' },
-        { name: 'columnHeaders', type: 9, value: '在线状态', key: 'columnHeaders' },
-        { name: 'ShowCount', type: 1, value: pageSize, key: 'ShowCount' },
-        { name: 'tableHeaderColor', type: 2, value: '#f8fbff', key: 'tableHeaderColor' },
-        { name: 'tableHeaderBackColor', type: 2, value: '#1d3557', key: 'tableHeaderBackColor' },
-        { name: 'tableSplitColor', type: 2, value: '#263449', key: 'tableSplitColor' },
-        { name: 'tableHoverColor', type: 2, value: '#1e3a5f', key: 'tableHoverColor' },
-        { name: 'themeName', type: 6, value: 'dark', key: 'themeName' },
-      ],
-    ))
-  }
+  const table = normalizeRuntimeTableCell(
+    list.find(isViewRealTableCell),
+    `devlist-vrt-${uid}`,
+    'navChildren',
+    pageSize,
+    '设备卡片列表',
+  )
+  list = list.filter(cell => !isViewRealTableCell(cell))
+  list.push(table)
 
   const hasTitle = list.some(c => {
     const detail = ((c || {}).data || {}).detail || {}
@@ -399,9 +641,9 @@ export function ensureDeviceListPageLayout(cells, nav) {
       },
     )
     list.push(
-      mkNavText(`devlist-prev-${uid}`, TPL_MAIN_X, '‹ 上一页', 'pagePrev'),
-      mkNavText(`devlist-info-${uid}`, TPL_MAIN_X + 96, '{{nav.pageInfo}}', 'pageInfo'),
-      mkNavText(`devlist-next-${uid}`, TPL_MAIN_X + 396, '下一页 ›', 'pageNext'),
+      mkNavText(`devlist-prev-${uid}`, DEVICE_LIST_PAGER_LAYOUT.prev.x, '‹ 上一页', 'pagePrev'),
+      mkNavText(`devlist-info-${uid}`, DEVICE_LIST_PAGER_LAYOUT.info.x, '{{nav.pageInfo}}', 'pageInfo'),
+      mkNavText(`devlist-next-${uid}`, DEVICE_LIST_PAGER_LAYOUT.next.x, '下一页 ›', 'pageNext'),
     )
   }
 
@@ -414,38 +656,98 @@ export function ensureDeviceListPageLayout(cells, nav) {
  */
 export function ensureDeviceDatapointPageLayout(cells, nav) {
   if (!nav || !nav.signalMode) return cells || []
-  const list = [...(cells || [])]
+  // 旧设备组详情页遗留了“← Y11设备组”和静态“🔧 设备名”页眉。
+  // 当前链路由左侧组织树承载上下文，设备页只展示按需加载的测点表，
+  // 因此不能保留这些会误导层级关系的历史 chrome。
+  let list = (cells || []).filter(cell => {
+    const style = ((((cell || {}).data || {}).detail || {}).style || {})
+    const text = String(style.text || '').trim()
+    const position = style.position || {}
+    // 旧大屏在顶栏写死了“区域 → 机房 → 设备组 → 设备”的多段面包屑及跳转。
+    // 新架构仅保留全局总览入口，其余上下文由实时组织树提供。
+    const isLegacyHeaderBreadcrumb = Number(position.y) <= 56
+      && Number(position.x) >= 740
+      && Number(position.x) < 1640
+      && !/全局总览/.test(text)
+    // 画布 y=56~145、x<720 是统一设备信息栏。历史模板在这里写死样本设备名，
+    // 无论具体字符串为何都应清理；全局入口、有效返回按钮和本次动态角色必须保留。
+    return !(isLegacyHeaderBreadcrumb
+      || isLegacyRuntimeHeaderCell(cell, 720)
+      || /设备组/.test(text)
+      || /^🔧\s*(?!\{\{).+/.test(text)
+      || /^●\s*(离线|运行|运行中)$/.test(text))
+  })
+  normalizeDeviceBreadcrumbCell(list, nav)
+  // 历史模板以裸 › 表示面包屑层级，视觉像小方块且曾误触发分页。
+  // 统一替换为明确的方向箭头并附上独立语义角色。
+  list.forEach(cell => {
+    const style = cell && cell.data && cell.data.detail && cell.data.detail.style
+    if (!style || String(style.text || '').trim() !== '›') return
+    style.text = '➜'
+    if (!Array.isArray(style.diy)) style.diy = []
+    const role = style.diy.find(d => d && d.key === 'labelRole')
+    if (role) role.value = 'breadcrumbArrow'
+    else style.diy.push({ name: 'labelRole', type: 9, value: 'breadcrumbArrow', key: 'labelRole' })
+  })
   const pageSize = nav.datapointPageSize || DEFAULT_DATAPOINT_PAGE_SIZE
   const uid = nav.deviceUuid || nav.uuid || nav.sid || 'device'
-
-  if (!list.some(isViewRealTableCell)) {
-    const id = `devpoints-vrt-${uid}`
-    list.push(makeTemplateTableCell(
-      id, TPL_MAIN_X, TPL_TABLE_Y, TPL_MAIN_W, TPL_TABLE_H,
-      [
-        { name: 'rowSource', type: 9, value: 'navDatapoints', key: 'rowSource' },
-        { name: 'columnHeaders', type: 9, value: '实时值', key: 'columnHeaders' },
-        { name: 'ShowCount', type: 1, value: pageSize, key: 'ShowCount' },
-        { name: 'tableHeaderColor', type: 2, value: '#f8fbff', key: 'tableHeaderColor' },
-        { name: 'tableHeaderBackColor', type: 2, value: '#1d3557', key: 'tableHeaderBackColor' },
-        { name: 'tableSplitColor', type: 2, value: '#263449', key: 'tableSplitColor' },
-        { name: 'tableHoverColor', type: 2, value: '#1e3a5f', key: 'tableHoverColor' },
-        { name: 'themeName', type: 6, value: 'dark', key: 'themeName' },
-      ],
-      { name: '设备测点表' },
+  const compactId = value => {
+    const text = String(value || '')
+    return text.length > 22 ? `${text.slice(0, 10)}…${text.slice(-7)}` : text
+  }
+  const roleOf = cell => {
+    const diy = (((((cell || {}).data || {}).detail || {}).style || {}).diy) || []
+    return String((diy.find(d => d && d.key === 'labelRole') || {}).value || '')
+  }
+  if (!list.some(cell => roleOf(cell) === 'deviceListBack')) {
+    list.push(makeTemplateTextCell(
+      `devpoints-back-${uid}`, 16, SIGNAL_PAGER_Y, 120, 30, '‹ 返回上一级',
+      {
+        foreColor: '#7ee8ff',
+        fontSize: 13,
+        name: '返回设备列表',
+        diy: [{ name: 'labelRole', type: 9, value: 'deviceListBack', key: 'labelRole' }],
+      },
+    ))
+  }
+  if (!list.some(cell => roleOf(cell) === 'deviceInfoName')) {
+    list.push(makeTemplateTextCell(
+      `devpoints-device-${uid}`, 152, SIGNAL_PAGER_Y, 500, 30,
+      `设备：${nav.name || nav.label || '未命名设备'}`,
+      {
+        foreColor: '#dffaff',
+        fontSize: 15,
+        name: '当前设备名称',
+        diy: [{ name: 'labelRole', type: 9, value: 'deviceInfoName', key: 'labelRole' }],
+      },
+    ))
+  }
+  if (!list.some(cell => roleOf(cell) === 'deviceInfoMeta')) {
+    const meta = [
+      nav.code ? `编号 ${compactId(nav.code)}` : '',
+      nav.modelUuid ? `模型 ${compactId(nav.modelUuid)}` : '',
+      `状态 ${nav.status === 'on' ? '在线' : '离线'}`,
+    ].filter(Boolean).join('  ·  ')
+    list.push(makeTemplateTextCell(
+      `devpoints-meta-${uid}`, 668, SIGNAL_PAGER_Y, 770, 30, meta,
+      {
+        foreColor: nav.status === 'on' ? '#64edbf' : '#7894aa',
+        fontSize: 11,
+        name: '当前设备信息',
+        diy: [{ name: 'labelRole', type: 9, value: 'deviceInfoMeta', key: 'labelRole' }],
+      },
     ))
   }
 
-  const hasTitle = list.some(c => {
-    const text = ((((c || {}).data || {}).detail || {}).style || {}).text || ''
-    return /\{\{\s*nav\.name\s*\}\}/.test(String(text))
-  })
-  if (!hasTitle) {
-    list.unshift(makeTemplateTextCell(
-      `devpoints-title-${uid}`, TPL_MAIN_X, TPL_TITLE_Y, TPL_MAIN_W, 36,
-      '{{nav.name}}', { foreColor: '#00e5ff', fontSize: 20, name: '设备标题' },
-    ))
-  }
+  const table = normalizeRuntimeTableCell(
+    list.find(isViewRealTableCell),
+    `devpoints-vrt-${uid}`,
+    'navDatapoints',
+    pageSize,
+    '测点实时数据卡片',
+  )
+  list = list.filter(cell => !isViewRealTableCell(cell))
+  list.push(table)
 
   // 顶部翻页：上一页 / 页码 / 下一页（与底部分页条同步，均走 NavPageChange）
   const hasTopPagerBtns = list.some(c => {
@@ -529,7 +831,7 @@ export function remapDeviceRealtimeTable(cells, nav) {
 }
 
 function rewriteSignalPaginationCells(cells, nav) {
-  if (!isSignalDatapointPaged(nav)) return
+  if (!nav || !nav.signalMode) return
   const info = formatDatapointPageInfo(nav)
   const cur = nav.datapointPageIndex || 0
   const totalPages = nav.datapointTotalPages || 1
@@ -621,10 +923,17 @@ export function resolveComponentsWithNavContext(components, navContext, opts = {
   // 设备列表翻页控件（room 模板无槽位时仍生效）
   if (isDeviceListNav(nav)) {
     rewritePaginationCells(cells, nav)
+    layoutDeviceListPagerChrome(cells)
   }
-  if (isSignalDatapointPaged(nav)) {
+  if (nav.signalMode) {
     rewriteSignalPaginationCells(cells, nav)
+    layoutSignalPagerChrome(cells)
   }
+
+  const homePageUuid = nav.homePageUuid || opts.homePageUuid || ''
+  cells.forEach(cell => normalizeGlobalOverviewCell(cell, homePageUuid))
+
+  const templateDeviceName = nav.signalMode ? findTemplateDeviceName(cells) : ''
 
   cells.forEach(cell => {
     if (!cell || !cell.data || !cell.data.detail) return
@@ -669,6 +978,7 @@ export function resolveComponentsWithNavContext(components, navContext, opts = {
     // 文本占位符 {{nav.*}} + 硬编码样本改写
     applyTextPlaceholders(nextDetail.style, nav, stats)
     rewriteStaticNavTexts(nextDetail.style, nav, stats)
+    rewriteStaticDeviceName(nextDetail.style, templateDeviceName, deviceName)
   })
 
   return sanitizeGraphComponents({ ...components, cells }, { tag: 'navContextBinding' })
@@ -686,23 +996,26 @@ export async function resolvePageComponentsAsync(components, navContext, opts = 
   if (nav.signalMode) {
     const muid = nav.modelUuid || nav.muid || ''
     const devLabel = nav.label || nav.name || ''
-    if (muid && !(nav.allDatapoints && nav.allDatapoints.length)) {
-      let points = await fetchDeviceDatapoints(muid, devLabel, nav.uuid || nav.deviceUuid || '')
-      if (!points.length && devLabel) {
-        const short = String(devLabel).split('_').filter(Boolean).pop()
-        if (short && short !== devLabel) {
-          points = await fetchDeviceDatapoints(muid, short, nav.uuid || nav.deviceUuid || '')
-        }
-      }
+    if (muid && !nav.serverPaged) {
+      const pointPage = await fetchDeviceDatapointPage({
+        muid,
+        deviceLabel: devLabel,
+        deviceUuid: nav.uuid || nav.deviceUuid || '',
+        page: (Number(nav.datapointPageIndex) || 0) + 1,
+        pageSize: nav.datapointPageSize || DEFAULT_DATAPOINT_PAGE_SIZE,
+        query: nav.datapointQuery || '',
+        category: nav.datapointCategory || '',
+      })
       nav = buildDeviceSignalContext(
         {
           label: nav.label, name: nav.name, uuid: nav.uuid || nav.deviceUuid,
           sid: nav.sid, modelUuid: muid, muid,
         },
-        points,
+        pointPage.points,
         nav.ancestors || [],
+        { ...pointPage, serverPaged: true, query: nav.datapointQuery, category: nav.datapointCategory },
       )
-      nav.datapointPageIndex = navContext.datapointPageIndex || 0
+      nav.datapointPageIndex = Math.max(0, Number(pointPage.page || 1) - 1)
     } else {
       nav = applyDatapointPagination(nav)
     }

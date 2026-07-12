@@ -1,6 +1,11 @@
 <template>
   <div class="ism-pageview">
     <ISMRenderLoader :show-uuid="dashboardUuid" />
+    <ScadaOrgOverview
+      v-if="showRunTree"
+      :model-id="dashboardUuid"
+      :project-uuid="projectUuid"
+    />
     <RunTreeNavLoader
       v-if="showRunTree"
       :model-id="dashboardUuid"
@@ -23,6 +28,7 @@ import BackToAdminButton from '@/components/BackToAdminButton.vue'
 const ISMRenderLoader = () => import(/* webpackChunkName: "ism-render-loader" */ './ISMRenderLoader.vue')
 const RunTreeNavLoader = () => import(/* webpackChunkName: "ism-runtree-loader" */ './RunTreeNavLoader.vue')
 const ScadaAlarmPanel = () => import(/* webpackChunkName: "scada-alarm-panel" */ './ScadaAlarmPanel.vue')
+const ScadaOrgOverview = () => import(/* webpackChunkName: "scada-org-overview" */ './ScadaOrgOverview.vue')
 
 import {
   applyHomeProjectAuth,
@@ -36,6 +42,7 @@ export default {
   name: 'AppRunShell',
   components: {
     ISMRenderLoader,
+    ScadaOrgOverview,
     PreviewWatermark,
     RunTreeNavLoader,
     ScadaAlarmPanel,

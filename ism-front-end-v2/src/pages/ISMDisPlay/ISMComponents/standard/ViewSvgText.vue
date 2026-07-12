@@ -1,18 +1,29 @@
 <template>
   <div xmlns="http://www.w3.org/1999/xhtml"
-       v-show="detail.style.visible==1||isStart"
+       v-show="(detail.style.visible==1||isStart) && !isRetiredOverviewHint && !isOverviewAlarmBackdrop"
+       @mousedown="onTextMouseDown"
        @click="onTextClick"
+       :title="labelRole === 'deviceBreadcrumb' ? displayText : null"
        :class="chromeClass"
        :style="boxStyle">
     <span v-if="labelRole === 'section'" class="vst-section-bar" aria-hidden="true"></span>
     <span v-if="labelRole === 'floorGroup' && !hasFloorIconPrefix" class="vst-floor-icon" aria-hidden="true">📋</span>
-    <span class="vst-text">{{ detail.style.text }}</span>
+    <span v-if="onlineRatioParts" class="vst-text vst-online-ratio">
+      <b>{{ onlineRatioParts[0] }}</b><i>/</i><span>{{ onlineRatioParts[1] }}</span>
+    </span>
+    <span v-else-if="deviceBreadcrumbParts.length" class="vst-text vst-device-breadcrumb">
+      <span v-for="(part, index) in deviceBreadcrumbParts" :key="`${part}-${index}`" class="vst-breadcrumb-segment">
+        <i>›</i><b :class="{ 'is-current': index === deviceBreadcrumbParts.length - 1 }">{{ part }}</b>
+      </span>
+    </span>
+    <span v-else class="vst-text">{{ displayText }}</span>
   </div>
 </template>
 
 <script>
 
 import ISMChildAutoMixin from '@/mixins/ISMChildAutoMixin'
+import store from '@/store'
 
 export default {
   mixins: [ISMChildAutoMixin],
@@ -167,6 +178,32 @@ export default {
       }
     },
     computed: {
+      isRetiredOverviewHint() {
+        const text = String((this.detail && this.detail.style && this.detail.style.text) || '').trim()
+        return text === '● 与设备管理树顶级区域一致 · 10kV母线 → 馈线模块 · 点击下钻进线→母线→馈线'
+          || text === '与设备管理树一致 · 点击区域下钻'
+      },
+      displayText() {
+        const text = String((this.detail && this.detail.style && this.detail.style.text) || '')
+        const name = String((this.detail && this.detail.name) || '')
+        if (/stat-alarm-val$/.test(name) && /^\d+$/.test(text.trim())) {
+          return text.trim().padStart(3, '0')
+        }
+        if (text === '拓扑概览 · 大屏主页面轮询') return '拓扑概览'
+        return text.trim() === '›' ? '❯' : text
+      },
+      onlineRatioParts() {
+        const match = String(this.displayText || '').trim().match(/^(\d+)\s*\/\s*(\d+)$/)
+        return match ? [match[1], match[2]] : null
+      },
+      deviceBreadcrumbParts() {
+        if (this.labelRole !== 'deviceBreadcrumb') return []
+        return String(this.displayText || '')
+          .replace(/^\s*›\s*/, '')
+          .split(/\s*›\s*/)
+          .map(part => part.trim())
+          .filter(Boolean)
+      },
       hasClickAction() {
         const actions = (this.detail && this.detail.action) || []
         return actions.some(a => a && a.type === 'click' && a.action === 'link')
@@ -199,6 +236,10 @@ export default {
           : null
         return !!(nav && nav.kind === 'device')
       },
+      isOverviewAlarmBackdrop() {
+        const name = String((this.detail && this.detail.name) || '')
+        return /stat-alarm-(?:glow|fill|val)$/.test(name)
+      },
       /** 按文本/尺寸/链接自动识别大屏标签角色（不改模板 DB 也能图形化） */
       labelRole() {
         const style = this.detail.style || {}
@@ -210,8 +251,9 @@ export default {
         if (/^←\s*/.test(t) || /返回总图|返回上级|返回首页/.test(t)) return 'navBack'
         if (/馈线模块|分区标题|模块区/.test(t) || (/^馈线/.test(t) && h <= 22)) return 'section'
         if (/设备组$/.test(t.replace(/^📋\s*/, '')) || t === '设备组') return 'floorGroup'
-        if (/^(‹|←|◀|上一页|上页)/.test(t)) return 'pagePrev'
-        if (/^(›|→|▶|下一页|下页)/.test(t)) return 'pageNext'
+        if (t === '›' || t === '→') return 'breadcrumbArrow'
+        if (/^(?:‹|←|◀)?\s*(上一页|上页|前一页)/.test(t)) return 'pagePrev'
+        if (/^(?:›|→|▶)?\s*(下一页|下页|后一页)/.test(t)) return 'pageNext'
         if (/第\s*\d+\s*\/\s*\d+\s*页/.test(t)) return 'pageInfo'
         if (this.hasClickAction && h >= 26 && /^←/.test(t)) return 'navBack'
         return ''
@@ -250,7 +292,14 @@ export default {
           textOverflow: 'ellipsis',
           position: 'relative',
         }
-        if (role === 'navBack') {
+        if (role === 'globalOverview') {
+          Object.assign(base, {
+            color: '#8fb8cc',
+            fontWeight: 600,
+            letterSpacing: '0.3px',
+            cursor: 'pointer',
+          })
+        } else if (role === 'navBack' || role === 'deviceListBack') {
           Object.assign(base, {
             background: 'linear-gradient(135deg, rgba(8, 42, 68, 0.92) 0%, rgba(12, 58, 88, 0.88) 100%)',
             border: '1px solid rgba(0, 229, 255, 0.45)',
@@ -261,6 +310,33 @@ export default {
             color: '#7ee8ff',
             fontWeight: 600,
             letterSpacing: '0.5px',
+            cursor: 'pointer',
+          })
+        } else if (role === 'deviceBreadcrumb') {
+          Object.assign(base, {
+            paddingLeft: '880px',
+            paddingRight: '290px',
+            color: style.foreColor || '#8fb8cc',
+            fontSize: Math.max(11, (style.fontSize || 12)) + 'px',
+            fontWeight: 500,
+            letterSpacing: '0.25px',
+            justifyContent: 'flex-start',
+            background: 'linear-gradient(90deg, transparent 44%, rgba(7, 48, 66, 0.22) 54%, transparent 86%)',
+          })
+        } else if (role === 'deviceInfoName') {
+          Object.assign(base, {
+            paddingLeft: '10px',
+            color: '#dffaff',
+            fontWeight: 600,
+            letterSpacing: '0.35px',
+            background: 'linear-gradient(90deg, rgba(8, 54, 75, 0.42), transparent)',
+            borderLeft: '2px solid rgba(53, 225, 255, 0.7)',
+          })
+        } else if (role === 'deviceInfoMeta') {
+          Object.assign(base, {
+            paddingLeft: '8px',
+            color: style.foreColor || '#7894aa',
+            letterSpacing: '0.2px',
           })
         } else if (role === 'section') {
           Object.assign(base, {
@@ -283,6 +359,14 @@ export default {
             paddingRight: '8px',
             color: '#b8e4f8',
             fontWeight: 600,
+          })
+        } else if (role === 'breadcrumbArrow') {
+          Object.assign(base, {
+            color: '#38d9f5',
+            fontSize: Math.max(16, (style.fontSize || 14)) + 'px',
+            fontWeight: 700,
+            justifyContent: 'center',
+            textShadow: '0 0 8px rgba(0, 229, 255, 0.45)',
           })
         } else if (role === 'pagePrev' || role === 'pageNext' || role === 'pagePrevDisabled' || role === 'pageNextDisabled'
           || role === 'detailPagePrev' || role === 'detailPageNext' || role === 'detailPagePrevDisabled' || role === 'detailPageNextDisabled') {
@@ -334,14 +418,50 @@ export default {
         }
         return null
       },
-      onTextClick() {
-        if (this.IsToolBox || this.editMode) {
+      onTextMouseDown() {
+        const role = this.labelRole
+        if (!/^(?:(?:detailPage|page)(?:Prev|Next)(?:Disabled)?|deviceListBack|globalOverview)$/.test(role)) return
+        this._pagerHandledByMouseDown = true
+        this.onTextClick({ type: 'mousedown' })
+      },
+      onTextClick(event) {
+        if (event && event.type === 'click' && this._pagerHandledByMouseDown) {
+          this._pagerHandledByMouseDown = false
           return
         }
         const role = this.labelRole
+        const isRuntimeControl = /^(?:(?:detailPage|page)(?:Prev|Next)(?:Disabled)?|deviceListBack|globalOverview)$/.test(role)
+        // X6 运行态动态注入的分页文本偶尔仍携带 editMode=true。
+        // 显式分页角色以 navContext 是否存在作为运行态门禁，不能在角色识别前被误拦截。
+        if (this.IsToolBox || (this.editMode && !isRuntimeControl)) {
+          return
+        }
+        if (role === 'breadcrumbArrow') return
+        if (/Disabled$/.test(role)) return
+        if (role === 'deviceListBack') {
+          this.$EventBus.$emit('ReturnToDeviceList')
+          return
+        }
+        if (role === 'globalOverview') {
+          const diy = (this.detail && this.detail.style && this.detail.style.diy) || []
+          const homePageUuid = String((diy.find(d => d && d.key === 'homePageUuid') || {}).value || '')
+          if (!homePageUuid) return
+          this.$EventBus.$emit('GoPage', {
+            IsPopUp: false,
+            autoClose: false,
+            linkType: 'Inside',
+            ModelId: homePageUuid,
+            PageUuid: homePageUuid,
+            navContext: null,
+          })
+          return
+        }
         if (role === 'pagePrev' || role === 'pageNext') {
-          const nav = this.$store && this.$store.state.ISMDisPlayEditorTool
-            ? this.$store.state.ISMDisPlayEditorTool.navContext
+          // X6 vue-shape 是独立 Vue 实例，未必注入 this.$store。
+          // 使用共享 store 兜底，保证模板翻页控件与表格分页行为一致。
+          const navStore = this.$store || store
+          const nav = navStore && navStore.state.ISMDisPlayEditorTool
+            ? navStore.state.ISMDisPlayEditorTool.navContext
             : null
           if (!nav || !nav.deviceListMode) return
           const cur = nav.pageIndex || 0
@@ -352,8 +472,9 @@ export default {
           return
         }
         if (role === 'detailPagePrev' || role === 'detailPageNext') {
-          const nav = this.$store && this.$store.state.ISMDisPlayEditorTool
-            ? this.$store.state.ISMDisPlayEditorTool.navContext
+          const navStore = this.$store || store
+          const nav = navStore && navStore.state.ISMDisPlayEditorTool
+            ? navStore.state.ISMDisPlayEditorTool.navContext
             : null
           // 信号层测点翻页（与底部分页条同一事件，±1）
           if (nav && (nav.signalMode || nav.routeMode === 'signal' || nav.allDatapoints || nav.kind === 'device')) {
@@ -470,7 +591,7 @@ export default {
 
         // 信号层翻页：同步顶部页码文案与上/下一页可点状态
         _t._onNavDatapointPageUpdate = (nav) => {
-          if (!nav || _t.editMode || _t.IsToolBox) return
+          if (!nav || _t.IsToolBox) return
           const role = _t.labelRole
           if (!role || String(role).indexOf('detailPage') !== 0) return
           const cur = nav.datapointPageIndex || 0
@@ -496,6 +617,12 @@ export default {
         }
         _t.$EventBus.$on('NavDatapointPageUpdate', _t._onNavDatapointPageUpdate)
       });
+    },
+    beforeDestroy() {
+      if (this._onNavDatapointPageUpdate && this.$EventBus) {
+        this.$EventBus.$off('NavDatapointPageUpdate', this._onNavDatapointPageUpdate)
+        this._onNavDatapointPageUpdate = null
+      }
     },
     created(){
     let _t = this
@@ -538,6 +665,7 @@ export default {
   white-space: nowrap;
   flex: 1 1 auto;
   min-width: 0;
+  pointer-events: none;
 }
 .vst-section-bar {
   flex: 0 0 3px;
@@ -552,6 +680,50 @@ export default {
   margin-right: 4px;
   font-size: 0.9em;
   opacity: 0.9;
+}
+.vst-online-ratio b {
+  color: #36e6a0;
+  font-weight: 700;
+  text-shadow: 0 0 9px rgba(54, 230, 160, 0.38);
+}
+.vst-online-ratio i {
+  margin: 0 0.18em;
+  color: rgba(159, 182, 214, 0.62);
+  font-style: normal;
+  font-weight: 400;
+}
+.vst-online-ratio > span {
+  color: #e8f1ff;
+  font-weight: 700;
+}
+.vst-device-breadcrumb {
+  display: flex;
+  align-items: center;
+}
+.vst-breadcrumb-segment {
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
+}
+.vst-breadcrumb-segment i {
+  flex: none;
+  margin: 0 8px;
+  color: #38d9f5;
+  font-style: normal;
+  font-weight: 700;
+  text-shadow: 0 0 7px rgba(0, 229, 255, 0.36);
+}
+.vst-breadcrumb-segment b {
+  overflow: hidden;
+  color: #8fb8cc;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.vst-breadcrumb-segment b.is-current {
+  color: #dffaff;
+  font-weight: 650;
+  text-shadow: 0 0 9px rgba(53, 225, 255, 0.28);
 }
 .vst-chrome--navBack:hover {
   border-color: rgba(0, 229, 255, 0.75);

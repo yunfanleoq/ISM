@@ -16,7 +16,8 @@
       <span v-else-if="node.count != null" class="rt-count">{{ node.count }}台</span>
     </div>
 
-    <ul v-if="hasChildren" v-show="isExpanded" class="rt-children">
+    <!-- 收起的分支不保留递归组件实例，组织树再深也只渲染当前展开路径。 -->
+    <ul v-if="hasChildren && isExpanded" class="rt-children">
       <ism-runtree-node
         v-for="child in node.children"
         :key="child.id"

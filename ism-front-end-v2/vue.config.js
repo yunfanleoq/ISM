@@ -91,7 +91,10 @@ module.exports = {
 	config.optimization = {
         sideEffects: true,
         usedExports: true, // 开启 tree shaking
-        concatenateModules:true,
+        // 开发态的 scope-hoisting 会在循环的异步 Vue SFC 依赖中串改 default export：
+        // ISMRunTreeNav/ISMRender Loader 曾被解析成 Vuex store，导致导航和画布均为空。
+        // 生产构建仍保留合并优化；开发态优先保证 HMR 与动态组件导出的正确性。
+        concatenateModules: process.env.NODE_ENV === 'production',
         splitChunks: {
             chunks: "all",//async 按需加载的异步块 initial（初始块） all（所有块）
             minSize: 30000, // 模块的最小体积

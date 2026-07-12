@@ -4,10 +4,29 @@
       <foreignObject style="overflow:visible;" pointer-events="all" :width="((detail && detail.style && detail.style.position && detail.style.position.w) || 200) - ((detail && detail.style && detail.style.borderWidth) || 0)*2" :height="((detail && detail.style && detail.style.position && detail.style.position.h) || 200) - ((detail && detail.style && detail.style.borderWidth) || 0)*2">
           <div
             class="view-chart-real-data"
+            :class="{ 'overview-embedded-chart': isOverviewEmbeddedChart }"
             :ref="detail && detail.identifier ? detail.identifier : 'chart_default'"
             :style="{'overflow': 'visible','width':'100%','height':'100%'}"
           ></div>
       </foreignObject>
+      <path
+        v-if="isOverviewEmbeddedChart"
+        class="overview-chart-frame"
+        :class="`overview-chart-frame--${overviewChartKind}`"
+        :d="overviewFramePath"
+        fill="none"
+        vector-effect="non-scaling-stroke"
+        pointer-events="none"
+      />
+      <path
+        v-if="isOverviewEmbeddedChart"
+        class="overview-chart-frame-accent"
+        :class="`overview-chart-frame-accent--${overviewChartKind}`"
+        :d="overviewFrameAccentPath"
+        fill="none"
+        vector-effect="non-scaling-stroke"
+        pointer-events="none"
+      />
       <!--      闪烁-->
       <animate v-if="isStart&&animateType.includes('blink')&&!IsToolBox" attributeName="opacity"
                values="0.1;1;0.1" :dur="blinkSpeed+'s'"
@@ -64,6 +83,32 @@ export default {
       deep: true
     }
   },
+  computed: {
+    isOverviewEmbeddedChart() {
+      const name = String((this.detail && this.detail.name) || '')
+      const pos = (this.detail && this.detail.style && this.detail.style.position) || {}
+      return Number(pos.x) >= 1200 && /功率趋势|用电量趋势/.test(name)
+    },
+    overviewChartKind() {
+      return /用电量|电度/.test(String((this.detail && this.detail.name) || '')) ? 'energy' : 'power'
+    },
+    overviewChartSize() {
+      const pos = (this.detail && this.detail.style && this.detail.style.position) || {}
+      return {
+        width: Math.max(24, Number(pos.w) || 200),
+        height: Math.max(24, Number(pos.h) || 200),
+      }
+    },
+    overviewFramePath() {
+      const w = this.overviewChartSize.width
+      const h = this.overviewChartSize.height
+      return `M 0.5 12 L 12 0.5 H ${w - 12} L ${w - 0.5} 12 V ${h - 12} L ${w - 12} ${h - 0.5} H 12 L 0.5 ${h - 12} Z`
+    },
+    overviewFrameAccentPath() {
+      const w = this.overviewChartSize.width
+      return `M 12 0.5 H ${Math.min(w - 12, 128)}`
+    }
+  },
   data() {
     return {
       detail:{},
@@ -73,6 +118,7 @@ export default {
       fill:"#A1BFE2",
       strokeWidth:0.3,
       ChartTimelyRefreshTimer:null,
+      dimensionSampleTimer:null,
       fillOpacity:1,
       strokeOpacity:1,
       animateType:"blink",
@@ -426,7 +472,7 @@ export default {
           trigger: 'axis'
         },
         legend: {
-          data: ['Email', 'Union Ads', 'Video Ads', 'Direct', 'Search Engine'],
+          data: [],
           textStyle:{
             color:"",
             fontFamily:"",
@@ -439,16 +485,12 @@ export default {
           bottom: '1%',
           containLabel: true
         },
-        toolbox: {
-          feature: {
-            saveAsImage: {}
-          }
-        },
+        toolbox: { show: false },
         xAxis: {
           type: 'category',
           boundaryGap: false,
           axisLine: {
-            show: false, //是否显示坐标刻度
+            show: true,
             lineStyle: {
               color: '#eeeeee'
             }
@@ -458,54 +500,22 @@ export default {
             rotate:40,
             color: '#fff',
           },
-          data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+          data: []
         },
         yAxis: {
           type: 'value',
-          min:100,
-          max:1000,
+          min: 0,
+          max: 100,
+          splitLine: {
+            show: true,
+            lineStyle: { color: 'rgba(125, 160, 200, 0.18)', type: 'dashed' }
+          },
           axisLabel: {
             show: true,
             color: '#fff',
           },
         },
-        series: [
-          {
-            name: 'Email',
-            type: 'line',
-            stack: 'Total',
-            smooth: true,
-            data: [120, 132, 101, 134, 90, 230, 210]
-          },
-          {
-            name: 'Union Ads',
-            type: 'line',
-            stack: 'Total',
-            smooth: true,
-            data: [220, 182, 191, 234, 290, 330, 310]
-          },
-          {
-            name: 'Video Ads',
-            type: 'line',
-            stack: 'Total',
-            smooth: true,
-            data: [150, 232, 201, 154, 190, 330, 410]
-          },
-          {
-            name: 'Direct',
-            type: 'line',
-            stack: 'Total',
-            smooth: true,
-            data: [320, 332, 301, 334, 390, 330, 320]
-          },
-          {
-            name: 'Search Engine',
-            type: 'line',
-            stack: 'Total',
-            smooth: true,
-            data: [820, 932, 901, 934, 1290, 1330, 1320]
-          }
-        ]
+        series: []
       },
       ShowChartVariable1IsCome:false,
       ShowChartVariable2IsCome:false,
@@ -516,6 +526,88 @@ export default {
     }
   },
   methods: {
+    buildDimensionSample(chartTitle) {
+      const timeAxis = ['00:00', '02:00', '04:00', '06:00', '08:00', '10:00',
+        '12:00', '14:00', '16:00', '18:00', '20:00', '22:00']
+      const sampleLine = (name, data, color) => ({
+        name,
+        type: 'line',
+        smooth: true,
+        symbol: 'none',
+        isDimensionSample: true,
+        lineStyle: { width: 2, type: 'dashed', color },
+        areaStyle: { color: `${color}18` },
+        data,
+      })
+      if (/用电量趋势|正有功电度|有功电度|用电量/.test(chartTitle)) {
+        return {
+          axis: timeAxis,
+          unit: 'kWh',
+          series: [
+            sampleLine('累计用电量',
+              [8200, 8260, 8310, 8350, 8420, 8510, 8620, 8730, 8840, 8930, 9020, 9100],
+              '#4dabf7'),
+          ],
+        }
+      }
+      if (/功率趋势|总有功功率|总无功功率|总视在功率/.test(chartTitle)) {
+        return {
+          axis: timeAxis,
+          unit: 'kW / kvar / kVA',
+          series: [
+            sampleLine('总有功功率',
+              [380, 350, 325, 315, 345, 430, 555, 640, 615, 570, 505, 445], '#22d3ee'),
+            sampleLine('总无功功率',
+              [88, 82, 76, 74, 80, 98, 124, 142, 138, 128, 116, 102], '#a78bfa'),
+            sampleLine('总视在功率',
+              [410, 378, 351, 340, 372, 463, 598, 685, 660, 612, 546, 480], '#34d399'),
+          ],
+        }
+      }
+      return null
+    },
+    stopDimensionSampleAnimation() {
+      if (this.dimensionSampleTimer) {
+        clearInterval(this.dimensionSampleTimer)
+        this.dimensionSampleTimer = null
+      }
+    },
+    startDimensionSampleAnimation() {
+      this.stopDimensionSampleAnimation()
+      if (typeof window !== 'undefined'
+        && window.matchMedia
+        && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
+      const samples = (this.option.series || []).filter(series => series.isDimensionSample)
+      if (!samples.length) return
+      this.dimensionSampleTimer = setInterval(() => {
+        if (!this.echartsView) return
+        samples.forEach(series => {
+          const data = Array.isArray(series.data) ? series.data : []
+          if (data.length < 2) return
+          const min = Math.min(...data)
+          const max = Math.max(...data)
+          const range = Math.max(1, max - min)
+          const last = Number(data[data.length - 1]) || 0
+          const isEnergy = /用电量|电度/.test(series.name || '')
+          const delta = isEnergy
+            ? Math.max(range * 0.025, 0.1)
+            : (Math.random() - 0.48) * range * 0.16
+          data.shift()
+          data.push(Number(Math.max(0, last + delta).toFixed(2)))
+        })
+        this.echartsView.setOption({ series: this.option.series }, false, true)
+      }, 1800)
+    },
+    metricDisplayName(condition) {
+      const raw = String((condition && condition.dataName) || '').trim()
+      const deviceName = String((condition && condition.DeviceName) || '').trim()
+      if (!raw) return '系统统计'
+      if (deviceName && raw.indexOf(deviceName) === 0) {
+        return raw.slice(deviceName.length).replace(/^[_\-\s]+/, '') || raw
+      }
+      const knownMetrics = ['总有功功率', '总无功功率', '总视在功率', '正有功电度', '有功电度', '用电量']
+      return knownMetrics.find(metric => raw.endsWith(metric)) || raw
+    },
     waitChartContainerReady(view, callback, retryCount = 0) {
       if (!view) {
         return
@@ -713,9 +805,11 @@ export default {
           {
             continue
           }
-          this.option.legend.data.push(this.detail.active[i].condition.DeviceName+"-"+this.detail.active[i].condition.dataName)
+          const metricName = this.metricDisplayName(this.detail.active[i].condition)
+          this.option.legend.data.push(metricName)
           let series= {
-            name: this.detail.active[i].condition.DeviceName+"-"+this.detail.active[i].condition.dataName,
+            // 图表只表达指标，不暴露某一具体设备名称，避免误读为设备详情趋势。
+            name: metricName,
             type: 'line',
             smooth: true,
             dataID:this.detail.active[i].condition.deviceSN+this.detail.active[i].condition.dataID,
@@ -728,6 +822,33 @@ export default {
           this.option.series.push(series)
           this.seriesMap[this.detail.active[i].condition.deviceSN+this.detail.active[i].condition.dataID]=[]
         }
+        const boundMetricNames = this.detail.active
+          .map(active => this.metricDisplayName(active.condition))
+          .join(' ')
+        const chartTitle = `${String(this.option.title.text || '')} ${boundMetricNames}`
+        if (/功率|电度|用电量/.test(chartTitle)) {
+          this.option.legend.show = true
+        }
+        const hasSamples = this.option.series.some(series =>
+          Array.isArray(series.data) && series.data.length > 0
+        )
+        if (!hasSamples) {
+          const dimensionSample = this.buildDimensionSample(chartTitle)
+          if (dimensionSample) {
+            this.option.xAxis.data = dimensionSample.axis
+            this.option.xAxis.axisLabel.rotate = 0
+            this.option.yAxis.name = dimensionSample.unit
+            this.option.yAxis.min = 'dataMin'
+            this.option.yAxis.max = 'dataMax'
+            this.option.series.push(...dimensionSample.series)
+            this.option.legend.data = dimensionSample.series.map(series => series.name)
+          } else {
+            this.option.xAxis.data = ['-5m', '-4m', '-3m', '-2m', '-1m', '现在']
+          }
+          this.option.graphic = []
+        } else {
+          this.option.graphic = []
+        }
       }
       let _t = this
       // this.option.series[0].itemStyle.normal.color = this.progressColor
@@ -737,6 +858,7 @@ export default {
         }
         _t.echartsView.setOption(_t.option,true)
         _t.echartsView.resize()
+        _t.startDimensionSampleAnimation()
       }, 100)
       if(!this.editMode){
         setTimeout(function (){
@@ -769,7 +891,7 @@ export default {
           trigger: 'axis'
         },
         legend: {
-          data: ['Email', 'Union Ads', 'Video Ads', 'Direct', 'Search Engine'],
+          data: [],
           textStyle:{
             color:"",
             fontFamily:"",
@@ -782,16 +904,12 @@ export default {
           bottom: '1%',
           containLabel: true
         },
-        toolbox: {
-          feature: {
-            saveAsImage: {}
-          }
-        },
+        toolbox: { show: false },
         xAxis: {
           type: 'category',
           boundaryGap: false,
           axisLine: {
-            show: false, //是否显示坐标刻度
+            show: true,
             lineStyle: {
               color: '#eeeeee'
             }
@@ -801,54 +919,22 @@ export default {
             rotate:40,
             color: '#fff',
           },
-          data: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+          data: []
         },
         yAxis: {
           type: 'value',
-          min:100,
-          max:1000,
+          min: 0,
+          max: 100,
+          splitLine: {
+            show: true,
+            lineStyle: { color: 'rgba(125, 160, 200, 0.18)', type: 'dashed' }
+          },
           axisLabel: {
             show: true,
             color: '#fff',
           },
         },
-        series: [
-          {
-            name: 'Email',
-            type: 'line',
-            stack: 'Total',
-            smooth: true,
-            data: [120, 132, 101, 134, 90, 230, 210]
-          },
-          {
-            name: 'Union Ads',
-            type: 'line',
-            stack: 'Total',
-            smooth: true,
-            data: [220, 182, 191, 234, 290, 330, 310]
-          },
-          {
-            name: 'Video Ads',
-            type: 'line',
-            stack: 'Total',
-            smooth: true,
-            data: [150, 232, 201, 154, 190, 330, 410]
-          },
-          {
-            name: 'Direct',
-            type: 'line',
-            stack: 'Total',
-            smooth: true,
-            data: [320, 332, 301, 334, 390, 330, 320]
-          },
-          {
-            name: 'Search Engine',
-            type: 'line',
-            stack: 'Total',
-            smooth: true,
-            data: [820, 932, 901, 934, 1290, 1330, 1320]
-          }
-        ]
+        series: []
       }
       this.option = defaultOption
       this.initComponents(this.detail)
@@ -895,9 +981,26 @@ export default {
       let c_data = this.getTime()
       c_data = moment(c_data).format(this.EchartsXFormat);
 
-      for(let i=0;i<this.option.series.length;i++)
+      const hadDimensionSample = this.option.series.some(series => series.isDimensionSample)
+      const realSeries = this.option.series.filter(series => !series.isDimensionSample)
+      for(let i=0;i<realSeries.length;i++)
       {
-        this.option.series[i].data = this.seriesMap[this.option.series[i].dataID] || []
+        realSeries[i].data = this.seriesMap[realSeries[i].dataID] || []
+      }
+      const hasRealSamples = realSeries.some(series => series.data.length > 0)
+      if (!hasRealSamples) {
+        this.echartsView.setOption(this.option, true)
+        return
+      }
+      this.stopDimensionSampleAnimation()
+      if (hadDimensionSample) {
+        this.option.series = realSeries
+        this.option.legend.data = realSeries.map(series => series.name)
+        this.option.graphic = []
+        this.option.xAxis.data = []
+        this.option.yAxis.name = ''
+        this.option.yAxis.min = 'dataMin'
+        this.option.yAxis.max = 'dataMax'
       }
       this.option.xAxis.data.push(c_data);
 
@@ -919,6 +1022,7 @@ export default {
   },
   beforeDestroy () {
     clearInterval(this.ChartTimelyRefresh)
+    this.stopDimensionSampleAnimation()
     if (this.echartsView != null&&(typeof this.echartsView.dispose=="function")) {
       this.echartsView.clear();
       this.echartsView.dispose()
@@ -1135,11 +1239,57 @@ export default {
 
 <style lang="less">
 .view-chart-real-data {
+  position: relative;
   height: 100%;
   width: 100%;
+  box-sizing: border-box;
   text-align: center;
   display: flex;
   justify-content: center;
   align-items: center;
+}
+.view-chart-real-data.overview-embedded-chart {
+  background:
+    radial-gradient(circle at 16% 22%, rgba(0, 222, 255, 0.1), transparent 27%),
+    radial-gradient(circle at 86% 74%, rgba(94, 92, 230, 0.08), transparent 30%),
+    linear-gradient(rgba(42, 126, 151, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(42, 126, 151, 0.055) 1px, transparent 1px),
+    linear-gradient(145deg, rgba(8, 31, 48, 0.72), rgba(5, 17, 30, 0.46));
+  background-size: auto, auto, 24px 24px, 24px 24px, auto;
+  box-shadow: inset 0 0 28px rgba(0, 157, 198, 0.055);
+  animation: overviewChartGridFlow 12s linear infinite;
+}
+.view-chart-real-data.overview-embedded-chart::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(0, 229, 255, 0.48), rgba(0, 229, 255, 0.14) 36%, transparent 76%);
+  box-shadow: 0 0 5px rgba(0, 229, 255, 0.12);
+}
+.overview-chart-frame {
+  stroke-width: 1px !important;
+  stroke-linejoin: miter !important;
+  opacity: 0.42;
+}
+.overview-chart-frame--power { stroke: #16d9ee !important; }
+.overview-chart-frame--energy { stroke: #6589ff !important; }
+.overview-chart-frame-accent {
+  stroke-width: 1.5px !important;
+  opacity: 0.82;
+  filter: drop-shadow(0 0 3px currentColor);
+}
+.overview-chart-frame-accent--power { stroke: #5cf1d2 !important; color: #5cf1d2; }
+.overview-chart-frame-accent--energy { stroke: #9c7cff !important; color: #9c7cff; }
+@keyframes overviewChartGridFlow {
+  from { background-position: 0 0, 0 0, 0 0, 0 0, 0 0; }
+  to { background-position: 0 0, 0 0, 24px 24px, 24px 24px, 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .view-chart-real-data.overview-embedded-chart { animation: none; }
 }
 </style>

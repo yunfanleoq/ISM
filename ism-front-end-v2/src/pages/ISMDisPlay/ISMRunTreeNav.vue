@@ -6,9 +6,18 @@
     :style="panelStyle"
   >
     <!-- 收起后的竖向把手 -->
-    <div v-if="collapsed" class="rt-handle" @click="collapsed = false" title="展开导航树">
+    <div
+      v-if="collapsed"
+      class="rt-handle"
+      role="button"
+      tabindex="0"
+      aria-label="展开导航树"
+      title="展开导航树"
+      @click="collapsed = false"
+      @keydown.enter="collapsed = false"
+      @keydown.space.prevent="collapsed = false"
+    >
       <span class="rt-handle-icon">›</span>
-      <span class="rt-handle-text">导航</span>
     </div>
 
     <!-- 展开的树面板 -->
@@ -83,9 +92,10 @@ import { resolveDeviceListTemplateId, deviceListPageSizeForNav } from './utils/d
 import { resolveDeviceSignalTemplateId } from './utils/deviceSignalTemplate'
 import {
   buildDeviceSignalContext,
-  fetchDeviceDatapoints,
+  fetchDeviceDatapointPage,
   applyGatewayListPagination,
 } from './utils/navContext'
+import { DASHBOARD_PERFORMANCE } from './utils/dashboardPerformance'
 import { detectDrillDepth, resolveOnSelectPageUuid, isDeviceNode } from './utils/drillDepth'
 import store from '@/store'
 
@@ -177,6 +187,39 @@ function sortZoneSiblings(nodes) {
   })
 }
 
+/**
+ * 采集端偶发同时返回多个顶级根（如 RootZone 与轮询任务根），
+ * 但直属组织分支相同。按直属子树签名折叠，只保留 RootZone / sid=1 优先项，
+ * 避免导航展示两套一模一样的组织架构。
+ */
+function dedupeMirroredRootNodes(nodes) {
+  const kept = new Map()
+  for (const [index, node] of (nodes || []).entries()) {
+    const value = node.value || {}
+    const children = (node.children || [])
+      .filter(child => ((child.value || {}).type) === 0)
+      .map(child => String(child.text || (child.value || {}).Name || '').trim())
+      .filter(Boolean)
+      .sort()
+    const signature = children.join('\u0001')
+    // 无组织子节点的顶级设备不能去重，避免误隐藏独立设备。
+    if (!signature) {
+      kept.set(`leaf:${node.key || value.sid || index}`, node)
+      continue
+    }
+    const current = kept.get(signature)
+    if (!current) {
+      kept.set(signature, node)
+      continue
+    }
+    const currentValue = current.value || {}
+    const isPreferred = (String(value.name || node.text) === 'RootZone' || value.sid === 1)
+      && !(String(currentValue.name || current.text) === 'RootZone' || currentValue.sid === 1)
+    if (isPreferred) kept.set(signature, node)
+  }
+  return [...kept.values()]
+}
+
 export default {
   name: 'ISMRunTreeNav',
   components: { 'ism-runtree-node': RunTreeNode },
@@ -210,12 +253,18 @@ export default {
     }
     this.fetchTemplateMap()
     this.fetchTree()
+    this.$EventBus.$on('OpenOrgDeviceList', this.onOrgDeviceList)
+    this.$EventBus.$on('OpenDeviceDatapoints', this.onDeviceDatapoints)
+    this.$EventBus.$on('ReturnToDeviceList', this.onReturnToDeviceList)
     this.$nextTick(() => {
       this.measureWidth()
     })
   },
   beforeDestroy() {
     if (this._rtTreeRO) this._rtTreeRO.disconnect()
+    this.$EventBus.$off('OpenOrgDeviceList', this.onOrgDeviceList)
+    this.$EventBus.$off('OpenDeviceDatapoints', this.onDeviceDatapoints)
+    this.$EventBus.$off('ReturnToDeviceList', this.onReturnToDeviceList)
   },
   watch: {
     projectUuid(val) {
@@ -274,9 +323,11 @@ export default {
     async fetchTree() {
       this.loading = true
       try {
-        const res = await getMonitorTree({ headers: { ProjectUuid: this.projectUuid } })
+        // ProjectUuid 是后端用于隔离组织树的 HTTP 请求头，不是接口请求体字段。
+        // 传入 params 会使后端无法识别项目范围，从而返回空树。
+        const res = await getMonitorTree({}, { headers: { ProjectUuid: this.projectUuid } })
         if (res.data && res.data.code === 0 && Array.isArray(res.data.list)) {
-          const normalized = normalizeRootNodes(res.data.list)
+          const normalized = dedupeMirroredRootNodes(normalizeRootNodes(res.data.list))
           this.roots = this.buildForest(normalized)
           // 建索引：旧 page_id 反查 + sid 定位（槽位重映射与 GoPage 兜底依赖）
           this.navIndex = buildNavTreeIndex(this.roots)
@@ -517,15 +568,17 @@ export default {
       }
       const sortedChildren = this.sortTreeChildren(childNodes)
 
-      // 叶容器即设备（无子节点，如「数据机房报警解析」）
+      // type=0 是组织节点；即使暂时没有子节点，也不能降级为设备。
+      // 否则空区域会被错误显示为 🔌，并进入设备测点页。
       if (sortedChildren.length === 0) {
+        const kind = resolveMonitorNodeKind({ type, sid, pid, name, childKinds: [] })
         return {
-          id: node.key || `dev-${sid}`,
+          id: node.key || `${kind}-${sid}`,
           rawLabel: name,
           label: name,
-          icon: '🔌',
-          kind: 'device',
-          layer: 'device',
+          icon: iconForMonitorKind(kind, pid),
+          kind,
+          layer: kind === 'room' ? 'room' : (kind === 'zone' ? 'zone' : kind),
           type: 0,
           treeDepth,
           sid,
@@ -533,7 +586,7 @@ export default {
           modelUuid: v.muid || '',
           muid: v.muid || '',
           status: v.Status === 1 ? 'on' : 'off',
-          pageId: pageIdDevice(sid) || this.resolveContainerPageId(sid, pid),
+          pageId: this.resolveContainerPageId(sid, pid),
           children: [],
         }
       }
@@ -630,7 +683,83 @@ export default {
       this.measureWidth()
     },
 
-    async onSelect(node) {
+    onOrgDeviceList(payload) {
+      const sid = payload && payload.sid
+      const node = sid != null && this.navIndex && this.navIndex.bySid
+        ? this.navIndex.bySid[sid]
+        : null
+      if (!node) {
+        this.$message && this.$message.warning('设备导航数据尚未加载完成，请稍后重试')
+        return
+      }
+      const organizationDevices = []
+      const collectDevices = current => {
+        const children = current.children || []
+        children.forEach(child => {
+          if (isDeviceNode(child)) organizationDevices.push(child)
+          else collectDevices(child)
+        })
+      }
+      collectDevices(node)
+      if (!organizationDevices.length) {
+        this.$message && this.$message.warning('该组织暂无设备')
+        return
+      }
+      this.onSelect({ ...node, children: organizationDevices }, { forceDeviceList: true })
+    },
+
+    onDeviceDatapoints(device) {
+      if (!device) return
+      const currentNav = store.state.ISMDisPlayEditorTool
+        ? store.state.ISMDisPlayEditorTool.navContext
+        : null
+      const returnContext = device.deviceListReturnContext
+        || (currentNav && currentNav.deviceListMode ? { ...currentNav } : null)
+      const sid = device.sid
+      const indexedNode = sid != null && this.navIndex && this.navIndex.bySid
+        ? this.navIndex.bySid[sid]
+        : null
+      const node = indexedNode || {
+        ...device,
+        id: device.id || `dev-${sid || device.uuid || device.name}`,
+        label: device.label || device.name || '',
+        kind: 'device',
+        layer: 'device',
+        type: 1,
+        modelUuid: device.modelUuid || device.muid || '',
+      }
+      this.onSelect(node, { returnContext })
+    },
+
+    onReturnToDeviceList() {
+      const currentNav = store.state.ISMDisPlayEditorTool
+        ? store.state.ISMDisPlayEditorTool.navContext
+        : null
+      const returnContext = currentNav && currentNav.deviceListReturnContext
+      if (!returnContext || !returnContext.deviceListMode) return
+      const pageList = (store.state.ISMDisPlayEditorTool && store.state.ISMDisPlayEditorTool.PCPageList) || []
+      const pageUuid = resolveDeviceListTemplateId(this.templateMap, pageList)
+      if (!pageUuid) return
+      store.commit('ISMDisPlayEditorTool/setNavContext', returnContext)
+      this.$EventBus.$emit('GoPage', {
+        ModelId: this.modelId,
+        PageUuid: pageUuid,
+        IsPopUp: false,
+        AutoClose: false,
+        linkType: 'Inside',
+        navContext: returnContext,
+      })
+      this.collapsed = true
+    },
+
+    async onSelect(node, options = {}) {
+      const forceDeviceList = !!options.forceDeviceList
+      // 组织节点只承担展开/收缩职责，禁止跳入旧的 zone/room/building 页面。
+      // 组织总览卡片可显式进入直属设备列表，设备叶节点进入按需加载的测点详情。
+      if (!isDeviceNode(node) && !forceDeviceList) {
+        if (node.children && node.children.length) this.onToggle(node.id)
+        return
+      }
       const depth = detectDrillDepth(node, this.navIndex)
       let pageUuid = ''
       let navContext = this.buildNavContext(node)
@@ -643,15 +772,38 @@ export default {
         remainingLayers: depth.remainingLayers,
       }
 
-      if (depth.routeMode === 'signal' || isDeviceNode(node)) {
+      if (forceDeviceList) {
+        navContext = applyGatewayListPagination({
+          ...navContext,
+          routeMode: 'childrenList',
+          pageSize: deviceListPageSizeForNav(navContext),
+        })
+        const pageList = (store.state.ISMDisPlayEditorTool && store.state.ISMDisPlayEditorTool.PCPageList) || []
+        pageUuid = resolveDeviceListTemplateId(this.templateMap, pageList)
+      } else if (depth.routeMode === 'signal' || isDeviceNode(node)) {
         const muid = node.modelUuid || node.muid || ''
         const devLabel = node.label || node.rawLabel || node.name || ''
-        const points = muid
-          ? await fetchDeviceDatapoints(muid, devLabel, node.uuid || node.deviceUuid || '')
-          : []
+        const pointPage = muid || node.uuid || node.deviceUuid
+          ? await fetchDeviceDatapointPage({
+            muid,
+            deviceLabel: devLabel,
+            deviceUuid: node.uuid || node.deviceUuid || '',
+            page: 1,
+            pageSize: DASHBOARD_PERFORMANCE.datapointPageSize,
+          })
+          : { points: [], total: 0, page: 1, pageSize: DASHBOARD_PERFORMANCE.datapointPageSize }
         const ancestors = (navContext.ancestors || [])
-        navContext = buildDeviceSignalContext(node, points, ancestors)
-        if (!points.length) {
+        navContext = buildDeviceSignalContext(node, pointPage.points, ancestors, {
+          ...pointPage,
+          serverPaged: true,
+        })
+        if (options.returnContext && options.returnContext.deviceListMode) {
+          navContext = {
+            ...navContext,
+            deviceListReturnContext: options.returnContext,
+          }
+        }
+        if (!pointPage.points.length && !pointPage.total) {
           console.warn('[ISMRunTreeNav] device datapoints empty', {
             muid, devLabel, nodeId: node.id, label: node.label, rawLabel: node.rawLabel,
           })
@@ -674,6 +826,12 @@ export default {
           || this.resolveTemplatePageId(node)
         const pageList = (store.state.ISMDisPlayEditorTool && store.state.ISMDisPlayEditorTool.PCPageList) || []
         pageUuid = pageUuid || resolveDeviceListTemplateId(this.templateMap, pageList)
+      }
+
+      // 固定系统入口必须回当前展示模型首页，而不是模板映射中的旧 home 快照。
+      navContext = {
+        ...navContext,
+        homePageUuid: this.modelId,
       }
 
       if (!pageUuid) {
@@ -757,38 +915,39 @@ export default {
   pointer-events: none;    /* 容器透传，子元素各自开启 */
   transition: width 0.2s ease, min-width 0.2s ease;
 }
-.ism-runtree.collapsed { width: 34px; min-width: 34px; max-width: 34px; }
+.ism-runtree.collapsed { width: 16px; min-width: 16px; max-width: 16px; }
 
 .rt-handle,
 .rt-panel { pointer-events: auto; }
 
 /* 收起把手 */
 .rt-handle {
-  width: 30px;
-  height: 120px;
-  margin-top: 12px;
-  background: linear-gradient(180deg, #0e1a2e, #0b1322);
-  border: 1px solid #1e3a5f;
+  width: 14px;
+  height: 34px;
+  margin-top: 8px;
+  background: rgba(8, 28, 43, 0.34);
+  border: 1px solid rgba(53, 199, 226, 0.22);
   border-left: none;
-  border-radius: 0 8px 8px 0;
+  border-radius: 0 5px 5px 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
   cursor: pointer;
-  color: #00e5ff;
-  box-shadow: 0 0 12px rgba(0, 229, 255, 0.15);
+  color: rgba(91, 231, 250, 0.68);
+  opacity: 0.42;
+  backdrop-filter: blur(2px);
+  box-shadow: 0 0 5px rgba(0, 229, 255, 0.08);
+  transition: width 0.18s ease, opacity 0.18s ease, background 0.18s ease;
 }
-.rt-handle:hover { background: linear-gradient(180deg, #11243d, #0d1a30); }
-/* 把手缓慢呼吸光（3s 周期，克制） */
-.rt-handle { animation: rtHandleBreath 3s ease-in-out infinite; }
-@keyframes rtHandleBreath {
-  0%, 100% { box-shadow: 0 0 8px rgba(0, 229, 255, 0.12); }
-  50% { box-shadow: 0 0 16px rgba(0, 229, 255, 0.26); }
+.rt-handle:hover,
+.rt-handle:focus-visible {
+  width: 16px;
+  opacity: 0.92;
+  outline: none;
+  background: rgba(10, 48, 67, 0.66);
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.18);
 }
-.rt-handle-icon { font-size: 18px; font-weight: 700; }
-.rt-handle-text { writing-mode: vertical-rl; font-size: 12px; letter-spacing: 2px; color: #9fb6d6; }
+.rt-handle-icon { font-size: 14px; line-height: 1; font-weight: 700; }
 
 /* 树面板：深色渐变底 + 内发光 + 科技角标 */
 .rt-panel {

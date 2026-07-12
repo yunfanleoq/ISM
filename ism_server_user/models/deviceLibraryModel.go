@@ -234,6 +234,7 @@ func GetSupportDeviceList() []DevicesSupportList {
 
 	return getDevicesSupputList
 }
+
 // naturalNameLess 按名称升序比较：数字按数值、中英文按字典序（不区分大小写）
 // 例：配电室2A1_1 < 配电室2A1_2 < 配电室10A1
 func naturalNameLess(a, b string) bool {
@@ -1283,7 +1284,7 @@ func GetRealDataPaged(uuid string, page, pageSize int) ([]DeviceRealData, int64,
   name = label OR name LIKE label || '_%'
 可选限定 muid；若同时给了 deviceUuid，则并上该设备下的测点（去重由调用方处理，这里用 OR）。
 */
-func GetRealDataPagedByNamePrefix(muid, deviceUuid, namePrefix string, page, pageSize int) ([]DeviceRealData, int64, int) {
+func GetRealDataPagedByNamePrefix(muid, deviceUuid, namePrefix, keyword, category string, page, pageSize int) ([]DeviceRealData, int64, int) {
 	if page < 1 {
 		page = 1
 	}
@@ -1296,6 +1297,8 @@ func GetRealDataPagedByNamePrefix(muid, deviceUuid, namePrefix string, page, pag
 	namePrefix = strings.TrimSpace(namePrefix)
 	muid = strings.TrimSpace(muid)
 	deviceUuid = strings.TrimSpace(deviceUuid)
+	keyword = strings.TrimSpace(keyword)
+	category = strings.TrimSpace(category)
 	if namePrefix == "" && deviceUuid == "" {
 		return nil, 0, errmsg.ERROR
 	}
@@ -1312,6 +1315,13 @@ func GetRealDataPagedByNamePrefix(muid, deviceUuid, namePrefix string, page, pag
 		q = q.Where("(name = ? OR name LIKE ?)", namePrefix, like)
 	} else {
 		q = q.Where("device_uuid = ?", deviceUuid)
+	}
+	if keyword != "" {
+		q = q.Where("name LIKE ?", "%"+keyword+"%")
+	}
+	// 分类由前端传入稳定的测点名前缀；数据库过滤后再 COUNT/LIMIT，避免全量拉取后筛选。
+	if category != "" {
+		q = q.Where("name LIKE ?", category+"%")
 	}
 
 	var total int64

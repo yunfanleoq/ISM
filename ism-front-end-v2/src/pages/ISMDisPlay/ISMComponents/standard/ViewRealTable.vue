@@ -23,7 +23,14 @@
       <foreignObject style="overflow:visible;" pointer-events="all" :width="(detail && detail.style && detail.style.position && detail.style.position.w) || width || 520" :height="(detail && detail.style && detail.style.position && detail.style.position.h) || height || 200">
         <div :class="['history-theme-shell', scrollbarThemeClass]" :style="styleVar">
           <div class="table-container">
+            <runtime-data-card-grid
+              v-if="isRuntimeCardMode"
+              :mode="isDeviceCardMode ? 'device' : 'point'"
+              :items="runtimeCards"
+              @select="openDeviceDatapoints"
+            />
             <div
+              v-else
               class="table-scroll"
               ref="tableScroll"
             >
@@ -34,33 +41,6 @@
                 :pagination="false"
                 :style="{ minWidth: `${tableScrollWidth}px` }"
               />
-            </div>
-            <div
-              class="table-pagination-bar"
-              :class="{ visible: showPaginationBar }"
-              v-if="paginationTotal > 0"
-              @mousedown.stop
-              @click.stop
-            >
-              <div class="rt-pager" role="navigation" aria-label="表格分页">
-                <button
-                  type="button"
-                  class="rt-pager-btn"
-                  :disabled="!pagerCanPrev"
-                  @click.stop.prevent="goPagerPrev"
-                >
-                  上一页
-                </button>
-                <span class="rt-pager-info">{{ pagerInfoText }}</span>
-                <button
-                  type="button"
-                  class="rt-pager-btn"
-                  :disabled="!pagerCanNext"
-                  @click.stop.prevent="goPagerNext"
-                >
-                  下一页
-                </button>
-              </div>
             </div>
           </div>
         </div>
@@ -114,6 +94,7 @@
 
 <script>
 import ISMChildAutoMixin from '@/mixins/ISMChildAutoMixin';
+import RuntimeDataCardGrid from './RuntimeDataCardGrid.vue'
 
 // 勿静态 import @/store / @/services/device / @/utils/realDataBatch ——
 // 主 chunk 已引用它们；ism-render 异步 chunk 再静态引用会触发 webpack4 scope-hoisting
@@ -160,7 +141,9 @@ function commitEditorNav(partial) {
   try {
     const st = typeof window !== 'undefined' ? window.__ISM_STORE__ : null
     if (!st) return
-    const cur = (st.state.ISMDisPlayEditorTool && st.state.ISMDisPlayEditorTool.navContext) || {}
+    const cur = st.state.ISMDisPlayEditorTool && st.state.ISMDisPlayEditorTool.navContext
+    // 离开设备页后首页会主动清空 navContext；晚到的实时请求不得重新创建旧设备上下文。
+    if (!cur) return
     st.commit('ISMDisPlayEditorTool/setNavContext', { ...cur, ...partial })
   } catch (e) { /* ignore */ }
 }
@@ -360,6 +343,7 @@ const THEME_MAP = {
 export default {
   mixins: [ISMChildAutoMixin],
   name: 'ism-view-real-table',
+  components: { RuntimeDataCardGrid },
   inject: ['getNode'],
   props: {},
   watch: {
@@ -486,6 +470,9 @@ export default {
       return this.dynamicData.slice(start, end);
     },
     paginationTotal() {
+      if (this.isDeviceCardMode) {
+        return this.cardDeviceTotal
+      }
       const navDp = this.navDatapointPagination
       if (navDp && navDp.totalDatapoints) {
         return navDp.totalDatapoints
@@ -505,6 +492,9 @@ export default {
       return this.dynamicData.length;
     },
     pagerPageSize() {
+      if (this.isDeviceCardMode) {
+        return this.cardPageSize
+      }
       const navDp = this.navDatapointPagination
       if (navDp) {
         return navDp.datapointPageSize || REAL_DATA_DEFAULT_PAGE_SIZE
@@ -522,6 +512,9 @@ export default {
       return (this.pagination && this.pagination.pageSize) || REAL_DATA_DEFAULT_PAGE_SIZE
     },
     pagerCurrent() {
+      if (this.isDeviceCardMode) {
+        return this.cardCurrentIndex + 1
+      }
       const navDp = this.navDatapointPagination
       if (navDp) {
         return (navDp.datapointPageIndex || 0) + 1
@@ -578,9 +571,57 @@ export default {
       return `第 ${cur}/${total} 页 · 共 ${n} 条`
     },
     navListPagination() {
-      if (!this.isNavChildrenSource) return null
       const nav = getEditorNavContext()
       return nav && nav.deviceListMode ? nav : null
+    },
+    isDeviceCardMode() {
+      return !!this.navListPagination
+    },
+    isDatapointCardMode() {
+      return this.isNavDatapointsSource
+    },
+    isRuntimeCardMode() {
+      return this.isDeviceCardMode || this.isDatapointCardMode
+    },
+    allCardDevices() {
+      const nav = this.navListPagination
+      return nav ? (nav.allChildDevices || nav.allChildNodes || nav.childDevices || nav.childNodes || []) : []
+    },
+    cardDeviceTotal() {
+      return this.allCardDevices.length
+    },
+    cardPageSize() {
+      return Math.max(1, Number((this.navListPagination || {}).pageSize) || 49)
+    },
+    cardCurrentIndex() {
+      const totalPages = Math.max(1, Math.ceil(this.cardDeviceTotal / this.cardPageSize))
+      const navIndex = Number((this.navListPagination || {}).pageIndex) || 0
+      return Math.min(navIndex, totalPages - 1)
+    },
+    cardDevices() {
+      const start = this.cardCurrentIndex * this.cardPageSize
+      return this.allCardDevices.slice(start, start + this.cardPageSize)
+    },
+    runtimeCards() {
+      if (this.isDeviceCardMode) {
+        return this.cardDevices.map((device, index) => ({
+          key: device.sid || device.uuid || `${device.name || 'device'}-${index}`,
+          name: device.name || device.label || '',
+          code: device.code || device.uuid || '',
+          model: this.shortDeviceCode(device.modelUuid),
+          online: device.status === 'on',
+          title: device.name || device.label || '',
+          source: device,
+        }))
+      }
+      return this.dynamicData.map((row, index) => ({
+        key: (this.bindingMatrix[index] && this.bindingMatrix[index][0])
+          || `${row.rowName || 'point'}-${index}`,
+        name: row.rowName || '',
+        value: row.col_0,
+        unit: row.deviceCode || '',
+        title: row.rowName || '',
+      }))
     },
     navDatapointPagination() {
       if (!this.isNavDatapointsSource) return null
@@ -703,22 +744,11 @@ export default {
       tableHeaderFontSize: '17px',
       selectedTheme: 'light',
       scrollbarStyleTagId: '',
-      showPaginationBar: true,
-      rowDeviceNames: ['空调', '灯光', '门禁', '监控'],
-      rowDeviceCodes: ['AC001', 'LT002', 'AC003', 'CAM004'],
-      columnHeaders: ['运行状态', '功率', '温度', '在线时长'],
-      bindingMatrix: [
-        ['AC001->status', 'AC001->power', 'AC001->temp', 'AC001->online_time'],
-        ['LT002->status', 'LT002->power', 'LT002->temp', 'LT002->online_time'],
-        ['AC003->status', 'AC003->power', 'AC003->temp', 'AC003->online_time'],
-        ['CAM004->status', 'CAM004->power', 'CAM004->temp', 'CAM004->online_time']
-      ],
-      cellData: [
-        [100, 200, 300, 400],
-        [150, 250, 350, 450],
-        [120, 220, 320, 420],
-        [180, 280, 380, 480]
-      ],
+      rowDeviceNames: [],
+      rowDeviceCodes: [],
+      columnHeaders: [],
+      bindingMatrix: [],
+      cellData: [],
       detail: {
         identifier: '',
         style: {
@@ -747,6 +777,7 @@ export default {
       blinkSpeed: 0.5,
       isStart: false,
       AlarmTimer: null,
+      navRefreshRequestId: 0,
       waitTime: 1000,
       fontFamily: 'Arial',
       fontSize: '14',
@@ -949,6 +980,20 @@ export default {
     };
   },
   methods: {
+    openDeviceDatapoints(device) {
+      if (!device) return
+      const currentNav = getEditorNavContext()
+      this.$EventBus.$emit('OpenDeviceDatapoints', {
+        ...device,
+        deviceListReturnContext: currentNav && currentNav.deviceListMode
+          ? { ...currentNav }
+          : null,
+      })
+    },
+    shortDeviceCode(code) {
+      const value = String(code || '')
+      return value.length > 14 ? `${value.slice(0, 8)}…${value.slice(-5)}` : value
+    },
     applyScrollbarTheme() {
       if (typeof document === 'undefined') {
         return;
@@ -1000,6 +1045,12 @@ export default {
       const totalPages = this.pagerTotalPages
       if (nextPage < 1 || nextPage > totalPages) return
 
+      if (this.isDeviceCardMode) {
+        const next = nextPage - 1
+        if (next === this.cardCurrentIndex) return
+        this.$EventBus.$emit('NavPageChange', { pageIndex: next })
+        return
+      }
       if (this.isNavDatapointsSource) {
         const next = nextPage - 1
         const nav = getEditorNavContext()
@@ -1235,8 +1286,10 @@ export default {
         }
         return
       }
-      const page = (Number(nav.datapointPageIndex) || 0) + 1
+      const requestedPageIndex = Number(nav.datapointPageIndex) || 0
+      const page = requestedPageIndex + 1
       const pageSize = Math.max(1, Number(nav.datapointPageSize) || 20)
+      const requestId = ++this.navRefreshRequestId
       this.messageShowLoad = true
       postGetRealData({
         // 有逻辑设备名时只按前缀查，避免 OR uuid 混入 device.DeviceStatus 等系统点
@@ -1246,10 +1299,14 @@ export default {
         deviceLabel: label || undefined,
         page,
         pageSize,
+        query: String(nav.datapointQuery || '').trim() || undefined,
+        category: String(nav.datapointCategory || '').trim() || undefined,
         IsRemoveGW: false,
       }).then((res) => {
+        if (this._isBeingDestroyed || this._isDestroyed || requestId !== this.navRefreshRequestId) return
+        const currentNav = getEditorNavContext() || {}
+        if ((Number(currentNav.datapointPageIndex) || 0) !== requestedPageIndex) return
         this.messageShowLoad = false
-        if (this._isBeingDestroyed || this._isDestroyed) return
         const body = res && res.data
         if (!body || body.code !== 0 || !Array.isArray(body.realData)) return
         const rows = (body.realData || []).filter(r => {
@@ -1282,8 +1339,8 @@ export default {
           this.setDiyOnDetail('rowDeviceNames', names.join('\n'))
           this.setDiyOnDetail('rowDeviceCodes', units.join('\n'))
         }
-        // 总数以客户端 allDatapoints / 已声明为准，避免服务端分页与本地切片不一致改写页码
-        const navTotal = Number(nav.totalDatapoints) || Number(body.total) || 0
+        // 服务端筛选分页的 total 才是唯一可信口径，浏览器不保留全量测点列表。
+        const navTotal = Number(body.total) || Number(nav.totalDatapoints) || 0
         if (navTotal > 0) {
           this.setDiyOnDetail('navTotalDatapoints', String(navTotal))
           const size = pageSize
@@ -1293,7 +1350,7 @@ export default {
             totalDatapoints: navTotal,
             datapointTotalPages: totalPages,
             datapointPageSize: size,
-            datapointPageIndex: page - 1,
+            datapointPageIndex: requestedPageIndex,
           })
           // 通知顶部页码同步
           this.$EventBus.$emit('NavDatapointPageUpdate', {
@@ -1301,11 +1358,14 @@ export default {
             totalDatapoints: navTotal,
             datapointTotalPages: totalPages,
             datapointPageSize: size,
-            datapointPageIndex: page - 1,
+            datapointPageIndex: requestedPageIndex,
           })
         }
         this.batchUpdateConfig(values)
       }).catch(() => {
+        if (requestId !== this.navRefreshRequestId) return
+        const currentNav = getEditorNavContext() || {}
+        if ((Number(currentNav.datapointPageIndex) || 0) !== requestedPageIndex) return
         this.messageShowLoad = false
         // 失败时尝试绑点回退
         if (this.bindingMatrix && this.bindingMatrix.length) {
@@ -1530,103 +1590,6 @@ export default {
   min-height: 0;
   overflow: auto;
   box-sizing: border-box;
-}
-
-.table-pagination-bar {
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 0;
-  height: 0;
-  padding: 0;
-  margin: 0 auto;
-  width: 100%;
-  border: none;
-  border-radius: 0;
-  background: transparent;
-  backdrop-filter: none;
-  box-shadow: none;
-  opacity: 0;
-  transform: translateY(4px);
-  pointer-events: none;
-  overflow: visible;
-  transition: opacity 0.18s ease, transform 0.18s ease;
-  z-index: 5;
-}
-
-.table-pagination-bar.visible {
-  min-height: 48px;
-  height: auto;
-  padding: 8px 12px 10px;
-  margin: 0 auto;
-  width: 100%;
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-.rt-pager {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  min-height: 44px;
-  padding: 6px 12px;
-  border-radius: 10px;
-  background: rgba(15, 35, 58, 0.85);
-  border: 1px solid rgba(0, 200, 255, 0.35);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
-  pointer-events: auto;
-  user-select: none;
-  transform: translateZ(0);
-}
-
-.rt-pager-btn {
-  min-width: 96px;
-  height: 40px;
-  padding: 0 18px;
-  border-radius: 8px;
-  border: 1px solid rgba(0, 229, 255, 0.45);
-  background: linear-gradient(180deg, rgba(20, 90, 140, 0.95) 0%, rgba(12, 58, 98, 0.95) 100%);
-  color: #9ef0ff;
-  font-size: 15px;
-  font-weight: 600;
-  letter-spacing: 0.5px;
-  cursor: pointer;
-  line-height: 38px;
-  outline: none;
-  pointer-events: auto;
-  touch-action: manipulation;
-  transition: background 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
-}
-
-.rt-pager-btn:hover:not(:disabled) {
-  border-color: rgba(120, 240, 255, 0.85);
-  background: linear-gradient(180deg, rgba(28, 120, 180, 0.98) 0%, rgba(16, 72, 120, 0.98) 100%);
-  color: #e8fbff;
-}
-
-.rt-pager-btn:active:not(:disabled) {
-  transform: translateY(1px);
-}
-
-.rt-pager-btn:disabled {
-  opacity: 0.38;
-  cursor: not-allowed;
-  border-color: rgba(90, 120, 150, 0.35);
-  background: rgba(20, 40, 60, 0.55);
-  color: #7a93ad;
-}
-
-.rt-pager-info {
-  min-width: 160px;
-  text-align: center;
-  color: #c8ddf5;
-  font-size: 13px;
-  font-weight: 500;
-  line-height: 1.3;
-  white-space: nowrap;
 }
 
 ::v-deep .ant-table-pagination.ant-pagination {

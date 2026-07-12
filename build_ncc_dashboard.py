@@ -149,6 +149,11 @@ PROJECT_UUID = os.environ.get('NCC_PROJECT_UUID', '31bc90be-ebc4-dd61-ba9d-ce6e0
 cur.execute("""
     SELECT uuid, name, muid FROM monitor_list
     WHERE project_uuid=%s AND type=1 AND deleted_at IS NULL AND muid IS NOT NULL AND muid<>''
+      AND EXISTS (
+          SELECT 1 FROM device_real_data d
+          WHERE d.device_uuid=monitor_list.uuid
+            AND TRIM(COALESCE(d.value, '')) <> ''
+      )
     ORDER BY id LIMIT 1
 """, (PROJECT_UUID,))
 _samp = cur.fetchone()
@@ -179,10 +184,23 @@ for _m in _all_muids:
     cur.execute('SELECT name, uuid, data_unit FROM modbus_devices_data_model WHERE muid=%s ORDER BY id', (_m,))
     MODEL_DP[_m] = {r[0]: {'uuid': r[1], 'unit': r[2] or ''} for r in cur.fetchall()}
 
+# 设备实时表是运行态唯一可信点位来源：部分虚拟/非 Modbus 模型不在
+# modbus_devices_data_model 中，仍可用自身的 model_data_uuid 绑定。
+DEVICE_DP = defaultdict(dict)
+cur.execute("""
+    SELECT device_uuid, name, model_data_uuid, data_unit
+    FROM device_real_data
+    WHERE device_uuid IS NOT NULL AND device_uuid <> ''
+      AND model_data_uuid IS NOT NULL AND model_data_uuid <> ''
+""")
+for _duuid, _name, _data_uuid, _unit in cur.fetchall():
+    if _name and _data_uuid:
+        DEVICE_DP[_duuid][_name] = {'uuid': _data_uuid, 'unit': _unit or ''}
 
-def dp_map_for(muid):
-    """Return the point map for a device's model, falling back to the sample model."""
-    return MODEL_DP.get(muid) or DP_MAP
+
+def dp_map_for(muid, device_uuid=None):
+    """优先返回设备实时点位映射，再回退到模型映射。"""
+    return DEVICE_DP.get(device_uuid) or MODEL_DP.get(muid) or DP_MAP
 
 # ── Query real device hierarchy ─────────────────────
 cur.execute("""
@@ -422,6 +440,7 @@ def _oneline_node_from_zone(z):
         'online': z['online'],
         'alarm': z['alarm'],
         'cabinets': cabs,
+        'rooms': z['rooms'],
     }
 
 substations = [_oneline_node_from_zone(z) for z in zones]
@@ -534,9 +553,16 @@ def _make_active(dp_name, device_uuid=None, device_name=None, dp_map=None):
     """Build a ShowData live-binding for a data point on a specific device.
     Defaults to the sample device/model when no device is supplied."""
     dp_map = dp_map if dp_map is not None else DP_MAP
-    if dp_name not in dp_map:
+    resolved_name = dp_name
+    if resolved_name not in dp_map:
+        resolved_name = next(
+            (name for name in dp_map
+             if name.endswith(f'_{dp_name}') or dp_name in name),
+            None,
+        )
+    if not resolved_name:
         return []
-    dp = dp_map[dp_name]
+    dp = dp_map[resolved_name]
     return [{
         "id": "ShowData",
         "name": "configComponent.variable.ShowData",
@@ -549,12 +575,62 @@ def _make_active(dp_name, device_uuid=None, device_name=None, dp_map=None):
             "isBandDevice": False,
             "bandType": 1,
             "dataID": dp['uuid'],
-            "dataName": dp_name,
+            "dataName": resolved_name,
             "operator": "",
             "OperatorValue": "",
             "OperatorMaxValue": ""
         }
     }]
+
+def _resolve_point_name(device, candidates):
+    """从设备模型中解析第一个可用的语义测点，兼容带设备名前缀的点位名称。"""
+    if not device:
+        return None
+    point_map = dp_map_for(device.get('muid'), device.get('uuid'))
+    for candidate in candidates:
+        if candidate in point_map:
+            return candidate
+    for name in point_map:
+        if any(name.endswith(f'_{candidate}') or candidate in name for candidate in candidates):
+            return name
+    return None
+
+def _make_status_animate(device, status_point=None):
+    """设备合分闸状态为真时启用轻量闪烁，离线/断开时保持静止。"""
+    point = status_point or _resolve_point_name(
+        device, ['输入状态1（合分闸状态）', '合分闸状态', '合分闸']
+    )
+    if not point:
+        return _base_animate()
+    active = _base_animate()
+    active['selected'] = ['blink']
+    active['isExpression'] = True
+    active['condition'] = _make_active(
+        point, device.get('uuid'), device.get('name'),
+        dp_map_for(device.get('muid'), device.get('uuid'))
+    )[0]['condition']
+    active['condition'].update({'operator': '>', 'OperatorValue': '0'})
+    return active
+
+def _make_flow_active(device, flow_point=None):
+    """按功率或电流正负驱动潮流方向；没有可用测点时不生成伪动态效果。"""
+    point = flow_point or _resolve_point_name(
+        device, ['总有功功率', '输出总有功功率', 'A相电流', '输出A相电流']
+    )
+    if not point:
+        return []
+    condition = _make_active(
+        point, device.get('uuid'), device.get('name'),
+        dp_map_for(device.get('muid'), device.get('uuid'))
+    )[0]['condition']
+    forward = {**condition, 'operator': '>', 'OperatorValue': '0'}
+    reverse = {**condition, 'operator': '<', 'OperatorValue': '0'}
+    return [
+        {'id': 'Forward', 'name': 'component.ViewCanvasMoveLineArrow.Forward',
+         'result': '', 'isExpression': True, 'condition': forward},
+        {'id': 'Reverse', 'name': 'component.ViewCanvasMoveLineArrow.Reverse',
+         'result': '', 'isExpression': True, 'condition': reverse},
+    ]
 
 def _make_style(pos, **extras):
     s = {"position": pos, "visible": 1, "opacity": 1, "diy": []}
@@ -775,7 +851,7 @@ def make_text(seed, x, y, w, h, text, color='#c8d6e5', font_size=14,
     if data_bound and dp_name:
         dev = device or {}
         active = _make_active(dp_name, dev.get('uuid'), dev.get('name'),
-                              dp_map_for(dev.get('muid')) if dev else None)
+                              dp_map_for(dev.get('muid'), dev.get('uuid')) if dev else None)
     else:
         active = []
     _extra_style = {}
@@ -803,6 +879,7 @@ def make_text(seed, x, y, w, h, text, color='#c8d6e5', font_size=14,
             }
         }
     }
+
 
 # ── DataV decorative frames (controlled "decoration budget") ──
 # These wrappers all share one builder. The underlying DataV components only
@@ -911,24 +988,16 @@ def _build_chart_active(dp_names, device=None):
     dev = device or {}
     d_uuid = dev.get('uuid') or DEVICE_UUID
     d_name = dev.get('name') or DEVICE_NAME
-    d_map = dp_map_for(dev.get('muid')) if dev else DP_MAP
+    d_map = dp_map_for(dev.get('muid'), dev.get('uuid')) if dev else DP_MAP
     var_ids = ['ShowChartVariable1', 'ShowChartVariable2', 'ShowChartVariable3',
                'ShowChartVariable4', 'ShowChartVariable5']
     for i, dpn in enumerate(dp_names[:5]):
-        if dpn not in d_map:
+        binding = _make_active(dpn, d_uuid, d_name, d_map)
+        if not binding:
             continue
-        dp = d_map[dpn]
         active.append({
+            **binding[0],
             "id": var_ids[i],
-            "name": "configComponent.variable.ShowData",
-            "result": "",
-            "isExpression": False,
-            "condition": {
-                "deviceSN": d_uuid, "DeviceName": d_name,
-                "selectVideoType": 0, "isBandDevice": False, "bandType": 1,
-                "dataID": dp['uuid'], "dataName": dpn,
-                "operator": "", "OperatorValue": "", "OperatorMaxValue": ""
-            }
         })
     return active
 
@@ -1193,7 +1262,7 @@ def make_breadcrumb(seed, x, y, segments, z=20):
     for si, (text, color, target) in enumerate(segments):
         if si > 0:
             sep_id = f'{seed}-sep-{si}'
-            cells_out.append(make_text(sep_id, cx, y, 18, 22, '›',
+            cells_out.append(make_text(sep_id, cx, y, 18, 22, '➜',
                                        color='#475569', font_size=FONT_BREAD - 1, z=z))
             cx += 18
         action = _nav_action(target) if target else None
@@ -1415,9 +1484,16 @@ def upsert_layer_page(page_name, page_uuid, comp_b64, layer_json=None):
 # ──────────────────────────────────────────────────────
 
 def make_electric(shape, seed, x, y, w, h, color=C_ACCENT, fill=C_PANEL,
-                  action=None, z=8, stroke_width=1.5):
-    """静态电气符号（view-svg-electricN）。selected=[] → 不闪。可挂下钻 action。"""
+                  action=None, z=8, stroke_width=1.5, device=None, status_point=None):
+    """电气符号；给定设备时由合分闸状态控制闪烁，仍可挂下钻 action。"""
     cell_id = gen_uid(seed)
+    status_name = status_point or _resolve_point_name(
+        device, ['输入状态1（合分闸状态）', '合分闸状态', '合分闸']
+    )
+    active = _make_active(
+        status_name, device.get('uuid'), device.get('name'),
+        dp_map_for(device.get('muid'), device.get('uuid'))
+    ) if device and status_name else []
     style = _make_style(
         {"x": x, "y": y, "w": w, "h": h},
         text="", backColor="transparent", foreColor=color, fontSize=1, borderWidth=0,
@@ -1442,8 +1518,8 @@ def make_electric(shape, seed, x, y, w, h, color=C_ACCENT, fill=C_PANEL,
         "size": {"width": w, "height": h},
         "data": {"detail": {
             "type": shape, "identifier": cell_id, "name": seed,
-            "style": style, "animate": _base_animate(),
-            "action": action or [], "active": [], "dataBind": []
+            "style": style, "animate": _make_status_animate(device, status_name) if device else _base_animate(),
+            "action": action or [], "active": active, "dataBind": []
         }}
     }
 
@@ -1454,7 +1530,8 @@ def make_conn_line(seed, x, y, w, h, color=C_ACCENT, z=4, opacity=0.85):
 
 
 def make_move_line(seed, x, y, w, h, color=C_ACCENT, z=5, vertical=False,
-                   stroke_width=3, direction=0, back_color=C_BORDER):
+                   stroke_width=3, direction=0, back_color=C_BORDER,
+                   device=None, flow_point=None):
     """ViewCanvasMoveLineArrow：母线/馈线「缓慢流动」潮流箭头（科技感来源，克制使用）。
     必须给 style.points（否则前端 .length 崩）；foreColor=流动色；strokeWidth 细=克制。"""
     cell_id = gen_uid(seed)
@@ -1468,6 +1545,7 @@ def make_move_line(seed, x, y, w, h, color=C_ACCENT, z=5, vertical=False,
                {"x": w, "y": h / 2, "isArrow": False}]
     _dir_enum = [{"value": 0, "option": "configComponent.bigScreen.border.border89DirectionForward"},
                  {"value": 1, "option": "configComponent.bigScreen.border.border89DirectionNegative"}]
+    active = _make_flow_active(device, flow_point) if device else []
     style = {
         "position": {"x": x, "y": y, "w": w, "h": h},
         "points": pts, "visible": 1, "opacity": 1, "transform": 0,
@@ -1478,7 +1556,7 @@ def make_move_line(seed, x, y, w, h, color=C_ACCENT, z=5, vertical=False,
             {"name": "component.public.strokeWidth", "type": 1,
              "value": stroke_width, "min": 1, "key": "strokeWidth"},
             {"name": "displayConfig.ToolBox.Diagram.MoveBrokenLineConditionEnable", "type": 6,
-             "value": 0, "min": 1, "key": "MoveBrokenLineConditionEnable",
+             "value": 1 if active else 0, "min": 1, "key": "MoveBrokenLineConditionEnable",
              "enumList": [{"value": 0, "option": "component.public.Forbidden"},
                           {"value": 1, "option": "component.public.Enable"}]},
             {"name": "configComponent.bigScreen.border.border89Direction", "type": 6,
@@ -1494,15 +1572,15 @@ def make_move_line(seed, x, y, w, h, color=C_ACCENT, z=5, vertical=False,
         "data": {"detail": {
             "type": "ViewCanvasMoveLineArrow", "identifier": cell_id, "name": seed,
             "style": style, "animate": _base_animate(),
-            "action": [], "active": [], "dataBind": []
+            "action": [], "active": active, "dataBind": []
         }}
     }
 
 
-def _oneline_points_for(muid):
+def _oneline_points_for(muid, device_uuid=None):
     """按设备模型解析该路要显示的电气量（电压/电流/有功/状态），避免张冠李戴。
     返回 [(label, dp_name, unit), ...]，dp_name 必须存在于该模型点表。"""
-    m = dp_map_for(muid)
+    m = dp_map_for(muid, device_uuid)
     if '总有功功率' in m and 'AB线电压' in m:           # 标准多功能电力仪表
         return [('母线电压', 'AB线电压', 'V'), ('A相电流', 'A相电流', 'A'),
                 ('有功功率', '总有功功率', 'kW'), ('合分闸', '输入状态1（合分闸状态）', '')]
@@ -1567,8 +1645,12 @@ def _campus_card_title(sub):
 
 
 def _append_campus_substation_card(out, seed_prefix, si, cx, cy, card_w, card_h, sub, accent):
-    """单座变电所示意卡片：10kV母线 → 双符号 → 所名 → 机房模块（对齐设计图1）。"""
-    sub_action = _nav_action(sub['page_id'])
+    """组织节点卡片：展示区域与设备统计；上层组织节点不提供旧页面下钻。"""
+    sub_action = None
+    source_device = next(
+        (cab['devices'][0] for cab in sub.get('cabinets', []) if cab.get('devices')),
+        None,
+    )
     out.append(make_panel_bg(f'{seed_prefix}-card-{si}', cx, cy, card_w, card_h,
                              color=C_PANEL_CARD, z=3, opacity=0.88, action=sub_action))
     out.append(make_panel_bg(f'{seed_prefix}-bar-{si}', cx, cy, 3, card_h, color=accent, z=4))
@@ -1578,7 +1660,7 @@ def _append_campus_substation_card(out, seed_prefix, si, cx, cy, card_w, card_h,
     out.append(make_conn_line(f'{seed_prefix}-bus-{si}', bus_l, bus_y, bus_r - bus_l, 2,
                               color=C_ACCENT, z=5, opacity=0.9))
     out.append(make_text(f'{seed_prefix}-bus-lab-{si}', cx + 8, bus_y - 14, card_w - 16, 14,
-                         '10kV母线', color=C_TEXT_DIM, font_size=10, z=10, action=sub_action, align='center'))
+                         '组织区域', color=C_TEXT_DIM, font_size=10, z=10, action=sub_action, align='center'))
 
     sym_s = 34
     sym_y = bus_y + 16
@@ -1590,9 +1672,11 @@ def _append_campus_substation_card(out, seed_prefix, si, cx, cy, card_w, card_h,
     out.append(make_conn_line(f'{seed_prefix}-drop-r-{si}', right_x + sym_s // 2 - 1, bus_y + 2, 2,
                               sym_y - bus_y - 2, color=C_ACCENT, z=4))
     out.append(make_electric('view-svg-electric1', f'{seed_prefix}-sym-l-{si}',
-                             left_x, sym_y, sym_s, sym_s, color=C_ACCENT, action=sub_action, z=8))
+                             left_x, sym_y, sym_s, sym_s, color=C_ACCENT, action=sub_action, z=8,
+                             device=source_device))
     out.append(make_electric('view-svg-electric2', f'{seed_prefix}-sym-r-{si}',
-                             right_x, sym_y, sym_s, sym_s, color=C_ACCENT, action=sub_action, z=8))
+                             right_x, sym_y, sym_s, sym_s, color=C_ACCENT, action=sub_action, z=8,
+                             device=source_device))
 
     name_y = sym_y + sym_s + 10
     name_h = 30
@@ -1608,12 +1692,12 @@ def _append_campus_substation_card(out, seed_prefix, si, cx, cy, card_w, card_h,
                                   drop_bot - drop_top, color=C_ACCENT, z=4))
         out.append(make_move_line(f'{seed_prefix}-flow-{si}', mid_x - 8, drop_top, 16,
                                   drop_bot - drop_top, color=C_ACCENT, z=5, vertical=True,
-                                  stroke_width=2, direction=0))
-    mod_label = '馈线模块' if sub.get('cabinet_count', 0) > 1 else '设备组'
+                                  stroke_width=2, direction=0, device=source_device))
+    mod_label = f'{sub["device_count"]} 台设备'
     out.append(make_text(f'{seed_prefix}-mod-{si}', cx + 8, cy + card_h - 24, card_w - 16, 18,
                          mod_label, color=C_TEXT, font_size=11, z=10, action=sub_action, align='center'))
     out.append(make_text(f'{seed_prefix}-stat-{si}', cx + card_w - 72, cy + 6, 64, 14,
-                         f'{sub["cabinet_count"]}柜',
+                         f'在线 {sub["online"]}',
                          color=C_TEXT_MUTED, font_size=9, z=10, action=sub_action))
 
 
@@ -1642,7 +1726,6 @@ TOPO_NAME_W = 148
 
 def append_overview_topo_panel(out, seed_prefix, x, y, w, h):
     """左下角拓扑概览浮层：按 RootZone 顶级区域摘要，与设备管理树一致。"""
-    out.append(make_box13(f'{seed_prefix}-topo-frame', x, y, w, h, z=14))
     out.append(make_panel_bg(f'{seed_prefix}-topo-fill', x + 4, y + 4, w - 8, h - 8,
                              color=C_PANEL, z=15, opacity=0.92))
     out.extend(make_panel_title(f'{seed_prefix}-topo', x + 12, y + 10,
@@ -1682,7 +1765,6 @@ def append_overview_topo_panel(out, seed_prefix, x, y, w, h):
 def append_overview_alarm_panel(out, seed_prefix, x, y, w, h):
     """右侧告警列表面板：展示离线/异常设备，可点进详情。"""
     alarms = _overview_alarm_items(limit=7)
-    out.append(make_box13(f'{seed_prefix}-alarm-inner', x, y, w, h, z=3))
     out.extend(make_panel_title(f'{seed_prefix}-alarm', x + 12, y + 10,
                                 '活跃告警', color=C_ORANGE, font_size=FONT_PANEL, z=7, w=160))
     alarm_n = sum(1 for row in all_devices if row[4] == 1 and row[6] != 1)
@@ -1732,25 +1814,28 @@ def append_overview_stats_row(out, seed_prefix):
         ('stat-power', '⚡', '0', 'kW', '总功率', '总有功功率', C_ACCENT),
         ('stat-energy', '📊', '---', 'kWh', '今日用电量', None, C_BLUE),
         ('stat-online', '🖥', f'{online_count}/{TOTAL_DEVICES}', '', '在线设备', None, C_GREEN),
-        ('stat-alarm', '🔔', str(alarm_count), '', '活跃告警', None, C_ORANGE),
+        ('stat-alarm', '🔔', f'{alarm_count:03d}', '', '活跃告警', None, C_ORANGE),
     ]
     for i, (seed, icon, val, unit, label, dp_name, accent) in enumerate(stat_configs):
         cx = card_xs[i]
-        out.append(make_panel_bg(f'{seed_prefix}-{seed}-glow', cx, stats_y, card_w, stats_h,
-                                 color=accent, z=1, opacity=0.06))
-        out.append(make_panel_bg(f'{seed_prefix}-{seed}-fill', cx + 5, stats_y + 5, card_w - 10, stats_h - 10,
-                                 color=C_PANEL_CARD, z=2, opacity=0.55))
+        if seed != 'stat-alarm':
+            out.append(make_panel_bg(f'{seed_prefix}-{seed}-glow', cx, stats_y, card_w, stats_h,
+                                     color=accent, z=1, opacity=0.06))
+            out.append(make_panel_bg(f'{seed_prefix}-{seed}-fill', cx + 5, stats_y + 5, card_w - 10, stats_h - 10,
+                                     color=C_PANEL_CARD, z=2, opacity=0.55))
         out.append(make_box12(f'{seed_prefix}-{seed}-bg', cx, stats_y, card_w, stats_h, z=3))
         out.append(make_panel_bg(f'{seed_prefix}-{seed}-accent', cx, stats_y + stats_h - 3, card_w, 2,
                                  color=accent, z=4, opacity=0.85))
         out.append(make_text(f'{seed_prefix}-{seed}-icon', cx, stats_y + 8, card_w, 24, icon,
                              color=accent, font_size=20, z=6, align='center'))
         display_val = f'{val} {unit}'.strip() if unit else val
-        out.append(make_text(
-            f'{seed_prefix}-{seed}-val', cx, stats_y + 32, card_w, 36,
-            display_val, color=C_TEXT, font_size=kpi_val_font(card_w), z=6,
-            data_bound=(dp_name is not None), dp_name=dp_name, align='center'
-        ))
+        # 活跃告警数由 ScadaAlarmPanel 实时接口覆盖，禁止再生成静态快照造成重叠。
+        if seed != 'stat-alarm':
+            out.append(make_text(
+                f'{seed_prefix}-{seed}-val', cx, stats_y + 32, card_w, 36,
+                display_val, color=C_TEXT, font_size=kpi_val_font(card_w), z=6,
+                data_bound=(dp_name is not None), dp_name=dp_name, align='center'
+            ))
         out.append(make_text(
             f'{seed_prefix}-{seed}-lab', cx, stats_y + 70, card_w, 20,
             label, color=C_TEXT_DIM, font_size=FONT_KPI_LABEL, z=6, align='center'
@@ -1776,9 +1861,8 @@ def append_overview_side_panels(out, seed_prefix, panel_top_y, panel_h, right_x,
                          '● 实时监测', color=C_GREEN, font_size=11, z=8, align='center'))
 
     power_y = panel_top_y + hdr_h
-    out.append(make_box13(f'{seed_prefix}-chart-power-inner', right_x + 8, power_y, right_w - 16, chart_h - 8, z=3))
     out.extend(make_panel_title(f'{seed_prefix}-chart-power', right_x + 20, power_y + 10,
-                                '功率趋势 (24h)', color=C_ACCENT, font_size=FONT_PANEL, z=7, w=200))
+                                '功率趋势 (24h)', color=C_ACCENT, font_size=FONT_PANEL, z=7, w=240))
     out.append(make_smooth_chart(
         f'{seed_prefix}-chart-trend', right_x + 18, power_y + 36, right_w - 36, chart_h - 48,
         title='功率趋势 (24h)',
@@ -1787,9 +1871,8 @@ def append_overview_side_panels(out, seed_prefix, panel_top_y, panel_h, right_x,
     ))
 
     energy_y = power_y + chart_h + chart_gap
-    out.append(make_box13(f'{seed_prefix}-chart-energy-inner', right_x + 8, energy_y, right_w - 16, chart_h - 8, z=3))
     out.extend(make_panel_title(f'{seed_prefix}-chart-energy', right_x + 20, energy_y + 10,
-                                '用电量趋势 (24h)', color=C_BLUE, font_size=FONT_PANEL, z=7, w=220))
+                                '用电量趋势 (24h)', color=C_BLUE, font_size=FONT_PANEL, z=7, w=260))
     # 用电量(正有功电度)是累计量。只绑这一条线走实时平滑图：
     # 单序列时 Y 轴自适应到电度量级，模拟器已让电度按墙钟累增，曲线即呈干净的上升趋势。
     # (不与瞬时功率同图，避免被量级差压成平线；历史趋势图依赖 TDengine 历史记录，本环境未开启故不可用。)
@@ -1805,26 +1888,17 @@ def append_overview_side_panels(out, seed_prefix, panel_top_y, panel_h, right_x,
 
 
 def append_overview_main_body(out, seed_prefix, substations):
-    """首页主体：顶栏 KPI + 左一次系统总图 + 右趋势图/告警（经典大屏布局）。"""
+    """首页主体：顶栏 KPI + 左运行时组织总览外框 + 右趋势图/告警。"""
     content_top = append_overview_stats_row(out, seed_prefix)
     panel_h = 1080 - content_top - 16
     left_w = int((MAIN_W - 16) * 0.68)
     right_w = MAIN_W - left_w - 16
     right_x = MAIN_X + left_w + 16
-    frame_bottom = content_top - 4 + panel_h + 4
-    topo_x = MAIN_X + 12
-    topo_y = frame_bottom - OVERVIEW_TOPO_H - 8
-
-    append_campus_oneline_diagram(
-        out, seed_prefix, substations,
-        frame_x=MAIN_X, frame_y=content_top - 4, frame_w=left_w, frame_h=panel_h + 4,
-        reserve_rect=(topo_x, topo_y, OVERVIEW_TOPO_W, OVERVIEW_TOPO_H),
-        legend_offset_x=OVERVIEW_TOPO_W + 8,
-    )
-    append_overview_topo_panel(
-        out, seed_prefix, topo_x, topo_y,
-        OVERVIEW_TOPO_W, OVERVIEW_TOPO_H,
-    )
+    # 组织内容由 ScadaOrgOverview 在运行时根据 monitortree 递归生成。
+    # 这里只保留唯一外框，禁止再生成母线、馈线、设备组等旧静态组件。
+    out.append(make_box13(
+        f'{seed_prefix}-frame', MAIN_X, content_top - 4, left_w, panel_h + 4, z=1,
+    ))
     append_overview_side_panels(out, seed_prefix, content_top, panel_h, right_x, right_w)
 
 
@@ -1851,11 +1925,11 @@ def append_campus_oneline_diagram(out, seed_prefix, substations, *, show_back=Fa
     dev_n = sum(s['device_count'] for s in substations)
     title_w = frame_x + frame_w - title_x - 16
     out.append(make_text(f'{seed_prefix}-title', title_x, title_y, title_w,
-                         LEVEL_TITLE_H, '变电所一次系统总图',
+                         LEVEL_TITLE_H, '组织层级总览',
                          color=C_TEXT, font_size=FONT_PANEL, z=10))
     out.append(make_text(f'{seed_prefix}-sub', title_x, title_y + LEVEL_TITLE_H + 4,
                          title_w, 20,
-                         f'全园区 {sub_n} 个区域 / {dev_n} 台设备 · 点击卡片进入区域一次系统图',
+                         f'全园区 {sub_n} 个顶级区域 / {dev_n} 台设备 · 组织节点仅展开，设备叶节点可查看测点',
                          color=C_TEXT_DIM, font_size=12, z=10))
 
     grid_y = title_y + LEVEL_TITLE_H + 28
@@ -1905,7 +1979,7 @@ def append_campus_oneline_diagram(out, seed_prefix, substations, *, show_back=Fa
     legend_x = frame_x + 16 + legend_offset_x
     legend_w = inner_w - legend_offset_x
     out.append(make_text(f'{seed_prefix}-legend', legend_x, legend_y, legend_w, 18,
-                         '● 与设备管理树顶级区域一致 · 10kV母线 → 馈线模块 · 点击下钻进线→母线→馈线',
+                         '● 与设备管理树实时组织层级一致 · 每个节点展示其包含设备数量',
                          color=C_TEXT_DIM, font_size=11, z=6))
 
 
@@ -2005,6 +2079,7 @@ def build_oneline_cells(sub, seed_prefix='oneline'):
                          color=C_TEXT_DIM, font_size=12, z=10))
 
     cabs = sub['cabinets']
+    source_device = next((cab['devices'][0] for cab in cabs if cab.get('devices')), None)
     diagram_top = title_y + 64
 
     # ── 进线 + 母线（紧凑示意）──
@@ -2012,7 +2087,7 @@ def build_oneline_cells(sub, seed_prefix='oneline'):
     inc_y = diagram_top + 6
     sym = 64
     out.append(make_electric('view-svg-electric6', f'{seed_prefix}-inc', inc_cx - sym // 2, inc_y,
-                             sym, sym, color=C_ACCENT, z=8))
+                             sym, sym, color=C_ACCENT, z=8, device=source_device))
     out.append(make_text(f'{seed_prefix}-inc-lab', inc_cx + sym // 2 + 6, inc_y + 16, 200, 18,
                          '⫶ 10kV 进线柜', color=C_TEXT, font_size=13, z=10))
     bus_y = inc_y + sym + 32
@@ -2022,11 +2097,12 @@ def build_oneline_cells(sub, seed_prefix='oneline'):
                               bus_y - (inc_y + sym), color=C_ACCENT, z=4))
     out.append(make_move_line(f'{seed_prefix}-flow-inc', inc_cx - 10, inc_y + sym, 20,
                               bus_y - (inc_y + sym), color=C_ACCENT, z=5, vertical=True,
-                              stroke_width=2, direction=0))
+                              stroke_width=2, direction=0, device=source_device))
     out.append(make_conn_line(f'{seed_prefix}-bus', bus_l, bus_y - 2, bus_r - bus_l, 4,
                               color=C_ACCENT, z=4, opacity=0.95))
     out.append(make_move_line(f'{seed_prefix}-flow-bus', bus_l, bus_y - 10, bus_r - bus_l, 20,
-                              color=C_ACCENT, z=5, vertical=False, stroke_width=2, direction=0))
+                              color=C_ACCENT, z=5, vertical=False, stroke_width=2, direction=0,
+                              device=source_device))
     out.append(make_text(f'{seed_prefix}-bus-lab', bus_l + 4, bus_y - 24, 240, 16,
                          f'▭ 10kV I 段母线 · {cab_n} 路馈线', color=C_ACCENT, font_size=11, z=10))
 
@@ -2051,7 +2127,7 @@ def build_oneline_cells(sub, seed_prefix='oneline'):
         sym_s = 44
         sym_y = cardy + 6
         out.append(make_electric(shape, f'{seed_prefix}-sym-{bi}', bx - sym_s // 2, sym_y,
-                                 sym_s, sym_s, color=C_ACCENT, action=cab_action, z=8))
+                                 sym_s, sym_s, color=C_ACCENT, action=cab_action, z=8, device=rep))
         out.append(make_text(f'{seed_prefix}-sym-lab-{bi}', cardx + 8, sym_y + sym_s + 2, card_w - 16, 18,
                              f'🗄 {cab["name"]}', color=C_ACCENT, font_size=12, z=10, action=cab_action))
         data_y = sym_y + sym_s + 22
@@ -2064,7 +2140,7 @@ def build_oneline_cells(sub, seed_prefix='oneline'):
                              '● 运行' if on else '● 离线',
                              color=C_GREEN if on else C_TEXT_DIM, font_size=11, z=6))
         if rep:
-            rows = _oneline_points_for(rep.get('muid'))
+            rows = _oneline_points_for(rep.get('muid'), rep.get('uuid'))
             ry = data_y + 28
             for li, (lab, dpn, unit) in enumerate(rows[:3]):
                 yy = ry + li * 36
@@ -2381,9 +2457,19 @@ def build_device_detail_cells(dev, bldg, floor, seed_prefix):
     out.append(make_box13(f'{seed_prefix}-cf', MAIN_X, chart_y, chart_w, 280, z=3))
     out.append(make_text(f'{seed_prefix}-ct', MAIN_X + 16, chart_y + 10, 400, 22, '📈 24小时功率曲线',
                          color=C_ACCENT, font_size=FONT_PANEL + 2, z=6))
-    out.append(make_smooth_chart(
-        f'{seed_prefix}-chart', MAIN_X + 16, chart_y + 40, chart_w - 32, 226,
-        title='设备功率趋势', dp_names=chart_dps, z=5, device=dev))
+    device_points = dp_map_for(dev.get('muid'), dev.get('uuid'))
+    chart_points = [point for point in chart_dps if _make_active(
+        point, dev.get('uuid'), dev.get('name'), device_points
+    )]
+    if chart_points:
+        out.append(make_smooth_chart(
+            f'{seed_prefix}-chart', MAIN_X + 16, chart_y + 40, chart_w - 32, 226,
+            title='设备功率趋势', dp_names=chart_points, z=5, device=dev))
+    else:
+        out.append(make_text(
+            f'{seed_prefix}-chart-unavailable', MAIN_X + 16, chart_y + 92, chart_w - 32, 32,
+            '当前设备未接入可用的功率趋势测点', color=C_TEXT_DIM, font_size=13, z=6, align='center',
+        ))
 
     status_x = MAIN_X + chart_w + 16
     status_w = MAIN_W - chart_w - 16
@@ -2396,20 +2482,24 @@ def build_device_detail_cells(dev, bldg, floor, seed_prefix):
     return out
 
 
+GENERATE_LEGACY_DEVICE_PAGES = os.environ.get('NCC_GENERATE_LEGACY_DEVICE_PAGES') == '1'
 device_pages = 0
-for bldg in buildings:
-    for floor in bldg['floors']:
-        for dev in floor['devices']:
-            seed = f'dev-{dev["sid"]}'
-            dcells = build_device_detail_cells(dev, bldg, floor, seed_prefix=seed)
-            comp_b64 = base64.b64encode(json.dumps({"cells": dcells}, ensure_ascii=False).encode()).decode()
-            upsert_layer_page(f'device-{dev["sid"]}', page_id_device(dev['sid']), comp_b64)
-            device_pages += 1
+if GENERATE_LEGACY_DEVICE_PAGES:
+    for bldg in buildings:
+        for floor in bldg['floors']:
+            for dev in floor['devices']:
+                seed = f'dev-{dev["sid"]}'
+                dcells = build_device_detail_cells(dev, bldg, floor, seed_prefix=seed)
+                comp_b64 = base64.b64encode(json.dumps({"cells": dcells}, ensure_ascii=False).encode()).decode()
+                upsert_layer_page(f'device-{dev["sid"]}', page_id_device(dev['sid']), comp_b64)
+                device_pages += 1
 conn.commit()
-report_overlaps(build_device_detail_cells(buildings[0]['floors'][0]['devices'][0],
-                                          buildings[0], buildings[0]['floors'][0], 'dev-sample'),
-                'Device detail (sample)')
-print(f"  wrote {device_pages} per-device detail pages")
+if GENERATE_LEGACY_DEVICE_PAGES:
+    report_overlaps(build_device_detail_cells(buildings[0]['floors'][0]['devices'][0],
+                                              buildings[0], buildings[0]['floors'][0], 'dev-sample'),
+                    'Device detail (sample)')
+print(f"  wrote {device_pages} per-device detail pages"
+      f"{'' if GENERATE_LEGACY_DEVICE_PAGES else ' (disabled: runtime templates are used)'}")
 
 # Keep the legacy shared 'device-detail' page (id=10) pointing at a real device
 # so any old reference still resolves to a coherent page.

@@ -595,6 +595,14 @@ func (c *DeviceLibraryController) GetRealData() {
 		if v, ok := getParams["muid"].(string); ok {
 			muid = strings.TrimSpace(v)
 		}
+		keyword := ""
+		if v, ok := getParams["query"].(string); ok {
+			keyword = strings.TrimSpace(v)
+		}
+		category := ""
+		if v, ok := getParams["category"].(string); ok {
+			category = strings.TrimSpace(v)
+		}
 		fetchAll := false
 		if v, ok := getParams["fetchAll"].(bool); ok {
 			fetchAll = v
@@ -639,8 +647,8 @@ func (c *DeviceLibraryController) GetRealData() {
 				if pageSize < 1 {
 					pageSize = models.RealDataDefaultPageSize
 				}
-			} else if namePrefix != "" {
-				realData, total, code = models.GetRealDataPagedByNamePrefix(muid, uuid, namePrefix, page, pageSize)
+			} else if namePrefix != "" || keyword != "" || category != "" {
+				realData, total, code = models.GetRealDataPagedByNamePrefix(muid, uuid, namePrefix, keyword, category, page, pageSize)
 			} else {
 				realData, total, code = models.GetRealDataPaged(uuid, page, pageSize)
 			}
