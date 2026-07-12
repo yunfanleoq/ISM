@@ -181,6 +181,10 @@ func (c *MqttCtl) DealWithMqttAlarmData(AlarmData protocol_common.PushAlarm) {
 	build.WriteString(alarm.DataUuid)
 	key := build.String()
 	alarmTemp, isExist := c.DeviceAlarmTemp[key]
+	if protocol_common.ObserveStartupAlarm(alarm, alarm.Value == "1") {
+		c.DeviceAlarmTemp[key] = alarm
+		return
+	}
 
 	updateAlarm.AlarmName = alarm.DataName
 	updateAlarm.DeviceUuid = alarm.DeviceUuid
@@ -537,21 +541,18 @@ func (c *MqttCtl) DealWithDeviceDataPthread() {
 					if item.Type == "3" || item.Type == "4" {
 						signleAlarm.Value = fmt.Sprintf("%v", getValueFloat64)
 						signleHistoryData.DataValue = fmt.Sprintf("%v", getValueFloat64)
-						protocol_common.DeviceRealDataMapByUUID.Store(item.RealDataUuid, signleAlarm.Value)
-						protocol_common.DeviceRealDataMap.Store(c.DeviceInfo.DeviceInfo.Name+"->"+item.Name, signleAlarm.Value)
+						protocol_common.StoreDeviceRealValue(item.RealDataUuid, c.DeviceInfo.DeviceInfo.Name, item.Name, signleAlarm.Value)
 						tempPushData.Data = append(tempPushData.Data, protocol_common.UpdateStu{Uuid: item.RealDataUuid, ModelDataUuid: item.ModelDataUuid, Value: fmt.Sprintf("%v", getValueFloat64)})
 					} else {
 						signleAlarm.Value = fmt.Sprintf("%d", getValue)
 						signleHistoryData.DataValue = fmt.Sprintf("%d", getValue)
-						protocol_common.DeviceRealDataMapByUUID.Store(item.RealDataUuid, signleAlarm.Value)
-						protocol_common.DeviceRealDataMap.Store(c.DeviceInfo.DeviceInfo.Name+"->"+item.Name, signleAlarm.Value)
+						protocol_common.StoreDeviceRealValue(item.RealDataUuid, c.DeviceInfo.DeviceInfo.Name, item.Name, signleAlarm.Value)
 						tempPushData.Data = append(tempPushData.Data, protocol_common.UpdateStu{Uuid: item.RealDataUuid, ModelDataUuid: item.ModelDataUuid, Value: fmt.Sprintf("%d", getValue)})
 					}
 				} else {
 					signleAlarm.Value = fmt.Sprintf("%0.2f", getValueFloat64)
 					signleHistoryData.DataValue = fmt.Sprintf("%0.2f", getValueFloat64)
-					protocol_common.DeviceRealDataMapByUUID.Store(item.RealDataUuid, signleAlarm.Value)
-					protocol_common.DeviceRealDataMap.Store(c.DeviceInfo.DeviceInfo.Name+"->"+item.Name, signleAlarm.Value)
+					protocol_common.StoreDeviceRealValue(item.RealDataUuid, c.DeviceInfo.DeviceInfo.Name, item.Name, signleAlarm.Value)
 					tempPushData.Data = append(tempPushData.Data, protocol_common.UpdateStu{Uuid: item.RealDataUuid, ModelDataUuid: item.ModelDataUuid, Value: fmt.Sprintf("%v", getValueFloat64)})
 				}
 			} else {
@@ -611,8 +612,7 @@ func (c *MqttCtl) DealWithDeviceDataPthread() {
 					signleHistoryData.DataValue = fmt.Sprintf("%s", v)
 					tempPushData.Data = append(tempPushData.Data, protocol_common.UpdateStu{Uuid: item.RealDataUuid, ModelDataUuid: item.ModelDataUuid, Value: signleHistoryData.DataValue})
 				}
-				protocol_common.DeviceRealDataMapByUUID.Store(item.RealDataUuid, signleAlarm.Value)
-				protocol_common.DeviceRealDataMap.Store(c.DeviceInfo.DeviceInfo.Name+"->"+item.Name, signleAlarm.Value)
+				protocol_common.StoreDeviceRealValue(item.RealDataUuid, c.DeviceInfo.DeviceInfo.Name, item.Name, signleAlarm.Value)
 			}
 		} else {
 			if item.Type == "1" || item.Type == "2" {
@@ -628,8 +628,7 @@ func (c *MqttCtl) DealWithDeviceDataPthread() {
 				signleHistoryData.DataValue = fmt.Sprintf("%s", v)
 				tempPushData.Data = append(tempPushData.Data, protocol_common.UpdateStu{Uuid: item.RealDataUuid, ModelDataUuid: item.ModelDataUuid, Value: signleHistoryData.DataValue})
 			}
-			protocol_common.DeviceRealDataMapByUUID.Store(item.RealDataUuid, signleAlarm.Value)
-			protocol_common.DeviceRealDataMap.Store(c.DeviceInfo.DeviceInfo.Name+"->"+item.Name, signleAlarm.Value)
+			protocol_common.StoreDeviceRealValue(item.RealDataUuid, c.DeviceInfo.DeviceInfo.Name, item.Name, signleAlarm.Value)
 		}
 
 		//触发器告警信息
@@ -877,8 +876,7 @@ func clearMqttRealData(device mqttDeviceStu) {
 	realErr := models.Db.Model(&models.DeviceRealData{}).Where("device_uuid = ? and project_uuid = ? ", device.Uuid, device.ProjectUuid).Find(&getRealData).Error
 	if realErr == nil {
 		for _, v := range getRealData {
-			protocol_common.DeviceRealDataMapByUUID.Store(v.Uuid, ClearValue)
-			protocol_common.DeviceRealDataMap.Store(device.Name+"->"+v.Name, ClearValue)
+			protocol_common.StoreDeviceRealValue(v.Uuid, device.Name, v.Name, ClearValue)
 			tempPushData.Data = append(tempPushData.Data, protocol_common.UpdateStu{Uuid: v.Uuid, ModelDataUuid: v.ModelDataUuid, Value: ClearValue})
 		}
 	}

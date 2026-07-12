@@ -35,6 +35,7 @@ preclean() {
     log_info "清场：停止旧进程、释放端口 7080/8081..."
 
     launchctl remove com.ism.frontend 2>/dev/null || true
+    launchctl remove com.ism.backend 2>/dev/null || true
     pkill -9 -f "vue-cli-service" 2>/dev/null || true
     pkill -9 -f "ism_server" 2>/dev/null || true
     lsof -ti :7080 2>/dev/null | grep -v Cursor | xargs kill -9 2>/dev/null || true
@@ -42,11 +43,15 @@ preclean() {
     rm -f "$BACKEND_PID_FILE"
     sleep 3
 
-    if pgrep -fl "ism_server|vue-cli-service" >/dev/null 2>&1; then
-        log_warn "仍有残留进程，请手动检查: pgrep -fl ism_server|vue-cli-service"
-    else
-        log_ok "清场完成"
+    if pgrep -fl "ism_server|vue-cli-service" >/dev/null 2>&1 ||
+       lsof -tiTCP:7080 -sTCP:LISTEN >/dev/null 2>&1 ||
+       lsof -tiTCP:8081 -sTCP:LISTEN >/dev/null 2>&1; then
+        log_error "清场失败，仍有残留进程或端口占用"
+        pgrep -fl "ism_server|vue-cli-service" || true
+        lsof -nP -iTCP:7080,8081 -sTCP:LISTEN || true
+        return 1
     fi
+    log_ok "清场完成"
 }
 
 # 清理函数 - 退出时停止所有服务
@@ -131,10 +136,18 @@ _do_start_backend() {
 
     cd "$BACKEND_DIR"
 
-    if [ ! -f "./ism_server" ]; then
-        log_error "后端二进制文件不存在: ./ism_server"
-        log_info "请先编译后端: cd $BACKEND_DIR && go build -o ism_server"
+    if command -v go >/dev/null 2>&1; then
+        log_info "正在编译最新后端代码..."
+        if ! go build -o ism_server .; then
+            log_error "后端编译失败"
+            exit 1
+        fi
+        log_ok "后端编译完成"
+    elif [ ! -x "./ism_server" ]; then
+        log_error "未安装 Go，且后端二进制文件不存在或不可执行: ./ism_server"
         exit 1
+    else
+        log_warn "未安装 Go，使用现有后端二进制文件"
     fi
 
     mkdir -p data/auth static/HistoryData static/reportTemplete static/RecordVideo logs
@@ -147,17 +160,23 @@ _do_start_backend() {
 
     log_info "等待后端服务就绪..."
     for i in $(seq 1 30); do
+        if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
+            log_error "后端进程已退出，禁止将旧端口监听误判为启动成功"
+            return 1
+        fi
         if curl -s http://127.0.0.1:8081/ > /dev/null 2>&1; then
-            log_ok "后端服务就绪 (http://127.0.0.1:8081)"
-            break
+            if lsof -tiTCP:8081 -sTCP:LISTEN 2>/dev/null | grep -qx "$BACKEND_PID"; then
+                log_ok "后端服务就绪 (http://127.0.0.1:8081, PID: $BACKEND_PID)"
+                cd "$PROJECT_ROOT"
+                return 0
+            fi
         fi
         if [ $i -eq 30 ]; then
-            log_warn "后端服务可能启动较慢，请稍候..."
+            log_error "后端启动超时或 8081 由其他进程占用"
+            return 1
         fi
         sleep 1
     done
-
-    cd "$PROJECT_ROOT"
 }
 
 start_backend() {

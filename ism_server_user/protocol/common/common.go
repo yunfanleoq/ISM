@@ -136,6 +136,7 @@ type PushAlarm struct {
 	AlarmMessage      string
 	AlarmClearMessage string
 	AlarmOnValue      int // 0 或 1：实时值等于该字符串时触发告警，默认 1
+	SuppressNotice    bool
 }
 
 // ResolveAlarmOnValue 未配置时默认 1 报警

@@ -1210,8 +1210,7 @@ func SetDeviceEnable(uuid string, updateData MonitorList) int {
 	} else {
 		updateData.Status = 3
 	}
-	protocol_common.DeviceRealDataMapByUUID.Store("sys.suid.device.status", fmt.Sprintf("%d", updateData.Status))
-	protocol_common.DeviceRealDataMap.Store(updateData.Name+"->"+"设备状态", fmt.Sprintf("%d", updateData.Status))
+	protocol_common.StoreDeviceRealValue("sys.suid.device.status", updateData.Name, "设备状态", fmt.Sprintf("%d", updateData.Status))
 	err := Db.Model(&MonitorList{}).Select("is_enable", "status").Where("uuid = ?", uuid).Updates(&updateData).Error
 	if err != nil {
 		return errmsg.ERROR

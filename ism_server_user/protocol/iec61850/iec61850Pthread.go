@@ -383,6 +383,10 @@ func (c *IEC61850Ctl) DealWithOpcuaCtlAlarmData(AlarmData protocol_common.PushAl
 	key := build.String()
 	alarmTemp, isExist := c.DeviceAlarmTemp[key]
 
+	if protocol_common.ObserveStartupAlarm(alarm, alarm.Value == "1") {
+		c.DeviceAlarmTemp[key] = alarm
+		return
+	}
 	updateAlarm.AlarmName = alarm.DataName
 	updateAlarm.DeviceUuid = alarm.DeviceUuid
 	updateAlarm.ProjectUuid = alarm.ProjectUuid

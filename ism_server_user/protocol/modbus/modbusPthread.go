@@ -768,8 +768,16 @@ func (c *ModbusCtl) DealWithModbusAlarmData(AlarmData protocol_common.PushAlarm)
 	alarm.AlarmClearMessage = updateAlarm.AlarmClearMessage
 	alarm.AlarmMessage = updateAlarm.AlarmMessage
 
+	active := protocol_common.IsAlarmValueActive(alarm.Value, alarm.AlarmOnValue)
+	if alarm.DataUuid == "sys.suid.device.status" {
+		active = alarm.Value == "1"
+	}
+	if protocol_common.ObserveStartupAlarm(alarm, active) {
+		c.DeviceAlarmTemp[key] = alarm
+		return
+	}
+
 	if !isExist {
-		oldValue, isexit := protocol_common.DeviceRealDataMapByUUID.Load(alarm.DeviceUuid + alarm.DataUuid)
 		var findAlarm models.DevicesAlarmList
 		// ========== 修复点1：创建新告警前，先清除未清除的旧告警 ==========
 		// 查询该数据点未清除的告警记录
@@ -800,42 +808,26 @@ func (c *ModbusCtl) DealWithModbusAlarmData(AlarmData protocol_common.PushAlarm)
 		} else {
 			alarm.ID = updateAlarm.ID
 		}
-		if protocol_common.IsAlarmValueActive(alarm.Value, alarm.AlarmOnValue) {
+		if active {
 			if protocol_common.ClearAlarmType == 0 {
 				ClearTime, _ := time.Parse("2006-01-02 15:04:05", "2006-01-02 15:04:05")
 				updateAlarm.ClearTime = ClearTime
 				models.Db.Model(&models.DevicesAlarmList{}).Create(&updateAlarm)
 			}
-			if isexit {
-				if oldValue != alarm.Value {
-					protocol_common.PushGAlarmQueue.QueuePush(alarm)
-					if updateAlarm.DataUuid == "sys.suid.device.status" {
-						models.Db.Model(&models.MonitorList{}).Where("uuid = ?", alarm.DeviceUuid).Update("status", 0)
-					}
-					go ismAlarmNotice.SendAlarmNotice(alarm)
-				}
-			} else {
-				protocol_common.PushGAlarmQueue.QueuePush(alarm)
-				if updateAlarm.DataUuid == "sys.suid.device.status" {
-					models.Db.Model(&models.MonitorList{}).Where("uuid = ?", alarm.DeviceUuid).Update("status", 0)
-				}
+			protocol_common.PushGAlarmQueue.QueuePush(alarm)
+			if updateAlarm.DataUuid == "sys.suid.device.status" {
+				models.Db.Model(&models.MonitorList{}).Where("uuid = ?", alarm.DeviceUuid).Update("status", 0)
+			}
+			if !alarm.SuppressNotice {
 				go ismAlarmNotice.SendAlarmNotice(alarm)
 			}
 		} else {
-			if isexit {
-				if oldValue != alarm.Value {
-					if updateAlarm.DataUuid == "sys.suid.device.status" {
-						protocol_common.PushGAlarmQueue.QueuePush(alarm)
-						go ismAlarmNotice.SendAlarmNotice(alarm)
-						models.Db.Model(&models.MonitorList{}).Where("uuid = ?", alarm.DeviceUuid).Update("status", 1)
-					}
-				}
-			} else {
-				if updateAlarm.DataUuid == "sys.suid.device.status" {
-					protocol_common.PushGAlarmQueue.QueuePush(alarm)
+			if updateAlarm.DataUuid == "sys.suid.device.status" {
+				protocol_common.PushGAlarmQueue.QueuePush(alarm)
+				if !alarm.SuppressNotice {
 					go ismAlarmNotice.SendAlarmNotice(alarm)
-					models.Db.Model(&models.MonitorList{}).Where("uuid = ?", alarm.DeviceUuid).Update("status", 1)
 				}
+				models.Db.Model(&models.MonitorList{}).Where("uuid = ?", alarm.DeviceUuid).Update("status", 1)
 			}
 			if protocol_common.ClearAlarmType == 1 {
 				updateAlarm.ClearTime = alarm.HappenTime
@@ -847,7 +839,7 @@ func (c *ModbusCtl) DealWithModbusAlarmData(AlarmData protocol_common.PushAlarm)
 	} else {
 		if alarmTemp.Value != alarm.Value {
 			var status int = 0
-			if protocol_common.IsAlarmValueActive(alarm.Value, alarm.AlarmOnValue) {
+			if active {
 				// ========== 修复点2：状态切换为告警时，确保旧告警已清除 ==========
 				var findOldAlarm models.DevicesAlarmList
 				oldAlarmResult := models.Db.Model(&models.DevicesAlarmList{}).
@@ -873,7 +865,7 @@ func (c *ModbusCtl) DealWithModbusAlarmData(AlarmData protocol_common.PushAlarm)
 				alarm.ID = updateAlarm.ID
 				status = 0
 				protocol_common.PushGAlarmQueue.QueuePush(alarm)
-				if alarm.AlarmMessage != "" {
+				if alarm.AlarmMessage != "" && !alarm.SuppressNotice {
 					go ismAlarmNotice.SendAlarmNotice(alarm)
 				}
 			} else {
@@ -882,7 +874,7 @@ func (c *ModbusCtl) DealWithModbusAlarmData(AlarmData protocol_common.PushAlarm)
 				status = 1
 				models.Db.Model(&models.DevicesAlarmList{}).Where("ID = ? AND device_uuid = ? AND data_uuid = ?", alarmTemp.ID, alarm.DeviceUuid, alarm.DataUuid).Updates(models.DevicesAlarmList{ClearTime: updateAlarm.ClearTime, KeepTime: updateAlarm.KeepTime})
 				protocol_common.PushGAlarmQueue.QueuePush(alarm)
-				if alarm.AlarmClearMessage != "" {
+				if alarm.AlarmClearMessage != "" && !alarm.SuppressNotice {
 					go ismAlarmNotice.SendAlarmNotice(alarm)
 				}
 			}
@@ -908,8 +900,7 @@ func (c *ModbusCtl) ClearRealData() {
 	tempPushData.Cmd = "RealData"
 
 	for _, v := range datalist {
-		protocol_common.DeviceRealDataMapByUUID.Store(v.RealDataUuid, ClearValue)
-		protocol_common.DeviceRealDataMap.Store(device.Name+"->"+v.Name, ClearValue)
+		protocol_common.StoreDeviceRealValue(v.RealDataUuid, device.Name, v.Name, ClearValue)
 		tempPushData.Data = append(tempPushData.Data, protocol_common.UpdateStu{DataName: v.Name, Uuid: v.RealDataUuid, ModelDataUuid: v.ModelDataUuid, Value: ClearValue})
 	}
 	go ismWebsocket.WSSend(tempPushData, tempPushData.ProjectUuid, 2)
@@ -1373,8 +1364,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 												signleAlarm.Value = fmt.Sprintf("%d", coils)
 												signleHistoryData.DataValue = fmt.Sprintf("%d", coils)
 												pushTriggerAlarm.Value = fmt.Sprintf("%d", coils)
-												protocol_common.DeviceRealDataMapByUUID.Store(data.RealDataUuid, pushTriggerAlarm.Value)
-												protocol_common.DeviceRealDataMap.Store(device.Name+"->"+data.Name, pushTriggerAlarm.Value)
+												protocol_common.StoreDeviceRealValue(data.RealDataUuid, device.Name, data.Name, pushTriggerAlarm.Value)
 												tempPushData.Data = append(tempPushData.Data, protocol_common.UpdateStu{DataName: data.Name, Uuid: data.RealDataUuid, ModelDataUuid: data.ModelDataUuid, Value: fmt.Sprintf("%d", coils)})
 												if data.IsAlarm == 1 && data.AlarmShield == 0 {
 													signleAlarm.AlarmLevel = data.AlarmLevel
@@ -2218,8 +2208,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 										signleAlarm.Value = fmt.Sprintf("%d", coils)
 										signleHistoryData.DataValue = fmt.Sprintf("%d", coils)
 										pushTriggerAlarm.Value = fmt.Sprintf("%d", coils)
-										protocol_common.DeviceRealDataMapByUUID.Store(data.RealDataUuid, pushTriggerAlarm.Value)
-										protocol_common.DeviceRealDataMap.Store(device.Name+"->"+data.Name, pushTriggerAlarm.Value)
+										protocol_common.StoreDeviceRealValue(data.RealDataUuid, device.Name, data.Name, pushTriggerAlarm.Value)
 										tempPushData.Data = append(tempPushData.Data, protocol_common.UpdateStu{DataName: data.Name, Uuid: data.RealDataUuid, ModelDataUuid: data.ModelDataUuid, Value: fmt.Sprintf("%d", coils)})
 										if data.IsAlarm == 1 && data.AlarmShield == 0 {
 											signleAlarm.AlarmLevel = data.AlarmLevel

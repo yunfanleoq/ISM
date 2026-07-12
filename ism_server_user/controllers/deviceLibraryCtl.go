@@ -654,15 +654,8 @@ func (c *DeviceLibraryController) GetRealData() {
 			}
 			// 实时值一律从内存 Map 覆盖（socket/采集写入），与 dbtype 无关；库里的 value 只是落盘快照
 			for key, v := range realData {
-				if DeviceDataValue, isExist := protocol_common.DeviceRealDataMapByUUID.Load(v.Uuid); isExist {
-					realData[key].Value = DeviceDataValue.(string)
-					continue
-				}
-				// 兼容：采集侧常用 deviceName->dataName 写入
-				if v.DeviceName != "" && v.Name != "" {
-					if DeviceDataValue, isExist := protocol_common.DeviceRealDataMap.Load(v.DeviceName + "->" + v.Name); isExist {
-						realData[key].Value = DeviceDataValue.(string)
-					}
+				if deviceDataValue, exists := protocol_common.LoadDeviceRealValue(v.Uuid, v.DeviceName, v.Name); exists {
+					realData[key].Value = deviceDataValue
 				}
 			}
 		} else {
@@ -714,9 +707,8 @@ func (c *DeviceLibraryController) GetRealDataByUuid() {
 		realData, code = models.GetRealDataByUuid(getParams.Uuid, getParams.Devices)
 
 		for key, v := range realData {
-			DeviceDataValue, isExist := protocol_common.DeviceRealDataMapByUUID.Load(v.Uuid)
-			if isExist {
-				realData[key].Value = DeviceDataValue.(string)
+			if deviceDataValue, exists := protocol_common.LoadDeviceRealValue(v.Uuid, v.DeviceName, v.Name); exists {
+				realData[key].Value = deviceDataValue
 			}
 		}
 
@@ -805,8 +797,7 @@ func (c *DeviceLibraryController) SetRealData() {
 						code = errmsg.ERROR
 					}
 					staticDataTask.PushStaticCloseChan()
-					protocol_common.DeviceRealDataMapByUUID.Store(readData.Uuid, SetValue)
-					protocol_common.DeviceRealDataMap.Store(readData.DeviceName+"->"+staticData.Name, SetValue)
+					protocol_common.StoreDeviceRealValue(readData.Uuid, readData.DeviceName, staticData.Name, SetValue)
 
 					tempPushData.DeviceUuid = DeviceUuid
 					tempPushData.ProjectUuid = readData.ProjectUuid
@@ -907,8 +898,7 @@ func (c *DeviceLibraryController) SetRealData() {
 							code = BACnetSetObj.BACnetSetData(readData.Uuid, SetValue)
 						}
 						if code == 0 {
-							protocol_common.DeviceRealDataMapByUUID.Store(readData.Uuid, SetValue)
-							protocol_common.DeviceRealDataMap.Store(readData.DeviceName+"->"+readData.Name, SetValue)
+							protocol_common.StoreDeviceRealValue(readData.Uuid, readData.DeviceName, readData.Name, SetValue)
 
 							var tempPushData protocol_common.PushRealDataWebData
 							tempPushData.DeviceUuid = DeviceUuid

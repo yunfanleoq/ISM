@@ -12,7 +12,6 @@ import (
 	protocol_common "ISMServer/protocol/common"
 	customDataTask "ISMServer/task/DealWithCustomData"
 	ISMScript "ISMServer/task/ISMScript"
-	writerealdataTask "ISMServer/task/RealData"
 	SyncData "ISMServer/task/SyncData"
 	ISMConfigFile "ISMServer/task/SystemConfigFile"
 	taskplanpthread "ISMServer/task/TaskPlan"
@@ -24,12 +23,14 @@ import (
 
 func TasksServer() {
 	protocol_common.ProtocolCommonInit()
-	SyncData.SyncDevicesDataToMemory()
+	if SyncData.FullPrewarmEnabled() {
+		go SyncData.SyncDevicesDataToMemory()
+	}
 	dataHistoryTask.HistoryRecordDb()
+	alarmTask.InitializeStartupAlarmGuard()
 	go alarmTask.DealWithAlarm()
 	go dataHistoryTask.DealWithHistoryData()
 	go triggerAlarmTask.AlarmTriggerTask()
-	go writerealdataTask.DealWithRealData()
 	go customDataTask.CustomDataTask()
 	go staticDataTask.PushStaticDataTask()
 	go taskplanpthread.TaskPlanPthread()

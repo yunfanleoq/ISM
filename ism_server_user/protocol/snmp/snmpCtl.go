@@ -332,6 +332,10 @@ func (c *SnmpCtl) DealWithSnmpCtlAlarmData(AlarmData protocol_common.PushAlarm) 
 	build.WriteString(alarm.DataUuid)
 	key := build.String()
 	alarmTemp, isExist := c.DeviceAlarmTemp[key]
+	if protocol_common.ObserveStartupAlarm(alarm, alarm.Value == "1") {
+		c.DeviceAlarmTemp[key] = alarm
+		return
+	}
 
 	updateAlarm.AlarmName = alarm.DataName
 	updateAlarm.DeviceUuid = alarm.DeviceUuid
@@ -649,8 +653,7 @@ func (c *SnmpCtl) GatherSnmpOids() {
 						temp.Value = string(variable.Value.([]byte))
 					}
 					c.updatesMap[variable.Name] = temp
-					protocol_common.DeviceRealDataMapByUUID.Store(temp.Uuid, temp.Value)
-					protocol_common.DeviceRealDataMap.Store(device.Name+"->"+temp.Name, temp.Value)
+					protocol_common.StoreDeviceRealValue(temp.Uuid, device.Name, temp.Name, temp.Value)
 					tempPushData.Data = append(tempPushData.Data, protocol_common.UpdateStu{Oid: variable.Name, Uuid: temp.Uuid, ModelDataUuid: temp.ModelDataUuid, Value: temp.Value})
 					//models.Db.Model(&models.DeviceRealData{}).Select("Value").Where("uuid = ?", temp.Uuid).Update("Value", temp.Value)
 				case g.Integer, g.Counter32, g.TimeTicks, g.Counter64, g.Uinteger32, g.Boolean:
@@ -789,16 +792,14 @@ func (c *SnmpCtl) GatherSnmpOids() {
 					if isExistCustom {
 						protocol_common.GCustomDataQueue.Store(pushTriggerAlarm.DeviceUuid+"->"+pushTriggerAlarm.ModelDataUuid, pushTriggerAlarm)
 					}
-					protocol_common.DeviceRealDataMapByUUID.Store(temp.Uuid, temp.Value)
-					protocol_common.DeviceRealDataMap.Store(device.Name+"->"+temp.Name, temp.Value)
+					protocol_common.StoreDeviceRealValue(temp.Uuid, device.Name, temp.Name, temp.Value)
 					tempPushData.Data = append(tempPushData.Data, protocol_common.UpdateStu{Oid: variable.Name, Uuid: temp.Uuid, ModelDataUuid: temp.ModelDataUuid, Value: temp.Value})
 					//models.Db.Model(&models.DeviceRealData{}).Select("Value").Where("uuid = ?", temp.Uuid).Update("Value", temp.Value)
 				case g.IPAddress:
 					ipaddress := fmt.Sprintf("%s", variable.Value)
 					temp.Value = ipaddress
 					c.updatesMap[variable.Name] = temp
-					protocol_common.DeviceRealDataMapByUUID.Store(temp.Uuid, temp.Value)
-					protocol_common.DeviceRealDataMap.Store(device.Name+"->"+temp.Name, temp.Value)
+					protocol_common.StoreDeviceRealValue(temp.Uuid, device.Name, temp.Name, temp.Value)
 					tempPushData.Data = append(tempPushData.Data, protocol_common.UpdateStu{Oid: variable.Name, Uuid: temp.Uuid, ModelDataUuid: temp.ModelDataUuid, Value: temp.Value})
 					//models.Db.Model(&models.DeviceRealData{}).Select("Value").Where("uuid = ?", temp.Uuid).Update("Value", temp.Value)
 				default:

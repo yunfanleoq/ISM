@@ -143,15 +143,9 @@ func GetDeviceData(deviceData string) interface{} {
 	if len(data) != 2 {
 		return nil
 	}
-	// var getRealData models.DeviceRealData
-	// err1 := models.Db.Model(&models.DeviceRealData{}).Where("BINARY device_name = ? and name = ? ", data[0], data[1]).First(&getRealData)
-	// if errors.Is(err1.Error, gorm.ErrRecordNotFound) {
-	// 	return 0
-	// }
-
-	getValue, isExistCustom := protocol_common.DeviceRealDataMap.Load(data[0] + "->" + data[1])
-	if isExistCustom {
-		t, convError := strconv.ParseFloat(getValue.(string), 64)
+	getValue, exists := loadDeviceValue(data[0], data[1])
+	if exists {
+		t, convError := strconv.ParseFloat(getValue, 64)
 		if convError != nil {
 			return getValue
 		}
@@ -171,18 +165,26 @@ func GetDeviceRealData(deviceData string) interface{} {
 	if len(data) != 2 {
 		return nil
 	}
-	// var getRealData models.DeviceRealData
-	// err1 := models.Db.Model(&models.DeviceRealData{}).Where("BINARY device_name = ? and name = ? ", data[0], data[1]).First(&getRealData)
-	// if errors.Is(err1.Error, gorm.ErrRecordNotFound) {
-	// 	return 0
-	// }
-
-	getValue, isExistCustom := protocol_common.DeviceRealDataMap.Load(data[0] + "->" + data[1])
-	if isExistCustom {
+	getValue, exists := loadDeviceValue(data[0], data[1])
+	if exists {
 		return getValue
-	} else {
-		return nil
 	}
+	return nil
+}
+
+func loadDeviceValue(deviceName, pointName string) (string, bool) {
+	if value, exists := protocol_common.LoadDeviceRealValue("", deviceName, pointName); exists {
+		return value, true
+	}
+	var point models.DeviceRealData
+	err := models.Db.Model(&models.DeviceRealData{}).
+		Select("value").
+		Where("device_name = ? and name = ?", deviceName, pointName).
+		First(&point).Error
+	if err != nil {
+		return "", false
+	}
+	return point.Value, true
 }
 func GetModuleDeviceList(moduleName string) []moduleDeviceStu {
 	var results []moduleDeviceStu
@@ -295,8 +297,7 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 			protocol_common.GHistoryDataQueue.QueuePush(signleHistoryData)
 		}
 
-		protocol_common.DeviceRealDataMapByUUID.Store(getRealData.Uuid, SetValue)
-		protocol_common.DeviceRealDataMap.Store(getRealData.DeviceName+"->"+getRealData.Name, SetValue)
+		protocol_common.StoreDeviceRealValue(getRealData.Uuid, getRealData.DeviceName, getRealData.Name, SetValue)
 
 	} else {
 		var readData models.DeviceRealData
@@ -337,8 +338,7 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 			}
 
 			if code == 0 {
-				protocol_common.DeviceRealDataMapByUUID.Store(getRealData.Uuid, SetValue)
-				protocol_common.DeviceRealDataMap.Store(getRealData.DeviceName+"->"+getRealData.Name, SetValue)
+				protocol_common.StoreDeviceRealValue(getRealData.Uuid, getRealData.DeviceName, getRealData.Name, SetValue)
 				var tempPushData protocol_common.PushRealDataWebData
 				tempPushData.DeviceUuid = DeviceUuid
 				tempPushData.ProjectUuid = readData.ProjectUuid
@@ -717,9 +717,9 @@ func BitGet(deviceData string, bitSize uint8) int8 {
 	if bitSize <= 0 {
 		return -4
 	}
-	getValue, isExistCustom := protocol_common.DeviceRealDataMap.Load(data[0] + "->" + data[1])
-	if isExistCustom {
-		t, convError := strconv.Atoi(getValue.(string))
+	getValue, exists := loadDeviceValue(data[0], data[1])
+	if exists {
+		t, convError := strconv.Atoi(getValue)
 		if convError != nil {
 			return -3
 		} else {
@@ -736,9 +736,9 @@ func BitSet(deviceData string, bitSize uint8, bitValue uint8) int8 {
 	if bitSize <= 0 {
 		return -4
 	}
-	getValue, isExistCustom := protocol_common.DeviceRealDataMap.Load(data[0] + "->" + data[1])
-	if isExistCustom {
-		t, convError := strconv.Atoi(getValue.(string))
+	getValue, exists := loadDeviceValue(data[0], data[1])
+	if exists {
+		t, convError := strconv.Atoi(getValue)
 		if convError != nil {
 			return -3
 		} else {
@@ -759,6 +759,7 @@ func BitSet(deviceData string, bitSize uint8, bitValue uint8) int8 {
 	}
 	return 0
 }
+
 // DeviceDataLookupIndex indexes DeviceRealDataMap for flexible point reference resolution.
 type DeviceDataLookupIndex struct {
 	ByDirectKey    map[string]interface{} // key: "device->data"
@@ -907,10 +908,27 @@ func resolveToDirectKey(pointRef string, idx *DeviceDataLookupIndex) string {
 // ResolvePointReference resolves a point reference string to a formatted real-time value.
 func ResolvePointReference(pointRef string, idx *DeviceDataLookupIndex) interface{} {
 	directKey := resolveToDirectKey(pointRef, idx)
-	if directKey == "" {
+	if directKey != "" {
+		return GetDeviceData(directKey)
+	}
+	pointRef = strings.TrimSpace(pointRef)
+	if strings.Contains(pointRef, "->") {
+		return GetDeviceData(pointRef)
+	}
+
+	var points []models.DeviceRealData
+	query := models.Db.Model(&models.DeviceRealData{}).Select("device_name", "name")
+	if separator := strings.Index(pointRef, "_"); separator > 0 {
+		deviceName := pointRef[:separator]
+		pointName := pointRef[separator+1:]
+		query = query.Where("(device_name = ? AND name = ?) OR name = ?", deviceName, pointName, pointRef)
+	} else {
+		query = query.Where("name = ?", pointRef)
+	}
+	if err := query.Limit(2).Find(&points).Error; err != nil || len(points) != 1 {
 		return nil
 	}
-	return GetDeviceData(directKey)
+	return GetDeviceData(points[0].DeviceName + "->" + points[0].Name)
 }
 
 func SaveDeviceData(deviceData string) int8 {
@@ -918,8 +936,8 @@ func SaveDeviceData(deviceData string) int8 {
 	if len(data) != 2 {
 		return -1
 	}
-	getValue, isExistCustom := protocol_common.DeviceRealDataMap.Load(data[0] + "->" + data[1])
-	if !isExistCustom {
+	getValue, exists := loadDeviceValue(data[0], data[1])
+	if !exists {
 		return -4
 	}
 	var getRealData models.DeviceRealData
@@ -938,7 +956,7 @@ func SaveDeviceData(deviceData string) int8 {
 	signleHistoryData.RecordInterval = getRealData.RecordInterval
 
 	//存储信息
-	signleHistoryData.DataValue = getValue.(string)
+	signleHistoryData.DataValue = getValue
 	signleHistoryData.DataName = getRealData.Name
 	signleHistoryData.DeviceName = getRealData.DeviceName
 	signleHistoryData.RecordTime = time.Now()
