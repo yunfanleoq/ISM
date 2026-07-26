@@ -1465,7 +1465,8 @@ func (c *OpcuaCtl) GatherOPcuaDeviceData() {
 					signleAlarm.HappenTime = time.Now()
 					c.DealWithOpcuaCtlAlarmData(signleAlarm)
 					// protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-				} else if temp.IsRecord == 1 {
+				}
+				if temp.IsRecord == 1 {
 					//存储信息
 					signleHistoryData.DataName = temp.Name
 					signleHistoryData.DeviceName = device.Name

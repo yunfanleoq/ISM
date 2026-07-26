@@ -57,13 +57,18 @@ type SnmpDevicesDataModel struct {
 }
 
 // 实时数据
+// 注意：UUID/项目等过滤列必须保持 varchar(250)，禁止落成 LONGTEXT，
+// 否则 OceanBase 无法有效建索引，GetSystemAnalysis COUNT 会全表扫描超时（Error 4012）。
+// 复合索引 idx_drd_project_deleted 由 ensureDeviceRealDataQueryIndexes 保证创建。
 type DeviceRealData struct {
 	gorm.Model
 
 	Name                 string `gorm:"index;type:varchar(250);not null"  json:"name" validate:"required,min=4,max=250" label:"OID名称"`
 	DeviceName           string `gorm:"index;type:varchar(250);not null"  json:"DeviceName" validate:"required,min=4,max=250" label:"设备名称"`
 	Oid                  string `gorm:"index;type:varchar(250);" json:"oid" validate:"required,min=2,max=250" label:"OID"`
-	Uuid                 string `gorm:"index;type:varchar(250);not null" json:"uuid" validate:"required,min=2,max=250" label:"数据标识"`
+	Uuid                 string `gorm:"index:idx_drd_uuid,priority:1;type:varchar(250);not null" json:"uuid" validate:"required,min=2,max=250" label:"数据标识"`
+	// 复合索引 idx_drd_project_deleted(project_uuid, deleted_at) 仅由 ensureDeviceRealDataQueryIndexes 创建，
+	// 此处勿用同名单列 index，否则 AutoMigrate 会占名导致复合索引被跳过。
 	ProjectUuid          string `gorm:"index;type:varchar(250);not null" json:"project_uuid" validate:"required" label:"项目的UUID"`
 	Auth                 int    `gorm:"type:int;not null" json:"auth" validate:"required" label:"读写权限"`
 	Type                 int    `gorm:"type:int;not null" json:"type" validate:"required" label:"数据类型"`
@@ -71,7 +76,7 @@ type DeviceRealData struct {
 	Muid                 string `gorm:"index;type:varchar(250);not null" json:"muid" validate:"required" label:"模型的id"`
 	ModelDataUuid        string `gorm:"index;type:varchar(250);not null" json:"mduid" validate:"required" label:"模型的数据id"`
 	ConversionExpression string `gorm:"type:varchar(250);" json:"conversionExpression" validate:"required" label:"转换表达式"`
-	DeviceUuid           string `gorm:"index;type:varchar(250);not null" json:"duid" validate:"required" label:"设备uuid"`
+	DeviceUuid           string `gorm:"index:idx_drd_device_uuid,priority:1;type:varchar(250);not null" json:"duid" validate:"required" label:"设备uuid"`
 	DeviceType           int    `gorm:"type:int;not null"  validate:"required" label:"设备类型"`
 	DataUnit             string `gorm:"type:varchar(250);" json:"unit" validate:"required" label:"数据单位"`
 	IsAlarm              int    `gorm:"index;type:int;" json:"alarm" validate:"required" label:"是否是告警"`
@@ -498,6 +503,52 @@ func ModelDataPointsByMuid(muid string) []map[string]string {
 		out = append(out, item)
 	}
 	return out
+}
+
+// ModelDataPointsPageByMuid 在设备尚未生成 device_real_data 时按物模型定义提供分页点位。
+// 返回值只含当前页，避免前端首屏加载或订阅整个物模型。
+func ModelDataPointsPageByMuid(muid, keyword string, page, pageSize int) ([]DeviceRealData, int64) {
+	return paginateModelDataPoints(ModelDataPointsByMuid(muid), muid, keyword, page, pageSize)
+}
+
+func paginateModelDataPoints(all []map[string]string, muid, keyword string, page, pageSize int) ([]DeviceRealData, int64) {
+	keyword = strings.ToLower(strings.TrimSpace(keyword))
+	filtered := make([]map[string]string, 0, len(all))
+	for _, point := range all {
+		if keyword != "" && !strings.Contains(strings.ToLower(point["name"]), keyword) {
+			continue
+		}
+		filtered = append(filtered, point)
+	}
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = RealDataDefaultPageSize
+	}
+	if pageSize > RealDataMaxPageSize {
+		pageSize = RealDataMaxPageSize
+	}
+	total := int64(len(filtered))
+	start := (page - 1) * pageSize
+	if start >= len(filtered) {
+		return []DeviceRealData{}, total
+	}
+	end := start + pageSize
+	if end > len(filtered) {
+		end = len(filtered)
+	}
+	out := make([]DeviceRealData, 0, end-start)
+	for _, point := range filtered[start:end] {
+		out = append(out, DeviceRealData{
+			Name:          point["name"],
+			Uuid:          point["uuid"],
+			ModelDataUuid: point["uuid"],
+			DataUnit:      point["unit"],
+			Muid:          muid,
+		})
+	}
+	return out, total
 }
 
 // mib删除

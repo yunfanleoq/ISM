@@ -280,11 +280,7 @@ export default {
             data: [80],
             coordinateSystem: 'polar',
 
-            itemStyle: {
-              normal: {
-                color: 'rgba(96, 244, 194, 1)',
-              },
-            },
+            itemStyle: {color: 'rgba(96, 244, 194, 1)'},
           },
           ],
         }

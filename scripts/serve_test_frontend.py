@@ -18,8 +18,16 @@ BACKEND_ROOT_PREFIXES = ("/SSEPushData",)
 
 # 大组态 JSON 经 cpolar 外网可达 90s+；SSE 需长连接
 PROXY_TIMEOUT = int(os.environ.get("ISM_PROXY_TIMEOUT", "300"))
+# Modbus/IEC104 等全量点位导入在 OceanBase 上可达数十分钟
+IMPORT_PROXY_TIMEOUT = int(os.environ.get("ISM_IMPORT_PROXY_TIMEOUT", "7200"))
 SSE_TIMEOUT = int(os.environ.get("ISM_SSE_TIMEOUT", "3600"))
 STREAM_CHUNK = 65536
+LONG_IMPORT_PATH_SUFFIXES = (
+    "UpdateAllModbusDataModel",
+    "UpdateDataModel",
+    "UpdateIEC104DataModel",
+    "UpdateModbusTcpPushDataModel",
+)
 
 
 def _default_fe_port() -> int:
@@ -28,10 +36,12 @@ def _default_fe_port() -> int:
 
 
 def _default_be_url() -> str:
-    if url := os.environ.get("ISM_BE_URL"):
+    # 兼容麒麟 Python 3.7（禁止 assignment expression / walrus）
+    url = os.environ.get("ISM_BE_URL")
+    if url:
         return url
     be_port = os.environ.get("ISM_BE_PORT") or "8091"
-    return f"http://127.0.0.1:{be_port}"
+    return "http://127.0.0.1:%s" % be_port
 
 
 class ProxyHandler(http.server.SimpleHTTPRequestHandler):
@@ -102,6 +112,20 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
         port = parsed.port or (443 if parsed.scheme == "https" else 80)
         return host, port
 
+    def _proxy_timeout(self, stream_only: bool, target_path: str) -> int:
+        if stream_only:
+            return SSE_TIMEOUT
+        path_only = target_path.split("?", 1)[0].rstrip("/")
+        if any(path_only.endswith(suffix) for suffix in LONG_IMPORT_PATH_SUFFIXES):
+            return IMPORT_PROXY_TIMEOUT
+        return PROXY_TIMEOUT
+
+    def _safe_send_error(self, code: int, message: str):
+        try:
+            self.send_error(code, message)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            pass
+
     def _proxy_backend(self, stream_only: bool):
         target_path = self._backend_target_path()
         if os.environ.get("ISM_TEST_SKIP_LICENSE", "1") == "1":
@@ -118,7 +142,7 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
         host, port = self._backend_host_port()
         length = int(self.headers.get("Content-Length", 0))
         body = self.rfile.read(length) if length else None
-        timeout = SSE_TIMEOUT if stream_only else PROXY_TIMEOUT
+        timeout = self._proxy_timeout(stream_only, target_path)
         conn = http.client.HTTPConnection(host, port, timeout=timeout)
         try:
             conn.request(
@@ -138,6 +162,11 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_header("Cache-Control", "no-cache, no-transform")
                 self.send_header("Connection", "keep-alive")
                 self.send_header("X-Accel-Buffering", "no")
+            else:
+                # 后端若使用 chunked 响应，代理会移除 Transfer-Encoding。
+                # 显式关闭客户端连接，让 cpolar/浏览器能在正文结束后立即完成请求。
+                self.send_header("Connection", "close")
+                self.close_connection = True
             self.end_headers()
             while True:
                 chunk = resp.read(STREAM_CHUNK)
@@ -145,13 +174,16 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
                     break
                 self.wfile.write(chunk)
                 self.wfile.flush()
-        except (BrokenPipeError, ConnectionResetError, socket.timeout) as e:
+        except (BrokenPipeError, ConnectionResetError) as e:
+            # 客户端已断开（常见于导入过久）；勿再 send_error，否则二次 BrokenPipe
+            sys.stderr.write("proxy client disconnected: %s path=%s\n" % (e, target_path))
+        except socket.timeout as e:
             if stream_only:
-                sys.stderr.write(f"SSE client disconnected: {e}\n")
+                sys.stderr.write("SSE timeout: %s\n" % e)
             else:
-                self.send_error(502, f"Backend proxy error: {e}")
+                self._safe_send_error(504, "Backend proxy timeout: %s" % e)
         except Exception as e:
-            self.send_error(502, f"Backend proxy error: {e}")
+            self._safe_send_error(502, "Backend proxy error: %s" % e)
         finally:
             conn.close()
 
@@ -174,7 +206,7 @@ def main():
     os.chdir(dist)
     server = http.server.ThreadingHTTPServer(("0.0.0.0", args.port), ProxyHandler)
     print(f"前端: http://0.0.0.0:{args.port}/  (dist={dist})")
-    print(f"API 代理: /api/* -> {args.backend} (timeout={PROXY_TIMEOUT}s, stream chunk={STREAM_CHUNK})")
+    print(f"API 代理: /api/* -> {args.backend} (timeout={PROXY_TIMEOUT}s, import={IMPORT_PROXY_TIMEOUT}s, stream chunk={STREAM_CHUNK})")
     print(f"根路径代理: {', '.join(BACKEND_ROOT_PREFIXES)} -> {args.backend} (timeout={SSE_TIMEOUT}s)")
     try:
         server.serve_forever()

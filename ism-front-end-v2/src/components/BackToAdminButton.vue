@@ -4,7 +4,7 @@
     v-if="isAdmin"
     class="back-to-admin-btn"
     @click="goAdmin"
-    title="项目后台"
+    title="项目列表"
   >
     <svg class="bta-gear" viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
       <path
@@ -49,9 +49,10 @@ export default {
       if (projectUuid) {
         setAuthorization({ token: projectUuid }, AUTH_TYPE.AUTH1)
       }
-      // 项目后台（AdminLayout + 侧栏菜单），非系统级 /Project 项目列表
-      if (this.$route.path !== '/dashboard') {
-        this.$router.push('/dashboard')
+      // 回到「我的项目」列表，便于多项目切换；再点具体项目进入其管理后台
+      const target = '/Project'
+      if (this.$route.path.toLowerCase() !== target.toLowerCase()) {
+        this.$router.push(target)
       }
     },
   },
@@ -59,14 +60,13 @@ export default {
 </script>
 
 <style lang="less" scoped>
-/* 精确落进顶栏右上角的「齿轮槽位」：紧贴屏幕右边缘（right 13px ≈ 生成脚本在 x≈1898
-   之后留出的空当），与"🟢 在线"文字（生成脚本已右移至 cell x≈1838，文字右端约 x≈1882）
-   仅留 ~8-10px 协调间距、垂直居中对齐同一状态行。小尺寸、低调样式，不撑高顶栏。
+/* 齿轮贴近右边缘，避免与“在线”状态文字重叠。
+   垂直居中对齐同一状态行，小尺寸、低调样式，不撑高顶栏。
    注：齿轮是前端浮层（需 Admin 权限 + 路由），生成脚本只负责让"在线/日期"右移腾位。 */
 .back-to-admin-btn {
   position: fixed;
   top: 21px;
-  right: 13px;
+  right: 5px;
   z-index: 1200;
   display: flex;
   align-items: center;

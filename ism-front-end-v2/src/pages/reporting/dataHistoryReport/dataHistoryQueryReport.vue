@@ -173,7 +173,7 @@ import { getMonitorTree } from "@/services/device";
 import { GetDeviceModelDataList } from "../../../services/device";
 import { GetDataHistoryList, GetDataHistoryReport } from "../../../services/report";
 import moment from 'moment';
-import { formatDate } from '@/utils/common';
+import { formatDate, parseLocalDateTime } from '@/utils/common';
 import {exportExcel} from '@/services/excelExport';
 import 'moment/locale/zh-cn';
 import 'moment/locale/en-ie';
@@ -238,13 +238,21 @@ export default {
       json_fields_cn: {
         "记录时间": {
           field: "MainTime",
-          callback: value => formatDate(new Date(value), 'yyyy-MM-dd hh:mm:ss')
+          callback: value => {
+            const date = parseLocalDateTime(value)
+            if (!date || isNaN(date.getTime())) return ''
+            return formatDate(date, 'yyyy-MM-dd hh:mm:ss')
+          }
         }
       },
       json_fields_en: {
         "Record Time": {
           field: "MainTime",
-          callback: value => formatDate(new Date(value), 'yyyy-MM-dd hh:mm:ss')
+          callback: value => {
+            const date = parseLocalDateTime(value)
+            if (!date || isNaN(date.getTime())) return ''
+            return formatDate(date, 'yyyy-MM-dd hh:mm:ss')
+          }
         }
       },
       json_fields: {},
@@ -299,7 +307,8 @@ export default {
   activated() { },
   filters: {
     formatDate(time) {
-      let date = new Date(time);
+      let date = parseLocalDateTime(time);
+      if (!date || isNaN(date.getTime())) return '';
       return formatDate(date, 'yyyy-MM-dd hh:mm:ss');
     },
   },

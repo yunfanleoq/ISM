@@ -847,7 +847,8 @@ func (c *DLT645Ctl) GatherDlt645DeviceData() {
 						signleAlarm.HappenTime = time.Now()
 						c.DealWithDlt645AlarmData(signleAlarm)
 						// protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-					} else if address.IsRecord == 1 {
+					}
+					if address.IsRecord == 1 {
 						//存储信息
 						signleHistoryData.DataName = address.Name
 						signleHistoryData.DeviceName = device.Name

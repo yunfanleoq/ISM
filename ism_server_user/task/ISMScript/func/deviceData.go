@@ -186,6 +186,37 @@ func loadDeviceValue(deviceName, pointName string) (string, bool) {
 	}
 	return point.Value, true
 }
+
+// PeekDeviceDataValue exposes loadDeviceValue for BitUnpack settle fallback.
+func PeekDeviceDataValue(deviceName, pointName string) (string, bool) {
+	return loadDeviceValue(deviceName, pointName)
+}
+
+type devicePointMeta struct {
+	Real     models.DeviceRealData
+	IsStatic bool
+}
+
+var devicePointMetaCache sync.Map // key: deviceName->pointName
+
+func getDevicePointMeta(deviceName, pointName string) (models.DeviceRealData, bool, int) {
+	key := deviceName + "->" + pointName
+	if cached, ok := devicePointMetaCache.Load(key); ok {
+		meta := cached.(devicePointMeta)
+		return meta.Real, meta.IsStatic, 0
+	}
+	var getRealData models.DeviceRealData
+	err1 := models.Db.Model(&models.DeviceRealData{}).Where(" device_name = ? and name = ? ", deviceName, pointName).First(&getRealData)
+	if errors.Is(err1.Error, gorm.ErrRecordNotFound) {
+		return getRealData, false, -2
+	}
+	var staticData models.StaticData
+	err1 = models.Db.Model(&models.StaticData{}).Where("uuid = ?", getRealData.ModelDataUuid).First(&staticData)
+	isStatic := !errors.Is(err1.Error, gorm.ErrRecordNotFound)
+	devicePointMetaCache.Store(key, devicePointMeta{Real: getRealData, IsStatic: isStatic})
+	return getRealData, isStatic, 0
+}
+
 func GetModuleDeviceList(moduleName string) []moduleDeviceStu {
 	var results []moduleDeviceStu
 
@@ -204,40 +235,27 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 	if err == nil {
 		Value = isScientificNotation
 	}
-	var getRealData models.DeviceRealData
-	err1 := models.Db.Model(&models.DeviceRealData{}).Where(" device_name = ? and name = ? ", data[0], data[1]).First(&getRealData)
-	if errors.Is(err1.Error, gorm.ErrRecordNotFound) {
-		return -2
-	}
 	SetValue := Value
-	// if SetValue == getRealData.Value {
-	// 	return 0
-	// }
+	// Memory same-value short-circuit: skip all DB work when live cache already matches.
+	if old, ok := protocol_common.LoadDeviceRealValue("", data[0], data[1]); ok && old == SetValue {
+		return 0
+	}
+	getRealData, isStatic, metaCode := getDevicePointMeta(data[0], data[1])
+	if metaCode != 0 {
+		return metaCode
+	}
 	DeviceUuid := getRealData.DeviceUuid
 	DataUuid := getRealData.ModelDataUuid
 
-	var staticData models.StaticData
-	err1 = models.Db.Model(&models.StaticData{}).Where("uuid = ?", DataUuid).First(&staticData)
-
-	if !errors.Is(err1.Error, gorm.ErrRecordNotFound) {
-		var isSameValue bool = false
-		if v, OK := protocol_common.DeviceRealDataMapByUUID.Load(getRealData.Uuid); OK {
-			if v == SetValue {
-				isSameValue = true
-			}
+	if isStatic {
+		// var tempPushData protocol_common.PushRealDataWebData
+		err := models.Db.Model(&models.DeviceRealData{}).Where("model_data_uuid = ? and device_uuid = ?", DataUuid, DeviceUuid).Update("value", SetValue).Error
+		if err != nil {
+			return -3
 		}
-		if !isSameValue {
-			// var tempPushData protocol_common.PushRealDataWebData
-			err := models.Db.Model(&models.DeviceRealData{}).Where("model_data_uuid = ? and device_uuid = ?", DataUuid, DeviceUuid).Update("value", SetValue).Error
-			if err != nil {
-				return -3
-			}
-			err2 := models.Db.Model(&models.StaticData{}).Where("uuid = ?", DataUuid).Update("data_default_value", SetValue).Error
-			if err2 != nil {
-				return -4
-			}
-		} else {
-			return 0
+		err2 := models.Db.Model(&models.StaticData{}).Where("uuid = ?", DataUuid).Update("data_default_value", SetValue).Error
+		if err2 != nil {
+			return -4
 		}
 		// tempPushData.Cmd = "RealData"
 
@@ -286,7 +304,8 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 			signleAlarm.DeviceName = getRealData.DeviceName
 			signleAlarm.HappenTime = time.Now()
 			protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-		} else if getRealData.IsRecord == 1 {
+		}
+		if getRealData.IsRecord == 1 {
 			//存储信息
 			signleHistoryData.DataValue = SetValue
 			signleHistoryData.DataName = getRealData.Name
@@ -402,7 +421,8 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 					signleAlarm.DeviceName = readData.DeviceName
 					signleAlarm.HappenTime = time.Now()
 					protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-				} else if readData.IsRecord == 1 {
+				}
+				if readData.IsRecord == 1 {
 					//存储信息
 					signleHistoryData.DataValue = SetValue
 					signleHistoryData.DataName = readData.Name

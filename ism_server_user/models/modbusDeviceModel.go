@@ -322,37 +322,35 @@ func ModbusRegisterAddressAdd(addData ModbusDevicesDataModel) int {
 	writeDeviceRealData.Muid = addData.Muid
 	writeDeviceRealData.DeviceType = 2
 	existError := Db.Model(&MonitorList{}).Where("muid = ?", addData.Muid).Find(&getDeviceData)
-	if !errors.Is(existError.Error, gorm.ErrRecordNotFound) {
+	if !errors.Is(existError.Error, gorm.ErrRecordNotFound) && len(getDeviceData) > 0 {
+		writeDeviceRealDataIn := make([]DeviceRealData, 0, len(getDeviceData))
 		for _, v := range getDeviceData {
-			var writeDeviceRealDataIn DeviceRealData
-
-			writeDeviceRealDataIn.Auth = writeDeviceRealData.Auth
-			writeDeviceRealDataIn.ProjectUuid = v.ProjectUuid
-			writeDeviceRealDataIn.DeviceUuid = v.Uuid
-			writeDeviceRealDataIn.DeviceName = v.Name
-			writeDeviceRealDataIn.Name = writeDeviceRealData.Name
-			writeDeviceRealDataIn.Uuid = uuid.New()
-			writeDeviceRealDataIn.ModelDataUuid = writeDeviceRealData.ModelDataUuid
-			writeDeviceRealDataIn.Type = 1
-
-			writeDeviceRealDataIn.DataUnit = addData.DataUnit
-			writeDeviceRealDataIn.IsAlarm = addData.IsAlarm
-			writeDeviceRealDataIn.AlarmOnValue = addData.AlarmOnValue
-			writeDeviceRealDataIn.AlarmLevel = addData.AlarmLevel
-			writeDeviceRealDataIn.AlarmMessage = addData.AlarmMessage
-			writeDeviceRealDataIn.AlarmClearMessage = addData.AlarmClearMessage
-			writeDeviceRealDataIn.IsRecord = addData.IsRecord
-			writeDeviceRealDataIn.RecordType = addData.RecordType
-			writeDeviceRealDataIn.RecordInterval = addData.RecordInterval
-			writeDeviceRealDataIn.RecordDataCharge = addData.RecordDataCharge
-			writeDeviceRealDataIn.ConversionExpression = addData.ConversionExpression
-
-			writeDeviceRealDataIn.Value = ""
-			writeDeviceRealDataIn.Muid = writeDeviceRealData.Muid
-			writeDeviceRealDataIn.DeviceType = writeDeviceRealData.DeviceType
-
-			Db.Model(&DeviceRealData{}).Create(&writeDeviceRealDataIn)
+			writeDeviceRealDataIn = append(writeDeviceRealDataIn, DeviceRealData{
+				Auth:                 writeDeviceRealData.Auth,
+				ProjectUuid:          v.ProjectUuid,
+				DeviceUuid:           v.Uuid,
+				DeviceName:           v.Name,
+				Name:                 writeDeviceRealData.Name,
+				Uuid:                 uuid.New(),
+				ModelDataUuid:        writeDeviceRealData.ModelDataUuid,
+				Type:                 1,
+				DataUnit:             addData.DataUnit,
+				IsAlarm:              addData.IsAlarm,
+				AlarmOnValue:         addData.AlarmOnValue,
+				AlarmLevel:           addData.AlarmLevel,
+				AlarmMessage:         addData.AlarmMessage,
+				AlarmClearMessage:    addData.AlarmClearMessage,
+				IsRecord:             addData.IsRecord,
+				RecordType:           addData.RecordType,
+				RecordInterval:       addData.RecordInterval,
+				RecordDataCharge:     addData.RecordDataCharge,
+				ConversionExpression: addData.ConversionExpression,
+				Value:                "",
+				Muid:                 writeDeviceRealData.Muid,
+				DeviceType:           writeDeviceRealData.DeviceType,
+			})
 		}
+		Db.Model(&DeviceRealData{}).CreateInBatches(&writeDeviceRealDataIn, 100)
 	}
 	return errmsg.SUCCSE
 }

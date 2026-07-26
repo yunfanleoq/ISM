@@ -19,10 +19,14 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/beego/beego/v2/core/config"
+	"github.com/beego/beego/v2/core/logs"
 	"github.com/go-basic/uuid"
 	"github.com/gorilla/websocket"
 )
@@ -34,6 +38,261 @@ type WsServer struct {
 }
 
 var websocketConnArray sync.Map //make(map[string][]*WsConnection)
+
+// realDataDropLog 节流：满通道 drop 时避免每条都刷屏拖垮进程
+var realDataDropLog struct {
+	mu         sync.Mutex
+	lastLog    time.Time
+	dropped    uint64
+	suppressed uint64
+	fileOnce   sync.Once
+	file       *os.File
+}
+
+// 实时推送合并窗（毫秒）：同点位只保留最新值，降低 RealDataChanel 填满概率。
+// 会议「调长周期」的正确落点；默认 2000ms，可用 app.conf RealDataPushMergeMs 覆盖。
+var realDataPushMergeMs int64 = 2000
+
+type realDataMergeBucket struct {
+	deviceUuid  string
+	deviceName  string
+	projectUuid string
+	points      map[string]protocol_common.UpdateStu
+	lastFlush   time.Time
+}
+
+var realDataMerge struct {
+	mu      sync.Mutex
+	buckets map[string]*realDataMergeBucket
+	started int32
+}
+
+func init() {
+	// 供 models 等包推送 RealData，避免 models↔websocket 循环依赖。
+	protocol_common.RealDataFrontendPush = func(msg protocol_common.PushRealDataWebData) {
+		WSSend(msg, msg.ProjectUuid, 2)
+	}
+}
+
+func initRealDataPushMerge() {
+	if !atomic.CompareAndSwapInt32(&realDataMerge.started, 0, 1) {
+		return
+	}
+	ms, err := config.Int("RealDataPushMergeMs")
+	if err == nil && ms >= 0 {
+		realDataPushMergeMs = int64(ms)
+	}
+	realDataMerge.buckets = make(map[string]*realDataMergeBucket)
+	if realDataPushMergeMs <= 0 {
+		return
+	}
+	go func() {
+		ticker := time.NewTicker(200 * time.Millisecond)
+		defer ticker.Stop()
+		for range ticker.C {
+			flushRealDataMergeBuckets(false)
+		}
+	}()
+}
+
+func flushRealDataMergeBuckets(force bool) {
+	mergeMs := atomic.LoadInt64(&realDataPushMergeMs)
+	if mergeMs <= 0 && !force {
+		return
+	}
+	now := time.Now()
+	realDataMerge.mu.Lock()
+	pending := make([]*realDataMergeBucket, 0, len(realDataMerge.buckets))
+	for key, b := range realDataMerge.buckets {
+		if b == nil || len(b.points) == 0 {
+			continue
+		}
+		if !force && mergeMs > 0 && now.Sub(b.lastFlush) < time.Duration(mergeMs)*time.Millisecond {
+			continue
+		}
+		pending = append(pending, b)
+		delete(realDataMerge.buckets, key)
+	}
+	realDataMerge.mu.Unlock()
+	for _, b := range pending {
+		msg := protocol_common.PushRealDataWebData{
+			DeviceUuid:  b.deviceUuid,
+			DeviceName:  b.deviceName,
+			ProjectUuid: b.projectUuid,
+			Cmd:         "RealData",
+			Data:        make([]protocol_common.UpdateStu, 0, len(b.points)),
+		}
+		for _, p := range b.points {
+			msg.Data = append(msg.Data, p)
+		}
+		pushToProjectConns(msg, b.projectUuid, 2)
+	}
+}
+
+func enqueueMergedRealData(msg protocol_common.PushRealDataWebData) {
+	initRealDataPushMerge()
+	mergeMs := atomic.LoadInt64(&realDataPushMergeMs)
+	if mergeMs <= 0 || len(msg.Data) == 0 {
+		pushToProjectConns(msg, msg.ProjectUuid, 2)
+		return
+	}
+	key := msg.ProjectUuid + "|" + msg.DeviceUuid
+	realDataMerge.mu.Lock()
+	b := realDataMerge.buckets[key]
+	if b == nil {
+		b = &realDataMergeBucket{
+			deviceUuid:  msg.DeviceUuid,
+			deviceName:  msg.DeviceName,
+			projectUuid: msg.ProjectUuid,
+			points:      make(map[string]protocol_common.UpdateStu, len(msg.Data)),
+			lastFlush:   time.Now(),
+		}
+		realDataMerge.buckets[key] = b
+	}
+	if msg.DeviceName != "" {
+		b.deviceName = msg.DeviceName
+	}
+	for _, p := range msg.Data {
+		id := p.Uuid
+		if id == "" {
+			id = p.DataName
+		}
+		if id == "" {
+			continue
+		}
+		b.points[id] = p
+	}
+	shouldFlush := time.Since(b.lastFlush) >= time.Duration(mergeMs)*time.Millisecond
+	var flushCopy *realDataMergeBucket
+	if shouldFlush {
+		flushCopy = b
+		delete(realDataMerge.buckets, key)
+	}
+	realDataMerge.mu.Unlock()
+	if flushCopy != nil {
+		out := protocol_common.PushRealDataWebData{
+			DeviceUuid:  flushCopy.deviceUuid,
+			DeviceName:  flushCopy.deviceName,
+			ProjectUuid: flushCopy.projectUuid,
+			Cmd:         "RealData",
+			Data:        make([]protocol_common.UpdateStu, 0, len(flushCopy.points)),
+		}
+		for _, p := range flushCopy.points {
+			out.Data = append(out.Data, p)
+		}
+		pushToProjectConns(out, out.ProjectUuid, 2)
+	}
+}
+
+func openDropLogFile() *os.File {
+	realDataDropLog.fileOnce.Do(func() {
+		_ = os.MkdirAll("logs", 0o755)
+		path := filepath.Join("logs", "ws_realdata_drop.log")
+		f, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o644)
+		if err != nil {
+			fmt.Printf("[WS] open drop log failed: %v\n", err)
+			return
+		}
+		realDataDropLog.file = f
+	})
+	return realDataDropLog.file
+}
+
+func noteRealDataChanelDrop(project string, ch chan interface{}, connCount int) {
+	realDataDropLog.mu.Lock()
+	realDataDropLog.dropped++
+	now := time.Now()
+	if now.Sub(realDataDropLog.lastLog) < time.Second {
+		realDataDropLog.suppressed++
+		realDataDropLog.mu.Unlock()
+		return
+	}
+	total := realDataDropLog.dropped
+	suppressed := realDataDropLog.suppressed
+	realDataDropLog.lastLog = now
+	realDataDropLog.suppressed = 0
+	realDataDropLog.mu.Unlock()
+
+	chLen, chCap := 0, 0
+	if ch != nil {
+		chLen = len(ch)
+		chCap = cap(ch)
+	}
+	line := fmt.Sprintf("%s [WS] RealDataChanel full, drop (total=%d, suppressed=%d/s, project=%s, conn=%d, chan=%d/%d, mergeMs=%d)\n",
+		now.Format("2006-01-02 15:04:05.000"), total, suppressed, project, connCount, chLen, chCap, atomic.LoadInt64(&realDataPushMergeMs))
+	fmt.Print(line)
+	if f := openDropLogFile(); f != nil {
+		_, _ = f.WriteString(line)
+	}
+}
+
+// tryPushChanel 非阻塞入队；满则立即丢弃，禁止在持锁路径上 sleep。
+func tryPushChanel(ch chan interface{}, message interface{}, isRealData bool, project string, connCount int) {
+	select {
+	case ch <- message:
+	default:
+		if isRealData {
+			noteRealDataChanelDrop(project, ch, connCount)
+		}
+	}
+}
+
+func realDataDeviceKey(message interface{}) string {
+	if realMsg, ok := message.(protocol_common.PushRealDataWebData); ok {
+		if realMsg.DeviceUuid != "" {
+			return realMsg.DeviceUuid
+		}
+		return realMsg.ProjectUuid + "|" + realMsg.DeviceName
+	}
+	return ""
+}
+
+// tryPushRealDataChanel 高水位时按设备 latest-wins 压缩队列，再入队；否则非阻塞入队。
+func tryPushRealDataChanel(ch chan interface{}, message interface{}, project string, connCount int) {
+	if ch == nil {
+		return
+	}
+	capN := cap(ch)
+	if capN > 0 && len(ch)*5 >= capN*4 {
+		latest := make(map[string]interface{}, 64)
+		order := make([]string, 0, 64)
+		anon := 0
+		drainOne := func(m interface{}) {
+			key := realDataDeviceKey(m)
+			if key == "" {
+				anon++
+				key = fmt.Sprintf("_anon_%d", anon)
+			}
+			if _, exists := latest[key]; !exists {
+				order = append(order, key)
+			}
+			latest[key] = m
+		}
+		for {
+			select {
+			case m, ok := <-ch:
+				if !ok {
+					return
+				}
+				drainOne(m)
+			default:
+				goto requeue
+			}
+		}
+	requeue:
+		drainOne(message)
+		for _, key := range order {
+			select {
+			case ch <- latest[key]:
+			default:
+				noteRealDataChanelDrop(project, ch, connCount)
+				return
+			}
+		}
+		return
+	}
+	tryPushChanel(ch, message, true, project, connCount)
+}
 
 type WsConnection struct {
 	connId               string
@@ -64,8 +323,8 @@ func NewWsServer() *WsServer {
 	ws := new(WsServer)
 	ws.addr = "0.0.0.0:" + fmt.Sprintf("%d", WSPort)
 	ws.upgrade = &websocket.Upgrader{
-		ReadBufferSize:    100,
-		WriteBufferSize:   500,
+		ReadBufferSize:    1024,
+		WriteBufferSize:   8192,
 		EnableCompression: true,
 		CheckOrigin: func(r *http.Request) bool {
 			if r.Method != "GET" {
@@ -148,12 +407,29 @@ func (conn *WsConnection) Close() {
 func (conn *WsConnection) WriteToClient(msg any) error {
 	defer conn.RwMutex.Unlock()
 	conn.RwMutex.Lock()
+	if conn.isClosed || conn.ws == nil {
+		return fmt.Errorf("connection closed")
+	}
 	jsonBytes, err := json.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("解析错误")
 	}
-	return conn.ws.WriteMessage(websocket.TextMessage, jsonBytes)
+	_ = conn.ws.SetWriteDeadline(time.Now().Add(3 * time.Second))
+	err = conn.ws.WriteMessage(websocket.TextMessage, jsonBytes)
+	_ = conn.ws.SetWriteDeadline(time.Time{})
+	return err
 }
+
+func (c *WsConnection) dropDeadConn() {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	if c.isClosed {
+		return
+	}
+	DeleteStringElement(c.connId, c.project)
+	c.Close()
+}
+
 func (c *WsConnection) connHandleRealData() {
 	if c.project == "" {
 		return
@@ -163,7 +439,10 @@ func (c *WsConnection) connHandleRealData() {
 			return
 		}
 		for realDataMsg := range c.RealDataChanel {
-			c.WriteToClient(realDataMsg)
+			if err := c.WriteToClient(realDataMsg); err != nil {
+				c.dropDeadConn()
+				return
+			}
 		}
 	}
 }
@@ -178,10 +457,7 @@ func (c *WsConnection) connHandleHeart() {
 
 		ee := c.WriteToClient("ping")
 		if ee != nil {
-			c.mutex.Lock()
-			DeleteStringElement(c.connId, c.project)
-			c.Close()
-			c.mutex.Unlock()
+			c.dropDeadConn()
 			return
 		}
 		time.Sleep(5 * time.Second)
@@ -196,7 +472,10 @@ func (c *WsConnection) connHandleRealAlarm() {
 			return
 		}
 		for realDataMsg := range c.RealAlarmChanel {
-			c.WriteToClient(realDataMsg)
+			if err := c.WriteToClient(realDataMsg); err != nil {
+				c.dropDeadConn()
+				return
+			}
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
@@ -210,7 +489,10 @@ func (c *WsConnection) connHandleRealSystemData() {
 			return
 		}
 		for realDataMsg := range c.RealSystemDataChanel {
-			c.WriteToClient(realDataMsg)
+			if err := c.WriteToClient(realDataMsg); err != nil {
+				c.dropDeadConn()
+				return
+			}
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
@@ -265,38 +547,44 @@ func SendToISMNode(project string, message interface{}, mType int) {
 		}
 	}
 }
+func pushToProjectConns(message interface{}, project string, msgType int) {
+	connList, ok := websocketConnArray.Load(project)
+	if !ok || connList == nil {
+		return
+	}
+	getConn := connList.([]*WsConnection)
+	connCount := len(getConn)
+	for _, connect := range getConn {
+		connect.mutex.Lock()
+		if connect.isClosed {
+			connect.mutex.Unlock()
+			continue
+		}
+		switch msgType {
+		case 1:
+			tryPushChanel(connect.RealAlarmChanel, message, false, project, connCount)
+		case 2:
+			tryPushRealDataChanel(connect.RealDataChanel, message, project, connCount)
+		case 3:
+			tryPushChanel(connect.RealSystemDataChanel, message, false, project, connCount)
+		}
+		connect.mutex.Unlock()
+	}
+}
+
 func WSSend(message interface{}, project string, msgType int) {
 	SSEConnManager.GlobalConnManager.PushToAll(message, 1000)
-	connList, ok := websocketConnArray.Load(project)
-	if ok && connList != nil {
-		getConn := connList.([]*WsConnection)
-		for _, connect := range getConn {
-			connect.mutex.Lock()
-			if connect.isClosed {
-				connect.mutex.Unlock()
-				continue
+	if msgType == 2 {
+		if realMsg, ok := message.(protocol_common.PushRealDataWebData); ok {
+			if realMsg.ProjectUuid == "" {
+				realMsg.ProjectUuid = project
 			}
-			if msgType == 1 {
-				select {
-				case connect.RealAlarmChanel <- message:
-				case <-time.After(1 * time.Millisecond):
-					break
-				}
-			} else if msgType == 2 {
-				select {
-				case connect.RealDataChanel <- message:
-				case <-time.After(1 * time.Millisecond):
-					break
-				}
-			} else if msgType == 3 {
-				select {
-				case connect.RealSystemDataChanel <- message:
-				case <-time.After(1 * time.Millisecond):
-					break
-				}
-			}
-			connect.mutex.Unlock()
+			enqueueMergedRealData(realMsg)
+		} else {
+			pushToProjectConns(message, project, msgType)
 		}
+	} else {
+		pushToProjectConns(message, project, msgType)
 	}
 	if _, IsTrue := protocol_common.ISMNodeProjectConn.Load(project); IsTrue {
 		tempPushData := new(protocol_common.ISMNodePushDataStu)
@@ -305,79 +593,37 @@ func WSSend(message interface{}, project string, msgType int) {
 		tempPushData.MsgType = msgType
 		select {
 		case protocol_common.NetworkNodePushDataChanel <- tempPushData:
-		case <-time.After(1 * time.Millisecond):
-			break
+		default:
 		}
 		tempPushData = nil
 	}
 }
 func WSSendISMNode(message interface{}, project string, msgType int) {
 	SSEConnManager.GlobalConnManager.PushToAll(message, 1000)
-	connList, ok := websocketConnArray.Load(project)
-	if ok && connList != nil {
-		getConn := connList.([]*WsConnection)
-		for _, connect := range getConn {
-			connect.mutex.Lock()
-			if connect.isClosed {
-				connect.mutex.Unlock()
-				continue
+	if msgType == 2 {
+		if realMsg, ok := message.(protocol_common.PushRealDataWebData); ok {
+			if realMsg.ProjectUuid == "" {
+				realMsg.ProjectUuid = project
 			}
-			if msgType == 1 {
-				select {
-				case connect.RealAlarmChanel <- message:
-				case <-time.After(1 * time.Millisecond):
-					break
-				}
-			} else if msgType == 2 {
-				select {
-				case connect.RealDataChanel <- message:
-				case <-time.After(1 * time.Millisecond):
-					break
-				}
-			} else if msgType == 3 {
-				select {
-				case connect.RealSystemDataChanel <- message:
-				case <-time.After(1 * time.Millisecond):
-					break
-				}
-			}
-			connect.mutex.Unlock()
+			enqueueMergedRealData(realMsg)
+			return
 		}
 	}
+	pushToProjectConns(message, project, msgType)
 }
 func WSSendAlarmOrOther(message interface{}, project string, msgType int) {
 	SSEConnManager.GlobalConnManager.PushToAll(message, 1000)
-	connList, ok := websocketConnArray.Load(project)
-	if ok && connList != nil {
-		getConn := connList.([]*WsConnection)
-		for _, connect := range getConn {
-			connect.mutex.Lock()
-			if connect.isClosed {
-				connect.mutex.Unlock()
-				continue
+	// RealData 强制走合并窗，禁止旁路直灌 RealDataChanel。
+	if msgType == 2 {
+		if realMsg, ok := message.(protocol_common.PushRealDataWebData); ok {
+			if realMsg.ProjectUuid == "" {
+				realMsg.ProjectUuid = project
 			}
-			if msgType == 1 {
-				select {
-				case connect.RealAlarmChanel <- message:
-				case <-time.After(1 * time.Millisecond):
-					break
-				}
-			} else if msgType == 2 {
-				select {
-				case connect.RealDataChanel <- message:
-				case <-time.After(1 * time.Millisecond):
-					break
-				}
-			} else if msgType == 3 {
-				select {
-				case connect.RealSystemDataChanel <- message:
-				case <-time.After(1 * time.Millisecond):
-					break
-				}
-			}
-			connect.mutex.Unlock()
+			enqueueMergedRealData(realMsg)
+			return
 		}
 	}
+	pushToProjectConns(message, project, msgType)
 }
 
 func (w *WsServer) Start() (err error) {
@@ -404,7 +650,27 @@ func PthreadSendAlarmQueue() {
 		if code == 0 && data != nil {
 			project, ok := data.(protocol_common.PushAlarm)
 			if ok {
-				fmt.Println("push alarm Data")
+				happen := project.HappenTime
+				if happen.IsZero() {
+					happen = time.Now()
+				}
+				msg := project.AlarmMessage
+				if project.Cmd != "RealAlarm" && project.AlarmClearMessage != "" {
+					msg = project.AlarmClearMessage
+				}
+				logs.Info("push alarm: time=%s cmd=%s device=%s point=%s value=%s real=%s level=%d msg=%s deviceUuid=%s dataUuid=%s project=%s",
+					happen.Format("2006-01-02 15:04:05"),
+					project.Cmd,
+					project.DeviceName,
+					project.DataName,
+					project.Value,
+					project.RealValue,
+					project.AlarmLevel,
+					msg,
+					project.DeviceUuid,
+					project.DataUuid,
+					project.ProjectUuid,
+				)
 				WSSendAlarmOrOther(data, project.ProjectUuid, 1)
 			}
 		}
@@ -413,25 +679,31 @@ func PthreadSendAlarmQueue() {
 }
 func PthreadSendDataQueue() {
 	for {
-		data, code := protocol_common.GGatherDataQueue.QueuePull()
-		// fmt.Println("实时数据队列长度:", protocol_common.GGatherDataQueue.QueueLength())
-		if code == 0 && data != nil {
-			project, ok := data.(protocol_common.PushRealDataWebData)
-			if ok {
-				// 串行化 SQLite 写入：避免并发 goroutine 竞争 MaxOpenConns=1
-				// 使用 recover 防止单次写入 panic 拖垮整个队列处理循环
-				func() {
-					defer func() {
-						if r := recover(); r != nil {
-							fmt.Printf("[RECOVER] WriteRealDataFunc panic: %v\n", r)
-						}
-					}()
-					alarmTask.WriteRealDataFunc(project)
-				}()
-				WSSendAlarmOrOther(data, project.ProjectUuid, 2)
+		processed := 0
+		// 批量 drain，减少固定 sleep 带来的积压延时
+		for processed < 32 {
+			data, code := protocol_common.GGatherDataQueue.QueuePull()
+			if code != 0 || data == nil {
+				break
 			}
+			processed++
+			project, ok := data.(protocol_common.PushRealDataWebData)
+			if !ok {
+				continue
+			}
+			// 队列仅写库；前端推送由协议侧 WSSend / NotifyRealDataFrontend 单入口负责，避免双推。
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						fmt.Printf("[RECOVER] WriteRealDataFunc panic: %v\n", r)
+					}
+				}()
+				alarmTask.WriteRealDataFunc(project)
+			}()
 		}
-		time.Sleep(time.Millisecond * 50)
+		if processed == 0 {
+			time.Sleep(time.Millisecond * 20)
+		}
 	}
 }
 func PthreadSendSystemDataQueue() {

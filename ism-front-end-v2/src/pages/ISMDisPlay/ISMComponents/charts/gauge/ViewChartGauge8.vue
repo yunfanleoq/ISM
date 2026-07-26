@@ -267,11 +267,7 @@ export default {
             symbolSize: [100, 45],
             symbolOffset: [0, -20],
             z: 12,
-            itemStyle: {
-              normal: {
-                color: '#363F5E'
-              }
-            },
+            itemStyle: {color: '#363F5E'},
             data: [{
               value: 100,
               symbolPosition: 'end'
@@ -283,12 +279,8 @@ export default {
             symbolSize: [100, 45],
             symbolOffset: [0, -20],
             z: 12,
-            itemStyle: {
-              normal: {
-                color: '#FFFF00',
-                opacity: 1
-              }
-            },
+            itemStyle: {color: '#FFFF00',
+                opacity: 1},
             data: [{
               value: chartData,
               symbolPosition: 'end'
@@ -300,23 +292,15 @@ export default {
               symbolSize: [100, 45],
               symbolOffset: [0, 20],
               z: 12,
-              itemStyle: {
-                normal: {
-                  color: '#FFFF00',
-                }
-              },
+              itemStyle: {color: '#FFFF00'},
               data: [100 - chartData]
           },
             {
             //底部立体柱
             stack: '1',
             type: 'bar',
-            itemStyle: {
-              normal: {
-                color: '#FFFF00',
-                opacity: .7
-              }
-            },
+            itemStyle: {color: '#FFFF00',
+                opacity: .7},
             label: {
               show: true,
               position: "inside",
@@ -333,12 +317,8 @@ export default {
             //上部立体柱
             stack: '1',
             type: 'bar',
-            itemStyle: {
-              normal: {
-                color: '#36405E',
-                opacity: .7
-              }
-            },
+            itemStyle: {color: '#36405E',
+                opacity: .7},
               clip:false,
               barWidth:100,
             data: [100 - chartData]

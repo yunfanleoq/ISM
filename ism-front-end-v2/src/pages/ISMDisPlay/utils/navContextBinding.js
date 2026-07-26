@@ -32,6 +32,7 @@ import {
   formatDatapointPageInfo,
   isSignalDatapointPaged,
   DEFAULT_DATAPOINT_PAGE_SIZE,
+  resolveDatapointFetchParams,
 } from './navContext'
 
 const dpCache = Object.create(null)
@@ -480,7 +481,7 @@ function compactBreadcrumbSegment(value, maxLength = 24) {
   return `${text.slice(0, side)}…${text.slice(-side)}`
 }
 
-/** 点位页顶部路径：固定首页入口之后仅展示真实组织层级和当前设备。 */
+/** 点位页顶部路径：固定首页入口之后仅展示真实组织层级、父设备与当前虚拟柜/设备。 */
 function buildDeviceBreadcrumb(nav) {
   const organizations = []
   const add = (value, kind = '') => {
@@ -500,6 +501,10 @@ function buildDeviceBreadcrumb(nav) {
     nav.deviceListReturnContext && (nav.deviceListReturnContext.label || nav.deviceListReturnContext.name),
     nav.deviceListReturnContext && nav.deviceListReturnContext.kind,
   )
+  // 虚拟列头柜：补上父设备名（若 ancestors 未带）
+  if (nav.virtualCabinet && nav.parentDeviceLabel) {
+    add(nav.parentDeviceLabel, 'device')
+  }
 
   let visibleOrganizations = organizations
   if (visibleOrganizations.length > 3) {
@@ -540,6 +545,61 @@ function normalizeDeviceBreadcrumbCell(cells, nav) {
   if (role) role.value = 'deviceBreadcrumb'
   else style.diy.push({ name: 'labelRole', type: 9, value: 'deviceBreadcrumb', key: 'labelRole' })
   detail.name = '当前设备面包屑'
+}
+
+/**
+ * 顶栏系统标题左对齐，并略向左收；与面包屑之间留出中间空隙。
+ * 匹配 build_ncc_dashboard 的 header-logo / header-title / header-subtitle 槽位。
+ */
+function normalizeHeaderTitleLayout(cells) {
+  const moveCellX = (cell, style, position, y, w, targetX) => {
+    const x = Number(cell.x != null ? cell.x : position.x)
+    if (Math.abs(x - targetX) <= 4) return
+    cell.x = targetX
+    if (cell.position) cell.position.x = targetX
+    style.position = {
+      ...position,
+      x: targetX,
+      y,
+      w,
+      h: Number(cell.height != null ? cell.height : position.h) || position.h,
+    }
+  }
+  ;(cells || []).forEach(cell => {
+    if (!cell || cell.shape !== 'view-svg-text') return
+    const detail = cell.data && cell.data.detail
+    const style = detail && detail.style
+    if (!style) return
+    const position = style.position || {}
+    const x = Number(cell.x != null ? cell.x : position.x)
+    const y = Number(cell.y != null ? cell.y : position.y)
+    const w = Number(cell.width != null ? cell.width : position.w)
+    const text = String(style.text || '')
+    const name = String((detail && detail.name) || '')
+    const id = String(cell.id || '')
+    const isLogo = y >= 0 && y <= 50
+      && x >= 100 && x <= 280
+      && w <= 48
+      && (/⚡|header-logo/i.test(text) || /header-logo/i.test(name) || /header-logo/i.test(id))
+    if (isLogo) {
+      moveCellX(cell, style, position, y, w, 16)
+      return
+    }
+    const isTitle = y >= 0 && y <= 28
+      && x >= 40 && x <= 400
+      && w >= 280
+      && (/监控系统/.test(text) || /header-title/i.test(name) || /header-title/i.test(id))
+    const isSubtitle = y > 28 && y <= 50
+      && x >= 40 && x <= 400
+      && w >= 280
+      && (/POWER MONITORING|DATA CENTER/i.test(text)
+        || /header-subtitle/i.test(name)
+        || /header-subtitle/i.test(id))
+    if (!isTitle && !isSubtitle) return
+    style.textAlign = 'left'
+    // 标题靠左（logo 旁），与面包屑（约 x≥1020）之间留中间空隙
+    moveCellX(cell, style, position, y, w, isTitle ? 56 : 58)
+  })
 }
 
 /**
@@ -663,6 +723,10 @@ export function ensureDeviceDatapointPageLayout(cells, nav) {
     const style = ((((cell || {}).data || {}).detail || {}).style || {})
     const text = String(style.text || '').trim()
     const position = style.position || {}
+    const diy = style.diy || []
+    const labelRole = String((diy.find(d => d && d.key === 'labelRole') || {}).value || '')
+    // 客户反馈：编号/模型/状态 UUID 串对运维无意义，测点页不再展示。
+    if (labelRole === 'deviceInfoMeta') return false
     // 旧大屏在顶栏写死了“区域 → 机房 → 设备组 → 设备”的多段面包屑及跳转。
     // 新架构仅保留全局总览入口，其余上下文由实时组织树提供。
     const isLegacyHeaderBreadcrumb = Number(position.y) <= 56
@@ -677,6 +741,7 @@ export function ensureDeviceDatapointPageLayout(cells, nav) {
       || /^🔧\s*(?!\{\{).+/.test(text)
       || /^●\s*(离线|运行|运行中)$/.test(text))
   })
+  normalizeHeaderTitleLayout(list)
   normalizeDeviceBreadcrumbCell(list, nav)
   // 历史模板以裸 › 表示面包屑层级，视觉像小方块且曾误触发分页。
   // 统一替换为明确的方向箭头并附上独立语义角色。
@@ -691,14 +756,11 @@ export function ensureDeviceDatapointPageLayout(cells, nav) {
   })
   const pageSize = nav.datapointPageSize || DEFAULT_DATAPOINT_PAGE_SIZE
   const uid = nav.deviceUuid || nav.uuid || nav.sid || 'device'
-  const compactId = value => {
-    const text = String(value || '')
-    return text.length > 22 ? `${text.slice(0, 10)}…${text.slice(-7)}` : text
-  }
   const roleOf = cell => {
     const diy = (((((cell || {}).data || {}).detail || {}).style || {}).diy) || []
     return String((diy.find(d => d && d.key === 'labelRole') || {}).value || '')
   }
+  const cellByRole = role => list.find(cell => roleOf(cell) === role)
   if (!list.some(cell => roleOf(cell) === 'deviceListBack')) {
     list.push(makeTemplateTextCell(
       `devpoints-back-${uid}`, 16, SIGNAL_PAGER_Y, 120, 30, '‹ 返回上一级',
@@ -710,31 +772,19 @@ export function ensureDeviceDatapointPageLayout(cells, nav) {
       },
     ))
   }
-  if (!list.some(cell => roleOf(cell) === 'deviceInfoName')) {
+  const deviceNameText = `设备：${nav.name || nav.label || '未命名设备'}`
+  const deviceNameCell = cellByRole('deviceInfoName')
+  if (deviceNameCell) {
+    deviceNameCell.data.detail.style.text = deviceNameText
+  } else {
     list.push(makeTemplateTextCell(
       `devpoints-device-${uid}`, 152, SIGNAL_PAGER_Y, 500, 30,
-      `设备：${nav.name || nav.label || '未命名设备'}`,
+      deviceNameText,
       {
         foreColor: '#dffaff',
         fontSize: 15,
         name: '当前设备名称',
         diy: [{ name: 'labelRole', type: 9, value: 'deviceInfoName', key: 'labelRole' }],
-      },
-    ))
-  }
-  if (!list.some(cell => roleOf(cell) === 'deviceInfoMeta')) {
-    const meta = [
-      nav.code ? `编号 ${compactId(nav.code)}` : '',
-      nav.modelUuid ? `模型 ${compactId(nav.modelUuid)}` : '',
-      `状态 ${nav.status === 'on' ? '在线' : '离线'}`,
-    ].filter(Boolean).join('  ·  ')
-    list.push(makeTemplateTextCell(
-      `devpoints-meta-${uid}`, 668, SIGNAL_PAGER_Y, 770, 30, meta,
-      {
-        foreColor: nav.status === 'on' ? '#64edbf' : '#7894aa',
-        fontSize: 11,
-        name: '当前设备信息',
-        diy: [{ name: 'labelRole', type: 9, value: 'deviceInfoMeta', key: 'labelRole' }],
       },
     ))
   }
@@ -907,6 +957,9 @@ export function resolveComponentsWithNavContext(components, navContext, opts = {
     cells = ensureDeviceListPageLayout(cells, nav)
   }
 
+  // 顶栏系统标题：左对齐 + 与面包屑中间留空隙（首页/列表/测点页共用）
+  normalizeHeaderTitleLayout(cells)
+
   // 容器模板页：槽位重映射（click link / 悬浮绑点 / 槽位文本）
   if (CONTAINER_KINDS.indexOf(navKind) >= 0) {
     try {
@@ -995,25 +1048,44 @@ export async function resolvePageComponentsAsync(components, navContext, opts = 
   let nav = navContext
   if (nav.signalMode) {
     const muid = nav.modelUuid || nav.muid || ''
-    const devLabel = nav.label || nav.name || ''
-    if (muid && !nav.serverPaged) {
+    const fetchParams = resolveDatapointFetchParams(nav)
+    if ((muid || fetchParams.deviceUuid) && !nav.serverPaged) {
       const pointPage = await fetchDeviceDatapointPage({
-        muid,
-        deviceLabel: devLabel,
-        deviceUuid: nav.uuid || nav.deviceUuid || '',
+        ...fetchParams,
         page: (Number(nav.datapointPageIndex) || 0) + 1,
         pageSize: nav.datapointPageSize || DEFAULT_DATAPOINT_PAGE_SIZE,
         query: nav.datapointQuery || '',
-        category: nav.datapointCategory || '',
       })
+      const vc = String(nav.virtualCabinet || '').trim()
+      const parentLabel = String(nav.parentDeviceLabel || '').trim()
+      const vcFallback = !!(
+        nav.virtualCabinetFallback
+        || nav.isFallbackGroup
+        || (vc && parentLabel && vc === parentLabel)
+      )
       nav = buildDeviceSignalContext(
         {
           label: nav.label, name: nav.name, uuid: nav.uuid || nav.deviceUuid,
           sid: nav.sid, modelUuid: muid, muid,
+          virtualCabinet: vc,
+          virtualCabinetFallback: vcFallback,
+          parentDeviceLabel: parentLabel,
+          parentDeviceUuid: nav.parentDeviceUuid || '',
         },
         pointPage.points,
         nav.ancestors || [],
-        { ...pointPage, serverPaged: true, query: nav.datapointQuery, category: nav.datapointCategory },
+        {
+          ...pointPage,
+          serverPaged: true,
+          query: nav.datapointQuery,
+          category: (vc && !vcFallback)
+            ? `${vc.replace(/_+$/, '')}_`
+            : nav.datapointCategory,
+          virtualCabinet: vc,
+          virtualCabinetFallback: vcFallback,
+          parentDeviceLabel: parentLabel,
+          parentDeviceUuid: nav.parentDeviceUuid || '',
+        },
       )
       nav.datapointPageIndex = Math.max(0, Number(pointPage.page || 1) - 1)
     } else {

@@ -42,7 +42,7 @@ export async function editMonitor(params) {
 
 export async function delMonitor(params) {
   return request(MONITORDEL, METHOD.POST,params,{
-    timeout:12000000
+    timeout:120000
   })
 }
 

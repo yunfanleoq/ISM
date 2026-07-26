@@ -1,16 +1,20 @@
 #!/bin/bash
 # 将最新全量补丁/OceanBase 一体包部署到 cpolar 测试机
-# 默认: 31.tcp.cpolar.top:12744 -> /opt/ISM/ism-release-oceanbase-20260708
-# 用法: bash scripts/deploy_full_patch_cpolar.sh
+# 默认 SSH: 5.tcp.cpolar.cn:14002（旧 8.tcp:14659 / 31.tcp:12744 已失效）
+# 用法:
+#   bash scripts/deploy_full_patch_cpolar.sh
+#   ISM_RELEASE_DIR=releases/ism-release-oceanbase-20260714-1746-3589 \
+#     ISM_REMOTE_DIR=/opt/ISM/ism-release-oceanbase-20260714-1746-3589 \
+#     bash scripts/deploy_full_patch_cpolar.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-REMOTE_HOST="${ISM_REMOTE_HOST:-31.tcp.cpolar.top}"
-REMOTE_PORT="${ISM_REMOTE_PORT:-12744}"
+REMOTE_HOST="${ISM_REMOTE_HOST:-5.tcp.cpolar.cn}"
+REMOTE_PORT="${ISM_REMOTE_PORT:-14002}"
 REMOTE_USER="${ISM_REMOTE_USER:-root}"
 REMOTE_PASS="${ISM_REMOTE_PASS:-Xunan@1108}"
-REMOTE_DIR="${ISM_REMOTE_DIR:-/opt/ISM/ism-release-oceanbase-20260708}"
-REL="${ISM_RELEASE_DIR:-$ROOT/releases/ism-release-oceanbase-20260708}"
+REMOTE_DIR="${ISM_REMOTE_DIR:-/opt/ISM/ism-release-oceanbase-20260714-1746-3589}"
+REL="${ISM_RELEASE_DIR:-$ROOT/releases/ism-release-oceanbase-20260714-1746-3589}"
 
 SSH_OPTS=(-o StrictHostKeyChecking=no -o PreferredAuthentications=password -o PubkeyAuthentication=no -p "$REMOTE_PORT")
 ssh_cmd() { NO_PROXY='*' no_proxy='*' sshpass -p "$REMOTE_PASS" ssh "${SSH_OPTS[@]}" "${REMOTE_USER}@${REMOTE_HOST}" "$@"; }
@@ -34,9 +38,15 @@ ssh_cmd "echo SSH_OK; hostname; uname -m; df -h /opt | tail -1" || {
 
 echo "[2/5] 同步发布目录（增量，跳过 ism_server_user/static 冗余）..."
 ssh_cmd "mkdir -p ${REMOTE_DIR}"
+# macOS 自带 rsync 不支持 --progress，统一用 --progress
 rsync_cmd \
+  --progress \
   --exclude 'logs/*' \
   --exclude '*.log' \
+  --exclude 'oceanbase/*.tar' \
+  --exclude 'tdengine/*.tar' \
+  --exclude 'docker-offline/' \
+  --exclude 'python-offline/' \
   --exclude 'ism-field-scripts-*.zip' \
   --exclude 'ism_server_user/static/' \
   "$REL/" "${REMOTE_USER}@${REMOTE_HOST}:${REMOTE_DIR}/"

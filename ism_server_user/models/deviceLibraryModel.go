@@ -1134,6 +1134,7 @@ func DelDeviceOrZone(uuid string) (int, int) {
 	var delSnmpModels MonitorList
 	var delReadData DeviceRealData
 	var delAlarmData DevicesAlarmList
+	isLegacyMirrorRoot := false
 	// var delHistoryData DevicesHistoryDataList
 
 	err6 := Db.Model(&MonitorList{}).Where("uuid = ?", uuid).First(&delSnmpModels).Error
@@ -1141,12 +1142,28 @@ func DelDeviceOrZone(uuid string) (int, int) {
 		return errmsg.ERROR, -1
 	}
 	if delSnmpModels.Pid == 0 {
-		return errmsg.ROOTZONE_NOT_DEL, delSnmpModels.DeviceType
+		// 永远保护规范根 RootZone。仅当同项目、同 sid 的 RootZone 已存在时，
+		// 才允许删除历史遗留的镜像根；其子节点按 sid 关联，仍归规范根所有。
+		var canonicalRootCount int64
+		if delSnmpModels.Type != 0 || delSnmpModels.Name == "RootZone" {
+			return errmsg.ROOTZONE_NOT_DEL, delSnmpModels.DeviceType
+		}
+		err := Db.Model(&MonitorList{}).
+			Where("project_uuid = ? AND pid = ? AND sid = ? AND name = ? AND id <> ?",
+				delSnmpModels.ProjectUuid, 0, delSnmpModels.Sid, "RootZone", delSnmpModels.ID).
+			Count(&canonicalRootCount).Error
+		if err != nil || canonicalRootCount == 0 {
+			return errmsg.ROOTZONE_NOT_DEL, delSnmpModels.DeviceType
+		}
+		isLegacyMirrorRoot = true
 	}
 
 	err := Db.Model(&MonitorList{}).Unscoped().Where("uuid = ?", uuid).Delete(&delSnmpModels).Error
 	if err != nil {
 		return errmsg.ERROR, delSnmpModels.DeviceType
+	}
+	if isLegacyMirrorRoot {
+		return errmsg.SUCCSECODE, delSnmpModels.DeviceType
 	}
 	err1 := Db.Model(&DeviceRealData{}).Unscoped().Where("device_uuid = ?", uuid).Delete(&delReadData).Error
 	if err1 != nil {
@@ -1280,7 +1297,9 @@ func GetRealDataPaged(uuid string, page, pageSize int) ([]DeviceRealData, int64,
 实时值由调用方从 DeviceRealDataMapByUUID 覆盖。
 
 匹配规则（与导航逻辑设备一致）：
-  name = label OR name LIKE label || '_%'
+
+	name = label OR name LIKE label || '_%'
+
 可选限定 muid；若同时给了 deviceUuid，则并上该设备下的测点（去重由调用方处理，这里用 OR）。
 */
 func GetRealDataPagedByNamePrefix(muid, deviceUuid, namePrefix, keyword, category string, page, pageSize int) ([]DeviceRealData, int64, int) {

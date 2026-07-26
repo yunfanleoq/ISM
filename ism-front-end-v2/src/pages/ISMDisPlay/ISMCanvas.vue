@@ -1,6 +1,11 @@
 <template>
   <a-spin :spinning="spinning" size="large" tip="Loading..." style="height: 100%">
-    <div class="x6-container" :style="ContainerStyle">
+    <div class="x6-container" :class="{'runtime-preview-canvas': editorRuntimePreview.active}" :style="ContainerStyle">
+      <div v-if="editorRuntimePreview.active" class="runtime-preview-banner">
+        <a-icon type="eye" />
+        {{ $t('displayConfig.RuntimePreviewReadonly') }}：
+        {{ editorRuntimePreview.virtualTitle }}
+      </div>
       <div ref="rulerHorizontal" class="ruler-horizontal" v-if="UpdateRuler"></div>
       <div ref="rulerVertical" class="ruler-vertical" v-if="UpdateRuler"></div>
       <div ref="ISMContainer" class="graph-container"  :class="{ 'format-painter' : isFormatPainterActive,'animated':true,[`${configData.layer.animate}`]: true}"></div>
@@ -124,6 +129,7 @@ export default {
       configData: state => store.state.ISMDisPlayEditorTool.LayerData,
       pageLayerLoading: state => store.state.ISMDisPlayEditorTool.pageLayerLoading,
       selectedNode: state => store.state.ISMDisPlayEditorTool.selectedNode,
+      editorRuntimePreview: state => store.state.ISMDisPlayEditorTool.editorRuntimePreview,
     }),
     ContainerStyle() {
       return {
@@ -3128,6 +3134,23 @@ export default {
 <style>
 .ant-spin-container{
   height:100%;
+}
+.runtime-preview-canvas .graph-container {
+  pointer-events: none;
+}
+.runtime-preview-banner {
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  z-index: 20;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border: 1px solid #91d5ff;
+  border-radius: 4px;
+  color: #096dd9;
+  background: rgba(230, 247, 255, 0.96);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
 }
 .normal {
   cursor: default;

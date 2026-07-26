@@ -586,7 +586,8 @@ func (c *Cjt188Ctl) GatherCjt188DeviceData() {
 						signleAlarm.HappenTime = time.Now()
 						c.DealWithCJT188AlarmData(signleAlarm)
 						// protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-					} else if address.IsRecord == 1 {
+					}
+					if address.IsRecord == 1 {
 						//存储信息
 						signleHistoryData.DataName = address.Name
 						signleHistoryData.DeviceName = device.Name

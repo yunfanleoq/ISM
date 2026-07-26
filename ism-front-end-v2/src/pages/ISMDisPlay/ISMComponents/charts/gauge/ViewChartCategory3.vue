@@ -296,13 +296,9 @@ export default {
           {
             name: 'Budget vs spending',
             type: 'radar',
-            itemStyle: {
-              normal: {
-                lineStyle: {
+            itemStyle: {lineStyle: {
                   width:6
-                }
-              }
-            },
+                }},
             data: [
               {
                 value: [5, 75, 50, 36, 20, 69],

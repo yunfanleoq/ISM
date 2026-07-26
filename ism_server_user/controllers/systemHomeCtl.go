@@ -1,5 +1,5 @@
 /**
- * @ Description: 系统首页大屏 API
+ * @ Description: 项目默认监控大屏 API（按 ProjectUuid 隔离）
  */
 
 package controllers
@@ -18,12 +18,13 @@ type SystemHomeController struct {
 }
 
 func (c *SystemHomeController) GetSystemHomeDashboard() {
-	cfg, dashboardName, code := models.GetSystemHomeDashboardConfig()
+	projectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
+	cfg, dashboardName, code := models.GetSystemHomeDashboardConfig(projectUuid)
 	result := map[string]interface{}{
-		"code":           code,
-		"dashboardUuid":  cfg.DashboardUuid,
-		"projectUuid":    cfg.ProjectUuid,
-		"dashboardName":  dashboardName,
+		"code":          code,
+		"dashboardUuid": cfg.DashboardUuid,
+		"projectUuid":   cfg.ProjectUuid,
+		"dashboardName": dashboardName,
 	}
 	c.Data["json"] = result
 	c.ServeJSON()
@@ -59,7 +60,7 @@ func (c *SystemHomeController) SetSystemHomeDashboard() {
 	}
 	if role != "Admin" {
 		result["code"] = -9
-		result["msg"] = "权限不足，仅管理员可设置系统首页"
+		result["msg"] = "权限不足，仅管理员可设置项目默认大屏"
 		c.Data["json"] = result
 		c.ServeJSON()
 		return
@@ -69,6 +70,18 @@ func (c *SystemHomeController) SetSystemHomeDashboard() {
 	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &params); err != nil {
 		result["code"] = errmsg.NOTJSON
 		result["msg"] = "参数格式错误"
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+
+	// 优先用请求体，其次请求头（当前进入的项目）
+	if params.ProjectUuid == "" {
+		params.ProjectUuid = c.Ctx.Request.Header.Get("ProjectUuid")
+	}
+	if params.ProjectUuid == "" || params.DashboardUuid == "" {
+		result["code"] = errmsg.ERROR
+		result["msg"] = "缺少项目或大屏参数"
 		c.Data["json"] = result
 		c.ServeJSON()
 		return

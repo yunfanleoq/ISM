@@ -113,6 +113,82 @@ export default {
         _t.treeLoading = false
       })
     },
+    // 编辑/变更后刷新树：保留 expandedKeys 与选中态，懒加载路径逐级恢复，避免只剩 RootZone
+    reloadKeepExpand() {
+      const _t = this
+      const savedExpanded = (_t.expandedKeys || []).slice()
+      const savedSelectKey = _t.selectKey
+      const savedSelectedKeys = (_t.selectedKeys || []).slice()
+      _t.treeLoading = true
+      const params = _t.treeLazy ? {lazy: true, pid: 0} : {}
+      return getMonitorTree(params).then(async function (res) {
+        if (res.data.code != 0) {
+          _t.treeData = []
+          return
+        }
+        _t.treeData = _t.normalizeTreeNodes(res.data.list || [])
+        _t.dataList = []
+        _t.generateList(_t.treeData)
+
+        if (_t.treeLazy && savedExpanded.length) {
+          for (let i = 0; i < savedExpanded.length; i++) {
+            await _t.loadChildrenByKey(savedExpanded[i])
+          }
+          _t.expandedKeys = savedExpanded
+          _t.autoExpandParent = false
+        }
+
+        if (savedSelectKey != null) {
+          _t.selectKey = savedSelectKey
+          _t.selectedKeys = savedSelectedKeys.length ? savedSelectedKeys : [savedSelectKey]
+          _t.dataSource = []
+          const selectNode = _t.findNodeByKey(savedSelectKey, _t.treeData)
+          if (selectNode && selectNode.value && selectNode.value.type === 0) {
+            if (!selectNode.children) {
+              await _t.loadChildrenByKey(savedSelectKey)
+            }
+            _t.getTreeChildren(savedSelectKey, _t.treeData)
+          }
+          _t.$emit('updateTree', _t.dataSource)
+        }
+        if (_t.treeData.length === 0) {
+          _t.selectKey = null
+          _t.selectNode = null
+        }
+      }).catch(function () {
+        _t.treeData = []
+      }).finally(function () {
+        _t.treeLoading = false
+      })
+    },
+    findNodeByKey(key, tree) {
+      if (!tree || !tree.length) return null
+      for (let i = 0; i < tree.length; i++) {
+        const node = tree[i]
+        if (node.key === key) return node
+        if (node.children && node.children.length) {
+          const found = this.findNodeByKey(key, node.children)
+          if (found) return found
+        }
+      }
+      return null
+    },
+    loadChildrenByKey(key) {
+      const _t = this
+      const node = _t.findNodeByKey(key, _t.treeData)
+      if (!node || !node.value || node.value.type === 1) {
+        return Promise.resolve()
+      }
+      const parentSid = node.value.sid
+      return getMonitorTree({lazy: true, pid: parentSid}).then(function (res) {
+        if (res.data.code == 0) {
+          node.children = _t.normalizeTreeNodes(res.data.list || [])
+          _t.treeData = [..._t.treeData]
+          _t.dataList = []
+          _t.generateList(_t.treeData)
+        }
+      }).catch(function () { /* keep previous children */ })
+    },
     normalizeTreeNodes(list) {
       if (!list || !list.length) {
         return []

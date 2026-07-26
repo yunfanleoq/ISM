@@ -67,6 +67,7 @@ export function sortByLabel(list, field = 'label') {
  * 遍历导航树（ISMRunTreeNav.buildForest 产物）构建索引。
  * @returns {{
  *   bySid: Object<number, object>,
+ *   byBusinessId: Object<string, object>,
  *   parentBySid: Object<number, object|null>,
  *   byOldPageId: Object<string, {oldKind:string, sid:number, key?:string}>,
  *   roots: object[],
@@ -74,7 +75,9 @@ export function sortByLabel(list, field = 'label') {
  */
 export function buildNavTreeIndex(roots) {
   const bySid = Object.create(null)
+  const byBusinessId = Object.create(null)
   const parentBySid = Object.create(null)
+  const parentByBusinessId = Object.create(null)
   const byOldPageId = Object.create(null)
 
   const put = (pid, entry) => {
@@ -84,6 +87,11 @@ export function buildNavTreeIndex(roots) {
   const walk = (node, parent) => {
     if (!node) return
     const sid = node.sid
+    const businessId = node.uuid || node.id || (sid != null ? String(sid) : '')
+    if (businessId) {
+      byBusinessId[String(businessId)] = node
+      parentByBusinessId[String(businessId)] = parent || null
+    }
     if (sid != null) {
       bySid[sid] = node
       parentBySid[sid] = parent || null
@@ -109,11 +117,11 @@ export function buildNavTreeIndex(roots) {
         })
       }
     }
-    ;(node.children || []).forEach(c => walk(c, node))
+    (node.children || []).forEach(c => walk(c, node))
   }
-  ;(roots || []).forEach(r => walk(r, null))
+  (roots || []).forEach(r => walk(r, null))
 
-  return { bySid, parentBySid, byOldPageId, roots: roots || [] }
+  return { bySid, byBusinessId, parentBySid, parentByBusinessId, byOldPageId, roots: roots || [] }
 }
 
 /** 深收集节点子孙 A3 转机（带在线状态） */
@@ -133,12 +141,12 @@ export function collectNodeDevices(node) {
       })
       return
     }
-    ;(n.children || []).forEach(walk)
+    (n.children || []).forEach(walk)
   }
   if (node && (node.kind === 'gateway' || node.kind === 'device' || isDeviceNode(node))) {
     walk(node)
   } else {
-    ;((node && node.children) || []).forEach(walk)
+    ((node && node.children) || []).forEach(walk)
   }
   return out
 }
@@ -170,12 +178,18 @@ export function buildNavContextForNode(node, index, ancestorsOverride) {
   if (!ancestors) {
     ancestors = []
     if (index && node) {
-      if (node.sid != null) {
+      if (node.sid != null || node.uuid || node.id) {
         const chain = []
-        let p = index.parentBySid[node.sid]
+        const businessId = node.uuid || node.id || String(node.sid)
+        let p = node.sid != null
+          ? index.parentBySid[node.sid]
+          : index.parentByBusinessId && index.parentByBusinessId[String(businessId)]
         while (p) {
           chain.unshift(p)
-          p = p.sid != null ? index.parentBySid[p.sid] : null
+          const parentBusinessId = p.uuid || p.id || (p.sid != null ? String(p.sid) : '')
+          p = p.sid != null
+            ? index.parentBySid[p.sid]
+            : (index.parentByBusinessId && index.parentByBusinessId[String(parentBusinessId)])
         }
         ancestors = chain.map(n => liteAncestor({
           kind: n.kind,
@@ -222,28 +236,14 @@ export function childAncestors(parentNav) {
   return [...(parentNav.ancestors || []), liteAncestor(parentNav)]
 }
 
-/** 按节点 kind/layer/物模型解析模板页 id */
-export function resolveTemplatePageIdForKind(templateMap, kind, modelUuid) {
+/** 唯一运行链路：首页 → 设备列表 → 点位列表。组织细分类型和物模型均不选模板。 */
+export function resolveTemplatePageIdForKind(templateMap, kind, _modelUuid) {
   const map = templateMap || {}
-  const roomFallback = map.room || map.zone || ''
-  if (kind === 'root' || kind === 'home') return map.home || roomFallback
-  if (kind === 'zone') return map.zone || roomFallback
-  if (kind === 'room') return map.room || map.zone || ''
-  // 设备（含原 gateway）→ 测点实时表模板
-  if (kind === 'gateway' || kind === 'device') {
-    const byModel = map.deviceByModel || {}
-    if (modelUuid && byModel[modelUuid]) return byModel[modelUuid]
-    return map.deviceDefault || map.cabinet || roomFallback
+  if (kind === 'root' || kind === 'home') return map.home || ''
+  if (kind === 'gateway' || kind === 'device' || kind === 'datapoint') {
+    return map.datapointList || ''
   }
-  if (kind === 'cabinet') return map.cabinet || map.room || map.zone || ''
-  // 禁用 floor / registerGroup 主链路
-  if (kind === 'floor' || kind === 'registerGroup') return map.room || map.zone || roomFallback
-  if (kind === 'device') {
-    const byModel = map.deviceByModel || {}
-    if (modelUuid && byModel[modelUuid]) return byModel[modelUuid]
-    return map.deviceDefault || roomFallback
-  }
-  return roomFallback
+  return map.deviceList || ''
 }
 
 /**
@@ -258,15 +258,12 @@ export function resolveOldPageTarget(oldPageId, index, templateMap) {
   const node = index.bySid[entry.sid]
   if (!node) return null
 
-  if (entry.oldKind === 'floor') {
-    // 旧 floor 设备组 → room 列表模板 + A3 转机分页（禁用 floor 主链路）
-    const nav = applyGatewayListPagination(buildNavContextForNode(node, index))
-    const pageUuid = resolveDeviceListTemplateId(templateMap)
-      || resolveTemplatePageIdForKind(templateMap, node.kind, nav.modelUuid)
-    return pageUuid ? { pageUuid, navContext: nav } : null
-  }
-
   const nav = buildNavContextForNode(node, index)
-  const pageUuid = resolveTemplatePageIdForKind(templateMap, node.kind, nav.modelUuid)
+  if (entry.oldKind !== 'device') {
+    const listNav = applyGatewayListPagination(nav)
+    const pageUuid = resolveDeviceListTemplateId(templateMap)
+    return pageUuid ? { pageUuid, navContext: listNav } : null
+  }
+  const pageUuid = resolveTemplatePageIdForKind(templateMap, 'device', '')
   return pageUuid ? { pageUuid, navContext: nav } : null
 }

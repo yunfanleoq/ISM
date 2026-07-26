@@ -26,6 +26,8 @@ export default {
       wsProtocol:"ws",
       connectWebsocket:null,
       connectSSE:null,
+      sseReconnectTimer: null,
+      sseReconnectAttempt: 0,
       locale: {},
       eventSource: null, // SSE 连接实例
       messages: [],      // 存储接收的消息
@@ -49,7 +51,14 @@ export default {
     this.checkBrowser()
   },
   mounted() {
-   this.setWeekModeTheme(this.weekMode)
+    this.setWeekModeTheme(this.weekMode)
+    window.addEventListener('online', this.handleSSEOnline)
+    document.addEventListener('visibilitychange', this.handleSSEVisibilityChange)
+  },
+  beforeDestroy() {
+    window.removeEventListener('online', this.handleSSEOnline)
+    document.removeEventListener('visibilitychange', this.handleSSEVisibilityChange)
+    this.DisconnectSSE()
   },
   watch: {
     weekMode(val) {
@@ -333,14 +342,27 @@ export default {
       let _t = this
       _t.$store.state.setting.skeletonLoading = true
       GetSystemAuthInfo().then(function (res) {
-        let auth = res.data
-        _t.$store.state.setting.systemName = auth.systemName
+        let auth = res.data || {}
+        // 循安现场品牌：后端 applyXunanBranding 为准；前端再兜底去掉「零界/zerobound」
+        const xunanLogo = '/static/branding/logo-xunan-hexagon.png'
+        const looksLegacy = /零界|zerobound|临界|ai\s*$/i.test(
+          String(auth.systemName || '') + ' ' + String(auth.SystemAPPName || '') + ' ' + String(auth.systemCompany || '')
+        )
+        _t.$store.state.setting.systemName = looksLegacy || !auth.systemName
+          ? '循安电力监控平台'
+          : auth.systemName
         _t.$store.state.setting.systemUrl = auth.systemUrl
         _t.$store.state.setting.SystemDynamicUrl = auth.SystemDynamicUrl
-        _t.$store.state.setting.SystemLogo = auth.SystemLogo
+        _t.$store.state.setting.SystemLogo = (looksLegacy || !auth.SystemLogo || String(auth.SystemLogo).indexOf('data:image') === 0)
+          ? xunanLogo
+          : auth.SystemLogo
         _t.$store.state.setting.systemLoginBg = auth.systemLoginBg
-        _t.$store.state.setting.SystemAuthAPPName = auth.SystemAPPName
-        _t.$store.state.setting.systemCompany = auth.systemCompany?auth.systemCompany:""
+        _t.$store.state.setting.SystemAuthAPPName = looksLegacy || !auth.SystemAPPName
+          ? '循安'
+          : auth.SystemAPPName
+        _t.$store.state.setting.systemCompany = looksLegacy || !auth.systemCompany
+          ? '北京循安科技有限公司'
+          : auth.systemCompany
         _t.$store.state.setting.systemBg = auth.systemBg
         _t.$store.state.setting.skeletonLoading = false
         _t.setHtmlTitle()
@@ -364,33 +386,37 @@ export default {
     },
     // 建立 SSE 连接
     ConnectSSE() {
-      // 关闭已有连接（防止重复连接）
-      if (this.eventSource) {
-        this.eventSource.close();
-      }
       if((!checkAuthorization())&&(!checkAuthorization(AUTH_TYPE.AUTH1)))
       {
         return
       }
       clearInterval(this.connectSSE)
-      let currentPort = 8081
-      const { hostname, port, origin, protocol } = window.location;
-      if (port === '') {
-        currentPort = protocol === 'https:' ? '443' : '80';
-      } else {
-        currentPort = port;
+      if (!navigator.onLine || document.visibilityState === 'hidden') {
+        return
       }
-      // 1. 创建 SSE 连接（Beego 后端接口地址）
-      this.eventSource = new EventSource(protocol+"//"+hostname+":"+port+"/SSEPushData?token="+getAuthorization());
+      if (this.eventSource &&
+        (this.eventSource.readyState === EventSource.CONNECTING ||
+          this.eventSource.readyState === EventSource.OPEN)) {
+        return
+      }
+      clearTimeout(this.sseReconnectTimer)
+      this.sseReconnectTimer = null
+
+      // SSE 与当前页面同源，生产环境由反向代理转发到 Beego。
+      const source = new EventSource(
+        `${window.location.origin}/SSEPushData?token=${encodeURIComponent(getAuthorization())}`
+      )
+      this.eventSource = source
 
       // 2. 监听连接成功
-      this.eventSource.onopen = () => {
+      source.onopen = () => {
         console.log("SSE 连接已打开");
         this.isConnected = true;
+        this.sseReconnectAttempt = 0;
       };
       let _this = this;
       // 3. 监听后端推送的消息
-      this.eventSource.onmessage = (event) => {
+      source.onmessage = (event) => {
         try {
           let wsData = JSON.parse(event.data)
           if(wsData.Cmd=="RealData")
@@ -423,14 +449,42 @@ export default {
       };
 
       // 4. 监听错误（如连接断开）
-      this.eventSource.onerror = (error) => {
+      source.onerror = (error) => {
+        if (_this.eventSource !== source) return
         console.error("SSE 错误：", error);
         _this.isConnected = false;
-        // 自动重连（3 秒后重试）
-        setTimeout(() => _this.ConnectSSE(), 5000);
+        // 关闭 EventSource 自带重连，统一交给带退避的单一重连定时器。
+        source.close()
+        _this.eventSource = null
+        _this.scheduleSSEReconnect()
       };
     },
+    scheduleSSEReconnect() {
+      if (this.sseReconnectTimer || !navigator.onLine ||
+        document.visibilityState === 'hidden') {
+        return
+      }
+      const delays = [1000, 2000, 5000, 10000, 30000]
+      const delay = delays[Math.min(this.sseReconnectAttempt, delays.length - 1)]
+      this.sseReconnectAttempt += 1
+      this.sseReconnectTimer = setTimeout(() => {
+        this.sseReconnectTimer = null
+        this.ConnectSSE()
+      }, delay)
+    },
+    handleSSEOnline() {
+      this.sseReconnectAttempt = 0
+      this.ConnectSSE()
+    },
+    handleSSEVisibilityChange() {
+      if (document.visibilityState === 'visible' && !this.isConnected) {
+        this.ConnectSSE()
+      }
+    },
     DisconnectSSE() {
+      clearInterval(this.connectSSE)
+      clearTimeout(this.sseReconnectTimer)
+      this.sseReconnectTimer = null
       if (this.eventSource) {
         this.eventSource.close();
         this.eventSource = null;

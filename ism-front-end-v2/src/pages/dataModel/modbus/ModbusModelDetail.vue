@@ -331,6 +331,10 @@ export default {
       })
     },
     GetDisplayPage(uuid){
+      if (!uuid) {
+        this.displayPageList = []
+        return
+      }
       let params={
         muid:uuid
       }
@@ -340,7 +344,7 @@ export default {
         if(res.data.code==0)
         {
           let pageLayer = res.data.layer
-          if(pageLayer.length>0)
+          if(pageLayer && pageLayer.length>0)
           {
             for(let i=0;i<pageLayer.length;i++)
             {
@@ -362,6 +366,28 @@ export default {
         _t.getSingleModelDetail()
       })
     },
+    // 只写当前已注册的 decorator 字段，避免 “set field before render”
+    setRegisteredFieldsValue(values) {
+      if (!values || !this.form) return
+      let names = []
+      try {
+        if (this.form.fieldsStore && typeof this.form.fieldsStore.getAllFieldsName === 'function') {
+          names = this.form.fieldsStore.getAllFieldsName() || []
+        }
+      } catch (e) { /* ignore */ }
+      if (!names.length) {
+        names = Object.keys(this.form.getFieldsValue() || {})
+      }
+      const registered = {}
+      names.forEach(function (n) { registered[n] = true })
+      const safe = {}
+      Object.keys(values).forEach(function (key) {
+        if (registered[key]) safe[key] = values[key]
+      })
+      if (Object.keys(safe).length) {
+        this.form.setFieldsValue(safe)
+      }
+    },
     getSingleModelDetail(){
       let _t = this
       const params={
@@ -369,45 +395,46 @@ export default {
       }
       this.messageShowLoad = true
       getSnmpModelDetail(params).then(function (res){
-        _t.GetDisplayPage(res.data.data.configUid)
+        const detail = (res && res.data && res.data.data) || {}
+        if (detail.configUid) {
+          _t.GetDisplayPage(detail.configUid)
+        } else {
+          _t.displayPageList = []
+        }
         _t.messageShowLoad = false
-        _t.modbusConnectType = res.data.data.modbusConnectType
-        setTimeout(function (){
-          _t.form.setFieldsValue(
-              {
-                name:res.data.data.name,
-                dec:res.data.data.dec,
-                timeout:res.data.data.timeout.toString(),
-                DataFormat:res.data.data.DataFormat,
-                configurationModel:res.data.data.configUid,
-                configurationPageUUID:res.data.data.PageUUID,
-                modbusConnectType:res.data.data.modbusConnectType,
-              })
-
-          if(_t.modbusConnectType=="Serial")
-          {
-            _t.form.setFieldsValue(
-                {
-                  ModbusType:res.data.data.modbusConnectMode,
-                  SerialPort:res.data.data.modbusCom,
-                  SerialPortBaud:res.data.data.serialBaud.toString(),
-                  SerialPortDataBit:res.data.data.serialBits.toString(),
-                  SerialPortVerifyBit:res.data.data.serialParity,
-                  SerialPortStopBit:res.data.data.serialStopBits,
-                  SerialPortFlow:res.data.data.serialFlow,
+        _t.modbusConnectType = detail.modbusConnectType
+        const commonValues = {
+          name: detail.name,
+          dec: detail.dec,
+          timeout: detail.timeout != null ? detail.timeout.toString() : '',
+          DataFormat: detail.DataFormat,
+          configurationModel: detail.configUid,
+          configurationPageUUID: detail.PageUUID,
+          modbusConnectType: detail.modbusConnectType,
+        }
+        // 先写公共字段（含 CommType），再等 v-if 分支渲染后写依赖字段
+        // 模板无 IpAddress/Port decorator，禁止写入
+        _t.$nextTick(function (){
+          _t.setRegisteredFieldsValue(commonValues)
+          _t.$nextTick(function (){
+            _t.$nextTick(function (){
+              const branchValues = {
+                ModbusType: detail.modbusConnectMode,
+              }
+              if (_t.modbusConnectType == "Serial") {
+                Object.assign(branchValues, {
+                  SerialPort: detail.modbusCom,
+                  SerialPortBaud: detail.serialBaud != null ? detail.serialBaud.toString() : '',
+                  SerialPortDataBit: detail.serialBits != null ? detail.serialBits.toString() : '',
+                  SerialPortVerifyBit: detail.serialParity,
+                  SerialPortStopBit: detail.serialStopBits,
+                  SerialPortFlow: detail.serialFlow,
                 })
-          }
-          else
-          {
-            _t.form.setFieldsValue(
-                {
-                  IpAddress:res.data.data.modbusClientIpaddress,
-                  Port:res.data.data.port.toString(),
-                  ModbusType:res.data.data.modbusConnectMode,
-                }
-            )
-          }
-        },300)
+              }
+              _t.setRegisteredFieldsValue(branchValues)
+            })
+          })
+        })
       })
     },
     onSubmit (e) {

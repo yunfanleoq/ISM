@@ -1345,13 +1345,9 @@ export default {
           type: 'line',
           dataID: this.SelectDevice+this.SelectDeviceDataList[k].DataUUID,
           data: [],
-          itemStyle: {
-            normal: {
-              lineStyle: {
+          itemStyle: {lineStyle: {
                 width:this.EchartsWidth
-              }
-            }
-          },
+              }},
           symbolSize: this.EchartsWidth,
           markPoint: {
             symbol: 'circle',

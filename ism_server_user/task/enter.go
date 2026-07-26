@@ -9,6 +9,7 @@
 package tasks
 
 import (
+	"ISMServer/models"
 	protocol_common "ISMServer/protocol/common"
 	customDataTask "ISMServer/task/DealWithCustomData"
 	ISMScript "ISMServer/task/ISMScript"
@@ -19,6 +20,8 @@ import (
 	dataHistoryTask "ISMServer/task/historydata"
 	staticDataTask "ISMServer/task/staticData"
 	triggerAlarmTask "ISMServer/task/triggerAlarm"
+
+	"github.com/beego/beego/v2/core/logs"
 )
 
 func TasksServer() {
@@ -26,6 +29,11 @@ func TasksServer() {
 	if SyncData.FullPrewarmEnabled() {
 		go SyncData.SyncDevicesDataToMemory()
 	}
+	if err := models.EnsureAllEnergyOverviewRecordingSettings(); err != nil {
+		logs.Error("恢复首页能源统计历史记录配置失败: %v", err)
+	}
+	// 部署包启动即清理旧预生成大屏页（building/floor/zone/...），只留三模板运行链路
+	models.PruneLegacyDashboardPages()
 	dataHistoryTask.HistoryRecordDb()
 	alarmTask.InitializeStartupAlarmGuard()
 	go alarmTask.DealWithAlarm()
@@ -38,6 +46,7 @@ func TasksServer() {
 	go dataHistoryTask.DealWithSaveHistoryData()
 	go ISMConfigFile.CheckAllConfigFiles()
 	go StartAutoCleanup() // 自动清理历史数据，防止DB膨胀
+	go models.EnergyOverviewAggregationTask()
 
 	// go DataTrend.InitMemDb()
 }

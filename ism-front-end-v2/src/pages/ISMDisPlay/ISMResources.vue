@@ -22,13 +22,13 @@
                   </span>
                 </div>
                 <div v-else>
-                    <span class="node-title" :title="item.title">
+                    <span class="node-title" :title="pageDisplayTitle(item)">
                         <template slot="title">
                           <span>{{$t('ISMResources.PageTipsIsHome')}}</span>
                         </template>
                       <a-icon type="home" v-if="item.IsHome==1"/>
                       <span class="empty-home-ico" v-else></span>
-                      {{item.title}}
+                      {{pageDisplayTitle(item)}}
                     </span>
                     <span class="" style="margin-left: 0px" v-if="selectTreeKey==item.key">
                       <a-tooltip placement="top" v-if="item.IsLogin!=1">
@@ -232,6 +232,8 @@ export default {
       PCPageList: state => store.state.ISMDisPlayEditorTool.PCPageList,
       PhonePageList: state => store.state.ISMDisPlayEditorTool.PhonePageList,
       ISMCavasContainer:state => store.state.ISMDisPlayEditorTool.ISMCavasContainer,
+      navTemplateMap: state => store.state.ISMDisPlayEditorTool.navTemplateMap,
+      editorRuntimePreview: state => store.state.ISMDisPlayEditorTool.editorRuntimePreview,
     }),
   },
   watch: {
@@ -257,12 +259,37 @@ export default {
     ...mapMutations('ISMDisPlayEditorTool',[
       'ClearRedo',
       'ClearUndo',
-      'ClearisHistoryOp'
+      'ClearisHistoryOp',
+      'setNavContext',
+      'setEditorRuntimePreview'
     ]),
+    runtimeTemplatePageIds(){
+      const map = this.navTemplateMap || {}
+      return new Set([
+        map.home,
+        map.deviceList,
+        map.datapointList,
+      ].filter(Boolean))
+    },
+    pageDisplayTitle(item){
+      if (!item || item.isComponents || item.pageType !== 1) {
+        return item && item.title ? item.title : ''
+      }
+      if (this.runtimeTemplatePageIds().has(item.pageUuid)) {
+        return `${item.title}（${this.$t('displayConfig.RuntimeTemplate')}）`
+      }
+      if (item.IsHome != 1) {
+        return `${item.title}（${this.$t('displayConfig.LegacyPage')}）`
+      }
+      return item.title
+    },
     handleSelectPageSizeChange(value){
         this.pageSize = value
     },
     doSaveLayerData(uuid){
+      if (this.editorRuntimePreview && this.editorRuntimePreview.active) {
+        return Promise.resolve()
+      }
       let _t = this
       let params = {
         uuid:uuid,
@@ -319,6 +346,8 @@ export default {
           this.checkPageInfo = page
           //保存上个页面
           this.doSaveLayerData(this.$route.params.uid)
+          this.setEditorRuntimePreview(null)
+          this.setNavContext(null)
           this.selectLayerDataStruct(page)
           document.title = page.AppName + ' | ' + page.title
         }

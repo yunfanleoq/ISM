@@ -12,6 +12,7 @@
             name="file"
             :multiple="false"
             :action=localUpgradeUrl
+            :data="importUploadData"
             :showUploadList="false"
             @change="localUpgradeCharge"
         >
@@ -29,7 +30,7 @@
 
       </a-space>
       <a-spin style="padding: 1px;"  :spinning="messageShowLoad" tip="Loading...">
-        <a-table :loading="false" :pagination="dataPagination" row-key="uuid" :row-selection="rowSelection" :columns="columns" :data-source="dataSource" class="ant-table-tbody">
+        <a-table :loading="false" :pagination="dataPagination" @change="onDataTableChange" row-key="uuid" :row-selection="rowSelection" :columns="columns" :data-source="dataSource" class="ant-table-tbody">
           <template v-for="(item, index) in columns" :slot="item.slotName">
             <span :key="index">{{ $t(item.slotName) }}</span>
           </template>
@@ -438,7 +439,7 @@
 
       </a-space>
       <a-spin style="padding: 1px;"  :spinning="messageShowLoad" tip="Loading...">
-        <a-table  :pagination="groupPagination" row-key="uuid" :columns="registerGroupColumns" :data-source="registerGroupDataSource" class="ant-table-tbody">
+        <a-table  :pagination="groupPagination" @change="onGroupTableChange" row-key="uuid" :columns="registerGroupColumns" :data-source="registerGroupDataSource" class="ant-table-tbody">
           <template v-for="(item, index) in registerGroupColumns" :slot="item.slotName">
             <span :key="index">{{ $t(item.slotName) }}</span>
           </template>
@@ -570,12 +571,14 @@ export default {
       groupPagination:{
         pageSize:15,
         showSizeChanger:true,
-        current:1
+        current:1,
+        total:0
       },
       dataPagination:{
         pageSize:15,
         showSizeChanger:true,
-        current:1
+        current:1,
+        total:0
       },
       localUpgradeUrl:LOCALUPGATEDATAMODEL+"/"+this.$route.params.uid,
       DataRecordType:0,
@@ -801,7 +804,11 @@ export default {
 
   },
   computed: {
-
+    importUploadData() {
+      return {
+        registerGroupUuid: this.registerUUID || ''
+      }
+    },
   },
   methods: {
     async handleExport() {
@@ -1256,6 +1263,29 @@ export default {
         })
       }
     },
+    /** a-table 受控分页：必须同步 current/pageSize，否则点击页码不生效 */
+    onGroupTableChange(pagination) {
+      if (!pagination) return
+      this.groupPagination = {
+        ...this.groupPagination,
+        current: pagination.current || 1,
+        pageSize: pagination.pageSize || this.groupPagination.pageSize,
+        total: this.groupPagination.total != null
+          ? this.groupPagination.total
+          : (this.registerGroupDataSource || []).length,
+      }
+    },
+    onDataTableChange(pagination) {
+      if (!pagination) return
+      this.dataPagination = {
+        ...this.dataPagination,
+        current: pagination.current || 1,
+        pageSize: pagination.pageSize || this.dataPagination.pageSize,
+        total: this.dataPagination.total != null
+          ? this.dataPagination.total
+          : (this.dataSource || []).length,
+      }
+    },
     registerGroupList(){
       let _t = this
       this.messageShowLoad = true
@@ -1266,6 +1296,11 @@ export default {
       modbusModelGroupList(params).then(function (res){
         _t.messageShowLoad = false
         _t.registerGroupDataSource = res.data.list==null?[]:res.data.list
+        _t.groupPagination = {
+          ..._t.groupPagination,
+          total: _t.registerGroupDataSource.length,
+          current: 1,
+        }
       })
     },
     deleteRegisterGroupRecord(uuid){
@@ -1317,6 +1352,11 @@ export default {
       }
       modbusModelRegisterList(params).then(function (res){
         _t.dataSource = res.data.list==null?[]:res.data.list
+        _t.dataPagination = {
+          ..._t.dataPagination,
+          total: _t.dataSource.length,
+          current: 1,
+        }
         _t.messageShowLoad = false
       })
     },
@@ -1343,6 +1383,10 @@ export default {
                 _t.selectedRows = _t.selectedRows.filter(item => item.uuid !== _t.selectDataTableUuid[i])
               }
               _t.selectDataTableUuid=[]
+              _t.dataPagination = {
+                ..._t.dataPagination,
+                total: _t.dataSource.length,
+              }
             }
             else {
               _t.$message.error(_t.$t("dataModel.deleteFailed"));

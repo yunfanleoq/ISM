@@ -204,8 +204,6 @@ import {setAuthorization} from '@/utils/request'
 import ProjectLayout from "../../layouts/ProjectLayout";
 import {AUTH_TYPE} from "../../utils/request";
 import {formatDate} from '@/utils/common';
-import {mapMutations, mapGetters} from 'vuex';
-import {applyHomeProjectAuth} from '@/config/homeDashboard'
 import {
   ProjectAdd,
   ProjectList,
@@ -274,7 +272,6 @@ export default {
     },
   },
   computed: {
-    ...mapGetters('setting', ['homeDashboardPath']),
     SystemDynamicUrl () {
       return this.$store.state.setting.SystemDynamicUrl
     },
@@ -287,9 +284,12 @@ export default {
 
     },
     GoProject(uuid){
+      // 进入所选项目的管理后台；并刷新该项目的默认「监控大屏」配置
       setAuthorization({token: uuid},AUTH_TYPE.AUTH1)
-      applyHomeProjectAuth(this.$store)
-      this.$router.push(this.homeDashboardPath)
+      const goDashboard = () => { this.$router.push('/dashboard') }
+      this.$store.dispatch('setting/fetchSystemHomeDashboard')
+        .then(goDashboard)
+        .catch(goDashboard)
     },
     editProject(e,item){
       this.projectVisible=true

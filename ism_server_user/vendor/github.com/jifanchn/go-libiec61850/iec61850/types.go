@@ -1,3 +1,5 @@
+//go:build (linux || windows) && cgo
+
 package iec61850
 
 import "C"

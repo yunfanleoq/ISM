@@ -315,7 +315,8 @@ func setDeviceData(task models.TaskPlanList) {
 						signleAlarm.DeviceName = readData.DeviceName
 						signleAlarm.HappenTime = time.Now()
 						protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-					} else if readData.IsRecord == 1 {
+					}
+					if readData.IsRecord == 1 {
 						//存储信息
 						signleHistoryData.DataValue = list.Value
 						signleHistoryData.DataName = readData.Name

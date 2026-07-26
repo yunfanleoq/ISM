@@ -886,13 +886,9 @@ export default {
             type: 'line',
             dataID:this.detail.active[i].condition.deviceSN+this.detail.active[i].condition.dataID,
             data: [],
-            itemStyle: {
-              normal: {
-                lineStyle: {
+            itemStyle: {lineStyle: {
                   width:this.EchartsWidth
-                }
-              }
-            },
+                }},
             symbolSize: this.EchartsWidth,
           }
           listObj.DeviceUuid = this.detail.active[i].condition.deviceSN

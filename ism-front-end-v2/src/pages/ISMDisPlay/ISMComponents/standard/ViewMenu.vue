@@ -621,7 +621,8 @@ export default {
       },
       GetDisplayPage(uuid){
         let params={
-          muid:uuid
+          muid:uuid,
+          metaOnly:true
         }
         let _t = this
         getDisplayModelLayerData(params).then(function (res){

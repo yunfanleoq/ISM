@@ -11,6 +11,7 @@ package modbusprotocols
 import (
 	"ISMServer/models"
 	protocolCommon "ISMServer/protocol/common"
+	alarmTask "ISMServer/task/alarm"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -26,6 +27,40 @@ import (
 	"github.com/goburrow/serial"
 	modbus "github.com/thinkgos/gomodbus/v2"
 )
+
+// modbusDeviceGatherSQL 显式 JOIN，避免三表笛卡尔积在 OceanBase 上打满 query timeout。
+const modbusDeviceGatherSQL = `
+SELECT
+  modbus_devices_register_group.uuid AS register_group_uuid,
+  modbus_devices_data_model.register_address,
+  modbus_devices_data_model.record_data_timely,
+  modbus_devices_data_model.float_accuracy,
+  modbus_devices_data_model.conversion_expression,
+  modbus_devices_data_model.is_alarm,
+  modbus_devices_data_model.alarm_level,
+  modbus_devices_data_model.byte_order,
+  modbus_devices_data_model.name,
+  modbus_devices_data_model.alarm_message,
+  modbus_devices_data_model.alarm_clear_message,
+  modbus_devices_data_model.data_unit,
+  modbus_devices_data_model.record_type,
+  modbus_devices_data_model.record_data_charge,
+  modbus_devices_data_model.is_record,
+  modbus_devices_data_model.record_interval,
+  device_real_data.uuid AS real_data_uuid,
+  device_real_data.alarm_shield,
+  device_real_data.model_data_uuid,
+  modbus_devices_data_model.type,
+  COALESCE(device_real_data.alarm_on_value, modbus_devices_data_model.alarm_on_value, 1) AS alarm_on_value
+FROM device_real_data
+INNER JOIN modbus_devices_register_group
+  ON device_real_data.muid = modbus_devices_register_group.muid
+INNER JOIN modbus_devices_data_model
+  ON modbus_devices_data_model.register_group_uuid = modbus_devices_register_group.uuid
+ AND device_real_data.model_data_uuid = modbus_devices_data_model.uuid
+WHERE device_real_data.device_uuid = ?
+  AND modbus_devices_register_group.muid = ?
+`
 
 var ModbusTcpClientConnMutex = make(map[string]*sync.Mutex, protocolCommon.HistoryCacheCount) //修改异步map
 
@@ -369,6 +404,8 @@ func ModbusGatherStart() {
 
 		if is_starting == 1 {
 			modbusWg.Wait()
+			// 批量主动退出后整轮重采：重新打开启动抑警窗，抑制首轮基线告警风暴
+			alarmTask.ReconfigureStartupAlarmWindows()
 		}
 		//等待数据库还原
 		if protocolCommon.IsRestoreDb == 1 {
@@ -478,7 +515,7 @@ func ModbusGatherStart() {
 				var deviceGather []modbusDeviceDataStu
 				var getExtraData extraData
 				var getRegisterGroupList []models.ModbusDevicesRegisterGroup
-				models.Db.Raw("SELECT  modbus_devices_register_group.uuid as register_group_uuid,modbus_devices_data_model.register_address,modbus_devices_data_model.record_data_timely,modbus_devices_data_model.float_accuracy,modbus_devices_data_model.conversion_expression,modbus_devices_data_model.is_alarm,modbus_devices_data_model.alarm_level,modbus_devices_data_model.byte_order,modbus_devices_data_model.name,modbus_devices_data_model.alarm_message,modbus_devices_data_model.alarm_clear_message,modbus_devices_data_model.data_unit,modbus_devices_data_model.record_type,modbus_devices_data_model.record_data_charge,modbus_devices_data_model.is_record,modbus_devices_data_model.record_interval,device_real_data.uuid as real_data_uuid ,device_real_data.alarm_shield,device_real_data.model_data_uuid,modbus_devices_data_model.type,COALESCE(device_real_data.alarm_on_value, modbus_devices_data_model.alarm_on_value, 1) as alarm_on_value FROM modbus_devices_data_model, modbus_devices_register_group,device_real_data WHERE device_real_data.device_uuid=? and device_real_data.muid=modbus_devices_register_group.muid and modbus_devices_register_group.muid = ? and modbus_devices_data_model.register_group_uuid=modbus_devices_register_group.uuid and device_real_data.model_data_uuid=modbus_devices_data_model.uuid", device.Uuid, device.Muid).Scan(&deviceGather)
+				models.Db.Raw(modbusDeviceGatherSQL, device.Uuid, device.Muid).Scan(&deviceGather)
 				models.Db.Model(&models.ModbusDevicesRegisterGroup{}).Select("*").Where("muid = ?", device.Muid).Find(&getRegisterGroupList)
 				if len(getRegisterGroupList) == 0 || len(deviceGather) == 0 {
 					time.Sleep(time.Second * 5)

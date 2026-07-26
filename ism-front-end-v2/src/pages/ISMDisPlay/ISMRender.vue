@@ -1,6 +1,6 @@
 <template>
   <div class="ism-render-root" :style="nodeMouseStyleVar" ref="ismrender">
-    <div class="run-graph-container" :class="{'animated':true,[`${configData.layer.animate}`]: true}">
+    <div class="run-graph-container" :class="['animated', configData.layer && configData.layer.animate ? configData.layer.animate : '']">
       <div ref="ISMRunningContainer" ></div>
     </div>
     <div v-show="pageLoading" class="ism-page-loading">
@@ -137,7 +137,7 @@
       <div  @click="PopUpDialogClick">
         <div v-if="!isExternUrl">
           <div  class="ism-popup-render"  @contextmenu.prevent="componentRightDialogClick" :style="popUpStyle" v-if="PopUpConfigData.layer" ref="ismrender1">
-            <div class="run-graph-container" :class="{'animated':true,[`${PopUpConfigData.layer.animate}`]: true}">
+            <div class="run-graph-container" :class="['animated', PopUpConfigData.layer && PopUpConfigData.layer.animate ? PopUpConfigData.layer.animate : '']">
               <div ref="ISMPopUpRunningContainer" ></div>
             </div>
             <!--          <Menu ref="componentMenuDialog"  menuCls="mymenu" @itemClick="componentMenuClickDialog($event)">-->
@@ -357,7 +357,7 @@ export default {
       pageLoading:false,
       pageLoadingEl:null,
       chargePage:false,
-      _loadPagerInFlight:false,
+      loadPagerInFlight:false,
       IsAutoClose:false,
       Zoom:100,
       SetPasswordFormValue:"",
@@ -375,8 +375,14 @@ export default {
       pageLoadingStartedAt:0,
       pageLoadingTimer:null,
       pageLoadingShownAt:0,
+      pageLoadingWatchdogTimer:null,
       lastGoPageKey:"",
       lastGoPageAt:0,
+      navHydrateInFlight:false,
+      navHydrateSuppressUntil:0,
+      navHydrateAttempts:0,
+      navHydrateKey:"",
+      navHydrateMaxAttempts:3,
       destroyMainGraphRaf:null,
       mainPageRequestToken:0,
       popUpPageRequestToken:0,
@@ -601,11 +607,11 @@ export default {
       let _t = this
       if(this.showUuid!="")
       {
-        if (this._loadPagerInFlight) {
+        if (this.loadPagerInFlight) {
           console.warn('[loadPager] skip duplicate call, uuid=', this.showUuid)
           return
         }
-        this._loadPagerInFlight = true
+        this.loadPagerInFlight = true
         if(this.showToken!="")
         {
           const requestToken = ++this.mainPageRequestToken
@@ -621,7 +627,7 @@ export default {
           _t.CurrentPagerRealDeviceUuidList=[]
           this.getLayerDataStructByTokenData({
             pageType: this.isMobile, token:this.showToken,uuid: this.showUuid, cb: function (errno, project_uuid,expireAt,token, datauuid,devices) {
-              _t._loadPagerInFlight = false
+              _t.loadPagerInFlight = false
               if (requestToken !== _t.mainPageRequestToken || _t._isDestroyed) {
                 _t.clearPagerLoading()
                 return
@@ -689,7 +695,7 @@ export default {
           this.CurrentPagerRealDeviceUuidList=[]
           this.getLayerDataStruct({
             pageType: this.isMobile, uuid: this.showUuid, metaOnly: true, cb: function (errno, project_uuid, datauuid,devices) {
-              _t._loadPagerInFlight = false
+              _t.loadPagerInFlight = false
               if (requestToken !== _t.mainPageRequestToken || _t._isDestroyed) {
                 _t.clearPagerLoading()
                 return
@@ -947,16 +953,12 @@ export default {
         this.zoomDebounceTimer = null
       }
     },
-    /** 目标页是否层级模板页（含首页/设备覆盖模板） */
+    /** 运行态只允许三类模板：首页、设备列表、点位列表。 */
     isTemplatePage(pageUuid) {
       if (!pageUuid) return false
       const tm = (this.$store.state.ISMDisPlayEditorTool || {}).navTemplateMap
-      if (!tm) return true // 映射未加载时不做清除，保守处理
-      if ([tm.home, tm.zone, tm.room, tm.cabinet, tm.floor, tm.deviceDefault].indexOf(pageUuid) >= 0) {
-        return true
-      }
-      const byModel = tm.deviceByModel || {}
-      return Object.keys(byModel).some(k => byModel[k] === pageUuid)
+      if (!tm) return pageUuid === this.showUuid
+      return [tm.home, tm.deviceList, tm.datapointList].filter(Boolean).indexOf(pageUuid) >= 0
     },
     /**
      * 层级模板兜底：链接目标是「已删除的旧 page_id」时，
@@ -969,14 +971,22 @@ export default {
         }
         const st = this.$store.state.ISMDisPlayEditorTool || {}
         const index = st.navTreeIndex
-        if (!index) return linkInfo
         const pageUuid = linkInfo.Inside.pageUUID
-        const known = (st.PCPageList || []).some(p => p && p.pageUuid === pageUuid) ||
-            (st.PhonePageList || []).some(p => p && p.pageUuid === pageUuid)
-        if (known) return linkInfo
+        if (this.isTemplatePage(pageUuid)) return linkInfo
+        if (!index) {
+          const homePage = (st.navTemplateMap && st.navTemplateMap.home) || this.showUuid
+          return homePage
+            ? { ...linkInfo, Inside: { ...linkInfo.Inside, pageUUID: homePage }, navContext: null }
+            : linkInfo
+        }
         const { resolveOldPageTarget } = require('@/pages/ISMDisPlay/utils/navTreeIndex')
         const conv = resolveOldPageTarget(pageUuid, index, st.navTemplateMap)
-        if (!conv) return linkInfo
+        if (!conv) {
+          const homePage = (st.navTemplateMap && st.navTemplateMap.home) || this.showUuid
+          return homePage
+            ? { ...linkInfo, Inside: { ...linkInfo.Inside, pageUUID: homePage }, navContext: null }
+            : linkInfo
+        }
         console.log('[showPage] legacy page link converted:', pageUuid, '→', conv.pageUuid, conv.navContext && conv.navContext.kind)
         return {
           ...linkInfo,
@@ -3329,6 +3339,45 @@ export default {
       nodeData.detail.style.visible = visible
       cell.setData(nodeData, {overwrite: true})
     },
+    clearPageLoadingWatchdog() {
+      if (this.pageLoadingWatchdogTimer) {
+        clearTimeout(this.pageLoadingWatchdogTimer)
+        this.pageLoadingWatchdogTimer = null
+      }
+    },
+    armPageLoadingWatchdog(token) {
+      // 根治：任何路径漏关 Loading 时，看门狗强制摘掉遮罩，避免只能刷新才能恢复
+      const PAGE_LOADING_MAX_MS = 12000
+      this.clearPageLoadingWatchdog()
+      this.pageLoadingWatchdogTimer = setTimeout(() => {
+        this.pageLoadingWatchdogTimer = null
+        if (this._isDestroyed) return
+        if (token !== this.pageLoadingToken) return
+        if (!this.pageLoading && !this.pageLoadingTimer && !this.pendingClickPageLoadingToken) {
+          return
+        }
+        console.warn('[ISMRender] pageLoading watchdog force-close', {
+          token,
+          pageLoading: this.pageLoading,
+          chargePage: this.chargePage,
+          showUuid: this.showUuid,
+        })
+        this.forceClosePageLoading(loadingKey)
+      }, PAGE_LOADING_MAX_MS)
+    },
+    forceClosePageLoading(key = loadingKey) {
+      this.clearPageLoadingWatchdog()
+      if (this.pageLoadingTimer) {
+        clearTimeout(this.pageLoadingTimer)
+        this.pageLoadingTimer = null
+      }
+      this.pendingClickPageLoadingToken = null
+      this.pageLoading = false
+      this.pageLoadingShownAt = 0
+      this.unmountBodyPageLoading()
+      this.$message.destroy(key)
+      ismDebug('SCADA.forceClosePageLoading', {token: this.pageLoadingToken})
+    },
     beginPageLoading(key = loadingKey) {
       this.$message.destroy(key)
       this.pageLoadingToken += 1
@@ -3343,6 +3392,7 @@ export default {
         this.pageLoadingTimer = null
       }
       this.pageLoadingShownAt = 0
+      this.armPageLoadingWatchdog(token)
       this.pageLoadingTimer = setTimeout(() => {
         this.pageLoadingTimer = null
         if (token === this.pageLoadingToken && !this._isDestroyed) {
@@ -3366,7 +3416,10 @@ export default {
     consumePendingPageLoading() {
       const token = this.pendingClickPageLoadingToken
       this.pendingClickPageLoadingToken = null
-      if (token && token === this.pageLoadingToken && this.pageLoading) {
+      // 只要 pending token 仍是当前 token，就复用（即使延迟遮罩尚未显示）
+      // 旧逻辑要求 pageLoading===true，会在 280ms 延迟窗口内误开新 token，导致旧 close 被 skip
+      if (token && token === this.pageLoadingToken) {
+        this.armPageLoadingWatchdog(token)
         return Promise.resolve(token)
       }
       return this.openPageLoading(loadingKey)
@@ -3375,6 +3428,9 @@ export default {
       if (this.pendingClickPageLoadingToken) {
         this.closePageLoading(loadingKey, this.pendingClickPageLoadingToken)
         this.pendingClickPageLoadingToken = null
+      } else if (this.pageLoading || this.pageLoadingTimer) {
+        // 无 pending 但遮罩/延迟定时器仍在（如 GoPage 被拦截）→ 强制关闭
+        this.forceClosePageLoading(loadingKey)
       }
     },
     closePageLoading(key = loadingKey, token = this.pageLoadingToken) {
@@ -3382,6 +3438,7 @@ export default {
         ismDebug('SCADA.closePageLoading.skipToken', {token, current: this.pageLoadingToken})
         return
       }
+      this.clearPageLoadingWatchdog()
       // 取消尚未触发的延迟遮罩 → 静默完成，遮罩从未出现
       if (this.pageLoadingTimer) {
         clearTimeout(this.pageLoadingTimer)
@@ -3688,7 +3745,7 @@ export default {
       }catch (e) {
         this.chargePage = false
         this.chargePagePopUp = false
-        this.closePageLoading(loadingKey)
+        this.forceClosePageLoading(loadingKey)
         console.error(e)
       }finally {
         console.log("[showPage] finally - nothing to clean here")
@@ -3962,6 +4019,8 @@ export default {
         const domContainer = this.$refs.ISMRunningContainer
         console.log('[RunCavasContainerInit] DOM check at render:done: container exists=', !!domContainer, 'childCount=', domContainer?.children?.length, 'svg exists=', !!domContainer?.querySelector('svg'))
         if (renderToken !== this.pageRenderToken) {
+          // 被新一轮渲染顶替时，本轮 loadingToken 可能已过期；若仍是当前 token 则关掉
+          this.closePageLoading(loadingKey, loadingToken)
           console.warn('[RunCavasContainerInit] render:done ABORTED: token mismatch, renderToken=', renderToken, 'pageRenderToken=', this.pageRenderToken)
           return
         }
@@ -4139,12 +4198,15 @@ export default {
       _t.eventHandlers.GoPage && _t.$EventBus.$off("GoPage", _t.eventHandlers.GoPage)
       _t.eventHandlers.GoPage = (data) => {
         if(!_t.shouldHandleGoPage(data)) {
-          console.warn("[GoPage] BLOCKED by shouldHandleGoPage (800ms debounce)")
+          // 点击已 beginPageLoading，但跳转被防抖拦截 → 必须关掉遮罩，否则永久转圈
+          _t.cancelPendingPageLoading()
+          console.warn("[GoPage] BLOCKED by shouldHandleGoPage (debounce), loading cancelled")
           return
         }
         // 非弹窗切换时，若主页面正在加载中则直接忽略，防止高频点击叠加请求
         if(_t.chargePage && !(data.IsPopUp)) {
-          console.warn("[GoPage] BLOCKED by chargePage guard", "chargePage=", _t.chargePage, "IsPopUp=", data.IsPopUp)
+          _t.cancelPendingPageLoading()
+          console.warn("[GoPage] BLOCKED by chargePage guard, loading cancelled", "chargePage=", _t.chargePage, "IsPopUp=", data.IsPopUp)
           return
         }
         // 层级模板：导航注入上下文
@@ -4192,7 +4254,8 @@ export default {
           }
           _t.showPage(linkInfo)
         } else {
-          console.warn("[GoPage] BLOCKED by JumpWindowEnable=false")
+          _t.cancelPendingPageLoading()
+          console.warn("[GoPage] BLOCKED by JumpWindowEnable=false, loading cancelled")
         }
       }
       _t.$EventBus.$on("GoPage", _t.eventHandlers.GoPage);
@@ -4226,22 +4289,37 @@ export default {
           }
           const requestedPageUuid = _t.currentPageUUID
           const requestedDeviceUuid = base.deviceUuid || base.uuid || ''
+          const cachedAllLen = Array.isArray(base.allDatapoints) ? base.allDatapoints.length : 0
+          const declaredTotal = Number(base.totalDatapoints) || 0
+          // 本地缓存短于声明总数时，必须走服务端分页，不能用截断列表算总页数
+          const useServerPaged = !!base.serverPaged
+            || (declaredTotal > 0 && cachedAllLen > 0 && declaredTotal > cachedAllLen)
+            || (declaredTotal > 0 && cachedAllLen === 0)
           let nextNav = typeof applyDatapointPagination === 'function'
-            ? applyDatapointPagination(base)
+            ? applyDatapointPagination({ ...base, serverPaged: useServerPaged || !!base.serverPaged })
             : base
           // 大设备的测点只保留当前服务端页；顶部翻页必须重新请求，
           // 不能像旧模板那样仅修改页码后继续渲染上一页的内存数据。
-          if (base.serverPaged && typeof fetchDeviceDatapointPage === 'function'
+          if (useServerPaged && typeof fetchDeviceDatapointPage === 'function'
             && typeof buildDeviceSignalContext === 'function') {
             try {
+              const baseVc = String(base.virtualCabinet || '').trim()
+              const baseParent = String(base.parentDeviceLabel || '').trim()
+              const baseFallback = !!(
+                base.virtualCabinetFallback
+                || base.isFallbackGroup
+                || (baseVc && baseParent && baseVc === baseParent)
+              )
               const pointPage = await fetchDeviceDatapointPage({
                 muid: base.modelUuid || base.muid || '',
-                deviceLabel: base.label || base.name || '',
+                deviceLabel: baseVc ? '' : (base.label || base.name || ''),
                 deviceUuid: base.deviceUuid || base.uuid || '',
+                pointNamePrefix: baseVc,
+                isFallbackGroup: baseFallback,
                 page: Number(payload.datapointPageIndex) + 1,
                 pageSize: base.datapointPageSize,
                 query: base.datapointQuery || '',
-                category: base.datapointCategory || '',
+                category: baseVc ? '' : (base.datapointCategory || ''),
               })
               const activeNav = _t.$store.state.ISMDisPlayEditorTool.navContext
               const activeDeviceUuid = activeNav && (activeNav.deviceUuid || activeNav.uuid || '')
@@ -4249,12 +4327,36 @@ export default {
                 || activeDeviceUuid !== requestedDeviceUuid) {
                 return
               }
-              nextNav = buildDeviceSignalContext(base, pointPage.points, base.ancestors || [], {
+              nextNav = buildDeviceSignalContext({
+                ...base,
+                label: base.label || base.name || '',
+                name: base.name || base.label || '',
+                uuid: base.deviceUuid || base.uuid || '',
+                virtualCabinet: baseVc,
+                virtualCabinetFallback: baseFallback,
+                parentDeviceLabel: baseParent,
+                parentDeviceUuid: base.parentDeviceUuid || '',
+              }, pointPage.points, base.ancestors || [], {
                 ...pointPage,
                 serverPaged: true,
                 query: base.datapointQuery || '',
-                category: base.datapointCategory || '',
+                category: (baseVc && !baseFallback)
+                  ? `${baseVc.replace(/_+$/, '')}_`
+                  : (base.datapointCategory || ''),
+                virtualCabinet: baseVc,
+                virtualCabinetFallback: baseFallback,
+                parentDeviceLabel: baseParent,
+                parentDeviceUuid: base.parentDeviceUuid || '',
               })
+              nextNav = {
+                ...nextNav,
+                virtualCabinet: baseVc,
+                virtualCabinetFallback: baseFallback,
+                parentDeviceLabel: baseParent,
+                parentDeviceUuid: base.parentDeviceUuid || '',
+                deviceListReturnContext: base.deviceListReturnContext || null,
+                homePageUuid: base.homePageUuid || '',
+              }
             } catch (e) {
               console.warn('[NavPageChange] fetch datapoint page failed:', e && e.message)
             }
@@ -4262,13 +4364,31 @@ export default {
           try {
             _t.$store.commit('ISMDisPlayEditorTool/setNavContext', nextNav)
           } catch (e) { /* ignore */ }
-          _t.$EventBus.$emit('NavDatapointPageUpdate', nextNav)
+          _t.navHydrateSuppressUntil = Date.now() + 800
+          try {
+            _t.$EventBus.$emit('NavDatapointPageUpdate', nextNav)
+          } catch (e) {
+            console.warn('[NavPageChange] NavDatapointPageUpdate emit failed', e && e.message)
+          }
           return
         }
         let changed = false
         if (nav.deviceListMode && payload.pageIndex != null) {
-          _t.$store.commit('ISMDisPlayEditorTool/setNavContextPage', { pageIndex: payload.pageIndex })
-          changed = true
+          // 优先用 allChildDevices 重新切片，避免 childDevices 被当成全量导致总台数缩水
+          let nextNav = { ...nav, pageIndex: Math.max(0, Number(payload.pageIndex) || 0) }
+          if (Array.isArray(nav.allChildDevices) && nav.allChildDevices.length) {
+            try {
+              const { applyDeviceListPagination } = require('@/pages/ISMDisPlay/utils/deviceListPager')
+              nextNav = applyDeviceListPagination(nextNav)
+            } catch (e) { /* keep pageIndex-only fallback */ }
+          }
+          try {
+            _t.$store.commit('ISMDisPlayEditorTool/setNavContext', nextNav)
+          } catch (e) {
+            _t.$store.commit('ISMDisPlayEditorTool/setNavContextPage', { pageIndex: nextNav.pageIndex })
+          }
+          // 设备卡片和页码都直接响应 Vuex navContext；同一模板翻页无需销毁并重建整张 X6 画布。
+          return
         } else if (nav.kind === 'device' && nav.detailPointMode && payload.detailPageIndex != null) {
           _t.$store.commit('ISMDisPlayEditorTool/setNavContextPage', { detailPageIndex: payload.detailPageIndex })
           changed = true
@@ -4299,7 +4419,49 @@ export default {
           || nav.allDatapoints || nav.datapoints)) {
           return
         }
-        if (nav.allDatapoints && nav.allDatapoints.length) {
+        // PageUpdate 同步回调里发出的 NeedHydrate：短暂抑制，打断同步事件环
+        if (_t.navHydrateSuppressUntil && Date.now() < _t.navHydrateSuppressUntil) {
+          return
+        }
+        const hydrateKey = [
+          nav.deviceUuid || nav.uuid || '',
+          Number(nav.datapointPageIndex) || 0,
+          nav.virtualCabinet || '',
+          nav.datapointQuery || '',
+          nav.datapointCategory || '',
+        ].join('|')
+        if (_t.navHydrateInFlight) {
+          return
+        }
+        if (_t.navHydrateKey === hydrateKey
+          && _t.navHydrateAttempts >= _t.navHydrateMaxAttempts) {
+          console.warn('[ISMRender] NavDatapointNeedHydrate: stop after max attempts', hydrateKey)
+          return
+        }
+        if (_t.navHydrateKey !== hydrateKey) {
+          _t.navHydrateKey = hydrateKey
+          _t.navHydrateAttempts = 0
+        }
+        _t.navHydrateInFlight = true
+        _t.navHydrateAttempts += 1
+        const releaseHydrate = () => { _t.navHydrateInFlight = false }
+        const emitPageUpdateSafe = (nextNav) => {
+          // 先抑制再广播：避免 ViewRealTable.applySignalPageFromNav → NeedHydrate 同步重入炸栈
+          _t.navHydrateSuppressUntil = Date.now() + 800
+          try {
+            _t.$EventBus.$emit('NavDatapointPageUpdate', nextNav)
+          } catch (e) {
+            console.warn('[ISMRender] NavDatapointPageUpdate emit failed', e && e.message)
+          }
+        }
+        const declaredTotal = Number(nav.totalDatapoints) || 0
+        const cachedAll = Array.isArray(nav.allDatapoints) ? nav.allDatapoints : []
+        // 本地缓存短于声明总数，或已标记服务端分页：禁止走 fetchAll（硬上限 5000
+        // → pageSize=80 时总页数被算成 63，下一页永久禁用）。
+        const mustServerPage = !!nav.serverPaged
+          || (declaredTotal > 0 && cachedAll.length > 0 && declaredTotal > cachedAll.length)
+          || (declaredTotal > 0 && !cachedAll.length)
+        if (!mustServerPage && cachedAll.length) {
           let applyDatapointPagination
           try {
             applyDatapointPagination = require('@/pages/ISMDisPlay/utils/navContext').applyDatapointPagination
@@ -4312,48 +4474,65 @@ export default {
           try {
             _t.$store.commit('ISMDisPlayEditorTool/setNavContext', nextNav)
           } catch (e) { /* ignore */ }
-          _t.$EventBus.$emit('NavDatapointPageUpdate', nextNav)
+          emitPageUpdateSafe(nextNav)
+          releaseHydrate()
           return
         }
         const muid = nav.modelUuid || nav.muid || ''
         const label = nav.label || nav.name || nav.rawLabel || ''
         const requestedPageUuid = _t.currentPageUUID
         const requestedDeviceUuid = nav.deviceUuid || nav.uuid || ''
-        if (!muid) return
-        let fetchDeviceDatapoints
+        let fetchDeviceDatapointPage
         let buildDeviceSignalContext
-        let clearDeviceDatapointCache
         try {
           const mod = require('@/pages/ISMDisPlay/utils/navContext')
-          fetchDeviceDatapoints = mod.fetchDeviceDatapoints
+          fetchDeviceDatapointPage = mod.fetchDeviceDatapointPage
           buildDeviceSignalContext = mod.buildDeviceSignalContext
-          clearDeviceDatapointCache = mod.clearDeviceDatapointCache
         } catch (e) {
           console.warn('[ISMRender] NavDatapointNeedHydrate: navContext load failed', e && e.message)
+          releaseHydrate()
           return
         }
-        if (typeof clearDeviceDatapointCache === 'function') {
-          clearDeviceDatapointCache(muid)
-        }
-        if (typeof fetchDeviceDatapoints !== 'function' || typeof buildDeviceSignalContext !== 'function') {
+        if (typeof fetchDeviceDatapointPage !== 'function' || typeof buildDeviceSignalContext !== 'function') {
+          releaseHydrate()
           return
         }
         try {
-          let points = await fetchDeviceDatapoints(muid, label, nav.uuid || nav.deviceUuid || '')
-          if (!points.length && label) {
-            const short = String(label).split('_').filter(Boolean).pop()
-            if (short && short !== label) {
-              points = await fetchDeviceDatapoints(muid, short, nav.uuid || nav.deviceUuid || '')
-            }
-          }
-          if (!points.length) {
-            console.warn('[ISMRender] NavDatapointNeedHydrate: datapoints still empty', muid, label)
+          const pageSize = Math.max(1, Number(nav.datapointPageSize) || 80)
+          const pageIndex = Math.max(0, Number(nav.datapointPageIndex) || 0)
+          const navVc = String(nav.virtualCabinet || '').trim()
+          const navParent = String(nav.parentDeviceLabel || '').trim()
+          const navFallback = !!(
+            nav.virtualCabinetFallback
+            || nav.isFallbackGroup
+            || (navVc && navParent && navVc === navParent)
+          )
+          const pointPage = await fetchDeviceDatapointPage({
+            muid: muid || '',
+            deviceLabel: navVc ? '' : label,
+            deviceUuid: nav.uuid || nav.deviceUuid || '',
+            pointNamePrefix: navVc,
+            isFallbackGroup: navFallback,
+            page: pageIndex + 1,
+            pageSize,
+            query: nav.datapointQuery || '',
+            category: navVc ? '' : (nav.datapointCategory || ''),
+          })
+          if (!pointPage.points.length) {
+            // total>0 但当前页仍空：停止重入，避免 NeedHydrate↔PageUpdate 死循环
+            console.warn('[ISMRender] NavDatapointNeedHydrate: empty page, stop loop', {
+              muid, label, total: pointPage.total, page: pageIndex + 1,
+            })
+            // 标记耗尽，后续同 key 不再 hydrate
+            _t.navHydrateAttempts = _t.navHydrateMaxAttempts
+            releaseHydrate()
             return
           }
           const activeNav = _t.$store.state.ISMDisPlayEditorTool.navContext
           const activeDeviceUuid = activeNav && (activeNav.deviceUuid || activeNav.uuid || '')
           if (!activeNav || _t.currentPageUUID !== requestedPageUuid
             || activeDeviceUuid !== requestedDeviceUuid) {
+            releaseHydrate()
             return
           }
           const nextNav = buildDeviceSignalContext(
@@ -4369,17 +4548,37 @@ export default {
               status: nav.status || '',
               deviceListReturnContext: nav.deviceListReturnContext || null,
               homePageUuid: nav.homePageUuid || '',
+              virtualCabinet: navVc,
+              virtualCabinetFallback: navFallback,
+              parentDeviceLabel: navParent,
+              parentDeviceUuid: nav.parentDeviceUuid || '',
             },
-            points,
+            pointPage.points,
             nav.ancestors || [],
+            {
+              ...pointPage,
+              total: Math.max(Number(pointPage.total) || 0, declaredTotal),
+              page: pageIndex + 1,
+              pageSize,
+              serverPaged: true,
+              query: nav.datapointQuery || '',
+              category: (navVc && !navFallback)
+                ? `${navVc.replace(/_+$/, '')}_`
+                : (nav.datapointCategory || ''),
+              virtualCabinetFallback: navFallback,
+            },
           )
-          nextNav.datapointPageIndex = nav.datapointPageIndex || 0
           try {
             _t.$store.commit('ISMDisPlayEditorTool/setNavContext', nextNav)
           } catch (e) { /* ignore */ }
-          _t.$EventBus.$emit('NavDatapointPageUpdate', nextNav)
+          _t.navHydrateAttempts = 0
+          emitPageUpdateSafe(nextNav)
         } catch (e) {
           console.warn('[ISMRender] NavDatapointNeedHydrate failed', e && e.message)
+          // 异常时也确保 Loading 不因后续组件崩溃残留
+          _t.forceClosePageLoading(loadingKey)
+        } finally {
+          releaseHydrate()
         }
       }
       _t.$EventBus.$on("NavDatapointNeedHydrate", _t.eventHandlers.NavDatapointNeedHydrate);
@@ -5122,6 +5321,7 @@ export default {
     speechSynthesis.cancel()
     this.$notification.destroy()
     this.clearPendingTimers()
+    this.forceClosePageLoading(loadingKey)
     this.mainPageRequestToken += 1
     this.popUpPageRequestToken += 1
 

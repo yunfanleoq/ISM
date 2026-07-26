@@ -555,18 +555,43 @@ func (c *DbOptController) DbDown() {
 	err := json.Unmarshal(data, &getParams)
 	if err != nil {
 		code = errmsg.NOTJSON
-	} else {
-		downName := filepath.Base(getParams.DbFilePath[:len(getParams.DbFilePath)-len(filepath.Ext(getParams.DbFilePath))])
-		fileslist = append(fileslist, getParams.DbFilePath)
-		filePath = saveFilePath + downName + ".zip"
-		ZipFiles(filePath, fileslist, "data\\dbbackup\\", "")
+		result := map[string]interface{}{
+			"code": code,
+			"path": "",
+		}
+		protocolCommon.IsRestoreDb = 0
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
 	}
 
-	result := map[string]interface{}{
-		"code": code,
-		"path": filePath,
+	if getParams.DbFilePath == "" {
+		result := map[string]interface{}{
+			"code": errmsg.ERROR,
+			"path": "",
+		}
+		protocolCommon.IsRestoreDb = 0
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
 	}
+
+	downName := filepath.Base(getParams.DbFilePath[:len(getParams.DbFilePath)-len(filepath.Ext(getParams.DbFilePath))])
+	fileslist = append(fileslist, getParams.DbFilePath)
+	filePath = saveFilePath + downName + ".zip"
+	if zipErr := ZipFiles(filePath, fileslist, "data\\dbbackup\\", ""); zipErr != nil {
+		result := map[string]interface{}{
+			"code": errmsg.ERROR,
+			"path": "",
+			"msg":  zipErr.Error(),
+		}
+		protocolCommon.IsRestoreDb = 0
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+
 	protocolCommon.IsRestoreDb = 0
-	c.Data["json"] = result
-	c.ServeJSON() //返回json格式
+	// 直接流式返回 zip，避免前端再请求 /static 导致 7080 上 404
+	c.Ctx.Output.Download(filePath, downName+".zip")
 }

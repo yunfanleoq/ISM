@@ -94,6 +94,14 @@ export default {
   navTreeIndex: null,
   // 层级模板页映射（/displayModelTemplateMap 结果）
   navTemplateMap: null,
+  // 编辑器运行态虚拟页预览；resolved 页面只展示，真实模板才允许保存
+  editorRuntimePreview: {
+    active: false,
+    virtualKey: '',
+    virtualTitle: '',
+    templatePageUuid: '',
+    templateTitle: '',
+  },
   // 存储用户真实密码（实际项目需从接口获取或加密存储，此处仅为示例）
   realPassword: '123456' // 实际项目需替换为用户登录后的加密密码
 }

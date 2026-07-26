@@ -664,7 +664,8 @@ func (c *MqttCtl) DealWithDeviceDataPthread() {
 			signleAlarm.DeviceName = c.DeviceInfo.DeviceInfo.Name
 			signleAlarm.HappenTime = time.Now()
 			protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-		} else if item.IsRecord == 1 {
+		}
+		if item.IsRecord == 1 {
 			//存储信息
 			signleHistoryData.DataName = item.Name
 			signleHistoryData.DeviceName = c.DeviceInfo.DeviceInfo.Name

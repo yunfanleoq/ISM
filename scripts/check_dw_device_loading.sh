@@ -16,6 +16,7 @@ FE_PORT="${ISM_FE_PORT:-7090}"
 OB_PORT="${OB_PORT:-2881}"
 OB_TENANT="${OB_TENANT:-ism_tenant}"
 OB_PASSWORD="${OB_PASSWORD:-ism2024!}"
+PYTHON="${ISM_PYTHON:-$(bash "$ROOT/scripts/ensure_python.sh")}"
 
 TS="$(date '+%Y%m%d_%H%M%S')"
 LOG="$ROOT/logs/ism_dw_device_${TS}.log"
@@ -34,7 +35,7 @@ LOGIN="$(curl -s --compressed -m 20 -X POST "http://127.0.0.1:${BE_PORT}/login" 
   -H 'Content-Type: application/json' \
   -d '{"Username":"admin","password":"e10adc3949ba59abbe56e057f20f883e"}')"
 echo "$LOGIN"
-TOKEN="$(echo "$LOGIN" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('token',''))" 2>/dev/null || true)"
+TOKEN="$(echo "$LOGIN" | "$PYTHON" -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('token',''))" 2>/dev/null || true)"
 if [[ -z "$TOKEN" ]]; then
   echo "登录失败，退出"
   exit 1
@@ -59,7 +60,7 @@ TREE_ROOT="$(curl -s --compressed -m 60 -X POST "http://127.0.0.1:${BE_PORT}/mon
   -d '{"lazy":true,"pid":0}')"
 END=$(date +%s%3N)
 echo "耗时 ms: $((END-START))"
-echo "$TREE_ROOT" | python3 -c "import sys,json; d=json.load(sys.stdin); l=d.get('list') or []; print('code=',d.get('code'),'root_count=',len(l))" 2>/dev/null || echo "$TREE_ROOT"
+echo "$TREE_ROOT" | "$PYTHON" -c "import sys,json; d=json.load(sys.stdin); l=d.get('list') or []; print('code=',d.get('code'),'root_count=',len(l))" 2>/dev/null || echo "$TREE_ROOT"
 
 section "4) getRealData 分页（首屏 50 条）"
 DEVICE_UUID="$(docker exec oceanbase obclient --default-character-set=utf8mb4 \
@@ -75,7 +76,7 @@ if [[ -n "$DEVICE_UUID" ]]; then
     -d "{\"uuid\":\"${DEVICE_UUID}\",\"page\":1,\"pageSize\":50,\"IsRemoveGW\":false}")"
   END=$(date +%s%3N)
   echo "耗时 ms: $((END-START))"
-  echo "$REAL" | python3 -c "import sys,json; d=json.load(sys.stdin); rd=d.get('realData') or []; print('code=',d.get('code'),'rows=',len(rd),'total=',d.get('total'),'hasMore=',d.get('hasMore'))" 2>/dev/null || echo "$REAL"
+  echo "$REAL" | "$PYTHON" -c "import sys,json; d=json.load(sys.stdin); rd=d.get('realData') or []; print('code=',d.get('code'),'rows=',len(rd),'total=',d.get('total'),'hasMore=',d.get('hasMore'))" 2>/dev/null || echo "$REAL"
 fi
 
 section "5) 大屏 metaOnly 元数据"
@@ -84,22 +85,50 @@ DISPLAY_UUID="$(docker exec oceanbase obclient --default-character-set=utf8mb4 \
   "SELECT display_model_uid FROM display_models WHERE deleted_at IS NULL LIMIT 1;" 2>/dev/null | tr -d '\r' || true)"
 echo "display_uuid=$DISPLAY_UUID"
 if [[ -n "$DISPLAY_UUID" ]]; then
+  META_FILE="$ROOT/logs/.ism_meta_${TS}.json"
   START=$(date +%s%3N)
-  LAYER="$(curl -s --compressed -m 120 -X POST "http://127.0.0.1:${BE_PORT}/getDisplayModelLayerData" \
+  META_METRICS="$(curl -sS --compressed -m 60 -o "$META_FILE" \
+    -w 'http=%{http_code} seconds=%{time_total} bytes=%{size_download}' \
+    -X POST "http://127.0.0.1:${BE_PORT}/getDisplayModelLayerData" \
     -H "Authorization: ${TOKEN}" \
     -H "ProjectUuid: ${PROJECT_UUID}" \
     -H 'Content-Type: application/json' \
     -d "{\"muid\":\"${DISPLAY_UUID}\",\"metaOnly\":true}")"
   END=$(date +%s%3N)
   echo "耗时 ms: $((END-START))"
-  echo "$LAYER" | python3 -c "
-import sys,json
-d=json.load(sys.stdin)
+  echo "$META_METRICS"
+  "$PYTHON" -c "
+import json
+d=json.load(open('$META_FILE'))
 layers=d.get('layer') or []
 home=sum(1 for x in layers if x.get('IsHome')==1)
 empty=sum(1 for x in layers if (x.get('components') in ('',None) or x.get('components')=='W10='))
-print('code=',d.get('code'),'pages=',len(layers),'home=',home,'empty_components=',empty)
-" 2>/dev/null || echo "(响应过大或解析失败，但 HTTP 已返回)"
+non_home_layer=sum(1 for x in layers if x.get('IsHome')!=1 and bool(x.get('layer')))
+print('code=',d.get('code'),'pages=',len(layers),'home=',home,'empty_components=',empty,'non_home_layer=',non_home_layer)
+" 2>/dev/null || echo "(metaOnly 响应解析失败)"
+
+  PAGE_ID="$(docker exec oceanbase obclient --default-character-set=utf8mb4 \
+    -h127.0.0.1 -P"${OB_PORT}" -uroot@"${OB_TENANT}" -p"${OB_PASSWORD}" ism -N -e \
+    "SELECT page_id FROM display_model_layer WHERE model_id='${DISPLAY_UUID}' AND is_home=1 AND deleted_at IS NULL LIMIT 1;" 2>/dev/null | tr -d '\r' || true)"
+  if [[ -n "$PAGE_ID" ]]; then
+    PAGE_FILE="$ROOT/logs/.ism_page_${TS}.json"
+    PAGE_METRICS="$(curl -sS --compressed -m 30 -o "$PAGE_FILE" \
+      -w 'http=%{http_code} seconds=%{time_total} bytes=%{size_download}' \
+      -X POST "http://127.0.0.1:${BE_PORT}/getDisplayModelPagerLayerData" \
+      -H "Authorization: ${TOKEN}" \
+      -H "ProjectUuid: ${PROJECT_UUID}" \
+      -H 'Content-Type: application/json' \
+      -d "{\"pageid\":\"${PAGE_ID}\"}")"
+    echo "单页 page_id=$PAGE_ID $PAGE_METRICS"
+    "$PYTHON" -c "
+import json
+d=json.load(open('$PAGE_FILE'))
+p=d.get('layer') or {}
+print('code=',d.get('code'),'has_layer=',bool(p.get('layer')),'has_components=',bool(p.get('components')))
+" 2>/dev/null || echo "(单页响应解析失败)"
+    rm -f "$PAGE_FILE"
+  fi
+  rm -f "$META_FILE"
 fi
 
 section "6) 前端代理抽检"

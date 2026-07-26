@@ -115,51 +115,10 @@ func InitializeStartupAlarmGuard() {
 	})
 }
 
-func enqueueStableStartupAlarms() {
-	recovered := protocol_common.DrainStableStartupAlarms(time.Now())
-	if len(recovered) == 0 {
-		return
-	}
-
-	type projectSummary struct {
-		count int
-		level int
-		names []string
-	}
-	summaries := make(map[string]*projectSummary)
-	for _, alarm := range recovered {
-		alarm.SuppressNotice = true
-		protocol_common.GAlarmQueue.QueuePush(alarm)
-		summary := summaries[alarm.ProjectUuid]
-		if summary == nil {
-			summary = &projectSummary{}
-			summaries[alarm.ProjectUuid] = summary
-		}
-		summary.count++
-		if alarm.AlarmLevel > summary.level {
-			summary.level = alarm.AlarmLevel
-		}
-		if len(summary.names) < 5 {
-			summary.names = append(summary.names, alarm.DeviceName+"->"+alarm.DataName)
-		}
-	}
-
-	for projectUuid, summary := range summaries {
-		detail := strings.Join(summary.names, "、")
-		if summary.count > len(summary.names) {
-			detail += fmt.Sprintf(" 等%d个点位", summary.count)
-		}
-		go SendAlarmNotice(protocol_common.PushAlarm{
-			ProjectUuid:  projectUuid,
-			DeviceName:   "系统启动",
-			DataName:     "持续告警汇总",
-			DataUuid:     "system.startup.alarm.summary",
-			Value:        "1",
-			HappenTime:   time.Now(),
-			AlarmLevel:   summary.level,
-			AlarmMessage: fmt.Sprintf("系统启动稳定后仍有%d个持续告警：%s", summary.count, detail),
-		})
-	}
+// ReconfigureStartupAlarmWindows 采集批量重连/重启后重新打开启动抑警窗，避免首轮基线落库成告警风暴。
+func ReconfigureStartupAlarmWindows() {
+	GetAlarmNoticeConfig()
+	configureStartupAlarmWindows()
 }
 
 func SendDingDingMessage(config string, sendAlarm protocol_common.PushAlarm) int {
@@ -449,7 +408,7 @@ func SendAlarmNotice(alarm protocol_common.PushAlarm) int {
 func DealWithAlarm() {
 	InitializeStartupAlarmGuard()
 	for {
-		enqueueStableStartupAlarms()
+		protocol_common.ExpireStartupAlarmWindows(time.Now())
 		data, code := protocol_common.GAlarmQueue.QueuePull()
 		if data == nil {
 			time.Sleep(time.Millisecond * 1000)
@@ -465,6 +424,8 @@ func DealWithAlarm() {
 			alarmTemp, isExist := DeviceAlarmTemp[key]
 
 			if protocol_common.ObserveStartupAlarm(alarm, alarm.Value == "1") {
+				// Silent baseline only: no DB create / notice during startup window.
+				DeviceAlarmTemp[key] = alarm
 				if alarm.DataUuid == "sys.suid.device.status" {
 					status := 1
 					if alarm.Value == "1" {

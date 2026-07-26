@@ -208,6 +208,16 @@ var DTUConnCache int
 var HistoryPartitionType int = 0
 var DataFloatNumberFunc map[string]govaluate.ExpressionFunction
 
+// RealDataFrontendPush 由 websocket 包注册，供 models 等避免循环依赖地推送实时值到前端。
+var RealDataFrontendPush func(msg PushRealDataWebData)
+
+// NotifyRealDataFrontend 推送 RealData 到前端（经合并窗）；未注册时为 no-op。
+func NotifyRealDataFrontend(msg PushRealDataWebData) {
+	if RealDataFrontendPush != nil {
+		RealDataFrontendPush(msg)
+	}
+}
+
 var ISMNodeProjectConn sync.Map
 var ISMNodeServerProjectConn sync.Map
 var ISMNodeProjectDataCollects sync.Map
@@ -340,8 +350,9 @@ func ProtocolCommonInit() {
 	initHistoryDataBuffer(historyDataBufferSize, historyDataFlushInterval)
 
 	RealDataChanelCache, err = config.Int("RealDataChanelCache")
-	if err != nil {
-		RealDataChanelCache = 1000
+	if err != nil || RealDataChanelCache <= 0 {
+		// 默认加大缓冲，降低采集风暴时 RealDataChanel full 丢包概率
+		RealDataChanelCache = 10000
 	}
 	NetworkNodePushDataChanel = make(chan interface{}, RealDataChanelCache)
 

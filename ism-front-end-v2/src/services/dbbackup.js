@@ -28,7 +28,8 @@ export async function DbRestore(params) {
 }
 export async function DbDown(params) {
     return request(DBDOWN, METHOD.POST,params,{
-        timeout:60*60*1000
+        timeout:60*60*1000,
+        responseType: 'blob'
     })
 }
 export async function GetDbConfig(params) {

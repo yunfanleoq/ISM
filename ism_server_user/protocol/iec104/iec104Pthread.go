@@ -373,7 +373,8 @@ func (c *IEC1045Ctl) APDUHandler(apdu *iec104.APDU) error {
 					signleAlarm.HappenTime = time.Now()
 					c.DealWithIEC104AlarmData(signleAlarm)
 					//protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-				} else if dataPoint.IsRecord == 1 {
+				}
+				if dataPoint.IsRecord == 1 {
 					//存储信息
 					signleHistoryData.DataName = dataPoint.Name
 					signleHistoryData.DeviceName = device.Name

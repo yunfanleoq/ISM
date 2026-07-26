@@ -5,22 +5,36 @@ import (
 	"time"
 )
 
-func TestStartupAlarmGuardReturnsOnlyStableActiveSamples(t *testing.T) {
+func TestObserveStartupAlarmSuppressesInsideWindow(t *testing.T) {
 	resetStartupAlarmGuardForTest()
 	ConfigureStartupAlarmWindow("project-1", time.Minute)
 
-	active := PushAlarm{
+	alarm := PushAlarm{
 		ProjectUuid: "project-1",
 		DeviceUuid:  "device-1",
 		DataUuid:    "point-1",
-		Value:       "1.0",
+		Value:       "1",
 	}
-	if !ObserveStartupAlarm(active, true) {
-		t.Fatal("first startup sample should be suppressed")
+	if !ObserveStartupAlarm(alarm, true) {
+		t.Fatal("samples inside startup window must be suppressed")
 	}
-	active.Value = "1"
-	if !ObserveStartupAlarm(active, true) {
-		t.Fatal("second startup sample should be suppressed")
+	if !ObserveStartupAlarm(alarm, true) {
+		t.Fatal("repeated samples inside startup window must stay suppressed")
+	}
+}
+
+func TestExpireStartupAlarmWindowsDoesNotRecoverAlarms(t *testing.T) {
+	resetStartupAlarmGuardForTest()
+	ConfigureStartupAlarmWindow("project-1", time.Minute)
+
+	alarm := PushAlarm{
+		ProjectUuid: "project-1",
+		DeviceUuid:  "device-1",
+		DataUuid:    "point-1",
+		Value:       "1",
+	}
+	if !ObserveStartupAlarm(alarm, true) {
+		t.Fatal("startup sample should be suppressed")
 	}
 
 	startupAlarmState.Lock()
@@ -29,18 +43,23 @@ func TestStartupAlarmGuardReturnsOnlyStableActiveSamples(t *testing.T) {
 	startupAlarmState.windows["project-1"] = window
 	startupAlarmState.Unlock()
 
-	recovered := DrainStableStartupAlarms(time.Now())
-	if len(recovered) != 1 {
-		t.Fatalf("expected one stable alarm, got %d", len(recovered))
+	ExpireStartupAlarmWindows(time.Now())
+
+	if ObserveStartupAlarm(alarm, true) {
+		t.Fatal("after window expiry, alarm evaluation must be enabled")
 	}
-	if !recovered[0].SuppressNotice {
-		t.Fatal("recovered startup alarm must suppress per-point notice")
+
+	startupAlarmState.Lock()
+	_, exists := startupAlarmState.windows["project-1"]
+	startupAlarmState.Unlock()
+	if exists {
+		t.Fatal("expired startup window must be removed without recovering alarms")
 	}
 }
 
-func TestStartupAlarmGuardDropsTransientAndNormalSamples(t *testing.T) {
+func TestConfigureStartupAlarmWindowZeroDisablesGuard(t *testing.T) {
 	resetStartupAlarmGuardForTest()
-	ConfigureStartupAlarmWindow("project-2", time.Minute)
+	ConfigureStartupAlarmWindow("project-2", 0)
 
 	alarm := PushAlarm{
 		ProjectUuid: "project-2",
@@ -48,19 +67,8 @@ func TestStartupAlarmGuardDropsTransientAndNormalSamples(t *testing.T) {
 		DataUuid:    "point-2",
 		Value:       "1",
 	}
-	ObserveStartupAlarm(alarm, true)
-	alarm.Value = "0"
-	ObserveStartupAlarm(alarm, false)
-	ObserveStartupAlarm(alarm, false)
-
-	startupAlarmState.Lock()
-	window := startupAlarmState.windows["project-2"]
-	window.deadline = time.Now().Add(-time.Second)
-	startupAlarmState.windows["project-2"] = window
-	startupAlarmState.Unlock()
-
-	if recovered := DrainStableStartupAlarms(time.Now()); len(recovered) != 0 {
-		t.Fatalf("expected no recovered alarms, got %d", len(recovered))
+	if ObserveStartupAlarm(alarm, true) {
+		t.Fatal("zero delay must disable startup suppression")
 	}
 }
 

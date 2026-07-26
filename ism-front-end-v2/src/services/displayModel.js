@@ -66,29 +66,54 @@ export async function displayModelForceDelete(params) {
 /**
  * 模型图层数据
  */
-// 全量大屏(4000+ 页)经 cpolar 外网传输可达 90s+，需单独加长 timeout
-const DISPLAY_LAYER_TIMEOUT = 300000
+const DISPLAY_META_TIMEOUT = 60000
+const DISPLAY_PAGE_TIMEOUT = 30000
+// 编辑态显式全量读取保留兼容窗口；运行态必须传 metaOnly=true。
+const DISPLAY_FULL_TIMEOUT = 300000
+const DISPLAY_LAYER_RETRY_DELAYS = [1000, 3000]
+
+function isRetryableDisplayLayerError(error) {
+  if (error && error.response) return false
+  if (error && (error.code === 'ERR_CANCELED' || error.code === 'ECONNABORTED')) return false
+  return typeof navigator === 'undefined' || navigator.onLine
+}
+
+async function requestDisplayLayer(url, params, timeout) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await request(url, METHOD.POST, params, {
+        timeout
+      })
+    } catch (error) {
+      if (attempt >= DISPLAY_LAYER_RETRY_DELAYS.length ||
+        !isRetryableDisplayLayerError(error)) {
+        throw error
+      }
+      await new Promise(resolve => setTimeout(resolve, DISPLAY_LAYER_RETRY_DELAYS[attempt]))
+    }
+  }
+}
 
 export async function getDisplayModelPagerLayerData(params) {
-  return request(GETDISPLAYMODELPAGERLAYERDATA, METHOD.POST,params,{
-    timeout: DISPLAY_LAYER_TIMEOUT
-  })
+  return requestDisplayLayer(GETDISPLAYMODELPAGERLAYERDATA, params, DISPLAY_PAGE_TIMEOUT)
 }
 /**
  * 模型图层数据
  */
 export async function getDisplayModelLayerData(params) {
-  return request(GETDISPLAYMODELLAYERDATA, METHOD.POST,params,{
-    timeout: DISPLAY_LAYER_TIMEOUT
-  })
+  const timeout = params && params.metaOnly === true
+    ? DISPLAY_META_TIMEOUT
+    : DISPLAY_FULL_TIMEOUT
+  return requestDisplayLayer(GETDISPLAYMODELLAYERDATA, params, timeout)
 }
 /**
  * 模型图层数据
  */
 export async function getLayerDataStructByToken(params) {
-  return request(GETDISPLAYMODELLAYERDATABYTOKEN, METHOD.POST,params,{
-    timeout: DISPLAY_LAYER_TIMEOUT
-  })
+  const timeout = params && params.metaOnly === false
+    ? DISPLAY_FULL_TIMEOUT
+    : DISPLAY_META_TIMEOUT
+  return requestDisplayLayer(GETDISPLAYMODELLAYERDATABYTOKEN, params, timeout)
 }
 /**
  * 模型图层数据

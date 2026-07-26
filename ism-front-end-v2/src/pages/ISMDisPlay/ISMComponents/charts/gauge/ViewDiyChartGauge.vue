@@ -257,12 +257,8 @@ export default {
               color: 'RGBA(51, 66, 127, 0.7)',
             },
             label: {
-              normal: {
-                textStyle: {
-                  fontSize: 50,
-                  color: '#fff',
-                },
-              },
+              fontSize: 50,
+              color: '#fff',
             },
             outline: {
               show: false,

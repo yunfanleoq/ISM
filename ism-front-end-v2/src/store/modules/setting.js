@@ -161,11 +161,12 @@ export default {
       return GetSystemHomeDashboard().then(res => {
         if (res.data && res.data.code === 0) {
           commit('setSystemHomeDashboard', {
-            dashboardUuid: res.data.dashboardUuid,
-            projectUuid: res.data.projectUuid,
+            dashboardUuid: res.data.dashboardUuid || '',
+            projectUuid: res.data.projectUuid || '',
             dashboardName: res.data.dashboardName || '',
           })
-          commit('patchScadaMonitorMenuName', res.data.dashboardName)
+          // 侧栏固定「监控大屏」，不按应用名覆盖
+          commit('patchScadaMonitorMenuName', '监控大屏')
         }
         return res
       })

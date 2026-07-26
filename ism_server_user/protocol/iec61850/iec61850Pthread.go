@@ -1,4 +1,3 @@
-//go:build ignore
 /**
  * @ Author: ISM Web组态软件
  * @ Create Time: 2023-01-09 08:53:25
@@ -382,11 +381,11 @@ func (c *IEC61850Ctl) DealWithOpcuaCtlAlarmData(AlarmData protocol_common.PushAl
 	build.WriteString(alarm.DataUuid)
 	key := build.String()
 	alarmTemp, isExist := c.DeviceAlarmTemp[key]
-
 	if protocol_common.ObserveStartupAlarm(alarm, alarm.Value == "1") {
 		c.DeviceAlarmTemp[key] = alarm
 		return
 	}
+
 	updateAlarm.AlarmName = alarm.DataName
 	updateAlarm.DeviceUuid = alarm.DeviceUuid
 	updateAlarm.ProjectUuid = alarm.ProjectUuid
@@ -983,7 +982,8 @@ func (c *IEC61850Ctl) GatherOPcuaDeviceData() {
 				signleAlarm.HappenTime = time.Now()
 				c.DealWithOpcuaCtlAlarmData(signleAlarm)
 				// protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-			} else if temp.IsRecord == 1 {
+			}
+			if temp.IsRecord == 1 {
 				//存储信息
 				signleHistoryData.DataName = temp.Name
 				signleHistoryData.DeviceName = device.Name

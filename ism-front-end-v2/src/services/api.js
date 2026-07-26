@@ -346,6 +346,7 @@ module.exports = {
   VIEWSQLREPORTTEMPLETE:`${BASE_URL}SQLCreateAndView`,
 
   LOCALUPGATEDATAMODEL:`${BASE_URL}UpdateDataModel`,
+  LOCALUPGATEALLMODBUSDATAMODEL:`${BASE_URL}UpdateAllModbusDataModel`,
   LOCALUPGATEDATAIEC104DATA:`${BASE_URL}UpdateIEC104DataModel`,
   LOCALUPGATEDATAMODBUSTCPDATA:`${BASE_URL}UpdateModbusTcpPushDataModel`,
   //系统脚本
@@ -386,6 +387,10 @@ module.exports = {
   TESTSYSNTPCONFIG:`${BASE_URL}TestNtpServer`,
   GETSYSTEMOPCUADATA:`${BASE_URL}opcuaServerConfig`,
   SAVESSYSTEMOPCUADATA:`${BASE_URL}opcuaServerConfigSet`,
+  GETENERGYOVERVIEWCONFIG:`${BASE_URL}GetEnergyOverviewConfig`,
+  SAVEENERGYOVERVIEWCONFIG:`${BASE_URL}SaveEnergyOverviewConfig`,
+  GETENERGYOVERVIEWCANDIDATES:`${BASE_URL}GetEnergyOverviewCandidates`,
+  GETENERGYOVERVIEWSTATS:`${BASE_URL}GetEnergyOverviewStats`,
 
   //数据模版
   ADDTEMPLETEDATA:`${BASE_URL}AddSystemDataTemplete`,

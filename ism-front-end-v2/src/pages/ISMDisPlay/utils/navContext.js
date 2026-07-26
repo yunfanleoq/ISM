@@ -1,7 +1,7 @@
 /**
  * 统一钻探 navContext schema
  *
- * 组织层（最多 4 层，treeDepth 1~4）：RootZone → 容器… → 设备
+ * 组织层（任意深度）：后端组织节点 → … → 设备
  * 信号层（2 层）：设备 → 测点（ism-view-real-table，无寄存器组）
  */
 
@@ -14,6 +14,7 @@ import {
 import { REAL_DATA_DEFAULT_PAGE_SIZE } from '@/utils/realDataBatch'
 import { isDeviceNode, isPureDeviceContainer } from './drillDepth'
 import { DASHBOARD_PERFORMANCE, normalizePageSize } from './dashboardPerformance'
+import { splitNameByLastUnderscore } from './pointValueDisplay'
 
 /** @typedef {'zone'|'room'|'device'|'datapoint'} NavLayer */
 
@@ -163,19 +164,24 @@ export function createBaseNavContext(node, ancestors = []) {
 
 /** 设备列表分页（UPS 122 等） */
 export function applyGatewayListPagination(nav, pageSizeOverride) {
+  const fromDevices = (nav.allChildDevices || nav.childDevices || []).map(d => ({
+    ...d,
+    // 保留虚拟列头柜 kind；仅缺省时才回落为 device
+    kind: d.kind || (d.virtualCabinet ? 'virtualCabinet' : 'device'),
+    layer: d.layer || 'device',
+  }))
   const all = nav.allChildNodes
     || nav.childNodes
-    || (nav.allChildDevices || nav.childDevices || []).map(d => ({
-      ...d,
-      kind: 'device',
-      layer: 'device',
-    }))
+    || fromDevices
   const size = pageSizeOverride || nav.pageSize || DEFAULT_DEVICE_PAGE_SIZE
   const p = paginateDevices(all, nav.pageIndex, size)
   return {
     ...nav,
     layer: nav.layer || 'zone',
     deviceListMode: true,
+    // 虚拟柜列表模式标记不得被冲掉
+    virtualCabinetListMode: !!(nav.virtualCabinetListMode
+      || all.some(d => d && (d.kind === 'virtualCabinet' || d.virtualCabinet))),
     allChildNodes: all,
     childNodes: p.pageDevices,
     allChildDevices: all,
@@ -223,10 +229,10 @@ export function applyDatapointPagination(nav, pageSizeOverride) {
   }
 }
 
-/** 是否处于列表分页模式（组织层设备列表） */
+/** 是否处于列表分页模式（组织层设备列表 / 虚拟列头柜列表） */
 export function isNavListPaged(nav) {
   if (!nav) return false
-  return !!nav.deviceListMode
+  return !!(nav.deviceListMode || nav.virtualCabinetListMode)
 }
 
 /** 是否信号层测点分页 */
@@ -256,47 +262,60 @@ export function datapointRowLabel(fullName, deviceLabel = '') {
   const n = String(fullName || '').trim()
   if (!n) return ''
   const label = String(deviceLabel || '').trim()
+  // 对齐数据仓库：最后一个 `_` 拆设备名/测点名
+  const split = splitNameByLastUnderscore(n)
+  if (label && split.deviceName === label && split.pointName) {
+    return split.pointName
+  }
   if (label) {
     const prefix = `${label}_`
     if (n.startsWith(prefix)) return n.slice(prefix.length)
     if (n.startsWith(label)) return n.slice(label.length).replace(/^[_\s]+/, '') || n
   }
-  return n
+  return split.pointName || n
 }
 
-/** 共享物模型下按设备名过滤测点（严格前缀，避免 U1 误匹配 U11） */
-export function filterDatapointsForDevice(points, deviceLabel = '') {
+/**
+ * 按数据仓库设备名列过滤测点（last `_`）。
+ * @param {object[]} points
+ * @param {string} deviceLabel 虚拟设备名 / 逻辑设备名
+ * @param {{ includeUnprefixed?: boolean }} [opts] includeUnprefixed=true 时纳入无设备名前缀点（UPS fallback 组）
+ */
+export function filterDatapointsForDevice(points, deviceLabel = '', opts = {}) {
   const list = Array.isArray(points) ? points : []
   const label = String(deviceLabel || '').trim()
   if (!label || !list.length) return list
+  const includeUnprefixed = !!(opts && opts.includeUnprefixed)
 
   const nameOf = p => String(p.name || p.Name || p.label || '')
 
-  // 1) 全名严格前缀：name === label 或 name.startsWith(label + '_')
+  // 1) 对齐数据仓库：split.deviceName === label；fallback 组另含无前缀点
   let filtered = list.filter(p => {
+    const split = splitNameByLastUnderscore(nameOf(p))
+    if (split.deviceName === label) return true
+    if (includeUnprefixed && !split.deviceName) return true
+    return false
+  })
+  if (filtered.length) return filtered
+
+  // 2) 兼容旧 startsWith（单段前缀 / 共享模型短名）
+  filtered = list.filter(p => {
     const n = nameOf(p)
     return n === label || n.startsWith(`${label}_`)
   })
   if (filtered.length) return filtered
 
-  // 2) 去空白后再试（树节点名偶发带空格）
+  // 3) 去空白后再试（树节点名偶发带空格）
   const compact = label.replace(/\s+/g, '')
   if (compact && compact !== label) {
     filtered = list.filter(p => {
       const n = nameOf(p)
+      const split = splitNameByLastUnderscore(n)
+      if (split.deviceName === compact) return true
       return n === compact || n.startsWith(`${compact}_`)
     })
     if (filtered.length) return filtered
   }
-
-  // 3) 短名/末段匹配：点名中含 `_label_`（U11 → 配电室1B3_U11_xxx）
-  //    用 `_label_` 而非 includes(label)，避免 U1 命中 U11
-  const seg = `_${label}_`
-  filtered = list.filter(p => {
-    const n = nameOf(p)
-    return n.includes(seg) || n.startsWith(`${label}_`) || n.endsWith(`_${label}`)
-  })
-  if (filtered.length) return filtered
 
   // 4) 仍无结果：不回退全量（共享模型 1800+ 会撑爆表格）
   return []
@@ -365,50 +384,69 @@ export async function fetchDeviceDatapoints(muid, deviceLabel = '', deviceUuid =
     return _devicePointsCache[cacheKey]
   }
 
-  // 1) 主路径：GetRealData（与 monitor.vue 相同）
+  // 1) 主路径：分页拉取（禁止 fetchAll，大设备可达数千～数万点）
   // 有逻辑设备名时优先只按 namePrefix 拉（共享模型全名点），避免 OR device_uuid 混入短名/系统点
   if (uuid || label) {
     try {
-      const primary = label
-        ? {
-          muid: muid || undefined,
-          namePrefix: label,
-          deviceLabel: label,
-          fetchAll: true,
-          page: 1,
-          pageSize: 100,
-          IsRemoveGW: false,
-        }
-        : {
-          uuid: uuid || undefined,
-          muid: muid || undefined,
-          fetchAll: true,
-          page: 1,
-          pageSize: 100,
-          IsRemoveGW: false,
-        }
-      const res = await getRealData(primary)
-      const body = res && res.data
-      if (body && body.code === 0) {
-        let list = mapRealDataRows(body.realData)
-        // 前缀为空时再回退设备 uuid
-        if (!list.length && uuid && label) {
+      const pageSize = 100
+      const collected = []
+      let page = 1
+      let total = Infinity
+      const maxPages = 50 // 硬顶 5000，与后端 GetRealDataAllByNamePrefix 对齐但走分页
+      while (page <= maxPages && collected.length < total) {
+        const primary = label
+          ? {
+            muid: muid || undefined,
+            namePrefix: label,
+            deviceLabel: label,
+            page,
+            pageSize,
+            IsRemoveGW: false,
+          }
+          : {
+            uuid: uuid || undefined,
+            muid: muid || undefined,
+            page,
+            pageSize,
+            IsRemoveGW: false,
+          }
+        const res = await getRealData(primary)
+        const body = res && res.data
+        if (!body || body.code !== 0) break
+        const rows = mapRealDataRows(body.realData)
+        if (!rows.length) break
+        collected.push(...rows)
+        total = Math.max(0, Number(body.total) || collected.length)
+        if (!body.hasMore && rows.length < pageSize) break
+        if (collected.length >= total) break
+        page += 1
+      }
+      let list = collected
+      // 前缀为空时再回退设备 uuid（同样分页）
+      if (!list.length && uuid && label) {
+        page = 1
+        total = Infinity
+        while (page <= maxPages && list.length < total) {
           const res2 = await getRealData({
             uuid,
-            fetchAll: true,
-            page: 1,
-            pageSize: 100,
+            page,
+            pageSize,
             IsRemoveGW: false,
           })
           const body2 = res2 && res2.data
-          if (body2 && body2.code === 0) {
-            list = mapRealDataRows(body2.realData)
-          }
+          if (!body2 || body2.code !== 0) break
+          const rows2 = mapRealDataRows(body2.realData)
+          if (!rows2.length) break
+          list = list.concat(rows2)
+          total = Math.max(0, Number(body2.total) || list.length)
+          if (!body2.hasMore && rows2.length < pageSize) break
+          if (list.length >= total) break
+          page += 1
         }
-        if (list.length) {
-          _devicePointsCache[cacheKey] = list
-          return list
-        }
+      }
+      if (list.length) {
+        _devicePointsCache[cacheKey] = list
+        return list
       }
     } catch (e) {
       console.warn('[navContext] fetchDeviceDatapoints getRealData failed', e && e.message)
@@ -514,6 +552,14 @@ export function buildDeviceSignalContext(deviceNode, datapoints = [], ancestors 
   const points = datapointsToChildNodes(datapoints)
   const pageSize = normalizePageSize(pageInfo.pageSize || DEFAULT_DATAPOINT_PAGE_SIZE)
   const total = Math.max(points.length, Number(pageInfo.total) || 0)
+  const vc = deviceNode.virtualCabinet || pageInfo.virtualCabinet || ''
+  const parentLabel = deviceNode.parentDeviceLabel || pageInfo.parentDeviceLabel || ''
+  const vcFallback = !!(
+    deviceNode.virtualCabinetFallback
+    || deviceNode.isFallbackGroup
+    || pageInfo.virtualCabinetFallback
+    || (vc && parentLabel && vc === parentLabel)
+  )
   const base = {
     layer: 'device',
     modbusLayer: 'device',
@@ -541,7 +587,11 @@ export function buildDeviceSignalContext(deviceNode, datapoints = [], ancestors 
     totalDatapoints: total,
     serverPaged: !!pageInfo.serverPaged,
     datapointQuery: String(pageInfo.query || ''),
-    datapointCategory: String(pageInfo.category || ''),
+    datapointCategory: String(pageInfo.category || (vc && !vcFallback ? `${vc}_` : '') || ''),
+    virtualCabinet: vc,
+    virtualCabinetFallback: vcFallback,
+    parentDeviceLabel: parentLabel,
+    parentDeviceUuid: deviceNode.parentDeviceUuid || pageInfo.parentDeviceUuid || '',
     deviceListReturnContext: deviceNode.deviceListReturnContext || null,
     homePageUuid: deviceNode.homePageUuid || pageInfo.homePageUuid || '',
     childDevices: [],
@@ -552,6 +602,10 @@ export function buildDeviceSignalContext(deviceNode, datapoints = [], ancestors 
 /**
  * 仅请求当前设备测点的当前筛选页。
  * 不得使用 fetchAll：设备可能包含数千到数万测点。
+ *
+ * @param {string} [pointNamePrefix] 虚拟设备名（数据仓库 deviceName / last `_` 前段）。
+ *   后端 uuid+namePrefix 是 OR（会拉回整台设备测点），虚拟柜必须走 uuid+category AND。
+ * @param {boolean} [isFallbackGroup] UPS 等无前缀点归属真设备名时：uuid 拉取后按 last `_` 客户端过滤
  */
 export async function fetchDeviceDatapointPage({
   muid = '',
@@ -561,27 +615,127 @@ export async function fetchDeviceDatapointPage({
   pageSize = DEFAULT_DATAPOINT_PAGE_SIZE,
   query = '',
   category = '',
+  pointNamePrefix = '',
+  isFallbackGroup = false,
 } = {}) {
-  const res = await getRealData({
-    uuid: deviceUuid || undefined,
-    muid: muid || undefined,
-    namePrefix: deviceLabel || undefined,
-    deviceLabel: deviceLabel || undefined,
-    page: Math.max(1, Number(page) || 1),
-    pageSize: normalizePageSize(pageSize),
-    query: String(query || '').trim() || undefined,
-    category: String(category || '').trim() || undefined,
-    IsRemoveGW: false,
-  })
+  const prefix = String(pointNamePrefix || '').trim()
+  const uuid = String(deviceUuid || '').trim()
+  const label = String(deviceLabel || '').trim()
+  const cat = String(category || '').trim()
+  const pageNum = Math.max(1, Number(page) || 1)
+  const size = normalizePageSize(pageSize)
+  const q = String(query || '').trim() || undefined
+  const fallback = !!isFallbackGroup
+
+  // fallback 组含无 `_` 点位，category LIKE '设备名_%' 会漏点 → 按 uuid 拉页再客户端过滤
+  if (fallback && prefix && uuid) {
+    const collected = []
+    let scanPage = 1
+    let total = Infinity
+    const maxPages = 50
+    while (scanPage <= maxPages && collected.length < total) {
+      const res = await getRealData({
+        uuid,
+        muid: muid || undefined,
+        page: scanPage,
+        pageSize: 100,
+        query: q,
+        IsRemoveGW: false,
+      })
+      const body = res && res.data
+      if (!body || body.code !== 0) break
+      const rows = mapRealDataRows(body.realData)
+      if (!rows.length) break
+      collected.push(...rows)
+      total = Math.max(0, Number(body.total) || collected.length)
+      if (!body.hasMore && rows.length < 100) break
+      if (collected.length >= total) break
+      scanPage += 1
+    }
+    let filtered = filterDatapointsForDevice(collected, prefix, { includeUnprefixed: true })
+    if (q) {
+      const qq = q.toLowerCase()
+      filtered = filtered.filter(p => String(p.name || p.label || '').toLowerCase().includes(qq))
+    }
+    const start = (pageNum - 1) * size
+    return {
+      points: filtered.slice(start, start + size),
+      total: filtered.length,
+      page: pageNum,
+      pageSize: size,
+    }
+  }
+
+  // 虚拟设备：device_uuid = ? AND name LIKE '设备名_%'（用 category，避免 OR 全量）
+  const payload = (prefix && uuid)
+    ? {
+      uuid,
+      muid: muid || undefined,
+      page: pageNum,
+      pageSize: size,
+      query: q,
+      category: prefix.endsWith('_') ? prefix : `${prefix}_`,
+      IsRemoveGW: false,
+    }
+    : {
+      uuid: uuid || undefined,
+      muid: muid || undefined,
+      namePrefix: label || undefined,
+      deviceLabel: label || undefined,
+      page: pageNum,
+      pageSize: size,
+      query: q,
+      category: cat || undefined,
+      IsRemoveGW: false,
+    }
+
+  const res = await getRealData(payload)
   const body = res && res.data
   if (!body || body.code !== 0) {
-    return { points: [], total: 0, page: 1, pageSize: normalizePageSize(pageSize) }
+    return { points: [], total: 0, page: 1, pageSize: size }
+  }
+  let points = mapRealDataRows(body.realData)
+  // 客户端兜底：按 last `_` 设备名对齐，避免误 OR
+  if (prefix) {
+    points = filterDatapointsForDevice(points, prefix, { includeUnprefixed: false })
   }
   return {
-    points: mapRealDataRows(body.realData),
+    points,
     total: Math.max(0, Number(body.total) || 0),
     page: Math.max(1, Number(body.page) || 1),
-    pageSize: normalizePageSize(body.pageSize || pageSize),
+    pageSize: normalizePageSize(body.pageSize || size),
+  }
+}
+
+/** 从 navContext 推导测点分页请求参数（虚拟柜用 pointNamePrefix） */
+export function resolveDatapointFetchParams(nav) {
+  const n = nav || {}
+  const vc = String(n.virtualCabinet || '').trim()
+  const uuid = String(n.deviceUuid || n.uuid || '').trim()
+  const muid = String(n.modelUuid || n.muid || '').trim()
+  const parentLabel = String(n.parentDeviceLabel || '').trim()
+  const isFallback = !!(
+    n.virtualCabinetFallback
+    || n.isFallbackGroup
+    || (vc && parentLabel && vc === parentLabel)
+  )
+  if (vc && uuid) {
+    return {
+      muid,
+      deviceUuid: uuid,
+      pointNamePrefix: vc,
+      deviceLabel: '',
+      category: '',
+      isFallbackGroup: isFallback,
+    }
+  }
+  return {
+    muid,
+    deviceUuid: uuid,
+    pointNamePrefix: '',
+    deviceLabel: String(n.label || n.name || '').trim(),
+    category: String(n.datapointCategory || '').trim(),
+    isFallbackGroup: false,
   }
 }
 

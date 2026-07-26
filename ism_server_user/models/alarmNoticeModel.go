@@ -50,6 +50,9 @@ type AlarmNoticeSpeeker struct {
 	IpAddress string `json:"IpAddress" label:"IP 地址"`
 	Volume    int    `json:"Volume" label:"音量"`
 }
+type AlarmStartupDelay struct {
+	DelayMinutes int `json:"DelayMinutes" label:"服务启动告警延迟分钟数"`
+}
 type AlarmNoticeAliyunSms struct {
 	AccessKeyId     string `json:"AccessKeyId" label:"AccessKey ID"`
 	AccessKeySecret string `json:"AccessKeySecret" label:"AccessKey Secret"`
@@ -137,6 +140,10 @@ func AlarmNoticeGetAll(ProjectUuid string, AlarmNoticeType string) (int, AlarmNo
 			voice.EveryDaySendCount = 10
 			voice.PhoneNumbers = ""
 			jsonByte, _ := json.Marshal(voice)
+			getAlarmNotice.AlarmNoticeParams = string(jsonByte)
+		} else if AlarmNoticeType == "StartupAlarmDelay" {
+			startupDelay := AlarmStartupDelay{DelayMinutes: 10}
+			jsonByte, _ := json.Marshal(startupDelay)
 			getAlarmNotice.AlarmNoticeParams = string(jsonByte)
 		}
 		Db.Model(&AlarmNotice{}).Create(&getAlarmNotice)

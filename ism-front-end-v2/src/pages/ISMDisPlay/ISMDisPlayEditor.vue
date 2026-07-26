@@ -28,7 +28,7 @@
                 <a-menu-item key="ISMEditorDeviceTree">
                   <a-tooltip placement="right">
                     <template #title>
-                      <span>设备树/模板</span>
+                      <span>{{$t('displayConfig.RuntimePagesTitle')}}</span>
                     </template>
                     <a-icon type="apartment" style="font-size: 20px"/>
                   </a-tooltip>

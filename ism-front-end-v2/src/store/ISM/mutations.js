@@ -1094,3 +1094,22 @@ export const setNavTreeIndex = (state, index) => {
 export const setNavTemplateMap = (state, map) => {
   Vue.set(state, 'navTemplateMap', map || null)
 }
+
+/** 编辑器运行态虚拟页预览状态 */
+export const setEditorRuntimePreview = (state, preview) => {
+  Vue.set(state, 'editorRuntimePreview', preview && preview.active
+    ? {
+      active: true,
+      virtualKey: preview.virtualKey || '',
+      virtualTitle: preview.virtualTitle || '',
+      templatePageUuid: preview.templatePageUuid || '',
+      templateTitle: preview.templateTitle || '',
+    }
+    : {
+      active: false,
+      virtualKey: '',
+      virtualTitle: '',
+      templatePageUuid: '',
+      templateTitle: '',
+    })
+}

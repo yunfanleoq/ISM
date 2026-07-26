@@ -975,13 +975,9 @@ export default {
           barMaxWidth: (this.EchartsWidth || 2) * 6,
           dataID:activeItem.condition.deviceSN+activeItem.condition.dataID,
           data: [],
-          itemStyle: {
-            normal: {
-              lineStyle: {
+          itemStyle: {lineStyle: {
                 width:this.EchartsWidth
-              }
-            }
-          },
+              }},
           symbolSize: this.EchartsWidth,
         }
         this.option.series.push(series)

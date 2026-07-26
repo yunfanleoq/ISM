@@ -652,6 +652,11 @@ func (c *DeviceLibraryController) GetRealData() {
 			} else {
 				realData, total, code = models.GetRealDataPaged(uuid, page, pageSize)
 			}
+			// 新导入设备可能尚未物化 device_real_data；此时仍按物模型定义返回当前页。
+			// 物模型只决定点位集合，不参与页面模板选择。
+			if !fetchAll && code == 0 && total == 0 && muid != "" {
+				realData, total = models.ModelDataPointsPageByMuid(muid, keyword, page, pageSize)
+			}
 			// 实时值一律从内存 Map 覆盖（socket/采集写入），与 dbtype 无关；库里的 value 只是落盘快照
 			for key, v := range realData {
 				if deviceDataValue, exists := protocol_common.LoadDeviceRealValue(v.Uuid, v.DeviceName, v.Name); exists {
@@ -849,7 +854,8 @@ func (c *DeviceLibraryController) SetRealData() {
 						signleAlarm.DeviceName = readData.DeviceName
 						signleAlarm.HappenTime = time.Now()
 						protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-					} else if readData.IsRecord == 1 {
+					}
+					if readData.IsRecord == 1 {
 						//存储信息
 						signleHistoryData.DataValue = SetValue
 						signleHistoryData.DataName = readData.Name
@@ -964,7 +970,8 @@ func (c *DeviceLibraryController) SetRealData() {
 								signleAlarm.DeviceName = readData.DeviceName
 								signleAlarm.HappenTime = time.Now()
 								protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-							} else if readData.IsRecord == 1 {
+							}
+							if readData.IsRecord == 1 {
 								//存储信息
 								signleHistoryData.DataValue = SetValue
 								signleHistoryData.DataName = readData.Name

@@ -51,8 +51,8 @@ type DisplayModelLayer struct {
 	PageType          int    `gorm:"index;type:int;not null"  json:"PageType" validate:"required,min=4,max=250" label:"页面类型,0：手机 1：PC"`
 	Layer             string `gorm:"column:layer;type:longtext;not null" json:"layer" validate:"required" label:"图层信息"`
 	Components        string `gorm:"column:components;type:longtext;not null" json:"components" validate:"required" label:"图层中的组件信息"`
-	TemplateKind      string `gorm:"index:idx_tpl_kind_model,priority:2;type:varchar(64);default:''" json:"templateKind" label:"模板层级 home|zone|room|cabinet|device"`
-	TemplateModelUuid string `gorm:"index:idx_tpl_kind_model,priority:3;type:varchar(250);default:''" json:"templateModelUuid" label:"设备物模型覆盖(仅 device)"`
+	TemplateKind      string `gorm:"index:idx_tpl_kind_model,priority:2;type:varchar(64);default:''" json:"templateKind" label:"运行模板 home|deviceList|datapointList"`
+	TemplateModelUuid string `gorm:"index:idx_tpl_kind_model,priority:3;type:varchar(250);default:''" json:"templateModelUuid" label:"保留兼容字段；三模板架构不使用物模型选模板"`
 }
 
 type layerStu struct {
@@ -290,7 +290,7 @@ func DisplayModelLayerGet(muid string) ([]DisplayModelLayer, int) {
 	var getDisplayModelLayer []DisplayModelLayer
 
 	result := Db.Raw("SELECT id, created_at, updated_at, deleted_at, model_id, page_name, page_id, is_home, is_login, page_type, layer, components, COALESCE(template_kind,'') AS template_kind, COALESCE(template_model_uuid,'') AS template_model_uuid FROM display_model_layer WHERE model_id = ? AND deleted_at IS NULL", muid).Scan(&getDisplayModelLayer)
-	
+
 	if result.Error != nil {
 		return getDisplayModelLayer, 0
 	}
@@ -305,29 +305,31 @@ func DisplayModelLayerGetMeta(muid string) ([]DisplayModelLayer, int) {
 
 	var getDisplayModelLayer []DisplayModelLayer
 
-	result := Db.Raw("SELECT id, created_at, updated_at, deleted_at, model_id, page_name, page_id, is_home, is_login, page_type, layer, CASE WHEN is_home = 1 THEN components ELSE '' END AS components, COALESCE(template_kind,'') AS template_kind, COALESCE(template_model_uuid,'') AS template_model_uuid FROM display_model_layer WHERE model_id = ? AND deleted_at IS NULL ORDER BY is_home DESC, id ASC", muid).Scan(&getDisplayModelLayer)
+	// 页索引只需要基础字段；layer/components 两个 LONGTEXT 仅首页返回。
+	// 非首页在 SQL 层置空，避免把数百页大字段搬进 Go 进程后再丢弃。
+	result := Db.Raw("SELECT id, model_id, page_name, page_id, is_home, is_login, page_type, CASE WHEN is_home = 1 THEN layer ELSE '' END AS layer, CASE WHEN is_home = 1 THEN components ELSE '' END AS components, COALESCE(template_kind,'') AS template_kind, COALESCE(template_model_uuid,'') AS template_model_uuid FROM display_model_layer WHERE model_id = ? AND deleted_at IS NULL ORDER BY is_home DESC, id ASC", muid).Scan(&getDisplayModelLayer)
 
 	if result.Error != nil {
-		return getDisplayModelLayer, 0
+		return getDisplayModelLayer, errmsg.ERROR
 	}
 
-	return getDisplayModelLayer, 0
+	return getDisplayModelLayer, errmsg.SUCCSECODE
 }
 
 // 单个页面获取
 func DisplayModelLayerPageGet(pageid string) (DisplayModelLayer, int) {
 
 	var getDisplayModelLayer DisplayModelLayer
-	var total int = 0
 
-	Db.Model(&DisplayModelLayer{}).Select("*").Where("page_id = ? AND deleted_at IS NULL", pageid).First(&getDisplayModelLayer)
-
-	var dberr error
-	if dberr == gorm.ErrRecordNotFound {
-		return getDisplayModelLayer, 0
+	result := Db.Model(&DisplayModelLayer{}).
+		Select("id, model_id, page_name, page_id, is_home, is_login, page_type, layer, components, template_kind, template_model_uuid").
+		Where("page_id = ? AND deleted_at IS NULL", pageid).
+		First(&getDisplayModelLayer)
+	if result.Error != nil {
+		return getDisplayModelLayer, errmsg.ERROR
 	}
 
-	return getDisplayModelLayer, total
+	return getDisplayModelLayer, errmsg.SUCCSECODE
 }
 
 func DisplayModelLayerGetLogin(muid string, pageType int) (DisplayModelLayer, int) {
@@ -516,18 +518,20 @@ func DisplayModelPageAdd(uuid string, name string, size string, pageType, islogi
 
 func normalizeTemplateKind(kind string) string {
 	switch kind {
-	case "home", "zone", "room", "cabinet", "device":
+	case "home", "deviceList", "datapointList":
 		return kind
+	case "zone", "room", "cabinet", "floor":
+		return "deviceList"
+	case "device":
+		return "datapointList"
 	default:
 		return ""
 	}
 }
 
-func normalizeTemplateModelUuid(kind, modelUuid string) string {
-	if kind != "device" {
-		return ""
-	}
-	return modelUuid
+func normalizeTemplateModelUuid(_ string, _ string) string {
+	// 物模型只确定设备点位，不参与运行模板选择。
+	return ""
 }
 
 // DisplayModelPageBindTemplate 绑定/改绑/解绑页面的模板角色。
@@ -566,7 +570,7 @@ func DisplayModelPageBindTemplate(modelId, pageId, templateKind, templateModelUu
 
 	err = Db.Model(&DisplayModelLayer{}).Where("model_id = ? AND page_id = ? AND deleted_at IS NULL", modelId, pageId).
 		Updates(map[string]interface{}{
-			"template_kind":        templateKind,
+			"template_kind":       templateKind,
 			"template_model_uuid": templateModelUuid,
 		}).Error
 	if err != nil {
@@ -575,57 +579,78 @@ func DisplayModelPageBindTemplate(modelId, pageId, templateKind, templateModelUu
 	return errmsg.SUCCSE, pageId
 }
 
-// DisplayModelTemplateMap 返回大屏各层级模板页映射
+// DisplayModelTemplateMap 返回唯一运行链路的三类模板。
+// 兼容读取旧角色，但只暴露 home/deviceList/datapointList，避免旧模板重新可达。
 func DisplayModelTemplateMap(muid string) map[string]interface{} {
 	var rows []DisplayModelLayer
 	Db.Model(&DisplayModelLayer{}).
 		Select("page_id, page_name, template_kind, template_model_uuid, is_home").
-		Where("model_id = ? AND deleted_at IS NULL AND COALESCE(template_kind,'') <> ''", muid).
+		Where("model_id = ? AND deleted_at IS NULL AND (COALESCE(template_kind,'') <> '' OR is_home = 1)", muid).
+		Order("id ASC").
 		Find(&rows)
 
 	out := map[string]interface{}{
 		"home":          "",
-		"zone":          "",
-		"room":          "",
-		"cabinet":       "",
-		"floor":         "",
-		"deviceDefault": "",
-		"deviceByModel":  map[string]string{},
+		"deviceList":    "",
+		"datapointList": "",
 		"pages":         []map[string]interface{}{},
 	}
-	deviceByModel := map[string]string{}
-	pages := make([]map[string]interface{}, 0, len(rows))
+	type candidate struct {
+		page     DisplayModelLayer
+		priority int
+	}
+	selected := map[string]candidate{}
 
 	for _, r := range rows {
-		kind := r.TemplateKind
-		pageInfo := map[string]interface{}{
-			"pageId":             r.PageId,
-			"pageName":           r.PageName,
-			"templateKind":       kind,
-			"templateModelUuid":  r.TemplateModelUuid,
-			"isHome":             r.IsHome,
-		}
-		pages = append(pages, pageInfo)
-		switch kind {
+		kind := ""
+		priority := 0
+		switch r.TemplateKind {
 		case "home":
-			out["home"] = r.PageId
-		case "zone":
-			out["zone"] = r.PageId
+			kind, priority = "home", 100
+		case "deviceList":
+			kind, priority = "deviceList", 100
+		case "datapointList":
+			kind, priority = "datapointList", 100
 		case "room":
-			out["room"] = r.PageId
-		case "cabinet":
-			out["cabinet"] = r.PageId
-		case "floor":
-			out["floor"] = r.PageId
+			kind, priority = "deviceList", 80
+		case "zone", "cabinet", "floor":
+			kind, priority = "deviceList", 40
 		case "device":
+			// 只接受通用设备模板；按 muid 覆盖的七类旧模板永不参与选择。
 			if r.TemplateModelUuid == "" {
-				out["deviceDefault"] = r.PageId
-			} else {
-				deviceByModel[r.TemplateModelUuid] = r.PageId
+				kind, priority = "datapointList", 80
+			}
+		default:
+			if r.IsHome == 1 {
+				kind, priority = "home", 60
 			}
 		}
+		if kind == "" {
+			continue
+		}
+		current, exists := selected[kind]
+		if !exists || priority > current.priority {
+			selected[kind] = candidate{page: r, priority: priority}
+		}
 	}
-	out["deviceByModel"] = deviceByModel
+
+	pages := make([]map[string]interface{}, 0, 3)
+	for _, kind := range []string{"home", "deviceList", "datapointList"} {
+		c, ok := selected[kind]
+		if !ok {
+			continue
+		}
+		r := c.page
+		out[kind] = r.PageId
+		pageInfo := map[string]interface{}{
+			"pageId":            r.PageId,
+			"pageName":          r.PageName,
+			"templateKind":      kind,
+			"templateModelUuid": "",
+			"isHome":            r.IsHome,
+		}
+		pages = append(pages, pageInfo)
+	}
 	out["pages"] = pages
 	return out
 }

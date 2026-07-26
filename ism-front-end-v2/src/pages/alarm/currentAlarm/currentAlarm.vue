@@ -46,18 +46,18 @@
             </a-col>
             <a-col :md="2" :sm="24" >
               <span style="float: right; margin-top: 3px;">
-                <a-button :disabled="messageShowLoad" type="primary" @click="QueryAlarmList">{{$t('reporting.AlarmHistory.Query')}}</a-button>
+                <a-button :disabled="tableLoading" type="primary" @click="QueryAlarmList">{{$t('reporting.AlarmHistory.Query')}}</a-button>
               </span>
             </a-col>
             <a-col  :md="2" :sm="24" >
               <span style="float: left; margin-top: 3px;">
-                <a-button :disabled="isLoadExecl" type="default" style="margin-left: 5px" @click="handleExport">{{$t('reporting.AlarmHistory.Export')}}</a-button>
+                <a-button :disabled="isLoadExecl || actionLoading" type="default" style="margin-left: 5px" @click="handleExport">{{$t('reporting.AlarmHistory.Export')}}</a-button>
               </span>
             </a-col>
             <a-col  :md="2" :sm="24" >
               <span style="float: left; margin-top: 3px;">
                 <a-popconfirm :title="$t('alarm.current.ClearAllTips')" @confirm="ClearAllAlarm">
-                  <a-button :disabled="messageShowLoad" type="danger" style="margin-left: 5px">{{$t('alarm.current.ClearAll')}}</a-button>
+                  <a-button :disabled="actionLoading || tableLoading" type="danger" style="margin-left: 5px">{{$t('alarm.current.ClearAll')}}</a-button>
                 </a-popconfirm>
               </span>
             </a-col>
@@ -69,10 +69,16 @@
       </a-form>
     </div>
 
-    <a-spin style="padding: 1px;"  :spinning="messageShowLoad" :tip="loadTip">
-      <a-table :pagination="pagination" :columns="columns" :data-source="dataSource" rowKey="DeviceName">
+    <a-spin style="padding: 1px;"  :spinning="tableLoading || actionLoading" :tip="loadTip">
+      <a-table
+        :pagination="pagination"
+        :columns="columns"
+        :data-source="dataSource"
+        :rowKey="alarmRowKey"
+        @change="onTableChange"
+      >
         <template v-for="(item, index) in columns" :slot="item.slotName">
-          <span :key="index">{{ $t(item.slotName) }}</span>
+          <span :key="item.slotName || index">{{ $t(item.slotName) }}</span>
         </template>
         <span slot="AlarmName" slot-scope="AlarmName">
          {{$t(AlarmName)}}
@@ -142,8 +148,12 @@ export default {
       scrollPage: 1,
       frontDataZ:[],
       pagination:{
-        pageSize:15,
-        showSizeChanger:true
+        current: 1,
+        pageSize: 10,
+        showSizeChanger: true,
+        showQuickJumper: true,
+        pageSizeOptions: ['10', '15', '20', '50', '100'],
+        showTotal: total => `共 ${total} 条`,
       },
       loadExecl:null,
       isLoadExecl:false,
@@ -261,6 +271,9 @@ export default {
       AlarmDataTree:[],
       form: this.$form.createForm(this),
       messageShowLoad:false,
+      tableLoading:false,
+      actionLoading:false,
+      lastQueryKey:'',
       loadTip:'Loading...',
       advanced: true,
       refIconLoading: false,
@@ -352,6 +365,25 @@ export default {
     }
   },
   methods: {
+    // 同设备多条告警时 DeviceName 会重复/为空，导致翻页时 Vue sameVnode 读 key 崩溃
+    alarmRowKey(record, index) {
+      if (!record) return `alarm-empty-${index}`
+      const id = record.ID != null ? record.ID : record.id
+      if (id != null && id !== '') return `alarm-${id}`
+      const duid = record.DeviceUuid || record.device_uuid || ''
+      const uuid = record.DataUuid || record.data_uuid || ''
+      const happen = record.HappenTime || record.happen_time || ''
+      const name = record.AlarmName || record.alarm_name || ''
+      return `alarm-${duid}__${uuid}__${happen}__${name}__${index}`
+    },
+    onTableChange(pagination) {
+      if (!pagination) return
+      this.pagination = Object.assign({}, this.pagination, {
+        current: pagination.current || 1,
+        pageSize: pagination.pageSize || this.pagination.pageSize,
+        total: this.pagination.total != null ? this.pagination.total : (this.dataSource || []).length,
+      })
+    },
     ClearAlarm(item){
       let _t = this
       _t.dataSource = []
@@ -362,19 +394,19 @@ export default {
           uuid:item.DataUuid,
         }
       }
-      this.messageShowLoad=true
+      this.actionLoading=true
       UpdateCurrentAlarm(params).then(function (res){
         if(res.data.code==0)
         {
-          _t.QueryAlarmList()
+          _t.QueryAlarmList({ resetPage: true })
           _t.$message.success(_t.$t('alarm.current.ClearSuccess'), 3)
         }
         else{
           _t.$message.error(_t.$t('alarm.current.ClearFailed'), 3)
         }
-        _t.messageShowLoad=false
+        _t.actionLoading=false
       }).catch(function(){
-        _t.messageShowLoad=false
+        _t.actionLoading=false
         _t.$message.error(_t.$t('loginPage.serverError'), 3)
       })
     },
@@ -383,37 +415,62 @@ export default {
       const filterParams = {
         deviceList: this.SelectDevice,
         dataList: this.SelectAlarmData,
+        skipOfflineResync: true,
       }
-      this.messageShowLoad = true
+      this.actionLoading = true
       this.loadTip = 'Loading...'
       ClearAllCurrentAlarm(filterParams).then(function (res) {
         if (res.data && res.data.code === 0) {
-          _t.QueryAlarmList()
+          _t.QueryAlarmList({ resetPage: true })
           const count = res.data.count || 0
           _t.$message.success(_t.$t('alarm.current.ClearAllSuccess') + ' (' + count + ')', 3)
-          _t.messageShowLoad = false
+          _t.actionLoading = false
         } else {
+          const code = res.data && res.data.code
+          // 后端已部署 /AlarmClearAll 但执行失败：提示 API 错误，不再误导成「请用脚本」
+          if (typeof code === 'number' && code !== 0) {
+            _t.actionLoading = false
+            _t.$message.error(
+              (_t.$t('alarm.current.ClearAllApiFailed') || '后端批量清除失败') + ' (code=' + code + ')',
+              6
+            )
+            return
+          }
+          // 旧环境无批量 API：走逐条兼容
           _t.clearAllAlarmFallback(filterParams)
         }
-      }).catch(function () {
-        _t.clearAllAlarmFallback(filterParams)
+      }).catch(function (err) {
+        const status = err && err.response && err.response.status
+        // 404/405 等表示旧后端无此接口，才进入逐条兜底
+        if (status === 404 || status === 405) {
+          _t.clearAllAlarmFallback(filterParams)
+          return
+        }
+        _t.actionLoading = false
+        _t.$message.error(
+          (_t.$t('alarm.current.ClearAllApiFailed') || '后端批量清除失败') +
+            (status ? ' (HTTP ' + status + ')' : ''),
+          6
+        )
       })
     },
     clearAllAlarmFallback(filterParams){
       let _t = this
       _t.loadTip = _t.$t('alarm.current.ClearAllFallback') || '兼容模式：逐条清除...'
       const useList = function (list) {
+        // 仅旧环境无 /AlarmClearAll 时的逐条兜底；超过阈值请用脚本，避免浏览器卡死
         const maxUi = 500
         if (list.length > maxUi) {
-          _t.messageShowLoad = false
+          _t.actionLoading = false
           _t.$message.warning(
-            _t.$t('alarm.current.ClearAllTooMany') || ('告警数量过大(' + list.length + ')，请使用 clear_all_alarms.py 脚本'),
-            6
+            (_t.$t('alarm.current.ClearAllTooMany') ||
+              ('旧版兼容模式告警过多(' + list.length + ')，请升级后端或使用 clear_all_alarms.py')) ,
+            8
           )
           return
         }
         if (list.length === 0) {
-          _t.messageShowLoad = false
+          _t.actionLoading = false
           _t.$message.info(_t.$t('alarm.current.ClearAllSuccess') + ' (0)', 3)
           return
         }
@@ -426,13 +483,13 @@ export default {
       }
       GetCurrentAlarmList(filterParams).then(function (res) {
         if (res.data.code !== 0 || !res.data.list) {
-          _t.messageShowLoad = false
+          _t.actionLoading = false
           _t.$message.error(_t.$t('alarm.current.ClearAllFailed'), 3)
           return
         }
         useList(res.data.list)
       }).catch(function () {
-        _t.messageShowLoad = false
+        _t.actionLoading = false
         _t.$message.error(_t.$t('loginPage.serverError'), 3)
       })
     },
@@ -464,8 +521,8 @@ export default {
         if (end < list.length) {
           _t.clearAllBatch(list, end, stats)
         } else {
-          _t.messageShowLoad = false
-          _t.QueryAlarmList()
+          _t.actionLoading = false
+          _t.QueryAlarmList({ resetPage: true })
           if (stats.failed === 0) {
             _t.$message.success(_t.$t('alarm.current.ClearAllSuccess') + ' (' + stats.cleared + ')', 3)
           } else {
@@ -488,19 +545,19 @@ export default {
           AlarmShield:Shield
         }
       }
-      this.messageShowLoad=true
+      this.actionLoading=true
       UpdateCurrentAlarm(params).then(function (res){
         if(res.data.code==0)
         {
-          _t.QueryAlarmList()
+          _t.QueryAlarmList({ resetPage: true })
           _t.$message.success(_t.$t('alarm.current.ShieldSuccess'), 3)
         }
         else{
           _t.$message.error(_t.$t('alarm.current.ShieldFailed'), 3)
         }
-        _t.messageShowLoad=false
+        _t.actionLoading=false
       }).catch(function(){
-        _t.messageShowLoad=false
+        _t.actionLoading=false
         _t.$message.error(_t.$t('loginPage.serverError'), 3)
       })
     },
@@ -624,23 +681,40 @@ export default {
         }
       })
     },
-    QueryAlarmList(){
+    QueryAlarmList(options){
       let _t = this
-
-
-      _t.dataSource = []
+      // a-button @click 会传入 MouseEvent，勿当成 options
+      const opts = (options && typeof options === 'object' && options.resetPage !== undefined) ? options : {}
       const params = {
         deviceList:this.SelectDevice,
         dataList:this.SelectAlarmData,
       }
+      const queryKey = JSON.stringify({
+        deviceList: this.SelectDevice || [],
+        dataList: this.SelectAlarmData || [],
+      })
+      const filtersChanged = queryKey !== _t.lastQueryKey
+      const resetPage = opts.resetPage === true || filtersChanged
+      this.tableLoading=true
       this.messageShowLoad=true
       GetCurrentAlarmList(params).then(function (res){
         if(res.data.code==0)
         {
-          _t.dataSource =res.data.list
+          const list = Array.isArray(res.data.list) ? res.data.list.filter(Boolean) : []
+          _t.dataSource = list
+          _t.lastQueryKey = queryKey
+          const nextPage = resetPage ? 1 : (_t.pagination.current || 1)
+          const pageSize = _t.pagination.pageSize || 10
+          const maxPage = Math.max(1, Math.ceil(list.length / pageSize) || 1)
+          _t.pagination = Object.assign({}, _t.pagination, {
+            current: Math.min(nextPage, maxPage),
+            total: list.length,
+          })
         }
+        _t.tableLoading=false
         _t.messageShowLoad=false
       }).catch(function(){
+        _t.tableLoading=false
         _t.messageShowLoad=false
         _t.$message.error(_t.$t('loginPage.serverError'), 3)
       })

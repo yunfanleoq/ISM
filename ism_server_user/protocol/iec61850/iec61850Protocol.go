@@ -1,4 +1,3 @@
-//go:build ignore
 package ismiec61850
 
 import (

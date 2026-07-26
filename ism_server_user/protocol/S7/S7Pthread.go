@@ -3066,7 +3066,8 @@ func (c *SimS7Ctl) GatherSimS7DeviceData() {
 				signleAlarm.HappenTime = time.Now()
 				c.DealWithPLCS7AlarmData(signleAlarm)
 				// protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-			} else if data.IsRecord == 1 {
+			}
+			if data.IsRecord == 1 {
 				//存储信息
 				signleHistoryData.DataName = data.Name
 				signleHistoryData.DeviceName = device.Name

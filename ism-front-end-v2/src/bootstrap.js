@@ -21,14 +21,8 @@ async function bootstrap({router, store, i18n, message}) {
   loadRoutes()
   // 加载路由守卫
   loadGuards(guards, {router, store, i18n, message})
-  // 首页配置并行拉取；成功后仅补丁侧栏名称，失败不阻塞启动
-  store.dispatch('setting/fetchSystemHomeDashboard').then(() => {
-    const homeName = store.state.setting.systemHomeDashboard &&
-      store.state.setting.systemHomeDashboard.dashboardName
-    if (homeName) {
-      store.commit('setting/patchScadaMonitorMenuName', homeName)
-    }
-  }).catch(e => {
+  // 拉取当前项目默认监控大屏配置；侧栏固定显示「监控大屏」，不再用大屏应用名覆盖
+  store.dispatch('setting/fetchSystemHomeDashboard').catch(e => {
     console.warn('[bootstrap] fetchSystemHomeDashboard failed, using defaults', e)
   })
 }

@@ -12,10 +12,13 @@ import (
 	"ISMServer/models"
 	protocolCommon "ISMServer/protocol/common"
 	protocolCommonFunc "ISMServer/protocol/commFunc"
+	"ISMServer/task/ISMScript/bitunpack"
+	ISMScriptFunc "ISMServer/task/ISMScript/func"
 	"ISMServer/utils/errmsg"
 	"encoding/base64"
 	"io/ioutil"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/beego/beego/v2/adapter/logs"
@@ -24,6 +27,28 @@ import (
 
 var GScriptChan chan bool
 var scriptWg sync.WaitGroup
+var valueChangeHookOnce sync.Once
+var valueChangeDepth int32
+
+func init() {
+	valueChangeHookOnce.Do(func() {
+		bitunpack.Configure(ISMScriptFunc.SetDeviceData, ISMScriptFunc.PeekDeviceDataValue)
+		protocolCommon.SetDeviceValueChangeHandler(onDeviceValueChanged)
+	})
+}
+
+func onDeviceValueChanged(deviceName, pointName, oldValue, newValue string) {
+	// Prevent deep re-entrancy when BitUnpack SetDeviceData writes targets.
+	if atomic.AddInt32(&valueChangeDepth, 1) > 16 {
+		atomic.AddInt32(&valueChangeDepth, -1)
+		return
+	}
+	defer atomic.AddInt32(&valueChangeDepth, -1)
+
+	bitunpack.ApplySource(deviceName, pointName, newValue)
+	WakeScriptsForKey(deviceName + "->" + pointName)
+	_ = oldValue
+}
 
 func isChanClose() bool {
 	select {
@@ -48,6 +73,14 @@ func getAllScript() (int, []models.ISMScript) {
 	}
 	return errmsg.SUCCSE, GetScrpt
 }
+
+func decodeScriptContent(script *models.ISMScript) {
+	tempComponents, deErr := base64.StdEncoding.DecodeString(script.ScriptContent)
+	if deErr == nil {
+		script.ScriptContent = string(tempComponents)
+	}
+}
+
 func ISMScriptMailPthread() {
 	var is_starting = 0
 	go StartSysScript()
@@ -57,25 +90,48 @@ func ISMScriptMailPthread() {
 		}
 		ScriptCloseChan()
 		GScriptChan = make(chan bool)
+
+		bitunpack.Clear()
+		clearScriptWakes()
+
 		code, scriptList := getAllScript()
+		nativeCount := 0
+		ankoCount := 0
 		if code == errmsg.SUCCSE && (len(scriptList) > 0) {
 			for _, script := range scriptList {
-				if script.Delay < 100 {
-					script.Delay = 100
+				decodeScriptContent(&script)
+				if rules, ok := bitunpack.Compile(script.ScriptUuid, script.ScriptName, script.ScriptContent); ok {
+					bitunpack.Register(rules)
+					logs.Info("native-bitunpack: %s rules=%d", script.ScriptName, len(rules))
+					nativeCount++
+					continue
 				}
-				tempComponents, deErr := base64.StdEncoding.DecodeString(script.ScriptContent)
-				if deErr == nil {
-					script.ScriptContent = string(tempComponents)
+				if script.Delay < 1000 {
+					script.Delay = 1000
 				}
 				d := &ISMScriptPthread{Script: script}
-				go d.Run()
 				scriptWg.Add(1)
+				go d.Run()
+				ankoCount++
 			}
+			if nativeCount > 0 {
+				bitunpack.SettleAll()
+			}
+			logs.Info("script scheduler: native-bitunpack=%d anko-onchange=%d", nativeCount, ankoCount)
+		}
+
+		if ankoCount > 0 {
+			// Wait on next loop until CRUD closes GScriptChan and anko workers exit.
+			is_starting = 1
+			time.Sleep(1 * time.Second)
+		} else if nativeCount > 0 {
+			// Pure native path: no WaitGroup workers; block until reload signal.
+			is_starting = 0
+			<-GScriptChan
 		} else {
+			is_starting = 0
 			time.Sleep(time.Millisecond * 1000)
 		}
-		is_starting = 1
-		time.Sleep(1 * time.Second)
 	}
 }
 func StartSysScript() {

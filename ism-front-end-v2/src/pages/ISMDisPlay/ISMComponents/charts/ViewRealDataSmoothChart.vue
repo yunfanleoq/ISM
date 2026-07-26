@@ -1,12 +1,12 @@
 <template>
-  <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"  x="0px" y="0px"  xml:space="preserve" :style="{'overflow': 'visible','width':(detail && detail.style && detail.style.position && detail.style.position.w) || '200px','height':(detail && detail.style && detail.style.position && detail.style.position.h) || '200px',}">
+  <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"  x="0px" y="0px"  xml:space="preserve" :style="chartSvgStyle">
     <g class="svg-el" :style="{'opacity':fillOpacity,'stroke-opacity':strokeOpacity,'stroke':strokeColor,'stroke-width':strokeWidth,'stroke-linecap':'round','stroke-linejoin':'round','fill':fill}">
-      <foreignObject style="overflow:visible;" pointer-events="all" :width="((detail && detail.style && detail.style.position && detail.style.position.w) || 200) - ((detail && detail.style && detail.style.borderWidth) || 0)*2" :height="((detail && detail.style && detail.style.position && detail.style.position.h) || 200) - ((detail && detail.style && detail.style.borderWidth) || 0)*2">
+      <foreignObject :style="chartForeignStyle" pointer-events="all" :width="chartInnerWidth" :height="chartInnerHeight">
           <div
             class="view-chart-real-data"
             :class="{ 'overview-embedded-chart': isOverviewEmbeddedChart }"
             :ref="detail && detail.identifier ? detail.identifier : 'chart_default'"
-            :style="{'overflow': 'visible','width':'100%','height':'100%'}"
+            :style="chartViewStyle"
           ></div>
       </foreignObject>
       <path
@@ -28,19 +28,19 @@
         pointer-events="none"
       />
       <!--      闪烁-->
-      <animate v-if="isStart&&animateType.includes('blink')&&!IsToolBox" attributeName="opacity"
+      <animate v-if="!isEnergyOverviewMode&&isStart&&animateType.includes('blink')&&!IsToolBox" attributeName="opacity"
                values="0.1;1;0.1" :dur="blinkSpeed+'s'"
                repeatCount="indefinite"/>
       <!--渐变-->
-      <animate v-if="isStart&&animateType.includes('millcolorGrad')&&!IsToolBox" attributeName="fill"
+      <animate v-if="!isEnergyOverviewMode&&isStart&&animateType.includes('millcolorGrad')&&!IsToolBox" attributeName="fill"
                :values="startColor+';'+stopColor+';'+startColor" :dur="animateSpeed+'s'"
                repeatCount="indefinite"/>
       <!--缩放      -->
-      <animateTransform v-if="isStart&&animateType.includes('Zoom')&&!IsToolBox" attributeName="transform"   begin="0s" dur="0.6s" type="scale" values="0.9;1;0.9" repeatCount="indefinite"/>
+      <animateTransform v-if="!isEnergyOverviewMode&&isStart&&animateType.includes('Zoom')&&!IsToolBox" attributeName="transform"   begin="0s" dur="0.6s" type="scale" values="0.9;1;0.9" repeatCount="indefinite"/>
       <!--      顺时针旋转-->
-      <animateTransform v-if="isStart&&animateType.includes('animateSpin')&&!IsToolBox&&spinDirection==0" attributeType="XML" attributeName="transform" :dur="animateSpinSpeed+'s'" type="rotate" from="0 0 0" to="360 0 0" repeatCount="indefinite" />
+      <animateTransform v-if="!isEnergyOverviewMode&&isStart&&animateType.includes('animateSpin')&&!IsToolBox&&spinDirection==0" attributeType="XML" attributeName="transform" :dur="animateSpinSpeed+'s'" type="rotate" from="0 0 0" to="360 0 0" repeatCount="indefinite" />
       <!--      逆时针旋转-->
-      <animateTransform v-if="isStart&&animateType.includes('animateSpin')&&!IsToolBox&&spinDirection==1" attributeType="XML" attributeName="transform" :dur="animateSpinSpeed+'s'" type="rotate" from="360 0 0" to="0 0 0" repeatCount="indefinite" />
+      <animateTransform v-if="!isEnergyOverviewMode&&isStart&&animateType.includes('animateSpin')&&!IsToolBox&&spinDirection==1" attributeType="XML" attributeName="transform" :dur="animateSpinSpeed+'s'" type="rotate" from="360 0 0" to="0 0 0" repeatCount="indefinite" />
   </g>
 </svg>
 
@@ -63,6 +63,7 @@ import walden from '@/theme/echarts/walden'
 import westeros from '@/theme/echarts/westeros'
 import wonderland from '@/theme/echarts/wonderland'
 import ISMChildAutoMixin from '@/mixins/ISMChildAutoMixin'
+import { subscribeEnergyOverviewStats } from '@/services/energyOverview'
 
 export default {
   mixins: [ISMChildAutoMixin],
@@ -78,13 +79,32 @@ export default {
         if(this.editMode){
           this.initComponents(newVal)
         }
+        this.syncEnergyOverviewSubscription()
         this.onResize()
       },
       deep: true
     }
   },
   computed: {
+    energyOverviewRole() {
+      const configuredRole = String((this.detail && this.detail.energyOverviewRole) || '')
+      if (configuredRole) return configuredRole
+      const name = String((this.detail && this.detail.name) || '')
+      const legacyOverviewRoles = {
+        'ov-chart-trend': 'power24h',
+        'ov-chart-energy': 'energyDelta24h',
+      }
+      if (legacyOverviewRoles[name]) return legacyOverviewRoles[name]
+      // 中航信大屏生成脚本把 detail.name 写成标题「功率趋势 (24h)」而非 ov-chart-*
+      if (/功率趋势/.test(name)) return 'power24h'
+      if (/用电量趋势/.test(name)) return 'energyDelta24h'
+      return ''
+    },
+    isEnergyOverviewMode() {
+      return this.energyOverviewRole === 'power24h' || this.energyOverviewRole === 'energyDelta24h'
+    },
     isOverviewEmbeddedChart() {
+      if (this.isEnergyOverviewMode) return true
       const name = String((this.detail && this.detail.name) || '')
       const pos = (this.detail && this.detail.style && this.detail.style.position) || {}
       return Number(pos.x) >= 1200 && /功率趋势|用电量趋势/.test(name)
@@ -97,6 +117,35 @@ export default {
       return {
         width: Math.max(24, Number(pos.w) || 200),
         height: Math.max(24, Number(pos.h) || 200),
+      }
+    },
+    chartInnerWidth() {
+      const border = Number((this.detail && this.detail.style && this.detail.style.borderWidth) || 0)
+      return Math.max(1, this.overviewChartSize.width - border * 2)
+    },
+    chartInnerHeight() {
+      const border = Number((this.detail && this.detail.style && this.detail.style.borderWidth) || 0)
+      return Math.max(1, this.overviewChartSize.height - border * 2)
+    },
+    // 首页嵌入图必须裁切，禁止 canvas 画出 cell 盖住下方活跃告警
+    chartOverflow() {
+      return this.isOverviewEmbeddedChart ? 'hidden' : 'visible'
+    },
+    chartSvgStyle() {
+      return {
+        overflow: this.chartOverflow,
+        width: this.overviewChartSize.width,
+        height: this.overviewChartSize.height,
+      }
+    },
+    chartForeignStyle() {
+      return { overflow: this.chartOverflow }
+    },
+    chartViewStyle() {
+      return {
+        overflow: this.chartOverflow,
+        width: '100%',
+        height: '100%',
       }
     },
     overviewFramePath() {
@@ -119,6 +168,7 @@ export default {
       strokeWidth:0.3,
       ChartTimelyRefreshTimer:null,
       dimensionSampleTimer:null,
+      energyOverviewStats:null,
       fillOpacity:1,
       strokeOpacity:1,
       animateType:"blink",
@@ -526,6 +576,105 @@ export default {
     }
   },
   methods: {
+    syncEnergyOverviewSubscription() {
+      if (!this.isEnergyOverviewMode || this.IsToolBox) {
+        if (this._energyOverviewUnsubscribe) {
+          this._energyOverviewUnsubscribe()
+          this._energyOverviewUnsubscribe = null
+        }
+        return
+      }
+      if (this._energyOverviewUnsubscribe) return
+      this._energyOverviewUnsubscribe = subscribeEnergyOverviewStats((stats) => {
+        this.energyOverviewStats = stats
+        this.renderEnergyOverviewChart(stats)
+      })
+    },
+    renderEnergyOverviewChart(stats) {
+      if (!this.isEnergyOverviewMode || !this.echartsView) return
+      const isPower = this.energyOverviewRole === 'power24h'
+      const available = stats && stats.configured !== false
+      const units = (stats && stats.units) || {}
+      const powerSpecs = [
+        { key: 'activePower', name: '总有功功率', unit: units.activePower || 'kW', color: '#22d3ee' },
+        { key: 'reactivePower', name: '总无功功率', unit: units.reactivePower || 'kvar', color: '#a78bfa' },
+        { key: 'apparentPower', name: '总视在功率', unit: units.apparentPower || 'kVA', color: '#34d399' },
+      ]
+      const sourceSeries = isPower
+        ? powerSpecs.map(spec => ({
+          ...spec,
+          points: available && stats.powerSeries ? stats.powerSeries[spec.key] || [] : [],
+        }))
+        : [{
+          key: 'energy',
+          name: '用电量',
+          unit: units.energy || units.energyDelta24h || 'kWh',
+          color: '#4dabf7',
+          points: available ? stats.energySeries || [] : [],
+        }]
+      const allTimes = []
+      sourceSeries.forEach(series => {
+        series.points = series.points.map(point => ({
+          time: point.time,
+          value: Number(point.value),
+        })).filter(point => point.time != null && Number.isFinite(point.value))
+        series.points.forEach(point => allTimes.push(String(point.time)))
+      })
+      const times = Array.from(new Set(allTimes)).sort((left, right) => {
+        const leftTime = new Date(left).getTime()
+        const rightTime = new Date(right).getTime()
+        if (Number.isFinite(leftTime) && Number.isFinite(rightTime)) return leftTime - rightTime
+        return left.localeCompare(right)
+      })
+      const hasPoints = times.length > 0
+      this.option.xAxis.data = times.map(time => {
+        const parsed = moment(time)
+        return parsed.isValid() ? parsed.format('MM-DD HH:mm') : time
+      })
+      this.option.xAxis.axisLabel.rotate = 0
+      this.option.yAxis.name = isPower
+        ? powerSpecs.map(spec => spec.unit).join(' / ')
+        : sourceSeries[0].unit
+      this.option.yAxis.min = 'dataMin'
+      this.option.yAxis.max = 'dataMax'
+      this.option.legend.show = hasPoints
+      this.option.legend.data = hasPoints ? sourceSeries.map(series => series.name) : []
+      this.option.tooltip.formatter = params => {
+        const rows = [params[0] ? params[0].axisValueLabel : '']
+        if (stats && stats.dataStatus !== 'ok') {
+          rows.push(`部分数据：有效 ${stats.validDevices || 0}/${stats.eligibleDevices || 0}`)
+        }
+        params.forEach(param => {
+          const series = sourceSeries.find(item => item.name === param.seriesName)
+          rows.push(`${param.marker}${param.seriesName}: ${param.value}${series && series.unit ? ` ${series.unit}` : ''}`)
+        })
+        return rows.join('<br/>')
+      }
+      this.option.series = hasPoints ? sourceSeries.map(series => {
+        const values = new Map(series.points.map(point => [String(point.time), point.value]))
+        return {
+          name: series.name,
+          type: 'line',
+          smooth: true,
+          symbol: 'none',
+          data: times.map(time => values.has(time) ? values.get(time) : null),
+          lineStyle: { width: this.EchartsWidth, color: series.color },
+          itemStyle: { color: series.color },
+        }
+      }) : []
+      this.option.graphic = hasPoints ? [] : [{
+        type: 'text',
+        left: 'center',
+        top: 'middle',
+        style: {
+          text: '暂无历史数据',
+          fill: '#7894aa',
+          fontSize: 14,
+        },
+      }]
+      this.echartsView.setOption(this.option, true)
+      this.echartsView.resize()
+    },
     buildDimensionSample(chartTitle) {
       const timeAxis = ['00:00', '02:00', '04:00', '06:00', '08:00', '10:00',
         '12:00', '14:00', '16:00', '18:00', '20:00', '22:00']
@@ -736,6 +885,15 @@ export default {
       if (!this.echartsView) {
         this.echartsView = echarts.init(view, this.EchartsTheme);
       }
+      if (this.isEnergyOverviewMode) {
+        this.animateType = []
+        this.isStart = false
+        clearInterval(this.ChartTimelyRefreshTimer)
+        this.ChartTimelyRefreshTimer = null
+        this.stopDimensionSampleAnimation()
+        this.renderEnergyOverviewChart(this.energyOverviewStats)
+        return
+      }
       i=0
       this.animateType = (option.animate && option.animate.selected) || []
       if(option.animate && option.animate.isExpression)
@@ -832,19 +990,26 @@ export default {
         const hasSamples = this.option.series.some(series =>
           Array.isArray(series.data) && series.data.length > 0
         )
-        if (!hasSamples) {
-          const dimensionSample = this.buildDimensionSample(chartTitle)
-          if (dimensionSample) {
-            this.option.xAxis.data = dimensionSample.axis
-            this.option.xAxis.axisLabel.rotate = 0
-            this.option.yAxis.name = dimensionSample.unit
-            this.option.yAxis.min = 'dataMin'
-            this.option.yAxis.max = 'dataMax'
-            this.option.series.push(...dimensionSample.series)
-            this.option.legend.data = dimensionSample.series.map(series => series.name)
-          } else {
-            this.option.xAxis.data = ['-5m', '-4m', '-3m', '-2m', '-1m', '现在']
-          }
+        // 禁止注入硬编码假曲线（尤其首页功率/用电量趋势）；无数据只显示空态文案
+        const banDimensionSample = this.isEnergyOverviewMode
+          || this.isOverviewEmbeddedChart
+          || /功率趋势|用电量趋势|总有功功率|总无功功率|总视在功率|正有功电度|有功电度|用电量/.test(chartTitle)
+        if (!hasSamples && banDimensionSample) {
+          this.stopDimensionSampleAnimation()
+          this.option.xAxis.data = []
+          this.option.series = (this.option.series || []).filter(s => !s.isDimensionSample)
+          this.option.graphic = [{
+            type: 'text',
+            left: 'center',
+            top: 'middle',
+            style: {
+              text: '暂无历史数据',
+              fill: '#7894aa',
+              fontSize: 14,
+            },
+          }]
+        } else if (!hasSamples && !banDimensionSample) {
+          this.option.xAxis.data = ['-5m', '-4m', '-3m', '-2m', '-1m', '现在']
           this.option.graphic = []
         } else {
           this.option.graphic = []
@@ -858,7 +1023,7 @@ export default {
         }
         _t.echartsView.setOption(_t.option,true)
         _t.echartsView.resize()
-        _t.startDimensionSampleAnimation()
+        // 生产环境不再启动假数据动画
       }, 100)
       if(!this.editMode){
         setTimeout(function (){
@@ -1021,8 +1186,13 @@ export default {
     }
   },
   beforeDestroy () {
-    clearInterval(this.ChartTimelyRefresh)
+    clearInterval(this.ChartTimelyRefreshTimer)
+    this.ChartTimelyRefreshTimer = null
     this.stopDimensionSampleAnimation()
+    if (this._energyOverviewUnsubscribe) {
+      this._energyOverviewUnsubscribe()
+      this._energyOverviewUnsubscribe = null
+    }
     if (this.echartsView != null&&(typeof this.echartsView.dispose=="function")) {
       this.echartsView.clear();
       this.echartsView.dispose()
@@ -1034,13 +1204,19 @@ export default {
     node.on('change:data', ({ current }) => {
       if(current) {
         _t.detail = current.detail
+        // 大屏写库后 cell 高度变化时，强制 echarts 按新容器重算，避免仍按旧高重叠告警区
+        _t.$nextTick(() => {
+          if (typeof _t.onResize === 'function') _t.onResize()
+        })
       }
     })
     node.on('change:size', ({ current }) => {
+      if (!_t.detail || !_t.detail.style) return
+      if (!_t.detail.style.position) _t.detail.style.position = {}
       _t.detail.style.position.w = current.width
       _t.detail.style.position.h = current.height
       _t.$nextTick(() => {
-        _t.onResize()
+        if (typeof _t.onResize === 'function') _t.onResize()
       })
     });
     this.detail = node.getData().detail
@@ -1057,9 +1233,11 @@ export default {
       let _t = this
     this.$nextTick(function(){
       this.initComponents(this.detail);
+      this.syncEnergyOverviewSubscription()
       let activeEvent = this.detail.identifier+"activeEvent"//动作数据
       let animateEvent = this.detail.identifier+"animateEvent"//动作数据
       _t.$EventBus.$on("DealWithRealDataFinish",(data) => {
+        if (_t.isEnergyOverviewMode) return
         if(_t.isFinish==0)
         {
           return
@@ -1184,6 +1362,7 @@ export default {
         _t.ShowChartVariable1IsCome = false
       })
       _t.$EventBus.$on(activeEvent, (data) => {
+        if (_t.isEnergyOverviewMode) return
         let valueObj = parseFloat(data.result)
         if(!isNaN(valueObj)) {
           let c_data = _t.getTime()
@@ -1230,6 +1409,7 @@ export default {
         }
       })
       _t.$EventBus.$on(animateEvent, (data) => {
+        if (_t.isEnergyOverviewMode) return
         _t.isStart = data
       })
     });
@@ -1249,6 +1429,8 @@ export default {
   align-items: center;
 }
 .view-chart-real-data.overview-embedded-chart {
+  overflow: hidden !important;
+  max-height: 100%;
   background:
     radial-gradient(circle at 16% 22%, rgba(0, 222, 255, 0.1), transparent 27%),
     radial-gradient(circle at 86% 74%, rgba(94, 92, 230, 0.08), transparent 30%),
@@ -1258,6 +1440,11 @@ export default {
   background-size: auto, auto, 24px 24px, 24px 24px, auto;
   box-shadow: inset 0 0 28px rgba(0, 157, 198, 0.055);
   animation: overviewChartGridFlow 12s linear infinite;
+}
+.view-chart-real-data.overview-embedded-chart > div,
+.view-chart-real-data.overview-embedded-chart canvas {
+  max-width: 100% !important;
+  max-height: 100% !important;
 }
 .view-chart-real-data.overview-embedded-chart::before {
   content: "";

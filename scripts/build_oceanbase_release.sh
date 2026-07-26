@@ -19,7 +19,8 @@ ZIP_OUT="$ROOT/releases/${PKG_NAME}-offline.zip"
 
 BACKEND_SRC="$ROOT/ism_server_user"
 FRONTEND_DIST="$ROOT/ism-front-end-v2/dist"
-MYSQL_BACKUP="$ROOT/Mysql_Backup_2026-07-08_15-52-44.sql"
+# 可通过 MYSQL_BACKUP=... 指定最新 dump（默认仍用历史权威备份文件名）
+MYSQL_BACKUP="${MYSQL_BACKUP:-$ROOT/Mysql_Backup_2026-07-08_15-52-44.sql}"
 LINUX_BIN="$STAGING/ism_server_user/ism_server"
 BUILD_METHOD="unknown"
 OB_IMAGE="oceanbase/oceanbase-ce:latest"
@@ -234,10 +235,14 @@ cp "$ROOT/scripts/import_mysql_to_oceanbase.sh" "$STAGING/scripts/"
 cp "$ROOT/scripts/fix_ob_charset_reimport.sh" "$STAGING/scripts/"
 cp "$ROOT/scripts/verify_ob_charset.sh" "$STAGING/scripts/"
 cp "$ROOT/scripts/fix_oceanbase_schema_alarm_on_value.sh" "$STAGING/scripts/"
+cp "$ROOT/scripts/fix_device_real_data_index.sh" "$STAGING/scripts/"
+cp "$ROOT/scripts/fix_device_real_data_indexes_oceanbase.sql" "$STAGING/scripts/" 2>/dev/null || true
 cp "$ROOT/scripts/prepare_mysql_dump_for_oceanbase.sh" "$STAGING/scripts/"
 cp "$ROOT/scripts/migrate_sqlite_to_oceanbase.py" "$STAGING/scripts/"
 cp "$ROOT/scripts/export_db_to_sqlite.py" "$STAGING/scripts/" 2>/dev/null || true
 cp "$ROOT/scripts/clear_all_alarms.py" "$STAGING/scripts/" 2>/dev/null || true
+cp "$ROOT/scripts/prune_legacy_dashboard_pages.py" "$STAGING/scripts/"
+cp "$ROOT/scripts/prune_legacy_dashboard_pages_on_start.sh" "$STAGING/scripts/"
 cp "$ROOT/scripts/install_docker_kylin_sp3.sh" "$STAGING/scripts/"
 cp "$ROOT/scripts/ensure_python.sh" "$STAGING/scripts/"
 cp "$ROOT/scripts/install_python_kylin_sp3.sh" "$STAGING/scripts/"
@@ -245,7 +250,10 @@ cp "$ROOT/scripts/fix_compose_offline.sh" "$STAGING/scripts/"
 chmod +x "$STAGING/scripts/install_docker_kylin_sp3.sh" \
   "$STAGING/scripts/ensure_python.sh" \
   "$STAGING/scripts/install_python_kylin_sp3.sh" \
-  "$STAGING/scripts/fix_compose_offline.sh"
+  "$STAGING/scripts/fix_compose_offline.sh" \
+  "$STAGING/scripts/prune_legacy_dashboard_pages_on_start.sh" \
+  "$STAGING/scripts/prune_legacy_dashboard_pages.py" \
+  "$STAGING/scripts/fix_device_real_data_index.sh"
 cp "$ROOT/docs/ISM-OceanBase部署与切换指南.md" "$STAGING/docs-ISM-OceanBase部署与切换指南.md" 2>/dev/null || true
 if [[ -f "$ROOT/docs/ISM-麒麟V10-OceanBase部署操作手册.md" ]]; then
   cp "$ROOT/docs/ISM-麒麟V10-OceanBase部署操作手册.md" "$STAGING/"
@@ -547,10 +555,19 @@ preload_oceanbase_data || {
   OB_PRELOADED="no"
 }
 
-# 从仓库已验证脚本复制（优先含 TDengine 的 20260709 包）
-PKG_SCRIPTS_SRC="$ROOT/releases/ism-release-oceanbase-20260709"
-[[ -d "$PKG_SCRIPTS_SRC" ]] || PKG_SCRIPTS_SRC="$ROOT/releases/ism-release-oceanbase-20260708"
-[[ -d "$PKG_SCRIPTS_SRC" ]] || PKG_SCRIPTS_SRC="$ROOT/releases/ism-release-oceanbase-20260707"
+# 从仓库已验证脚本复制（优先最新一体包）
+PKG_SCRIPTS_SRC=""
+for cand in \
+  "$ROOT/releases/ism-release-oceanbase-20260721-1024-dbb9" \
+  "$ROOT/releases/ism-release-oceanbase-20260716-1747-fb6d" \
+  "$ROOT/releases/ism-release-oceanbase-20260714-1746-3589" \
+  "$ROOT/releases/ism-release-oceanbase-20260709"; do
+  if [[ -d "$cand" && -f "$cand/start-all.sh" ]]; then
+    PKG_SCRIPTS_SRC="$cand"
+    break
+  fi
+done
+[[ -n "$PKG_SCRIPTS_SRC" ]] || PKG_SCRIPTS_SRC="$ROOT/releases/ism-release-oceanbase-20260708"
 for script in start-all.sh stop-all.sh deploy-offline.sh; do
   if [[ -f "$PKG_SCRIPTS_SRC/$script" ]]; then
     cp "$PKG_SCRIPTS_SRC/$script" "$STAGING/$script"
@@ -566,9 +583,47 @@ for script in check_env_kylin.sh diagnose_kylin.sh test_on_kylin_host.sh export_
     cp "$PKG_SCRIPTS_SRC/scripts/$script" "$STAGING/scripts/$script"
   fi
 done
+
+# 启动时自动硬删旧预生成大屏页：注入 start-all（后端启动前）
+if [[ -f "$STAGING/start-all.sh" ]] && ! grep -q 'prune_legacy_dashboard_pages_on_start' "$STAGING/start-all.sh"; then
+  awk '
+    BEGIN { done=0 }
+    /启动后端 ism_server/ && !done {
+      print "echo \"=== 硬删除旧大屏预生成页（启动清理）===\""
+      print "if [[ -x \"$ROOT/scripts/prune_legacy_dashboard_pages_on_start.sh\" ]]; then"
+      print "  bash \"$ROOT/scripts/prune_legacy_dashboard_pages_on_start.sh\" || true"
+      print "fi"
+      print ""
+      done=1
+    }
+    { print }
+  ' "$STAGING/start-all.sh" > "$STAGING/start-all.sh.tmp" \
+    && mv "$STAGING/start-all.sh.tmp" "$STAGING/start-all.sh"
+fi
+
+# 启动时自动修复 device_real_data 索引（Error 4012 / COUNT 超时）：注入 start-all（后端启动前）
+if [[ -f "$STAGING/start-all.sh" ]] && ! grep -q 'fix_device_real_data_index' "$STAGING/start-all.sh"; then
+  awk '
+    BEGIN { done=0 }
+    /启动后端 ism_server/ && !done {
+      print "echo \"=== device_real_data 索引自愈（VARCHAR + idx_drd_project_deleted）===\""
+      print "if [[ -x \"$ROOT/scripts/fix_device_real_data_index.sh\" ]]; then"
+      print "  bash \"$ROOT/scripts/fix_device_real_data_index.sh\" || true"
+      print "else"
+      print "  echo \"  [SKIP] 无 fix_device_real_data_index.sh\""
+      print "fi"
+      print ""
+      done=1
+    }
+    { print }
+  ' "$STAGING/start-all.sh" > "$STAGING/start-all.sh.tmp" \
+    && mv "$STAGING/start-all.sh.tmp" "$STAGING/start-all.sh"
+fi
+
 chmod +x "$STAGING/start-all.sh" "$STAGING/stop-all.sh" "$STAGING/deploy-offline.sh" \
   "$STAGING/scripts/"*.sh 2>/dev/null || true
-chmod +x "$STAGING/scripts/serve_test_frontend.py"
+chmod +x "$STAGING/scripts/serve_test_frontend.py" \
+  "$STAGING/scripts/prune_legacy_dashboard_pages.py" 2>/dev/null || true
 
 cat > "$STAGING/README-部署说明.md" << READMEEOF
 # ISM OceanBase + TDengine 一体部署包

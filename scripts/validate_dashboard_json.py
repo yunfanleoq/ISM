@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""扫描 SQL/SQLite 中 display_model_layer 组态 JSON 完整性（animate.selected 等）。"""
+"""扫描 SQL/SQLite 中未删除的 display_model_layer 组态 JSON 完整性。"""
 import argparse
 import base64
 import json
@@ -70,7 +70,11 @@ def load_from_sqlite(db_path):
     conn = sqlite3.connect(db_path)
     cur = conn.cursor()
     cur.execute(
-        "SELECT page_name, page_id, components FROM display_model_layer WHERE model_id=?",
+        """
+        SELECT page_name, page_id, components
+        FROM display_model_layer
+        WHERE model_id=? AND deleted_at IS NULL
+        """,
         (MODEL_ID,),
     )
     return cur.fetchall()
@@ -83,15 +87,15 @@ def load_from_sql(sql_path):
     for line in sql_path.read_text(encoding="utf-8", errors="replace").splitlines():
         if not line.startswith(prefix) or MODEL_ID not in line:
             continue
-        # VALUES (id,'ts','ts',NULL,'model_id','page_name','page_id',is_home,page_type,'layer','components',is_login)
+        # VALUES (id,'ts','ts',deleted_at,'model_id','page_name','page_id',is_home,page_type,'layer','components',is_login)
         m = re.search(
-            r"VALUES\s*\(\d+,'[^']*','[^']*',[^,]*,'"
+            r"VALUES\s*\(\d+,'[^']*','[^']*',(NULL|'[^']*'),'"
             + re.escape(MODEL_ID)
             + r"','([^']+)','([^']+)',[^,]*,[^,]*,'[^']*','([^']*)'",
             line,
         )
-        if m:
-            pages.append((m.group(1), m.group(2), m.group(3)))
+        if m and m.group(1) == "NULL":
+            pages.append((m.group(2), m.group(3), m.group(4)))
     return pages
 
 

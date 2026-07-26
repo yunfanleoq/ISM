@@ -322,6 +322,10 @@ export default {
       })
     },
     GetDisplayPage(uuid){
+      if (!uuid) {
+        this.displayPageList = []
+        return
+      }
       let params={
         muid:uuid
       }
@@ -331,7 +335,7 @@ export default {
         if(res.data.code==0)
         {
           let pageLayer = res.data.layer
-          if(pageLayer.length>0)
+          if(pageLayer && pageLayer.length>0)
           {
             for(let i=0;i<pageLayer.length;i++)
             {
@@ -388,40 +392,63 @@ export default {
     onBlackCLK(){
       this.$router.push('/DeviceModel/ModbusModel')
     },
+    // 只写当前已注册的 decorator 字段，避免 “set field before render”
+    setRegisteredFieldsValue(values) {
+      if (!values || !this.form) return
+      let names = []
+      try {
+        if (this.form.fieldsStore && typeof this.form.fieldsStore.getAllFieldsName === 'function') {
+          names = this.form.fieldsStore.getAllFieldsName() || []
+        }
+      } catch (e) { /* ignore */ }
+      if (!names.length) {
+        names = Object.keys(this.form.getFieldsValue() || {})
+      }
+      const registered = {}
+      names.forEach(function (n) { registered[n] = true })
+      const safe = {}
+      Object.keys(values).forEach(function (key) {
+        if (registered[key]) safe[key] = values[key]
+      })
+      if (Object.keys(safe).length) {
+        this.form.setFieldsValue(safe)
+      }
+    },
+    applyDefaultFields() {
+      const values = {
+        timeout: "1000",
+        modbusConnectType: this.modbusConnectType,
+        ModbusType: "RTU",
+        DataFormat: "BigEndian",
+      }
+      if (this.modbusConnectType === "Serial") {
+        Object.assign(values, {
+          SerialPort: this.COMList[0],
+          SerialPortBaud: "9600",
+          SerialPortDataBit: "8",
+          SerialPortVerifyBit: "None",
+          SerialPortStopBit: "1",
+          SerialPortFlow: "None",
+        })
+      }
+      this.setRegisteredFieldsValue(values)
+    },
     getCommList(){
       let _t = this
       _t.messageShowLoad = true
+      // 等 Serial 分支 decorator 挂载后再写默认值
       this.$nextTick(function(){
-        _t.form.setFieldsValue(
-            {
-              timeout:"1000",
-              modbusConnectType:_t.modbusConnectType,
-              ModbusType:"RTU",
-              DataFormat:"BigEndian",
-              SerialPort:_t.COMList[0],
-              SerialPortBaud:"9600",
-              SerialPortDataBit:"8",
-              SerialPortVerifyBit:"None",
-              SerialPortStopBit:"1",
-              SerialPortFlow:"None",
-            })
+        _t.$nextTick(function (){
+          _t.applyDefaultFields()
+        })
       });
 
       COMListGet().then(function (res){
         _t.COMList = res.data
-
-        _t.form.setFieldsValue(
-            {
-              modbusConnectType:_t.modbusConnectType,
-              ModbusType:"RTU",
-              SerialPort:_t.COMList[0],
-              SerialPortBaud:"9600",
-              SerialPortDataBit:"8",
-              SerialPortVerifyBit:"None",
-              SerialPortStopBit:"1",
-              SerialPortFlow:"None",
-            })
-        _t.messageShowLoad = false
+        _t.$nextTick(function (){
+          _t.applyDefaultFields()
+          _t.messageShowLoad = false
+        })
       })
     },
     handleSelectChange(value){

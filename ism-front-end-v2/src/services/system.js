@@ -80,8 +80,8 @@ export async function systemFontsList() {
 export async function SetDebug(params) {
   return request(SETDEBUG, METHOD.POST,params)
 }
-export async function GetSystemData() {
-  return request(GETSYSTEMDATAMODEL, METHOD.POST)
+export async function GetSystemData(params, config) {
+  return request(GETSYSTEMDATAMODEL, METHOD.POST, params || {}, config)
 }
 
 export async function GetDataModelData(params) {

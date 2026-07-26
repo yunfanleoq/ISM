@@ -333,7 +333,8 @@ func RESTFulDataDealWith(RecvData UpdateDeviceData) (int, string) {
 				signleAlarm.DeviceName = getDevice.Name
 				signleAlarm.HappenTime = time.Now()
 				protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-			} else if getRealData.IsRecord == 1 {
+			}
+			if getRealData.IsRecord == 1 {
 				//存储信息
 				signleHistoryData.DataName = getRealData.Name
 				signleHistoryData.DeviceName = getDevice.Name
@@ -347,8 +348,10 @@ func RESTFulDataDealWith(RecvData UpdateDeviceData) (int, string) {
 			tempPushData.Data = append(tempPushData.Data, protocol_common.UpdateStu{Uuid: getRealData.Uuid, ModelDataUuid: getRealData.ModelDataUuid, Value: v.Value})
 		}
 		if len(tempPushData.Data) > 0 {
+			tempPushData.DeviceName = getDevice.Name
+			// 队列只负责写库；前端推送走独立入口（合并窗），避免与采集双推。
 			protocol_common.GGatherDataQueue.QueuePush(tempPushData)
-			// go ismWebsocket.WSSend(tempPushData, tempPushData.ProjectUuid, 2)
+			protocol_common.NotifyRealDataFrontend(tempPushData)
 		}
 		if updateIsNotComplete == 1 {
 			return -4, "更新未完全成功"

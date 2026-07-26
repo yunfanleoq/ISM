@@ -1,17 +1,14 @@
 /**
- * 组织层（最多 4 层，从 RootZone 起算 treeDepth）+ 信号层（设备 → 测点，2 层）
- * 深度与路由均来自 monitorTree 实际结构，禁止全站写死层数。
+ * 任意组织层级 + 信号层（设备 → 测点）。
+ * 深度与路由均来自 monitorTree 实际结构。
  */
 
-import { resolveTemplatePageIdForKind } from './navTreeIndex'
 import { resolveDeviceListTemplateId } from './deviceListPager'
 import { resolveDeviceSignalTemplateId } from './deviceSignalTemplate'
+import { isRoomZoneName } from './monitorTreeTransform'
 
-/** 组织层最大深度（RootZone = 1） */
-export const ORG_MAX_DEPTH = 4
-
-/** 信号层：设备 → 测点 */
-export const SIGNAL_LAYERS = 2
+/** 信号层：真设备 →（可选虚拟列头柜）→ 测点 */
+export const SIGNAL_LAYERS = 3
 
 /**
  * 分析树节点子项构成（transform 后）
@@ -36,6 +33,10 @@ export function isDeviceNode(node) {
 /** 叶容器：type=0 无子节点，自身即设备（如「数据机房报警解析」） */
 export function isLeafDeviceContainer(node) {
   if (!node || node.kind === 'device' || node.kind === 'root') return false
+  // 组织/配电室/机房即使暂无子节点，也不得当设备直进测点页（避免「一点配电室全是点位」）
+  if (node.kind === 'organization' || node.kind === 'zone' || node.kind === 'room') return false
+  const label = node.label || node.name || node.rawLabel || ''
+  if (isRoomZoneName(label)) return false
   const { total } = analyzeNodeChildren(node)
   return total === 0
 }
@@ -77,24 +78,25 @@ export function resolveTreeDepth(node, index) {
   return depth
 }
 
-/** 组织层深度（1~4） */
+/** 组织层深度（由实际祖先链决定，不设上限） */
 export function resolveOrgDepth(node, index) {
-  return Math.min(ORG_MAX_DEPTH, Math.max(1, resolveTreeDepth(node, index)))
+  return Math.max(1, resolveTreeDepth(node, index))
 }
 
 /**
  * 决定 onSelect 路由模式
  * @returns {'org'|'childrenList'|'signal'}
  * - org：非设备节点，画布展示直接 children（容器卡片）
- * - childrenList：非设备节点且子项全是设备（分页列表，如 UPS 122）
+ * - childrenList：非设备节点且子项全是设备（分页列表；含仅 1 台，保证 配电室→设备→点位）
  * - signal：设备节点，进入测点实时表
  */
 export function resolveRouteMode(node) {
   if (!node) return 'org'
   if (isDeviceNode(node)) return 'signal'
   const { deviceChildren, containerChildren } = analyzeNodeChildren(node)
+  // 直属全是设备 → 设备列表（即使只有 1 台也不跳过列表层直接铺点位）
   if (deviceChildren.length > 0 && containerChildren.length === 0) {
-    return deviceChildren.length > 1 ? 'childrenList' : 'org'
+    return 'childrenList'
   }
   return 'org'
 }
@@ -120,19 +122,19 @@ export function detectDrillDepth(node, index) {
   const orgDepth = resolveOrgDepth(node, index)
   const routeMode = resolveRouteMode(node)
   const isDevice = isDeviceNode(node)
-  const pureDeviceList = !isDevice && isPureDeviceContainer(node) && deviceChildren.length > 1
+  const pureDeviceList = !isDevice && isPureDeviceContainer(node) && deviceChildren.length > 0
   const hasSubContainers = containerChildren.length > 0
 
   let totalLayers = orgDepth
   if (routeMode === 'signal') {
     totalLayers = orgDepth + SIGNAL_LAYERS - 1
   } else {
-    totalLayers = Math.min(ORG_MAX_DEPTH + SIGNAL_LAYERS, orgDepth + SIGNAL_LAYERS)
+    totalLayers = orgDepth + SIGNAL_LAYERS
   }
 
   const remainingLayers = routeMode === 'signal'
     ? SIGNAL_LAYERS
-    : Math.max(1, (ORG_MAX_DEPTH + SIGNAL_LAYERS) - orgDepth)
+    : SIGNAL_LAYERS
 
   const modbusLayer = isDevice ? 'device' : (orgDepth <= 1 ? 'zone' : (orgDepth <= 2 ? 'zone' : 'room'))
 
@@ -154,20 +156,10 @@ export function detectDrillDepth(node, index) {
  * onSelect 目标模板页
  */
 export function resolveOnSelectPageUuid(node, templateMap, index) {
-  const map = templateMap || {}
   const depth = detectDrillDepth(node, index)
-  const templateFallback = resolveDeviceListTemplateId(map)
-  switch (depth.routeMode) {
-    case 'signal':
-      return resolveDeviceSignalTemplateId(map, null, node.modelUuid || node.muid || '')
-        || resolveTemplatePageIdForKind(map, 'device', node.modelUuid || node.muid || '')
-        || templateFallback
-    case 'childrenList':
-      return resolveDeviceListTemplateId(map) || map.room || map.zone || templateFallback
-    default:
-      return resolveTemplatePageIdForKind(map, node.kind, node.modelUuid || node.muid || '')
-        || templateFallback
-  }
+  return depth.routeMode === 'signal'
+    ? resolveDeviceSignalTemplateId(templateMap)
+    : resolveDeviceListTemplateId(templateMap)
 }
 
 /**

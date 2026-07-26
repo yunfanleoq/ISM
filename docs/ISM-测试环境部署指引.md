@@ -133,10 +133,11 @@ flowchart LR
 
 | 项 | 内网 | 外网（cpolar） |
 |----|------|----------------|
-| 地址 | `192.168.110.83` | `8.tcp.cpolar.cn` |
-| SSH 端口 | `22` | `14659` |
+| 地址 | `192.168.110.83` | `5.tcp.cpolar.cn` |
+| SSH 端口 | `22` | **`14002`**（当前有效；旧 `8.tcp.cpolar.cn:14659` 已失效） |
 | 用户 | `root` | `root` |
 | 密码 | `Xunan@1108` | `Xunan@1108` |
+| SSH 命令 | `ssh root@192.168.110.83` | `ssh -p 14002 root@5.tcp.cpolar.cn` |
 
 ### 2.3 备用机：CentOS 7（资料中有记录，非本包默认目标）
 
@@ -222,7 +223,7 @@ df -h /opt /root /home
 若你本机可访问 cpolar 外网 SSH，可在**自己电脑**终端执行：
 
 ```bash
-scp -P 14659 /path/to/ism-release-sqlite-YYYYMMDD.zip root@8.tcp.cpolar.cn:/opt/ism/
+scp -P 14002 /path/to/ism-release-sqlite-YYYYMMDD.zip root@5.tcp.cpolar.cn:/opt/ism/
 # 密码：Xunan@1108
 ```
 
@@ -387,7 +388,7 @@ curl -s -X POST http://127.0.0.1:8091/login \
   -d '{"Username":"admin","password":"e10adc3949ba59abbe56e057f20f883e"}'
 
 # ── 外网 SCP 上传（本机执行）──
-scp -P 14659 ism-release-sqlite-YYYYMMDD.zip root@8.tcp.cpolar.cn:/opt/ism/
+scp -P 14002 ism-release-sqlite-YYYYMMDD.zip root@5.tcp.cpolar.cn:/opt/ism/
 ```
 
 ---
@@ -515,7 +516,7 @@ ism-release-sqlite-YYYYMMDD/
 
 > 适用：**麒麟 V10**（x86_64，systemd，类 CentOS/RHEL）  
 > 官方文档：<https://www.cpolar.com/docs>  
-> 资料 PDF 中该机器可能**已配置** cpolar（SSH `8.tcp.cpolar.cn:14659`、Web `https://ism.cpolar.cn`）。**先检查，勿重复安装。**
+> 当前测试机 SSH 隧道为 **`5.tcp.cpolar.cn:14002`**（旧 `8.tcp.cpolar.cn:14659` 已失效）。Web 见 `https://ism-test.cpolar.cn`。**先检查，勿重复安装。**
 
 ### 11.1 检查是否已安装（在 192.168.110.83 上执行）
 
@@ -537,14 +538,14 @@ ss -tlnp | grep 9200
 curl -s -o /dev/null -w "%{http_code}\n" http://127.0.0.1:9200/
 
 # 5) 隧道是否在线（登录 https://dashboard.cpolar.com/status 对照）
-# 期望与资料一致：TCP 8.tcp.cpolar.cn:14659、HTTP ism.cpolar.cn
+# 期望：TCP 5.tcp.cpolar.cn:14002、HTTP ism-test.cpolar.cn
 ```
 
 | 现象 | 含义 |
 |------|------|
 | `which cpolar` 有输出且 `cpolar version` 正常 | 已安装客户端 |
 | `systemctl status cpolar` 为 `active (running)` | 服务在跑，一般已开机自启 |
-| `cpolar.yml` 含 `remote_addr: 8.tcp.cpolar.cn:14659` 等 | SSH 固定 TCP 已配置 |
+| `cpolar.yml` 含 `remote_addr: 5.tcp.cpolar.cn:14002` 等 | SSH 固定 TCP 已配置 |
 | `subdomain: ism` 或后台状态页有 `ism.cpolar.cn` | HTTP 隧道已配置 |
 
 **若已全部正常**：跳过 §11.2，仅需 `systemctl restart cpolar` 改配置后重启；外网验证见 §11.5。
@@ -593,7 +594,7 @@ cpolar authtoken YOUR_AUTHTOKEN
 
 | 类型 | 后台路径 | 资料中的值 |
 |------|----------|------------|
-| 保留 TCP（SSH） | 预留 → 保留 TCP 地址 | `8.tcp.cpolar.cn:14659` |
+| 保留 TCP（SSH） | 预留 → 保留 TCP 地址 | `5.tcp.cpolar.cn:14002` |
 | 保留二级子域名（HTTP） | 预留 → 保留二级子域名 | `ism` → `ism.cpolar.cn` |
 
 > 固定 TCP / 二级子域名通常需 **基础套餐及以上**；免费版多为随机地址（24–48 小时变化）。
@@ -615,7 +616,7 @@ tunnels:
     addr: 22
     proto: tcp
     region: cn_vip
-    remote_addr: 8.tcp.cpolar.cn:14659
+    remote_addr: 5.tcp.cpolar.cn:14002
 
   ism-test-web:
     addr: 7080
@@ -626,7 +627,7 @@ tunnels:
 
 说明：
 
-- **ssh**：本地 22 → 外网 `8.tcp.cpolar.cn:14659`（`remote_addr` 须与后台「保留 TCP」一致）。
+- **ssh**：本地 22 → 外网 `5.tcp.cpolar.cn:14002`（`remote_addr` 须与后台「保留 TCP」一致）。
 - **ism-test-web**：本地 **7080**（本测试包前端）→ `https://largescreen.cpolar.cn`（须先在后台保留子域名）。
 - **勿**将隧道指向客户 7080，以免与 `/opt/ISMCode/ism_web` 冲突。
 - 若暂未购买固定地址，可删掉 `remote_addr` / `subdomain`，启动后从 <https://dashboard.cpolar.com/status> 查看临时公网地址。
@@ -657,7 +658,7 @@ firewall-cmd --reload
 
 ```bash
 # SSH（资料中的外网入口）
-ssh -p 14659 root@8.tcp.cpolar.cn
+ssh -p 14002 root@5.tcp.cpolar.cn
 # 密码：Xunan@1108（测试环境，见 §2.2）
 
 # 浏览器

@@ -1,12 +1,12 @@
 #!/bin/bash
-# 为 MySQL 业务库创建「设备测点表」device 模板页
+# 为 MySQL 业务库绑定「设备点位列表」模板页
 # 点击导航树中的设备叶节点 → ViewRealTable(navDatapoints)：一行一个测点，底部分页
 # 用法: bash scripts/bootstrap_device_signal_template_mysql.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-MODEL_ID="${MODEL_ID:-b8b4c094-faa9-a22a-1d0d-037539b27a6c}"
-PAGE_ID="${DEVICE_SIGNAL_TEMPLATE_PAGE_ID:-7c3e8f92a1b04d6e9f3c2a1b0d8e7f65}"
+MODEL_ID="${MODEL_ID:?必须显式提供 MODEL_ID}"
+PAGE_ID="${DEVICE_SIGNAL_TEMPLATE_PAGE_ID:?必须显式提供 DEVICE_SIGNAL_TEMPLATE_PAGE_ID}"
 PAGE_NAME="${DEVICE_SIGNAL_TEMPLATE_NAME:-模板-设备测点表}"
 MYSQL_PWD="${MYSQL_PWD:-ism2024!}"
 MYSQL_DB="${MYSQL_DB:-ism}"
@@ -35,12 +35,12 @@ PY
 mysql_exec "
 INSERT INTO display_model_layer
   (created_at, updated_at, deleted_at, model_id, page_name, page_id, is_home, is_login, page_type, layer, components, template_kind, template_model_uuid)
-SELECT NOW(6), NOW(6), NULL, '${MODEL_ID}', '${PAGE_NAME}', '${PAGE_ID}', 0, 0, 1, '', '${COMPONENTS_B64}', 'device', ''
+SELECT NOW(6), NOW(6), NULL, '${MODEL_ID}', '${PAGE_NAME}', '${PAGE_ID}', 0, 0, 1, '', '${COMPONENTS_B64}', 'datapointList', ''
 WHERE NOT EXISTS (
   SELECT 1 FROM display_model_layer WHERE model_id='${MODEL_ID}' AND page_id='${PAGE_ID}' AND deleted_at IS NULL
 );
 UPDATE display_model_layer
-SET page_name='${PAGE_NAME}', template_kind='device', template_model_uuid='', updated_at=NOW(6), deleted_at=NULL
+SET page_name='${PAGE_NAME}', template_kind='datapointList', template_model_uuid='', updated_at=NOW(6), deleted_at=NULL
 WHERE model_id='${MODEL_ID}' AND page_id='${PAGE_ID}';
 "
 

@@ -165,14 +165,14 @@ const routerMap = {
   },
   SCADAMonitor:{
     path: '/SCADAMonitor',
-    name: '电力监控大屏',
+    name: '监控大屏',
     meta: {
       icon: 'dashboard',
       authority: {
         role: ['Admin','Operator']
       }
     },
-    // 菜单「电力监控大屏」直达系统首页大屏（动态读取 store）
+    // 菜单「监控大屏」直达当前项目的默认大屏（动态读取 store）
     redirect: createHomeDashboardRedirect()
   },
   DataWarehouse:{

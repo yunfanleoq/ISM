@@ -122,7 +122,7 @@ import {GetDeviceModelDataList} from "../../../services/device";
 import {GetDataHistoryList} from "../../../services/report";
 import moment from 'moment';
 
-import {formatDate} from '@/utils/common';
+import {formatDate, parseLocalDateTime} from '@/utils/common';
 import {exportExcel} from '@/services/excelExport'
 import 'moment/locale/zh-cn';
 import  'moment/locale/en-ie';
@@ -157,7 +157,8 @@ export default {
           field: "RecordTime",
           //自定义回调函数
           callback: value => {
-            let date = new Date(value)
+            let date = parseLocalDateTime(value)
+            if (!date || isNaN(date.getTime())) return ''
             return formatDate(date,'yyyy-MM-dd hh:mm:ss')
           }
         }
@@ -171,7 +172,8 @@ export default {
           field: "RecordTime",
           //自定义回调函数
           callback: value => {
-            let date = new Date(value)
+            let date = parseLocalDateTime(value)
+            if (!date || isNaN(date.getTime())) return ''
             return formatDate(date,'yyyy-MM-dd hh:mm:ss')
           }
         }
@@ -251,7 +253,8 @@ export default {
   },
   filters: {
     formatDate(time) {
-      let date = new Date(time)
+      let date = parseLocalDateTime(time)
+      if (!date || isNaN(date.getTime())) return ''
       return formatDate(date,'yyyy-MM-dd hh:mm:ss')
     },
   },

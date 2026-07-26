@@ -180,8 +180,15 @@ function safeBaseOf(comp, filePath) {
   }
   return undefined
 }
+// standard 目录中的运行态内部子组件由宿主组件本地注册，不属于 X6 shape / 编辑器工具箱。
+const standardHelperComponents = new Set([
+  './RuntimeDataCardGrid.vue',
+])
 //标准控件
 componentsStandard.keys().forEach(filePath => {
+  if (standardHelperComponents.has(filePath)) {
+    return
+  }
   const keyArr = filePath.split('/')
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')

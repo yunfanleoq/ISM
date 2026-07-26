@@ -13,14 +13,17 @@ OB_TENANT="${OB_TENANT:-ism_tenant}"
 OB_PASSWORD="${OB_PASSWORD:-ism2024!}"
 OB_DATABASE="${OB_DATABASE:-ism}"
 OB_CHARSET="${OB_CHARSET:-utf8mb4}"
-SQL_FILE="${SQL_FILE:-$ROOT/data/source/Mysql_Backup_2026-07-08_15-52-44.sql}"
 PREPARE="${PREPARE:-0}"
 
 OBCLIENT_FLAGS=(--default-character-set="${OB_CHARSET}")
 
-if [[ ! -f "$SQL_FILE" ]]; then
-  echo "错误: 缺少 MySQL 备份: $SQL_FILE"
-  echo "请将 Mysql_Backup_2026-07-08_15-52-44.sql 放到 data/source/ 或设置 SQL_FILE=..."
+# 优先显式 SQL_FILE；否则取 data/source 下最新 Mysql_Backup_*.sql
+if [[ -z "${SQL_FILE:-}" ]]; then
+  SQL_FILE="$(ls -t "$ROOT"/data/source/Mysql_Backup_*.sql 2>/dev/null | head -1 || true)"
+fi
+if [[ -z "${SQL_FILE:-}" || ! -f "$SQL_FILE" ]]; then
+  echo "错误: 缺少 MySQL 备份（data/source/Mysql_Backup_*.sql）"
+  echo "请放入 dump 或设置 SQL_FILE=..."
   exit 1
 fi
 

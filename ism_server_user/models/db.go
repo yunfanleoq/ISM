@@ -13,6 +13,7 @@ import (
 	ISMNetwork "ISMServer/task/network"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/beego/beego/v2/core/config"
@@ -34,10 +35,86 @@ type Writer struct {
 }
 
 func (w Writer) Printf(format string, args ...interface{}) {
-	// log.Infof(format, args...)
 	logString := fmt.Sprintf(format, args...)
-
+	// 同类 schema/scan 噪音：节流后最多偶发一条，避免脚本/采集循环刷盘
+	if strings.Contains(logString, "unsupported Scan") && strings.Contains(logString, "created_at") {
+		protocol_common.ErrorThrottled("gorm:scan:created_at", "sqlite datetime scan noise throttled: unsupported Scan created_at (text->*time.Time)")
+		return
+	}
+	if strings.Contains(logString, "no such column") {
+		brief := logString
+		if len(brief) > 240 {
+			brief = brief[:240]
+		}
+		protocol_common.ErrorThrottled("gorm:nocol:"+brief, "%s", brief)
+		return
+	}
 	gormlog.Info(logString)
+}
+
+// ensureCriticalSchema 大包 AutoMigrate 可能在 display_model_layer 处中断，
+// 关键点表/模型表必须独立补齐（SQLite 与 OceanBase 均走 Migrator，缺列才加）。
+func ensureCriticalSchema() {
+	if e := Db.AutoMigrate(&DeviceRealData{}, &ModbusDevicesDataModel{}); e != nil {
+		gormlog.Info("关键表独立迁移失败: %v", e)
+	}
+	for _, item := range []struct {
+		model interface{}
+		col   string
+		label string
+	}{
+		{&DeviceRealData{}, "alarm_on_value", "device_real_data.alarm_on_value"},
+		{&ModbusDevicesDataModel{}, "alarm_on_value", "modbus_devices_data_model.alarm_on_value"},
+	} {
+		if Db.Migrator().HasColumn(item.model, item.col) {
+			continue
+		}
+		if err := Db.Migrator().AddColumn(item.model, item.col); err != nil {
+			gormlog.Info("补列失败 %s: %v", item.label, err)
+		} else {
+			gormlog.Info("已补列 %s", item.label)
+		}
+	}
+	ensureDeviceRealDataQueryIndexes()
+}
+
+// ensureDeviceRealDataQueryIndexes 修复 GetSystemAnalysis COUNT 等热点查询超时：
+// MySQL/OceanBase 上历史库可能把 UUID 列建成 LONGTEXT 且无二级索引，导致全表扫描撞 ob_query_timeout。
+func ensureDeviceRealDataQueryIndexes() {
+	dbtype, _ := config.Int("dbtype")
+	// MySQL(0) / OceanBase(4)：LONGTEXT 无法有效建索引，先改成 VARCHAR(250)
+	if dbtype == 0 || dbtype == 4 {
+		for _, col := range []string{"project_uuid", "uuid", "device_uuid", "muid", "model_data_uuid"} {
+			sql := fmt.Sprintf("ALTER TABLE device_real_data MODIFY COLUMN `%s` VARCHAR(250) NOT NULL", col)
+			if err := Db.Exec(sql).Error; err != nil {
+				// 已是目标类型或权限不足时不阻断启动
+				gormlog.Info("device_real_data.%s 列类型对齐跳过/失败: %v", col, err)
+			}
+		}
+	}
+
+	type idxSpec struct {
+		name string
+		ddl  string
+	}
+	indexes := []idxSpec{
+		// 概览 COUNT：WHERE project_uuid=? AND deleted_at IS NULL
+		{"idx_drd_project_deleted", "CREATE INDEX idx_drd_project_deleted ON device_real_data(project_uuid, deleted_at)"},
+		{"idx_drd_uuid", "CREATE INDEX idx_drd_uuid ON device_real_data(uuid)"},
+		{"idx_drd_device_uuid", "CREATE INDEX idx_drd_device_uuid ON device_real_data(device_uuid)"},
+		// Modbus 采集 JOIN 热点
+		{"idx_drd_device_muid_model", "CREATE INDEX idx_drd_device_muid_model ON device_real_data(device_uuid, muid, model_data_uuid)"},
+	}
+	for _, idx := range indexes {
+		if Db.Migrator().HasIndex(&DeviceRealData{}, idx.name) {
+			continue
+		}
+		if err := Db.Exec(idx.ddl).Error; err != nil {
+			gormlog.Info("创建 device_real_data 索引 %s 失败: %v", idx.name, err)
+		} else {
+			gormlog.Info("已创建索引 %s", idx.name)
+		}
+	}
 }
 
 func init() {
@@ -53,6 +130,21 @@ func CheckAllTables() {
 	err := Db.AutoMigrate(&BacnetDevicesDataModel{}, &SQLReportTemplete{}, &CJT188DevicesDataModel{}, &VirtualDeviceDataModel{}, &ModbusTcpDataPushModel{}, &IEC104DataPushModel{}, &SystemDataInterface{}, &SystemDataTemplete{}, &DisplayModelsUserList{}, &HJ212DevicesDataModel{}, &OutConnectList{}, &IEC61850DevicesDataModel{}, &IEC104DevicesDataModel{}, &Dlt645DevicesDataModel{}, &MqttDevicesDataModel{}, &ISMScript{}, &ReportTemplete{}, &TaskPlanList{}, &SimS7DataModel{}, &UserApiAccessToken{}, &RESTFulDataModel{}, &CustomData{}, &SystemDataModel{}, &OpcuaDevicesDataModel{}, &RolesList{}, &AlarmNotice{}, &SystemJournal{}, &StaticData{}, &ProjectVideoList{}, &ProjectUser{}, &ProjectLists{}, &AlarmTrigger{}, &DevicesHistoryDataList{}, &DevicesAlarmList{}, &SystemImge{}, &ModbusDevicesDataModel{}, &ModbusDevicesRegisterGroup{}, &User{}, &DisplayModelLayer{}, &DevicesModel{}, &SnmpDevicesDataModel{}, &MonitorList{}, &DeviceRealData{}, &DevicesSupportList{}, &DisplayModels{}, &AutoGenTask{}, &AutoGenTemplate{})
 	if err != nil {
 		gormlog.Info(err)
+	}
+	// 大表迁移可能被旧版 display_model_layer DDL 兼容问题中断；关键实时/告警列与能源表必须独立迁移。
+	ensureCriticalSchema()
+	if energyErr := Db.AutoMigrate(
+		&EnergyOverviewConfig{},
+		&EnergyOverviewAggregateSnapshot{},
+		&EnergyOverviewDailyBaseline{},
+	); energyErr != nil {
+		gormlog.Info(energyErr)
+	}
+	dbtype, _ := config.Int("dbtype")
+	if dbtype == 4 && !Db.Migrator().HasIndex(&DisplayModelLayer{}, "idx_dml_model_deleted") {
+		if err := Db.Exec("CREATE INDEX idx_dml_model_deleted ON display_model_layer(model_id, deleted_at)").Error; err != nil {
+			gormlog.Info("创建大屏元数据联合索引失败: %v", err)
+		}
 	}
 	d := time.Since(r)
 	gormlog.Info("系统表检查完成,耗时:%s", d)
@@ -149,7 +241,8 @@ func ReconnectDbServer() {
 		panic("达梦数据库不支持当前平台，请使用 SQLite(dbtype=1)、MySQL(dbtype=0) 或 PostgreSQL(dbtype=2)")
 	} else if dbtype == 4 {
 		// OceanBase MySQL 兼容模式
-		connstr := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&timeout=10s&readTimeout=120s&writeTimeout=30s",
+		// writeTimeout 调高：全量点位 CreateInBatches 等批量写在大表上可能超过 30s
+		connstr := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&timeout=10s&readTimeout=120s&writeTimeout=120s",
 			oceanbaseuser,
 			oceanbasepwd,
 			oceanbasehost,

@@ -437,7 +437,8 @@ func (c *HJ212Ctl) ParseCN2011Message(message hj212Msg.Message, deviceInfo hj212
 					signleAlarm.DeviceName = DeviceData.DeviceInfo.Name
 					signleAlarm.HappenTime = time.Now()
 					c.DealWithModbusAlarmData(signleAlarm)
-				} else if item.IsRecord == 1 {
+				}
+				if item.IsRecord == 1 {
 					//存储信息
 					signleHistoryData.DataName = item.Name
 					signleHistoryData.DeviceName = DeviceData.DeviceInfo.Name
@@ -849,7 +850,8 @@ func (c *HJ212Ctl) ParseCN2051Message(message hj212Msg.Message, deviceInfo hj212
 						signleAlarm.DeviceName = DeviceData.DeviceInfo.Name
 						signleAlarm.HappenTime = time.Now()
 						c.DealWithModbusAlarmData(signleAlarm)
-					} else if item.IsRecord == 1 {
+					}
+					if item.IsRecord == 1 {
 						//存储信息
 						signleHistoryData.DataName = item.Name
 						signleHistoryData.DeviceName = DeviceData.DeviceInfo.Name
@@ -1071,7 +1073,8 @@ func (c *HJ212Ctl) ParseCN2061Message(message hj212Msg.Message, deviceInfo hj212
 						signleAlarm.DeviceName = DeviceData.DeviceInfo.Name
 						signleAlarm.HappenTime = time.Now()
 						c.DealWithModbusAlarmData(signleAlarm)
-					} else if item.IsRecord == 1 {
+					}
+					if item.IsRecord == 1 {
 						//存储信息
 						signleHistoryData.DataName = item.Name
 						signleHistoryData.DeviceName = DeviceData.DeviceInfo.Name

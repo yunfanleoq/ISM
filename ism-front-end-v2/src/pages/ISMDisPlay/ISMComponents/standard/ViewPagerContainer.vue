@@ -355,6 +355,7 @@ export default {
           pageLoadingToken: 0,
           pageLoadingStartedAt: 0,
           pageLoadingEl: null,
+          pageLoadingWatchdogTimer: null,
           pendingClickPageLoadingToken: null,
           _isDestroyed: false,
           detail:null,
@@ -701,7 +702,8 @@ export default {
       },
       getLayerDataStruct  (data) {
         let params={
-          muid:data.uuid
+          muid:data.uuid,
+          metaOnly:data.metaOnly !== false
         }
         let bangDingData=[]
         let bangDingDeviceSN=[]
@@ -1532,6 +1534,15 @@ export default {
           }});
       },
       getLayerPagerContainerDataStruct (data) {
+        const templateMap = (this.$store.state.ISMDisPlayEditorTool || {}).navTemplateMap
+        if (templateMap) {
+          const allowed = [templateMap.home, templateMap.deviceList, templateMap.datapointList]
+            .filter(Boolean)
+          if (!allowed.includes(data.pageid)) {
+            data.cb(-4, null, [], [])
+            return
+          }
+        }
         let params={
           pageid:data.pageid
         }
@@ -2024,10 +2035,33 @@ export default {
           return action.action === 'DeviceView' && action.DeviceView && action.DeviceView.isContainer
         })
       },
+      clearPageLoadingWatchdog() {
+        if (this.pageLoadingWatchdogTimer) {
+          clearTimeout(this.pageLoadingWatchdogTimer)
+          this.pageLoadingWatchdogTimer = null
+        }
+      },
+      armPageLoadingWatchdog(token) {
+        const PAGE_LOADING_MAX_MS = 12000
+        this.clearPageLoadingWatchdog()
+        this.pageLoadingWatchdogTimer = setTimeout(() => {
+          this.pageLoadingWatchdogTimer = null
+          if (this._isDestroyed || token !== this.pageLoadingToken) return
+          console.warn('[ViewPagerContainer] pageLoading watchdog force-close', { token })
+          this.forceClosePageLoading(loadingKey)
+        }, PAGE_LOADING_MAX_MS)
+      },
+      forceClosePageLoading(key = loadingKey) {
+        this.clearPageLoadingWatchdog()
+        this.pendingClickPageLoadingToken = null
+        this.unmountBodyPageLoading()
+        this.$message.destroy(key)
+      },
       beginPageLoading(key = loadingKey) {
         this.$message.destroy(key)
         this.pageLoadingToken += 1
         this.pageLoadingStartedAt = Date.now()
+        this.armPageLoadingWatchdog(this.pageLoadingToken)
         this.mountBodyPageLoading()
         return this.pageLoadingToken
       },
@@ -2044,6 +2078,7 @@ export default {
         const token = this.pendingClickPageLoadingToken
         this.pendingClickPageLoadingToken = null
         if (token && token === this.pageLoadingToken) {
+          this.armPageLoadingWatchdog(token)
           return Promise.resolve(token)
         }
         return this.openPageLoading(loadingKey)
@@ -2052,12 +2087,15 @@ export default {
         if (this.pendingClickPageLoadingToken) {
           this.closePageLoading(loadingKey, this.pendingClickPageLoadingToken)
           this.pendingClickPageLoadingToken = null
+        } else {
+          this.forceClosePageLoading(loadingKey)
         }
       },
       closePageLoading(key = loadingKey, token = this.pageLoadingToken) {
         if (token !== this.pageLoadingToken) {
           return
         }
+        this.clearPageLoadingWatchdog()
         const elapsed = Date.now() - this.pageLoadingStartedAt
         const close = () => {
           if (token !== this.pageLoadingToken) {
@@ -5296,7 +5334,7 @@ export default {
       // 清理嵌套 X6 Graph（含异常保护）
       this.destroyPopUpGraph()
       this.destroyMainGraph()
-      this.unmountBodyPageLoading()
+      this.forceClosePageLoading(loadingKey)
     }
 }
 </script>

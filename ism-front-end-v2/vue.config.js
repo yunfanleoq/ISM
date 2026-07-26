@@ -66,6 +66,12 @@ module.exports = {
         pathRewrite: {
           '^/api': ''
         }
+      },
+      // App.vue EventSource 使用同源 /SSEPushData（不走 /api）；开发态需单独代理到后端
+      '/SSEPushData': {
+        target: 'http://127.0.0.1:8081',
+        changeOrigin: true,
+        ws: true,
       }
     },
   },

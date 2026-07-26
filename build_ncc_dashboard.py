@@ -120,7 +120,8 @@ cur = conn.cursor()
 
 # ── Constants ───────────────────────────────────────
 # 可用环境变量覆盖(支持多项目复用): NCC_MODEL_ID / NCC_PROJECT_UUID
-MODEL_ID = os.environ.get('NCC_MODEL_ID', '043135ad-44be-e5d8-89be-3e54883c23a8')
+# 默认指向当前活的中航信大屏；重建前仍建议三连查后用环境变量覆盖
+MODEL_ID = os.environ.get('NCC_MODEL_ID', 'b8b4c094-faa9-a22a-1d0d-037539b27a6c')
 PAGE_ID_MAIN = MODEL_ID
 PAGE_ID_DEVICE = _uuid.uuid5(_uuid.NAMESPACE_DNS, 'ncc-dash-device-detail').hex
 # Per-entity page UUIDs (generated from sid/floor_key below)
@@ -142,7 +143,7 @@ def page_id_device(dev_sid):
 def page_id_oneline(room_sid):
     # 变电所一次系统总图（单线图）。seed 与技能 advanced-electric.md 约定一致。
     return _uuid.uuid5(_uuid.NAMESPACE_DNS, f'ncc-dash-oneline-{room_sid}').hex
-PROJECT_UUID = os.environ.get('NCC_PROJECT_UUID', '31bc90be-ebc4-dd61-ba9d-ce6e075e40e2')
+PROJECT_UUID = os.environ.get('NCC_PROJECT_UUID', '3ec5821f-b512-2adb-3e1c-473720d0a93e')
 
 # 采样设备(作为无显式设备绑定时的兜底)动态取自本项目第一台 type=1 设备，
 # 避免硬编码 1A 设备导致跨项目张冠李戴。
@@ -1080,6 +1081,74 @@ def make_smooth_chart(seed, x, y, w, h, title, dp_names, z=5, device=None, show_
     }
 
 
+def _with_energy_overview_role(cell, role):
+    """只为首页能源四组件写入后端统计角色，并移除实时绑点。"""
+    detail = cell["data"]["detail"]
+    detail["energyOverviewRole"] = role
+    detail["active"] = []
+    return cell
+
+
+def make_alarm_history(seed, x, y, w, h, z=6):
+    """组态告警历史查询组件（AlarmHistoryComponents），深色主题适配大屏。
+
+    首页右侧栏已恢复双趋势图 + 右下角活跃告警；历史查询由 ScadaAlarmPanel 抽屉打开。
+    本函数仍保留供组态编辑器/工具箱手工拖入使用。
+    """
+    cell_id = gen_uid(seed)
+    diy = [
+        {"name": "configComponent.DeviceTree.ShowCount", "type": 1,
+         "value": 8, "min": 1, "max": 100, "key": "ShowCount"},
+        {"name": "configComponent.DeviceTree.SearchColor", "type": 2,
+         "value": "#9fb6d6", "key": "SearchColor"},
+        {"name": "configComponent.DeviceTree.SearchBackColor", "type": 2,
+         "value": "#0b1c2b", "key": "SearchBackColor"},
+        {"name": "configComponent.DeviceTree.SearchBorderColor", "type": 2,
+         "value": "#1e3a5f", "key": "SearchBorderColor"},
+        {"name": "configComponent.DataHistoryList.dateSelectColor", "type": 2,
+         "value": "#00e5ff", "key": "dateSelectColor"},
+        {"name": "configComponent.DataHistoryList.dateSelectBackColor", "type": 2,
+         "value": "#0b1c2b", "key": "dateSelectBackColor"},
+        {"name": "configComponent.DataHistoryList.dateSelectBorderColor", "type": 2,
+         "value": "#1e3a5f", "key": "dateSelectBorderColor"},
+        {"name": "configComponent.DataHistoryList.tableHeaderColor", "type": 2,
+         "value": "#9fefff", "key": "tableHeaderColor"},
+        {"name": "configComponent.DataHistoryList.tableHeaderBackColor", "type": 2,
+         "value": "#0d2438", "key": "tableHeaderBackColor"},
+        {"name": "configComponent.DataHistoryList.tableSplitColor", "type": 2,
+         "value": "#1e3a5f", "key": "tableSplitColor"},
+        {"name": "configComponent.DataHistoryList.tableHoverColor", "type": 2,
+         "value": "#12304a", "key": "tableHoverColor"},
+    ]
+    return {
+        "shape": "AlarmHistoryComponents",
+        "id": cell_id, "x": x, "y": y, "width": w, "height": h,
+        "zIndex": z, "visible": True,
+        "position": {"x": x, "y": y},
+        "size": {"width": w, "height": h},
+        "data": {
+            "detail": {
+                "type": "AlarmHistoryComponents",
+                "identifier": cell_id,
+                "name": "告警历史查询",
+                "style": {
+                    "position": {"x": x, "y": y, "w": w, "h": h},
+                    "visible": 1,
+                    "backColor": "rgba(11, 28, 43, 0.92)",
+                    "foreColor": "#e8f1ff",
+                    "zIndex": z,
+                    "transform": 0,
+                    "diy": diy,
+                },
+                "animate": _base_animate(),
+                "action": [],
+                "active": [],
+                "dataBind": [],
+            }
+        },
+    }
+
+
 def make_real_table(seed, x, y, w, h, column_headers, row_names, row_codes, binding_rows,
                     z=5, theme='dark', page_size=ROOM_TABLE_PAGE_SIZE,
                     refresh_ms=ROOM_TABLE_REFRESH_MS):
@@ -1279,13 +1348,14 @@ def build_header_cells(seed_prefix, breadcrumb_segments):
     out.append(make_panel_bg(f'{seed_prefix}-header-bg', 0, 0, 1920, HEADER_H, color=C_HEADER, z=0))
     # Shared restrained HUD decoration (screen-edge corners + title glow), behind text.
     out.extend(build_screen_decor(seed_prefix))
-    out.append(make_text(f'{seed_prefix}-header-logo', 220, 10, 36, 36, '⚡',
+    out.append(make_text(f'{seed_prefix}-header-logo', 16, 10, 36, 36, '⚡',
                          color=C_ACCENT, font_size=26, z=10))
-    out.append(make_text(f'{seed_prefix}-header-title', 260, 3, 480, 24, '中航信数据中心电力监控系统',
-                         color=C_TEXT, font_size=FONT_TITLE, z=10))
-    out.append(make_text(f'{seed_prefix}-header-subtitle', 262, 35, 480, 14, 'AVIC INFO DATA CENTER POWER MONITORING SYSTEM',
-                         color=C_TEXT_DIM, font_size=FONT_SUBTITLE, z=10))
-    out.extend(make_breadcrumb(f'{seed_prefix}-header-crumb', 760, 20, breadcrumb_segments, z=20))
+    out.append(make_text(f'{seed_prefix}-header-title', 56, 3, 520, 24, '中航信数据中心电力监控系统',
+                         color=C_TEXT, font_size=FONT_TITLE, z=10, align='left'))
+    out.append(make_text(f'{seed_prefix}-header-subtitle', 58, 35, 520, 14, 'AVIC INFO DATA CENTER POWER MONITORING SYSTEM',
+                         color=C_TEXT_DIM, font_size=FONT_SUBTITLE, z=10, align='left'))
+    # 标题左对齐后，面包屑从中后段起排，中间留空隙
+    out.extend(make_breadcrumb(f'{seed_prefix}-header-crumb', 1020, 20, breadcrumb_segments, z=20))
     # 右上角依次紧凑排：日期/时间 → 🟢在线 → ⚙齿轮槽位（最右角，由前端 BackToAdminButton
     # 浮层 right:13px 落入）。这里把时钟右移到 x≈1650、在线右移到 x≈1842（文字左对齐，右端落
     # 在 canvas x≈1881），在 1881~1920 留出空当给齿轮；按 1920×1080 满屏标定，与齿轮约 10px 间距、
@@ -1803,22 +1873,21 @@ def append_overview_alarm_panel(out, seed_prefix, x, y, w, h):
 
 def append_overview_stats_row(out, seed_prefix):
     """经典大屏顶部四卡：总功率 / 今日用电 / 在线设备 / 活跃告警。"""
-    online_count = sum(1 for row in all_devices if row[4] == 1 and row[6] == 1)
-    alarm_count = TOTAL_DEVICES - online_count
     stats_y = BODY_Y + 16
     stats_h = 96
     card_gap = 16
     card_w = int((MAIN_W - card_gap * 3) / 4)
     card_xs = [MAIN_X + i * (card_w + card_gap) for i in range(4)]
+    # 在线设备 / 活跃告警数值由 ScadaAlarmPanel 实时覆盖，禁止写静态快照。
     stat_configs = [
-        ('stat-power', '⚡', '0', 'kW', '总功率', '总有功功率', C_ACCENT),
-        ('stat-energy', '📊', '---', 'kWh', '今日用电量', None, C_BLUE),
-        ('stat-online', '🖥', f'{online_count}/{TOTAL_DEVICES}', '', '在线设备', None, C_GREEN),
-        ('stat-alarm', '🔔', f'{alarm_count:03d}', '', '活跃告警', None, C_ORANGE),
+        ('stat-power', '⚡', '--', '', '总功率', 'activePower', C_ACCENT, False),
+        ('stat-energy', '📊', '--', '', '今日用电量', 'todayEnergy', C_BLUE, False),
+        ('stat-online', '🖥', '--/--', '', '在线设备', None, C_GREEN, True),
+        ('stat-alarm', '🔔', '000', '', '活跃告警', None, C_ORANGE, True),
     ]
-    for i, (seed, icon, val, unit, label, dp_name, accent) in enumerate(stat_configs):
+    for i, (seed, icon, val, unit, label, energy_role, accent, overlay_value) in enumerate(stat_configs):
         cx = card_xs[i]
-        if seed != 'stat-alarm':
+        if not overlay_value:
             out.append(make_panel_bg(f'{seed_prefix}-{seed}-glow', cx, stats_y, card_w, stats_h,
                                      color=accent, z=1, opacity=0.06))
             out.append(make_panel_bg(f'{seed_prefix}-{seed}-fill', cx + 5, stats_y + 5, card_w - 10, stats_h - 10,
@@ -1829,13 +1898,15 @@ def append_overview_stats_row(out, seed_prefix):
         out.append(make_text(f'{seed_prefix}-{seed}-icon', cx, stats_y + 8, card_w, 24, icon,
                              color=accent, font_size=20, z=6, align='center'))
         display_val = f'{val} {unit}'.strip() if unit else val
-        # 活跃告警数由 ScadaAlarmPanel 实时接口覆盖，禁止再生成静态快照造成重叠。
-        if seed != 'stat-alarm':
-            out.append(make_text(
+        if not overlay_value:
+            value_cell = make_text(
                 f'{seed_prefix}-{seed}-val', cx, stats_y + 32, card_w, 36,
                 display_val, color=C_TEXT, font_size=kpi_val_font(card_w), z=6,
-                data_bound=(dp_name is not None), dp_name=dp_name, align='center'
-            ))
+                data_bound=False, align='center'
+            )
+            if energy_role:
+                value_cell = _with_energy_overview_role(value_cell, energy_role)
+            out.append(value_cell)
         out.append(make_text(
             f'{seed_prefix}-{seed}-lab', cx, stats_y + 70, card_w, 20,
             label, color=C_TEXT_DIM, font_size=FONT_KPI_LABEL, z=6, align='center'
@@ -1848,11 +1919,21 @@ def append_overview_stats_row(out, seed_prefix):
 
 
 def append_overview_side_panels(out, seed_prefix, panel_top_y, panel_h, right_x, right_w):
-    """右侧科技感监测区：功率趋势 + 用电量趋势 + 活跃告警列表。"""
+    """右侧科技感监测区：功率趋势 + 右下角活跃告警（已去掉用电量趋势）。
+
+    历史查询不再内嵌侧栏（AlarmHistoryComponents 表单过重），由 ScadaAlarmPanel
+    标题栏「历史查询」打开全屏抽屉。
+
+    告警区坐标须与 ScadaAlarmPanel.panelStyle 对齐：
+      alarm_x = right_x + 8, alarm_w = right_w - 16, alarm_h = 540
+      alarm_y = panel_top_y + hdr_h + chart_h + chart_gap
+    无顶部 KPI 时标准布局约为 (1312, 516, 584×540)——功率图再矮、告警区再高。
+    """
     chart_gap = 12
-    alarm_h = 184
+    alarm_h = 540  # 与 ScadaAlarmPanel.panelStyle 高度对齐（告警区再加高）
     hdr_h = 34  # 顶部留给“● 实时监测”角标的标题带，避免压在边框线上
-    chart_h = (panel_h - hdr_h - chart_gap * 2 - alarm_h - 8) // 2
+    # 单功率图：占满告警区以上空间（告警加高后功率图自动变矮）
+    chart_h = panel_h - hdr_h - chart_gap - alarm_h - 8
 
     out.append(make_box13(f'{seed_prefix}-side-frame', right_x, panel_top_y - 4, right_w, panel_h, z=1))
     out.append(make_panel_bg(f'{seed_prefix}-side-glow', right_x + 4, panel_top_y, right_w - 8, panel_h - 8,
@@ -1861,35 +1942,24 @@ def append_overview_side_panels(out, seed_prefix, panel_top_y, panel_h, right_x,
                          '● 实时监测', color=C_GREEN, font_size=11, z=8, align='center'))
 
     power_y = panel_top_y + hdr_h
+    out.append(make_box13(f'{seed_prefix}-chart-power-inner', right_x + 8, power_y, right_w - 16, chart_h - 8, z=3))
     out.extend(make_panel_title(f'{seed_prefix}-chart-power', right_x + 20, power_y + 10,
-                                '功率趋势 (24h)', color=C_ACCENT, font_size=FONT_PANEL, z=7, w=240))
-    out.append(make_smooth_chart(
+                                '功率趋势 (24h)', color=C_ACCENT, font_size=FONT_PANEL, z=7, w=200))
+    out.append(_with_energy_overview_role(make_smooth_chart(
         f'{seed_prefix}-chart-trend', right_x + 18, power_y + 36, right_w - 36, chart_h - 48,
         title='功率趋势 (24h)',
         dp_names=['总有功功率', '总无功功率', '总视在功率'],
         z=6, show_title=False
-    ))
+    ), 'power24h'))
 
-    energy_y = power_y + chart_h + chart_gap
-    out.extend(make_panel_title(f'{seed_prefix}-chart-energy', right_x + 20, energy_y + 10,
-                                '用电量趋势 (24h)', color=C_BLUE, font_size=FONT_PANEL, z=7, w=260))
-    # 用电量(正有功电度)是累计量。只绑这一条线走实时平滑图：
-    # 单序列时 Y 轴自适应到电度量级，模拟器已让电度按墙钟累增，曲线即呈干净的上升趋势。
-    # (不与瞬时功率同图，避免被量级差压成平线；历史趋势图依赖 TDengine 历史记录，本环境未开启故不可用。)
-    out.append(make_smooth_chart(
-        f'{seed_prefix}-chart-energy', right_x + 18, energy_y + 36, right_w - 36, chart_h - 48,
-        title='用电量趋势 (24h)',
-        dp_names=['正有功电度'],
-        z=6, show_title=False
-    ))
-
-    alarm_y = power_y + chart_h * 2 + chart_gap * 2
+    alarm_y = power_y + chart_h + chart_gap
     append_overview_alarm_panel(out, seed_prefix, right_x + 8, alarm_y, right_w - 16, alarm_h)
 
 
 def append_overview_main_body(out, seed_prefix, substations):
-    """首页主体：顶栏 KPI + 左运行时组织总览外框 + 右趋势图/告警。"""
-    content_top = append_overview_stats_row(out, seed_prefix)
+    """首页主体：左运行时组织总览外框 + 右功率趋势/告警（无顶部 KPI）。"""
+    # RC08bate-20260724：删除顶部四卡，左区结构图上移占满
+    content_top = BODY_Y + 16
     panel_h = 1080 - content_top - 16
     left_w = int((MAIN_W - 16) * 0.68)
     right_w = MAIN_W - left_w - 16
@@ -2002,7 +2072,6 @@ def build_oneline_campus_cells(substations, seed_prefix='oneline-master'):
 cells = []
 cells.extend(build_header_cells('ov', [
     ('📊 全局总览', C_TEXT, PAGE_ID_MAIN),
-    ('🔌 变电所一次系统总图', C_TEXT_DIM, None),
 ]))
 append_overview_main_body(cells, 'ov', substations)
 report_overlaps(cells, 'Overview layout')
@@ -2037,8 +2106,11 @@ cur.execute(
 _ov = cur.fetchone()
 if _ov:
     overview_id = _ov[0]
-    cur.execute("UPDATE display_model_layer SET components=%s, layer=%s, page_id=%s, is_home=1, page_name='main', updated_at=NOW() WHERE id=%s",
-                (comp_b64_main, _dark_layer, PAGE_ID_MAIN, overview_id))
+    # 保留既有 page_name / template_kind（如「首页模板」+ home），只刷新图层内容
+    cur.execute(
+        "UPDATE display_model_layer SET components=%s, layer=%s, page_id=%s, is_home=1, updated_at=NOW() WHERE id=%s",
+        (comp_b64_main, _dark_layer, PAGE_ID_MAIN, overview_id),
+    )
     conn.commit()
     print(f"Database UPDATE executed for overview id={overview_id}, rows affected: {cur.rowcount}")
 else:
@@ -2277,252 +2349,273 @@ def build_room_detail_cells(room, seed_prefix='room'):
     return out
 
 
-print(f"\n=== LEVEL Z: ZONE PAGES (per 顶级区域) ===")
+GENERATE_LEGACY_PAGES = os.environ.get('NCC_GENERATE_LEGACY_PAGES') == '1'
 zone_pages = []
-for zone in zones:
-    if zone['sid'] == -1:
-        continue
-    seed = f'zone-{zone["sid"]}'
-    zone_cells = build_zone_detail_cells(zone, seed_prefix=seed)
-    report_overlaps(zone_cells, f'Zone {zone["name"]}')
-    comp_b64 = base64.b64encode(json.dumps({"cells": zone_cells}, ensure_ascii=False).encode()).decode()
-    row_id, action = upsert_layer_page(f'zone-{zone["sid"]}', zone['page_id'], comp_b64)
-    zone_pages.append((zone['name'], zone['page_id'], len(zone_cells), action))
-    print(f"  {action} zone page: {zone['name']} id={row_id} cells={len(zone_cells)}")
-conn.commit()
-
-print(f"\n=== LEVEL R: ROOM PAGES (per 配电室/楼层) ===")
 room_pages = []
-for room in rooms:
-    seed = f'room-{room["sid"]}'
-    room_cells = build_room_detail_cells(room, seed_prefix=seed)
-    report_overlaps(room_cells, f'Room {room["name"]}')
-    comp_b64 = base64.b64encode(json.dumps({"cells": room_cells}, ensure_ascii=False).encode()).decode()
-    row_id, action = upsert_layer_page(f'room-{room["sid"]}', room['page_id'], comp_b64)
-    room_pages.append((room['name'], room['page_id'], len(room_cells), action))
-    print(f"  {action} room page: {room['name']} id={row_id} cells={len(room_cells)}")
-conn.commit()
-
-# ── LEVEL O: 一次系统总图（园区总览 + 各变电所单线图）──
-if substations and PAGE_ID_ONELINE:
-    print(f"\n=== LEVEL O: ONE-LINE DIAGRAM (一次系统总图) ===")
-    master_cells = build_oneline_campus_cells(substations)
-    report_overlaps(master_cells, 'One-line campus master')
-    _ol_master_b64 = base64.b64encode(json.dumps({"cells": master_cells}, ensure_ascii=False).encode()).decode()
-    _ol_master_id, _ol_master_act = upsert_layer_page('oneline', PAGE_ID_ONELINE, _ol_master_b64)
-    conn.commit()
-    print(f"  {_ol_master_act} one-line MASTER: {len(substations)} substations id={_ol_master_id} "
-          f"cells={len(master_cells)} page_id={PAGE_ID_ONELINE}")
-    for sub in substations:
-        seed = f'oneline-{sub["sid"]}'
-        sub_cells = build_oneline_cells(sub, seed_prefix=seed)
-        report_overlaps(sub_cells, f'One-line {sub["name"]}')
-        _ol_b64 = base64.b64encode(json.dumps({"cells": sub_cells}, ensure_ascii=False).encode()).decode()
-        _ol_id, _ol_act = upsert_layer_page(seed, sub['page_id'], _ol_b64)
-        print(f"  {_ol_act} one-line sub: {sub['name']} id={_ol_id} cells={len(sub_cells)}")
-    conn.commit()
-
-print(f"\n=== LEVEL 1: BUILDING PAGES (per cabinet) ===")
 building_pages = []
-for bldg in buildings:
-    seed = f'bldg-{bldg["sid"]}'
-    bldg_cells = build_building_detail_cells(bldg, seed_prefix=seed)
-    report_overlaps(bldg_cells, f'Building {bldg["name"]}')
-    comp_json = json.dumps({"cells": bldg_cells}, ensure_ascii=False)
-    comp_b64 = base64.b64encode(comp_json.encode()).decode()
-    page_name = f'building-{bldg["sid"]}'
-    row_id, action = upsert_layer_page(page_name, bldg['page_id'], comp_b64)
-    building_pages.append((bldg['name'], bldg['page_id'], len(bldg_cells), action))
-    print(f"  {action} building page: {bldg['name']} id={row_id} cells={len(bldg_cells)} page_id={bldg['page_id'][:12]}...")
-conn.commit()
-
-print(f"\n=== LEVEL 2: FLOOR PAGES (per device group) ===")
 floor_pages = []
-for bldg in buildings:
-    for floor in bldg['floors']:
-        seed = f'floor-{bldg["sid"]}-{floor["key"]}'
-        floor_cells = build_floor_detail_cells(bldg, floor, seed_prefix=seed)
-        report_overlaps(floor_cells, f'Floor {bldg["name"]}/{floor["name"]}')
-        comp_json = json.dumps({"cells": floor_cells}, ensure_ascii=False)
-        comp_b64 = base64.b64encode(comp_json.encode()).decode()
-        page_name = f'floor-{bldg["sid"]}-{floor["key"]}'
-        row_id, action = upsert_layer_page(page_name, floor['page_id'], comp_b64)
-        floor_pages.append((f'{bldg["name"]}/{floor["name"]}', floor['page_id'], len(floor_cells), action))
-        print(f"  {action} floor page: {bldg['name']}/{floor['name']} id={row_id} cells={len(floor_cells)}")
-conn.commit()
-
-# Retire legacy single building-detail / floor-detail pages
-cur.execute(
-    """UPDATE display_model_layer SET deleted_at=NOW()
-       WHERE model_id=%s AND page_name IN ('building-detail', 'floor-detail') AND deleted_at IS NULL""",
-    (MODEL_ID,)
-)
-if cur.rowcount:
-    print(f"\nRetired {cur.rowcount} legacy generic detail page(s)")
-conn.commit()
-
-
-# ════════════════════════════════════════════════════════
-# LEVEL 3: DEVICE DETAIL PAGE (page_name='device-detail', id=10)
-# ════════════════════════════════════════════════════════
-print(f"\n=== LEVEL 3: PER-DEVICE DETAIL PAGES ===")
-
-
-def build_device_detail_cells(dev, bldg, floor, seed_prefix):
-    """One page per physical device. All params bind to THIS device's live data
-    (deviceSN = dev.uuid) resolved against its own modbus model -> no 张冠李戴."""
-    out = []
-    dev_name = dev['name']
-    # 按本设备的模型选点（UPS 与电力仪表点名体系不同），否则实时/功率绑点全空。
-    rt_params, pw_params, chart_dps, dev_type_label = detail_params_for(dev.get('muid'))
-    out.extend(build_header_cells(seed_prefix, [
-        ('📊 全局总览', C_TEXT_DIM, PAGE_ID_MAIN),
-        (bldg.get('room_name', ROOT_NAME), C_TEXT_DIM, bldg.get('room_page_id')),
-        (bldg['name'], C_TEXT_DIM, bldg['page_id']),
-        (floor['name'], C_TEXT_DIM, floor['page_id']),
-        (dev_name, C_TEXT, None),
-    ]))
-    level_y = BODY_Y + 16
-    title_y = level_y + LEVEL_TITLE_TOP_PAD
-    out.append(make_text(f'{seed_prefix}-back', MAIN_X, title_y, 200, 32, f'← {floor["name"]}',
-                         color=C_ACCENT, font_size=14, z=20, action=_nav_action(floor['page_id'])))
-    out.append(make_text(f'{seed_prefix}-title', MAIN_X + 220, title_y, 760, LEVEL_TITLE_H,
-                         f'🔧 {dev_name}', color=C_TEXT, font_size=22, z=10))
-    on = dev['status'] == 1
-    out.append(make_text(f'{seed_prefix}-status', MAIN_X + 980, title_y + 6, 200, 22,
-                         '● 运行中' if on else '● 离线', color=C_GREEN if on else C_TEXT_DIM,
-                         font_size=13, z=10))
-
-    panel_top = title_y + LEVEL_GRID_Y
-    panel_h = 360
-    col_w = (MAIN_W - 32) // 3
-    left_x = MAIN_X
-    mid_x = MAIN_X + col_w + 16
-    right_x = MAIN_X + (col_w + 16) * 2
-
-    # Left: basic info (static, device-specific)
-    out.append(make_panel_bg(f'{seed_prefix}-lp', left_x, panel_top, col_w, panel_h, color=C_PANEL, z=2, opacity=0.6))
-    out.append(make_box13(f'{seed_prefix}-lf', left_x, panel_top, col_w, panel_h, z=3))
-    out.append(make_text(f'{seed_prefix}-lt', left_x + 16, panel_top + 10, 400, 22, '📋 基本参数',
-                         color=C_ACCENT, font_size=FONT_PANEL + 2, z=6))
-    basic_params = [
-        ('设备名称', dev_name), ('设备类型', dev_type_label),
-        ('通信协议', 'Modbus RTU'), ('设备编号', str(dev['sid'])),
-        ('所属机房', 'NCC 航信机房'), ('所属区域', f'{bldg["name"]} {floor["name"]}'),
-        ('采集周期', '500ms'), ('在线状态', '🟢 运行中' if on else '⚪ 离线'),
-    ]
-    bp_y = panel_top + 44
-    for bi, (bk, bv) in enumerate(basic_params):
-        by = bp_y + bi * 36
-        out.append(make_text(f'{seed_prefix}-bpk-{bi}', left_x + 16, by, 130, 22,
-                             bk, color=C_TEXT_DIM, font_size=FONT_PARAM_LABEL + 1, z=6))
-        out.append(make_text(f'{seed_prefix}-bpv-{bi}', left_x + 152, by, col_w - 168, 22,
-                             bv, color=C_TEXT, font_size=FONT_PARAM_VAL - 2, z=6))
-
-    # Mid: live electrical params (bound to this device)
-    out.append(make_panel_bg(f'{seed_prefix}-mp', mid_x, panel_top, col_w, panel_h, color=C_PANEL, z=2, opacity=0.6))
-    out.append(make_box13(f'{seed_prefix}-mf', mid_x, panel_top, col_w, panel_h, z=3))
-    out.append(make_text(f'{seed_prefix}-mt', mid_x + 16, panel_top + 10, 400, 22, '📊 实时参数',
-                         color=C_ACCENT, font_size=FONT_PANEL + 2, z=6))
-    rtp_y = panel_top + 44
-    for ri, (rname, runit) in enumerate(rt_params):
-        ry = rtp_y + ri * 36
-        out.append(make_text(f'{seed_prefix}-rk-{ri}', mid_x + 16, ry, 150, 22,
-                             rname, color=C_TEXT_DIM, font_size=FONT_PARAM_LABEL + 1, z=6))
-        out.append(make_text(f'{seed_prefix}-rv-{ri}', mid_x + 172, ry, 110, 22,
-                             '—', color=C_ACCENT, font_size=FONT_PARAM_VAL, z=6,
-                             data_bound=True, dp_name=rname, device=dev))
-        out.append(make_text(f'{seed_prefix}-ru-{ri}', mid_x + 300, ry, 60, 22,
-                             runit, color=C_TEXT_DIM, font_size=FONT_PARAM_LABEL, z=6))
-
-    # Right: live power params (bound to this device)
-    out.append(make_panel_bg(f'{seed_prefix}-rp', right_x, panel_top, col_w, panel_h, color=C_PANEL, z=2, opacity=0.6))
-    out.append(make_box13(f'{seed_prefix}-rf', right_x, panel_top, col_w, panel_h, z=3))
-    out.append(make_text(f'{seed_prefix}-rt2', right_x + 16, panel_top + 10, 400, 22, '⚡ 功率参数',
-                         color=C_ACCENT, font_size=FONT_PANEL + 2, z=6))
-    pw_y = panel_top + 44
-    for pi, (pname, punit) in enumerate(pw_params):
-        py = pw_y + pi * 44
-        out.append(make_text(f'{seed_prefix}-pk-{pi}', right_x + 16, py, 150, 22,
-                             pname, color=C_TEXT_DIM, font_size=FONT_PARAM_LABEL + 1, z=6))
-        out.append(make_text(f'{seed_prefix}-pv-{pi}', right_x + 172, py, 140, 30,
-                             '—', color=C_GREEN, font_size=FONT_KPI_VALUE - 4, z=6,
-                             data_bound=True, dp_name=pname, device=dev))
-        out.append(make_text(f'{seed_prefix}-pu-{pi}', right_x + 322, py, 60, 22,
-                             punit, color=C_TEXT_DIM, font_size=FONT_PARAM_LABEL, z=6))
-
-    chart_y = panel_top + panel_h + 16
-    chart_w = int(MAIN_W * 0.65)
-    out.append(make_panel_bg(f'{seed_prefix}-cp', MAIN_X, chart_y, chart_w, 280, color=C_PANEL, z=2, opacity=0.6))
-    out.append(make_box13(f'{seed_prefix}-cf', MAIN_X, chart_y, chart_w, 280, z=3))
-    out.append(make_text(f'{seed_prefix}-ct', MAIN_X + 16, chart_y + 10, 400, 22, '📈 24小时功率曲线',
-                         color=C_ACCENT, font_size=FONT_PANEL + 2, z=6))
-    device_points = dp_map_for(dev.get('muid'), dev.get('uuid'))
-    chart_points = [point for point in chart_dps if _make_active(
-        point, dev.get('uuid'), dev.get('name'), device_points
-    )]
-    if chart_points:
-        out.append(make_smooth_chart(
-            f'{seed_prefix}-chart', MAIN_X + 16, chart_y + 40, chart_w - 32, 226,
-            title='设备功率趋势', dp_names=chart_points, z=5, device=dev))
-    else:
-        out.append(make_text(
-            f'{seed_prefix}-chart-unavailable', MAIN_X + 16, chart_y + 92, chart_w - 32, 32,
-            '当前设备未接入可用的功率趋势测点', color=C_TEXT_DIM, font_size=13, z=6, align='center',
-        ))
-
-    status_x = MAIN_X + chart_w + 16
-    status_w = MAIN_W - chart_w - 16
-    out.append(make_panel_bg(f'{seed_prefix}-sp', status_x, chart_y, status_w, 280, color=C_PANEL, z=2, opacity=0.6))
-    out.append(make_box13(f'{seed_prefix}-sf', status_x, chart_y, status_w, 280, z=3))
-    out.append(make_text(f'{seed_prefix}-stt', status_x + 16, chart_y + 10, 400, 22, '🔔 设备告警',
-                         color=C_ORANGE, font_size=FONT_PANEL + 2, z=6))
-    out.append(make_text(f'{seed_prefix}-se', status_x + 16, chart_y + 48, status_w - 32, 200,
-                         '✅ 该设备无告警记录', color=C_TEXT_DIM, font_size=13, z=6))
-    return out
-
-
-GENERATE_LEGACY_DEVICE_PAGES = os.environ.get('NCC_GENERATE_LEGACY_DEVICE_PAGES') == '1'
+detail_cells = []
 device_pages = 0
-if GENERATE_LEGACY_DEVICE_PAGES:
+
+if not GENERATE_LEGACY_PAGES:
+    print("\n=== LEGACY PAGES SKIPPED (default; set NCC_GENERATE_LEGACY_PAGES=1 to regenerate) ===")
+    print("  Runtime templates only: 首页模板 / 设备列表模板 / 点位列表模板")
+    cur.execute(
+        """
+        DELETE FROM display_model_layer
+        WHERE model_id=%s
+          AND COALESCE(is_home,0)<>1
+          AND COALESCE(page_name,'') NOT IN ('首页模板','设备列表模板','点位列表模板')
+          AND COALESCE(template_kind,'') NOT IN ('home','deviceList','datapointList')
+        """,
+        (MODEL_ID,),
+    )
+    conn.commit()
+    print(f"  HARD-deleted leftover legacy pages: {cur.rowcount}")
+else:
+    print(f"\n=== LEVEL Z: ZONE PAGES (per 顶级区域) ===")
+    zone_pages = []
+    for zone in zones:
+        if zone['sid'] == -1:
+            continue
+        seed = f'zone-{zone["sid"]}'
+        zone_cells = build_zone_detail_cells(zone, seed_prefix=seed)
+        report_overlaps(zone_cells, f'Zone {zone["name"]}')
+        comp_b64 = base64.b64encode(json.dumps({"cells": zone_cells}, ensure_ascii=False).encode()).decode()
+        row_id, action = upsert_layer_page(f'zone-{zone["sid"]}', zone['page_id'], comp_b64)
+        zone_pages.append((zone['name'], zone['page_id'], len(zone_cells), action))
+        print(f"  {action} zone page: {zone['name']} id={row_id} cells={len(zone_cells)}")
+    conn.commit()
+
+    print(f"\n=== LEVEL R: ROOM PAGES (per 配电室/楼层) ===")
+    room_pages = []
+    for room in rooms:
+        seed = f'room-{room["sid"]}'
+        room_cells = build_room_detail_cells(room, seed_prefix=seed)
+        report_overlaps(room_cells, f'Room {room["name"]}')
+        comp_b64 = base64.b64encode(json.dumps({"cells": room_cells}, ensure_ascii=False).encode()).decode()
+        row_id, action = upsert_layer_page(f'room-{room["sid"]}', room['page_id'], comp_b64)
+        room_pages.append((room['name'], room['page_id'], len(room_cells), action))
+        print(f"  {action} room page: {room['name']} id={row_id} cells={len(room_cells)}")
+    conn.commit()
+
+    # ── LEVEL O: 一次系统总图（园区总览 + 各变电所单线图）──
+    if substations and PAGE_ID_ONELINE:
+        print(f"\n=== LEVEL O: ONE-LINE DIAGRAM (一次系统总图) ===")
+        master_cells = build_oneline_campus_cells(substations)
+        report_overlaps(master_cells, 'One-line campus master')
+        _ol_master_b64 = base64.b64encode(json.dumps({"cells": master_cells}, ensure_ascii=False).encode()).decode()
+        _ol_master_id, _ol_master_act = upsert_layer_page('oneline', PAGE_ID_ONELINE, _ol_master_b64)
+        conn.commit()
+        print(f"  {_ol_master_act} one-line MASTER: {len(substations)} substations id={_ol_master_id} "
+              f"cells={len(master_cells)} page_id={PAGE_ID_ONELINE}")
+        for sub in substations:
+            seed = f'oneline-{sub["sid"]}'
+            sub_cells = build_oneline_cells(sub, seed_prefix=seed)
+            report_overlaps(sub_cells, f'One-line {sub["name"]}')
+            _ol_b64 = base64.b64encode(json.dumps({"cells": sub_cells}, ensure_ascii=False).encode()).decode()
+            _ol_id, _ol_act = upsert_layer_page(seed, sub['page_id'], _ol_b64)
+            print(f"  {_ol_act} one-line sub: {sub['name']} id={_ol_id} cells={len(sub_cells)}")
+        conn.commit()
+
+    print(f"\n=== LEVEL 1: BUILDING PAGES (per cabinet) ===")
+    building_pages = []
+    for bldg in buildings:
+        seed = f'bldg-{bldg["sid"]}'
+        bldg_cells = build_building_detail_cells(bldg, seed_prefix=seed)
+        report_overlaps(bldg_cells, f'Building {bldg["name"]}')
+        comp_json = json.dumps({"cells": bldg_cells}, ensure_ascii=False)
+        comp_b64 = base64.b64encode(comp_json.encode()).decode()
+        page_name = f'building-{bldg["sid"]}'
+        row_id, action = upsert_layer_page(page_name, bldg['page_id'], comp_b64)
+        building_pages.append((bldg['name'], bldg['page_id'], len(bldg_cells), action))
+        print(f"  {action} building page: {bldg['name']} id={row_id} cells={len(bldg_cells)} page_id={bldg['page_id'][:12]}...")
+    conn.commit()
+
+    print(f"\n=== LEVEL 2: FLOOR PAGES (per device group) ===")
+    floor_pages = []
     for bldg in buildings:
         for floor in bldg['floors']:
-            for dev in floor['devices']:
-                seed = f'dev-{dev["sid"]}'
-                dcells = build_device_detail_cells(dev, bldg, floor, seed_prefix=seed)
-                comp_b64 = base64.b64encode(json.dumps({"cells": dcells}, ensure_ascii=False).encode()).decode()
-                upsert_layer_page(f'device-{dev["sid"]}', page_id_device(dev['sid']), comp_b64)
-                device_pages += 1
-conn.commit()
-if GENERATE_LEGACY_DEVICE_PAGES:
-    report_overlaps(build_device_detail_cells(buildings[0]['floors'][0]['devices'][0],
-                                              buildings[0], buildings[0]['floors'][0], 'dev-sample'),
-                    'Device detail (sample)')
-print(f"  wrote {device_pages} per-device detail pages"
-      f"{'' if GENERATE_LEGACY_DEVICE_PAGES else ' (disabled: runtime templates are used)'}")
+            seed = f'floor-{bldg["sid"]}-{floor["key"]}'
+            floor_cells = build_floor_detail_cells(bldg, floor, seed_prefix=seed)
+            report_overlaps(floor_cells, f'Floor {bldg["name"]}/{floor["name"]}')
+            comp_json = json.dumps({"cells": floor_cells}, ensure_ascii=False)
+            comp_b64 = base64.b64encode(comp_json.encode()).decode()
+            page_name = f'floor-{bldg["sid"]}-{floor["key"]}'
+            row_id, action = upsert_layer_page(page_name, floor['page_id'], comp_b64)
+            floor_pages.append((f'{bldg["name"]}/{floor["name"]}', floor['page_id'], len(floor_cells), action))
+            print(f"  {action} floor page: {bldg['name']}/{floor['name']} id={row_id} cells={len(floor_cells)}")
+    conn.commit()
 
-# Keep the legacy shared 'device-detail' page (id=10) pointing at a real device
-# so any old reference still resolves to a coherent page.
-_sb = buildings[0]; _sf = _sb['floors'][0]; _sd = _sf['devices'][0]
-legacy_cells = build_device_detail_cells(_sd, _sb, _sf, 'detail')
-comp_b64_detail = base64.b64encode(json.dumps({"cells": legacy_cells}, ensure_ascii=False).encode()).decode()
-cur.execute(
-    "SELECT id FROM display_model_layer WHERE model_id=%s AND page_name='device-detail' AND deleted_at IS NULL",
-    (MODEL_ID,)
-)
-existing_dev = cur.fetchone()
-if existing_dev:
-    cur.execute("UPDATE display_model_layer SET page_id=%s, components=%s, updated_at=NOW() WHERE id=%s",
-                (PAGE_ID_DEVICE, comp_b64_detail, existing_dev[0]))
-else:
+    # Retire legacy single building-detail / floor-detail pages
     cur.execute(
-        """INSERT INTO display_model_layer
-           (model_id, page_name, page_id, is_home, is_login, page_type, layer, components, created_at, updated_at)
-           VALUES (%s, 'device-detail', %s, 0, 0, 1, '{"height":1080,"width":1920,"autoSize":1}', %s, NOW(), NOW())""",
-        (MODEL_ID, PAGE_ID_DEVICE, comp_b64_detail)
+        """UPDATE display_model_layer SET deleted_at=NOW()
+           WHERE model_id=%s AND page_name IN ('building-detail', 'floor-detail') AND deleted_at IS NULL""",
+        (MODEL_ID,)
     )
-conn.commit()
-detail_cells = legacy_cells
+    if cur.rowcount:
+        print(f"\nRetired {cur.rowcount} legacy generic detail page(s)")
+    conn.commit()
+
+    # ════════════════════════════════════════════════════════
+
+    # LEVEL 3: DEVICE DETAIL PAGE (page_name='device-detail', id=10)
+
+    # ════════════════════════════════════════════════════════
+    print(f"\n=== LEVEL 3: PER-DEVICE DETAIL PAGES ===")
+
+    def build_device_detail_cells(dev, bldg, floor, seed_prefix):
+        """One page per physical device. All params bind to THIS device's live data
+        (deviceSN = dev.uuid) resolved against its own modbus model -> no 张冠李戴."""
+        out = []
+        dev_name = dev['name']
+        # 按本设备的模型选点（UPS 与电力仪表点名体系不同），否则实时/功率绑点全空。
+        rt_params, pw_params, chart_dps, dev_type_label = detail_params_for(dev.get('muid'))
+        out.extend(build_header_cells(seed_prefix, [
+            ('📊 全局总览', C_TEXT_DIM, PAGE_ID_MAIN),
+            (bldg.get('room_name', ROOT_NAME), C_TEXT_DIM, bldg.get('room_page_id')),
+            (bldg['name'], C_TEXT_DIM, bldg['page_id']),
+            (floor['name'], C_TEXT_DIM, floor['page_id']),
+            (dev_name, C_TEXT, None),
+        ]))
+        level_y = BODY_Y + 16
+        title_y = level_y + LEVEL_TITLE_TOP_PAD
+        out.append(make_text(f'{seed_prefix}-back', MAIN_X, title_y, 200, 32, f'← {floor["name"]}',
+                             color=C_ACCENT, font_size=14, z=20, action=_nav_action(floor['page_id'])))
+        out.append(make_text(f'{seed_prefix}-title', MAIN_X + 220, title_y, 760, LEVEL_TITLE_H,
+                             f'🔧 {dev_name}', color=C_TEXT, font_size=22, z=10))
+        on = dev['status'] == 1
+        out.append(make_text(f'{seed_prefix}-status', MAIN_X + 980, title_y + 6, 200, 22,
+                             '● 运行中' if on else '● 离线', color=C_GREEN if on else C_TEXT_DIM,
+                             font_size=13, z=10))
+        panel_top = title_y + LEVEL_GRID_Y
+        panel_h = 360
+        col_w = (MAIN_W - 32) // 3
+        left_x = MAIN_X
+        mid_x = MAIN_X + col_w + 16
+        right_x = MAIN_X + (col_w + 16) * 2
+        # Left: basic info (static, device-specific)
+        out.append(make_panel_bg(f'{seed_prefix}-lp', left_x, panel_top, col_w, panel_h, color=C_PANEL, z=2, opacity=0.6))
+        out.append(make_box13(f'{seed_prefix}-lf', left_x, panel_top, col_w, panel_h, z=3))
+        out.append(make_text(f'{seed_prefix}-lt', left_x + 16, panel_top + 10, 400, 22, '📋 基本参数',
+                             color=C_ACCENT, font_size=FONT_PANEL + 2, z=6))
+        basic_params = [
+            ('设备名称', dev_name), ('设备类型', dev_type_label),
+            ('通信协议', 'Modbus RTU'), ('设备编号', str(dev['sid'])),
+            ('所属机房', 'NCC 航信机房'), ('所属区域', f'{bldg["name"]} {floor["name"]}'),
+            ('采集周期', '500ms'), ('在线状态', '🟢 运行中' if on else '⚪ 离线'),
+        ]
+        bp_y = panel_top + 44
+        for bi, (bk, bv) in enumerate(basic_params):
+            by = bp_y + bi * 36
+            out.append(make_text(f'{seed_prefix}-bpk-{bi}', left_x + 16, by, 130, 22,
+                                 bk, color=C_TEXT_DIM, font_size=FONT_PARAM_LABEL + 1, z=6))
+            out.append(make_text(f'{seed_prefix}-bpv-{bi}', left_x + 152, by, col_w - 168, 22,
+                                 bv, color=C_TEXT, font_size=FONT_PARAM_VAL - 2, z=6))
+        # Mid: live electrical params (bound to this device)
+        out.append(make_panel_bg(f'{seed_prefix}-mp', mid_x, panel_top, col_w, panel_h, color=C_PANEL, z=2, opacity=0.6))
+        out.append(make_box13(f'{seed_prefix}-mf', mid_x, panel_top, col_w, panel_h, z=3))
+        out.append(make_text(f'{seed_prefix}-mt', mid_x + 16, panel_top + 10, 400, 22, '📊 实时参数',
+                             color=C_ACCENT, font_size=FONT_PANEL + 2, z=6))
+        rtp_y = panel_top + 44
+        for ri, (rname, runit) in enumerate(rt_params):
+            ry = rtp_y + ri * 36
+            out.append(make_text(f'{seed_prefix}-rk-{ri}', mid_x + 16, ry, 150, 22,
+                                 rname, color=C_TEXT_DIM, font_size=FONT_PARAM_LABEL + 1, z=6))
+            out.append(make_text(f'{seed_prefix}-rv-{ri}', mid_x + 172, ry, 110, 22,
+                                 '—', color=C_ACCENT, font_size=FONT_PARAM_VAL, z=6,
+                                 data_bound=True, dp_name=rname, device=dev))
+            out.append(make_text(f'{seed_prefix}-ru-{ri}', mid_x + 300, ry, 60, 22,
+                                 runit, color=C_TEXT_DIM, font_size=FONT_PARAM_LABEL, z=6))
+        # Right: live power params (bound to this device)
+        out.append(make_panel_bg(f'{seed_prefix}-rp', right_x, panel_top, col_w, panel_h, color=C_PANEL, z=2, opacity=0.6))
+        out.append(make_box13(f'{seed_prefix}-rf', right_x, panel_top, col_w, panel_h, z=3))
+        out.append(make_text(f'{seed_prefix}-rt2', right_x + 16, panel_top + 10, 400, 22, '⚡ 功率参数',
+                             color=C_ACCENT, font_size=FONT_PANEL + 2, z=6))
+        pw_y = panel_top + 44
+        for pi, (pname, punit) in enumerate(pw_params):
+            py = pw_y + pi * 44
+            out.append(make_text(f'{seed_prefix}-pk-{pi}', right_x + 16, py, 150, 22,
+                                 pname, color=C_TEXT_DIM, font_size=FONT_PARAM_LABEL + 1, z=6))
+            out.append(make_text(f'{seed_prefix}-pv-{pi}', right_x + 172, py, 140, 30,
+                                 '—', color=C_GREEN, font_size=FONT_KPI_VALUE - 4, z=6,
+                                 data_bound=True, dp_name=pname, device=dev))
+            out.append(make_text(f'{seed_prefix}-pu-{pi}', right_x + 322, py, 60, 22,
+                                 punit, color=C_TEXT_DIM, font_size=FONT_PARAM_LABEL, z=6))
+        chart_y = panel_top + panel_h + 16
+        chart_w = int(MAIN_W * 0.65)
+        out.append(make_panel_bg(f'{seed_prefix}-cp', MAIN_X, chart_y, chart_w, 280, color=C_PANEL, z=2, opacity=0.6))
+        out.append(make_box13(f'{seed_prefix}-cf', MAIN_X, chart_y, chart_w, 280, z=3))
+        out.append(make_text(f'{seed_prefix}-ct', MAIN_X + 16, chart_y + 10, 400, 22, '📈 24小时功率曲线',
+                             color=C_ACCENT, font_size=FONT_PANEL + 2, z=6))
+        device_points = dp_map_for(dev.get('muid'), dev.get('uuid'))
+        chart_points = [point for point in chart_dps if _make_active(
+            point, dev.get('uuid'), dev.get('name'), device_points
+        )]
+        if chart_points:
+            out.append(make_smooth_chart(
+                f'{seed_prefix}-chart', MAIN_X + 16, chart_y + 40, chart_w - 32, 226,
+                title='设备功率趋势', dp_names=chart_points, z=5, device=dev))
+        else:
+            out.append(make_text(
+                f'{seed_prefix}-chart-unavailable', MAIN_X + 16, chart_y + 92, chart_w - 32, 32,
+                '当前设备未接入可用的功率趋势测点', color=C_TEXT_DIM, font_size=13, z=6, align='center',
+            ))
+        status_x = MAIN_X + chart_w + 16
+        status_w = MAIN_W - chart_w - 16
+        out.append(make_panel_bg(f'{seed_prefix}-sp', status_x, chart_y, status_w, 280, color=C_PANEL, z=2, opacity=0.6))
+        out.append(make_box13(f'{seed_prefix}-sf', status_x, chart_y, status_w, 280, z=3))
+        out.append(make_text(f'{seed_prefix}-stt', status_x + 16, chart_y + 10, 400, 22, '🔔 设备告警',
+                             color=C_ORANGE, font_size=FONT_PANEL + 2, z=6))
+        out.append(make_text(f'{seed_prefix}-se', status_x + 16, chart_y + 48, status_w - 32, 200,
+                             '✅ 该设备无告警记录', color=C_TEXT_DIM, font_size=13, z=6))
+        return out
+
+    GENERATE_LEGACY_DEVICE_PAGES = os.environ.get('NCC_GENERATE_LEGACY_DEVICE_PAGES') == '1'
+    device_pages = 0
+    if GENERATE_LEGACY_DEVICE_PAGES:
+        for bldg in buildings:
+            for floor in bldg['floors']:
+                for dev in floor['devices']:
+                    seed = f'dev-{dev["sid"]}'
+                    dcells = build_device_detail_cells(dev, bldg, floor, seed_prefix=seed)
+                    comp_b64 = base64.b64encode(json.dumps({"cells": dcells}, ensure_ascii=False).encode()).decode()
+                    upsert_layer_page(f'device-{dev["sid"]}', page_id_device(dev['sid']), comp_b64)
+                    device_pages += 1
+    conn.commit()
+    if GENERATE_LEGACY_DEVICE_PAGES:
+        report_overlaps(build_device_detail_cells(buildings[0]['floors'][0]['devices'][0],
+                                                  buildings[0], buildings[0]['floors'][0], 'dev-sample'),
+                        'Device detail (sample)')
+    print(f"  wrote {device_pages} per-device detail pages"
+          f"{'' if GENERATE_LEGACY_DEVICE_PAGES else ' (disabled: runtime templates are used)'}")
+
+    # Keep the legacy shared 'device-detail' page (id=10) pointing at a real device
+    # so any old reference still resolves to a coherent page.
+    detail_cells = []
+    if buildings and buildings[0].get('floors') and buildings[0]['floors'][0].get('devices'):
+        _sb = buildings[0]; _sf = _sb['floors'][0]; _sd = _sf['devices'][0]
+        legacy_cells = build_device_detail_cells(_sd, _sb, _sf, 'detail')
+        comp_b64_detail = base64.b64encode(json.dumps({"cells": legacy_cells}, ensure_ascii=False).encode()).decode()
+        cur.execute(
+            "SELECT id FROM display_model_layer WHERE model_id=%s AND page_name='device-detail' AND deleted_at IS NULL",
+            (MODEL_ID,)
+        )
+        existing_dev = cur.fetchone()
+        if existing_dev:
+            cur.execute("UPDATE display_model_layer SET page_id=%s, components=%s, updated_at=NOW() WHERE id=%s",
+                        (PAGE_ID_DEVICE, comp_b64_detail, existing_dev[0]))
+        else:
+            cur.execute(
+                """INSERT INTO display_model_layer
+                   (model_id, page_name, page_id, is_home, is_login, page_type, layer, components, created_at, updated_at)
+                   VALUES (%s, 'device-detail', %s, 0, 0, 1, '{"height":1080,"width":1920,"autoSize":1}', %s, NOW(), NOW())""",
+                (MODEL_ID, PAGE_ID_DEVICE, comp_b64_detail)
+            )
+        conn.commit()
+        detail_cells = legacy_cells
+    else:
+        print("  skip legacy device-detail page (no devices in hierarchy)")
 
 # ── Verify all pages ──
 cur.execute("""
@@ -2541,22 +2634,17 @@ total_bldg_cells = sum(p[2] for p in building_pages)
 total_floor_cells = sum(p[2] for p in floor_pages)
 print(f"\n{'='*60}")
 print(f"✅ Build complete!")
-print(f"   Level 0 (overview):        {len(cells)} cells")
-print(f"   Level 1 (building pages):  {len(building_pages)} pages, {total_bldg_cells} cells total")
-print(f"   Level 2 (floor pages):     {len(floor_pages)} pages, {total_floor_cells} cells total")
-print(f"   Level 3 (device-detail):   {len(detail_cells)} cells")
+print(f"   Level 0 (overview/home template): {len(cells)} cells")
+if GENERATE_LEGACY_PAGES:
+    print(f"   Level Z/R/O/1/2 legacy pages: regenerated (NCC_GENERATE_LEGACY_PAGES=1)")
+    print(f"   Level 1 (building pages):  {len(building_pages)} pages, {total_bldg_cells} cells total")
+    print(f"   Level 2 (floor pages):     {len(floor_pages)} pages, {total_floor_cells} cells total")
+    print(f"   Level 3 (device-detail):   {len(detail_cells)} cells")
+else:
+    print(f"   Legacy zone/room/building/floor/device pages: SKIPPED + HARD-purged")
+    print(f"   Runtime: 首页模板 / 设备列表模板 / 点位列表模板")
 print(f"   Main content: MAIN_X={MAIN_X}px, MAIN_W={MAIN_W}px (sidebar removed, use ISMRunTreeNav)")
-print(f"\n   Preview URLs (pageId 走 query，勿用 /AppRun/{{model}}/{{page}}):")
-print(f"     MAIN (overview):    {apprun_url(MODEL_ID)}")
-print(f"     DEVICE_DETAIL:      {apprun_url(MODEL_ID, PAGE_ID_DEVICE)}")
-if buildings:
-    print(f"     Example building:   {apprun_url(MODEL_ID, buildings[0]['page_id'])}  ({buildings[0]['name']})")
-    if buildings[0]['floors']:
-        f0 = buildings[0]['floors'][0]
-        print(f"     Example floor:      {apprun_url(MODEL_ID, f0['page_id'])}  ({f0['name']})")
-if rooms:
-    print(f"     Example room:       {apprun_url(MODEL_ID, rooms[0]['page_id'])}  ({rooms[0]['display_name']})")
-print(f"\n   Open in browser: {apprun_url(MODEL_ID)}")
+print(f"\n   Preview: {apprun_url(MODEL_ID)}")
 print(f"{'='*60}")
 
 conn.close()

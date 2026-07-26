@@ -1,10 +1,10 @@
 <template>
   <div class="edt-wrap">
     <div class="edt-head">
-      <span class="edt-title">设备树 / 层级模板</span>
+      <span class="edt-title">{{ $t('displayConfig.RuntimePagesTitle') }}</span>
       <a-button size="small" type="link" @click="refresh" :loading="loading">刷新</a-button>
     </div>
-    <div v-if="previewHint" class="edt-hint">预览上下文：{{ previewHint }}</div>
+    <div v-if="previewHint" class="edt-hint">{{ $t('displayConfig.RuntimePreviewContext') }}：{{ previewHint }}</div>
     <div v-if="tplSummary" class="edt-tpl">
       <div class="edt-tpl-row" v-for="row in tplSummary" :key="row.key">
         <span class="edt-tpl-k">{{ row.label }}</span>
@@ -27,7 +27,7 @@
       <div class="edt-sel">当前：{{ selectedNode.title }}（{{ kindLabel(selectedNode.kind) }}）</div>
       <a-space direction="vertical" style="width:100%">
         <a-button type="primary" block size="small" @click="createOrOpenTemplate" :loading="acting">
-          创建/打开该层级模板
+          {{ hasTemplateForSelected ? $t('displayConfig.EditRuntimeTemplate') : '创建该层级模板' }}
         </a-button>
         <a-button block size="small" @click="bindCurrentAsTemplate" :loading="acting" :disabled="!selectPageUuid">
           绑定当前页为该层级模板
@@ -35,9 +35,6 @@
         <a-button block size="small" @click="unbindTemplate" :loading="acting" :disabled="!hasTemplateForSelected">
           解除该层级模板角色
         </a-button>
-        <a-checkbox v-model="useModelOverride" v-if="selectedNode.kind==='device'">
-          按物模型覆盖（{{ shortMuid }}）
-        </a-checkbox>
       </a-space>
     </div>
   </div>
@@ -53,18 +50,26 @@ import {
 import { mapActions, mapState } from 'vuex'
 import store from '@/store'
 import Cookie from 'js-cookie'
+import {
+  buildNavContextForNode,
+  buildNavTreeIndex,
+  resolveTemplatePageIdForKind,
+} from '@/pages/ISMDisPlay/utils/navTreeIndex'
+import {
+  normalizeRootNodes,
+  countDevicesInSubtree,
+} from '@/pages/ISMDisPlay/utils/monitorTreeTransform'
 
 const KIND_LABEL = {
   home: '主页',
   root: '主页',
-  zone: '区域',
-  room: '机房',
-  cabinet: '机柜',
+  organization: '组织',
   device: '设备',
 }
 
 export default {
   name: 'ISMEditorDeviceTree',
+  i18n: require('../../i18n/language'),
   data() {
     return {
       loading: false,
@@ -74,7 +79,7 @@ export default {
       expandedKeys: [],
       selectedNode: null,
       templateMap: null,
-      useModelOverride: false,
+      navIndex: null,
       previewHint: '',
     }
   },
@@ -82,16 +87,13 @@ export default {
     ...mapState({
       selectPageUuid: state => store.state.ISMDisPlayEditorTool.selectPageUuid,
       PCPageList: state => store.state.ISMDisPlayEditorTool.PCPageList,
+      editorRuntimePreview: state => store.state.ISMDisPlayEditorTool.editorRuntimePreview,
     }),
     modelId() {
       return this.$route.params.uid || ''
     },
     projectUuid() {
       return Cookie.get('ProjectUuid') || sessionStorage.getItem('ProjectUuid') || ''
-    },
-    shortMuid() {
-      const m = (this.selectedNode && this.selectedNode.modelUuid) || ''
-      return m ? m.slice(0, 8) + '…' : '无模型'
     },
     hasTemplateForSelected() {
       if (!this.selectedNode || !this.templateMap) return false
@@ -106,20 +108,10 @@ export default {
         return (p && p.title) || pid.slice(0, 8) + '…'
       }
       const rows = [
-        { key: 'home', label: '主页', pageName: findName(m.home) },
-        { key: 'zone', label: '区域', pageName: findName(m.zone) },
-        { key: 'room', label: '机房', pageName: findName(m.room) },
-        { key: 'cabinet', label: '机柜', pageName: findName(m.cabinet) },
-        { key: 'device', label: '设备(通用)', pageName: findName(m.deviceDefault) },
+        { key: 'home', label: '首页模板', pageName: findName(m.home) },
+        { key: 'deviceList', label: '设备列表模板', pageName: findName(m.deviceList) },
+        { key: 'datapointList', label: '点位列表模板', pageName: findName(m.datapointList) },
       ]
-      const by = m.deviceByModel || {}
-      Object.keys(by).forEach(muid => {
-        rows.push({
-          key: 'dev-' + muid,
-          label: '设备覆盖 ' + muid.slice(0, 6),
-          pageName: findName(by[muid]),
-        })
-      })
       return rows
     },
   },
@@ -127,14 +119,20 @@ export default {
     this.refresh()
   },
   methods: {
-    ...mapActions('ISMDisPlayEditorTool', ['selectLayerDataStruct', 'getLayerDataStruct']),
+    ...mapActions('ISMDisPlayEditorTool', [
+      'selectLayerDataStruct',
+      'selectEditorRuntimePreview',
+      'getLayerDataStruct',
+    ]),
     kindLabel(k) {
       return KIND_LABEL[k] || k || '-'
     },
     async refresh() {
       this.loading = true
       try {
-        await Promise.all([this.fetchTemplateMap(), this.fetchTree()])
+        // 先取得映射再生成树，确保虚拟节点首次渲染即可显示模板状态。
+        await this.fetchTemplateMap()
+        await this.fetchTree()
       } finally {
         this.loading = false
       }
@@ -145,6 +143,7 @@ export default {
         const res = await displayModelTemplateMap({ muid: this.modelId })
         if (res && res.data && res.data.code === 0) {
           this.templateMap = res.data.map || null
+          store.commit('ISMDisPlayEditorTool/setNavTemplateMap', this.templateMap)
         }
       } catch (e) {
         console.warn('[EditorDeviceTree] templateMap', e && e.message)
@@ -152,9 +151,11 @@ export default {
     },
     async fetchTree() {
       try {
-        const res = await getMonitorTree({ headers: { ProjectUuid: this.projectUuid } })
+        const res = await getMonitorTree({}, { headers: { ProjectUuid: this.projectUuid } })
         if (res && res.data && res.data.code === 0 && Array.isArray(res.data.list)) {
           this.treeData = this.buildTree(res.data.list)
+          this.navIndex = buildNavTreeIndex(this.treeData)
+          store.commit('ISMDisPlayEditorTool/setNavTreeIndex', this.navIndex)
           if (this.treeData.length) {
             this.expandedKeys = [this.treeData[0].key]
           }
@@ -167,100 +168,111 @@ export default {
       }
     },
     buildTree(nodes) {
-      const mapNode = (node) => {
+      const mapNode = (node, depth = 1, fallbackKey = '') => {
         const v = node.value || {}
         const name = node.text || v.Name || '未命名'
-        const type = v.type
+        const type = Number(v.type)
         const sid = v.sid
-        const pid = v.pid
-        const children = (node.children || []).map(mapNode).filter(Boolean)
-        let kind = 'zone'
-        if (type === 1) kind = 'device'
-        else if (sid === 1) kind = 'root'
-        else if (pid === 1) kind = 'zone'
-        else if (children.length && children.every(c => c.kind === 'device')) kind = 'cabinet'
-        else if (/配电室|机房|房间/.test(name)) kind = 'room'
-        else kind = 'zone'
-        const key = node.key || `${kind}-${sid}`
-        const tplId = this.resolveTemplatePageId({ kind, modelUuid: v.muid || '' })
+        const businessKey = String(v.uuid || node.key || (sid != null ? sid : fallbackKey))
+        const children = (node.children || []).map((child, index) =>
+          mapNode(child, depth + 1, `${businessKey}-${index}`),
+        ).filter(Boolean)
+        const kind = type === 1 ? 'device' : (depth === 1 ? 'root' : 'organization')
+        const key = `${kind}-${businessKey}`
+        const tplId = this.resolveTemplatePageId({ kind })
         const title = tplId ? `${name} ✓` : name
         return {
           key,
           title,
+          label: name,
+          name,
           kind,
+          layer: kind === 'root' ? 'home' : (kind === 'device' ? 'device' : 'organization'),
           sid,
           uuid: v.uuid || node.key || '',
           modelUuid: v.muid || '',
+          muid: v.muid || '',
+          status: v.status || v.Status || 'off',
+          treeDepth: depth,
+          type,
+          count: countDevicesInSubtree(children) || undefined,
+          raw: v,
           children: children.length ? children : undefined,
           isLeaf: type === 1 || !children.length,
         }
       }
-      return (nodes || []).map(mapNode).filter(Boolean)
+      return normalizeRootNodes(nodes || []).map((node, index) =>
+        mapNode(node, 1, `root-${index}`),
+      ).filter(Boolean)
     },
     resolveTemplatePageId(node) {
       const map = this.templateMap
       if (!map || !node) return ''
       const kind = node.kind === 'root' ? 'home' : node.kind
       if (kind === 'home') return map.home || ''
-      if (kind === 'zone') return map.zone || ''
-      if (kind === 'room') return map.room || map.zone || ''
-      if (kind === 'cabinet') return map.cabinet || ''
-      if (kind === 'device') {
-        const muid = node.modelUuid || ''
-        if (this.useModelOverride && muid && map.deviceByModel && map.deviceByModel[muid]) {
-          return map.deviceByModel[muid]
-        }
-        if (muid && map.deviceByModel && map.deviceByModel[muid]) return map.deviceByModel[muid]
-        return map.deviceDefault || ''
-      }
-      return ''
+      return kind === 'device' ? (map.datapointList || '') : (map.deviceList || '')
     },
     templateKindOf(node) {
       if (!node) return ''
       if (node.kind === 'root') return 'home'
-      return node.kind
+      return node.kind === 'device' ? 'datapointList' : 'deviceList'
     },
     templateModelUuidOf(node) {
-      if (!node || node.kind !== 'device') return ''
-      if (this.useModelOverride) return node.modelUuid || ''
       return ''
     },
     onExpand(keys) {
       this.expandedKeys = keys
     },
-    onSelect(keys, info) {
+    async onSelect(keys, info) {
       this.selectedKeys = keys
       const n = info && info.node && info.node.dataRef
       this.selectedNode = n || null
       if (!n) return
       this.previewHint = `${n.title} / ${this.kindLabel(n.kind)}`
+      const navContext = buildNavContextForNode(n, this.navIndex)
+      const pageId = resolveTemplatePageIdForKind(
+        this.templateMap,
+        navContext.kind || n.kind,
+        navContext.modelUuid || n.modelUuid || '',
+      )
+      if (!pageId) return
+      this.acting = true
       try {
-        store.commit('ISMDisPlayEditorTool/setNavContext', {
-          sid: n.sid,
-          uuid: n.uuid,
-          name: n.title,
-          kind: n.kind === 'root' ? 'home' : n.kind,
-          modelUuid: n.modelUuid || '',
-          childDevices: [],
+        const resolved = await this.selectEditorRuntimePreview({
+          pageUuid: pageId,
+          virtualKey: keys[0] || n.key,
+          virtualTitle: n.label || n.title,
+          navContext,
         })
-      } catch (e) { /* ignore */ }
-      const pageId = this.resolveTemplatePageId(n)
-      if (pageId) this.openPage(pageId)
+        if (!resolved) {
+          this.$message.error('运行态页面预览加载失败')
+        } else {
+          document.title = `${resolved.name || n.title} | ${this.$t('displayConfig.RuntimePreviewReadonly')}`
+        }
+      } finally {
+        this.acting = false
+      }
     },
     openPage(pageUuid) {
       if (!pageUuid) return
+      store.commit('ISMDisPlayEditorTool/setEditorRuntimePreview', null)
+      store.commit('ISMDisPlayEditorTool/setNavContext', null)
+      const page = (this.PCPageList || []).find(item => item.pageUuid === pageUuid)
       this.selectLayerDataStruct({
         pageType: 1,
         pageUuid,
+        title: page ? page.title : '',
       })
+      if (page) document.title = `${page.AppName || ''} | ${page.title}`
     },
     defaultPageName(node) {
       const kind = this.templateKindOf(node)
-      const labels = { home: '主页模板', zone: '区域模板', room: '机房模板', cabinet: '机柜模板', device: '设备模板' }
-      let name = labels[kind] || '模板页'
-      const muid = this.templateModelUuidOf(node)
-      if (kind === 'device' && muid) name = `设备模板-${muid.slice(0, 8)}`
-      return name
+      const labels = {
+        home: '首页模板',
+        deviceList: '设备列表模板',
+        datapointList: '点位列表模板',
+      }
+      return labels[kind] || '模板页'
     },
     async createOrOpenTemplate() {
       const node = this.selectedNode

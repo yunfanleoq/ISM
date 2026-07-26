@@ -39,7 +39,7 @@ var commands = map[string]string{
 	"linux":   "xdg-open",
 }
 
-const VERSION string = "V3.01.RC07"
+const VERSION string = "V3.01.RC08bate"
 const VERSION_DATE string = "2026年03月17日"
 
 // 验证软件是否过期
@@ -151,6 +151,13 @@ func freeMemory() {
 func main() {
 
 	var RecordPathErr error
+
+	// 统一业务时区为北京时间，避免历史入库/查询出现 ±8 小时偏差
+	if beijingLoc, locErr := time.LoadLocation("Asia/Shanghai"); locErr == nil {
+		time.Local = beijingLoc
+	} else {
+		logs.Error("加载 Asia/Shanghai 时区失败: %v", locErr)
+	}
 
 	runtime.GOMAXPROCS(runtime.NumCPU())
 

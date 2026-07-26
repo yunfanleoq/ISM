@@ -245,6 +245,7 @@ export default {
       echartsViewMem:null,
       echartsViewDisk:null,
       refreshTimer: null,
+      resizeTimeoutId: null,
       cpuHistoryLimit: 20,
       cpuHistoryLabels: [],
       cpuHistoryValues: [],
@@ -360,11 +361,7 @@ export default {
             data: [10],
             coordinateSystem: 'polar',
 
-            itemStyle: {
-              normal: {
-                color: 'rgba(96, 244, 194, 1)',
-              },
-            },
+            itemStyle: {color: 'rgba(96, 244, 194, 1)'},
           },
         ],
       },
@@ -496,7 +493,8 @@ export default {
     ...mapState('setting', ['langList','isMobile','systemVersion','ProtectedID']),
   },
   watch: {
-    $route () {
+    $route (to) {
+      if (!to || !String(to.path || '').includes('dashboard')) return
       this.$nextTick(() => {
         this.initMap()
         this.GetSystemAnalysis()
@@ -504,6 +502,9 @@ export default {
     }
   },
   methods: {
+    isChartAlive(chart) {
+      return !!(chart && typeof chart.isDisposed === 'function' && !chart.isDisposed())
+    },
     getCurrentTimeLabel() {
       const now = new Date()
       const pad = (value) => String(value).padStart(2, '0')
@@ -519,7 +520,7 @@ export default {
       }
       this.optionCpu.xAxis.data = [...this.cpuHistoryLabels]
       this.optionCpu.series[0].data = [...this.cpuHistoryValues]
-      if (this.echartsView) {
+      if (this.isChartAlive(this.echartsView)) {
         this.echartsView.setOption(this.optionCpu, true)
       }
     },
@@ -533,7 +534,7 @@ export default {
       }
       this.optionMem.xAxis.data = [...this.memHistoryLabels]
       this.optionMem.series[0].data = [...this.memHistoryValues]
-      if (this.echartsViewMem) {
+      if (this.isChartAlive(this.echartsViewMem)) {
         this.echartsViewMem.setOption(this.optionMem, true)
       }
     },
@@ -548,16 +549,20 @@ export default {
         clearInterval(this.refreshTimer)
         this.refreshTimer = null
       }
+      if (this.resizeTimeoutId) {
+        clearTimeout(this.resizeTimeoutId)
+        this.resizeTimeoutId = null
+      }
     },
     resizeCharts() {
       this.$nextTick(() => {
-        if (this.echartsView) {
+        if (this.isChartAlive(this.echartsView)) {
           this.echartsView.resize()
         }
-        if (this.echartsViewMem) {
+        if (this.isChartAlive(this.echartsViewMem)) {
           this.echartsViewMem.resize()
         }
-        if (this.echartsViewDisk) {
+        if (this.isChartAlive(this.echartsViewDisk)) {
           this.echartsViewDisk.resize()
         }
       })
@@ -616,12 +621,15 @@ export default {
         if (apiData.DataCount != null) _t.SystemInfo.DataCount = apiData.DataCount
         if (apiData.VideoCount != null) _t.SystemInfo.VideoCount = apiData.VideoCount
 
+        // 组件已销毁或图表已 dispose 时跳过图表操作，避免 "Instance has been disposed"
+        if (_t._isDestroyed || _t._isBeingDestroyed) return
+
         _t.updateCpuChart(_t.SystemInfo.CpuInfo.UsedPercent[0])
         _t.updateMemChart(_t.SystemInfo.MemInfo.usedPercent)
 
         _t.optionDisk.series[0].data[0] = _t.SystemInfo.DiskInfo.usedPercent
         _t.optionDisk.title[0].text = _t.SystemInfo.DiskInfo.usedPercent+ "%"
-        if (_t.echartsViewDisk) {
+        if (_t.isChartAlive(_t.echartsViewDisk)) {
           _t.echartsViewDisk.setOption(_t.optionDisk,true)
         }
         _t.resizeCharts()
@@ -632,14 +640,21 @@ export default {
       })
     },
     initMap(){
+      if (this.resizeTimeoutId) {
+        clearTimeout(this.resizeTimeoutId)
+        this.resizeTimeoutId = null
+      }
       if (this.echartsView) {
         this.echartsView.dispose()
+        this.echartsView = null
       }
       if (this.echartsViewMem) {
         this.echartsViewMem.dispose()
+        this.echartsViewMem = null
       }
       if (this.echartsViewDisk) {
         this.echartsViewDisk.dispose()
+        this.echartsViewDisk = null
       }
       let view = this.$refs.cpuCharts
       let viewMem = this.$refs.memCharts
@@ -661,7 +676,8 @@ export default {
       }
 
       this.resizeCharts()
-      setTimeout(() => {
+      this.resizeTimeoutId = setTimeout(() => {
+        this.resizeTimeoutId = null
         this.resizeCharts()
       }, 100)
     },

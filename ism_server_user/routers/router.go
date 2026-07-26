@@ -158,16 +158,26 @@ func init() {
 	beego.Router("/OpcuaModelNodeIDEdit", &controllers.OPCUAController{}, "*:ModelDataEdit")
 	beego.Router("/OpcuaModelNodeIDList", &controllers.OPCUAController{}, "*:ModelDataList")
 
-// 	//IEC61850
-// 	beego.Router("/IEC61850ModelAdd", &controllers.IEC61850Controller{}, "*:ModelAdd")
-// 	beego.Router("/IEC61850ModelList", &controllers.IEC61850Controller{}, "*:ModelList")
-// 	beego.Router("/IEC61850ModelDel", &controllers.IEC61850Controller{}, "*:ModelDel")
-// 	beego.Router("/IEC61850ModelEdit", &controllers.IEC61850Controller{}, "*:ModelEdit")
-// 	beego.Router("/IEC61850NodeidImport/:muid", &controllers.IEC61850Controller{}, "*:NodeIDImport")
-// 	beego.Router("/IEC61850ModelNodeIDAdd", &controllers.IEC61850Controller{}, "*:ModelDataAdd")
-// 	beego.Router("/IEC61850ModelNodeIDDel", &controllers.IEC61850Controller{}, "*:ModelDataDel")
-// 	beego.Router("/IEC61850ModelNodeIDEdit", &controllers.IEC61850Controller{}, "*:ModelDataEdit")
-// 	beego.Router("/IEC61850ModelNodeIDList", &controllers.IEC61850Controller{}, "*:ModelDataList")
+	//IEC61850
+	beego.Router("/IEC61850ModelAdd", &controllers.IEC61850Controller{}, "*:ModelAdd")
+	beego.Router("/IEC61850ModelList", &controllers.IEC61850Controller{}, "*:ModelList")
+	beego.Router("/IEC61850ModelDel", &controllers.IEC61850Controller{}, "*:ModelDel")
+	beego.Router("/IEC61850ModelEdit", &controllers.IEC61850Controller{}, "*:ModelEdit")
+	beego.Router("/IEC61850NodeidImport/:muid", &controllers.IEC61850Controller{}, "*:NodeIDImport")
+	beego.Router("/IEC61850ModelNodeIDAdd", &controllers.IEC61850Controller{}, "*:ModelDataAdd")
+	beego.Router("/IEC61850ModelNodeIDDel", &controllers.IEC61850Controller{}, "*:ModelDataDel")
+	beego.Router("/IEC61850ModelNodeIDEdit", &controllers.IEC61850Controller{}, "*:ModelDataEdit")
+	beego.Router("/IEC61850ModelNodeIDList", &controllers.IEC61850Controller{}, "*:ModelDataList")
+
+	//BACnet（前端 api.js: bacnetModel* / bacnetModelNodeID*）
+	beego.Router("/bacnetModelAdd", &controllers.BacnetController{}, "*:ModelAdd")
+	beego.Router("/bacnetModelList", &controllers.BacnetController{}, "*:ModelList")
+	beego.Router("/bacnetModelDel", &controllers.BacnetController{}, "*:ModelDel")
+	beego.Router("/bacnetModelEdit", &controllers.BacnetController{}, "*:ModelEdit")
+	beego.Router("/bacnetModelNodeIDAdd", &controllers.BacnetController{}, "*:ModelDataAdd")
+	beego.Router("/bacnetModelNodeIDDel", &controllers.BacnetController{}, "*:ModelDataDel")
+	beego.Router("/bacnetModelNodeIDEdit", &controllers.BacnetController{}, "*:ModelDataEdit")
+	beego.Router("/bacnetModelNodeIDList", &controllers.BacnetController{}, "*:ModelDataList")
 
 	//MQTT
 	beego.Router("/mqttModelAdd", &controllers.MqttController{}, "*:ModelAdd")
@@ -302,6 +312,10 @@ func init() {
 	beego.Router("/GetSystemParamsList", &controllers.ISMSystem{}, "*:GetSystemParamsList")
 	beego.Router("/GetSystemHomeDashboard", &controllers.SystemHomeController{}, "*:GetSystemHomeDashboard")
 	beego.Router("/SetSystemHomeDashboard", &controllers.SystemHomeController{}, "*:SetSystemHomeDashboard")
+	beego.Router("/GetEnergyOverviewConfig", &controllers.EnergyOverviewController{}, "*:GetConfig")
+	beego.Router("/SaveEnergyOverviewConfig", &controllers.EnergyOverviewController{}, "*:SaveConfig")
+	beego.Router("/GetEnergyOverviewCandidates", &controllers.EnergyOverviewController{}, "*:GetCandidates")
+	beego.Router("/GetEnergyOverviewStats", &controllers.EnergyOverviewController{}, "*:GetStats")
 	beego.Router("/GetPhysicalIDCheck", &controllers.ISMSystem{}, "*:GetPhysicalIDCheck")
 	beego.Router("/WitePhysicalID", &controllers.ISMSystem{}, "*:WitePhysicalID")
 	beego.Router("/GetAuthLicenseInfo", &controllers.ISMSystem{}, "*:GetAuthLicenseInfo")
@@ -382,6 +396,7 @@ func init() {
 
 	//
 	beego.Router("/UpdateDataModel/:muid", &controllers.ISMSystem{}, "*:UpdateDataModel")
+	beego.Router("/UpdateAllModbusDataModel", &controllers.ISMSystem{}, "*:UpdateAllModbusDataModel")
 
 	//系统脚本
 	beego.Router("/AddScript", &controllers.ISMScriptController{}, "*:AddScript")
@@ -529,6 +544,7 @@ var FilterUser = func(ctx *context.Context) {
 				!strings.Contains(ctx.Request.RequestURI, "/WitePhysicalID") &&
 				!strings.Contains(ctx.Request.RequestURI, "/GetPhysicalIDCheck") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateDataModel") &&
+				!strings.Contains(ctx.Request.RequestURI, "/UpdateAllModbusDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateIEC104DataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateModbusTcpPushDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/setData") &&
@@ -576,6 +592,7 @@ var FilterUser = func(ctx *context.Context) {
 				!strings.Contains(ctx.Request.RequestURI, "/WitePhysicalID") &&
 				!strings.Contains(ctx.Request.RequestURI, "/GetPhysicalIDCheck") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateDataModel") &&
+				!strings.Contains(ctx.Request.RequestURI, "/UpdateAllModbusDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateIEC104DataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateModbusTcpPushDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/setData") &&

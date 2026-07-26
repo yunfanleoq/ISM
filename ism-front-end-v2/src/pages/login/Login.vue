@@ -1,23 +1,31 @@
 <template>
-      <div class="boxer" :style="styleVar">
+      <div class="boxer xunan-login" :style="styleVar">
         <div class="header">
           <div class="inner-header flex">
             <div class="box1">
               <div class="middle1">
                 <div class="middle_left">
-                  <a-skeleton :loading="skeletonLoading" active>
-                    <img :src="systemLoginBg"  style="width: 670px;height: 600px;">
-                  </a-skeleton>
+                  <div class="brand-panel">
+                    <a-skeleton :loading="skeletonLoading" active>
+                      <img :src="systemLogo" alt="循安" class="brand-logo" />
+                    </a-skeleton>
+                    <h1 class="brand-title">循安科技电力监控平台</h1>
+                    <p class="brand-subtitle">POWER MONITORING &amp; INTELLIGENT MANAGEMENT</p>
+                    <ul class="brand-features">
+                      <li>实时数据采集与监控</li>
+                      <li>智能告警与故障预警</li>
+                      <li>能耗分析与报表统计</li>
+                    </ul>
+                  </div>
                 </div>
                 <div class="middle_right">
                   <div class="mr_box">
-                    <div>
-                      <div>
-                        <a-skeleton :loading="skeletonLoading" active>
-                        <img :src="systemLogo" alt="logo" style="width: 128px;height: 128px;">
-                        </a-skeleton>
-                      </div>
-                      <h2>{{$t("loginPage.logonBtn")}}  </h2>
+                    <div class="login-head">
+                      <a-skeleton :loading="skeletonLoading" active>
+                        <img :src="systemLogo" alt="logo" class="login-card-logo" />
+                      </a-skeleton>
+                      <h2>登录</h2>
+                      <p class="login-welcome">欢迎登录，请输入您的账号信息</p>
                     </div>
                     <a-form @submit="onSubmit" :form="form">
                       <a-alert type="error" :closable="true" v-show="error" :message="error" showIcon style="margin-bottom: 24px;" />
@@ -26,6 +34,7 @@
                             class="form-control"
                             autocomplete="autocomplete"
                             size="large"
+                            :placeholder="$t('loginPage.logonUserTips')"
                             v-decorator="['name', {rules: [{ required: true, message:  $t('loginPage.logonUserTips'), whitespace: true}]}]"
                         >
                           <a-icon slot="prefix" type="user" style="position: absolute;top: -5px;right:-15px;color: #13c2c2;font-size: 20px;"/>
@@ -37,6 +46,7 @@
                             size="large"
                             autocomplete="autocomplete"
                             type="password"
+                            :placeholder="$t('loginPage.logonPasswordTips')"
                             v-decorator="['password', {rules: [{ required: true, message: $t('loginPage.logonPasswordTips'), whitespace: true}]}]"
                         >
                           <a-icon slot="prefix" type="lock" size="large" style="position: absolute;top: -5px;right:-15px;color: #13c2c2;font-size: 20px;"/>
@@ -77,6 +87,10 @@
           </div>
           <!--Waves end-->
         </div>
+        <!-- 整页底部居中，对齐登录参考图；勿放在登录卡片内 -->
+        <div class="xunan-footer">
+          © 北京循安科技有限公司 - 循安科技电力监控平台
+        </div>
       </div>
 </template>
 
@@ -109,7 +123,11 @@ export default {
     },
 
     systemLogo () {
-      return this.$store.state.setting.SystemLogo
+      const logo = this.$store.state.setting.SystemLogo
+      if (!logo || String(logo).indexOf('data:image') === 0) {
+        return '/static/branding/logo-xunan-hexagon.png'
+      }
+      return logo
     },
     systemLoginBg () {
       return this.$store.state.setting.systemLoginBg
@@ -253,7 +271,6 @@ export default {
   text-align:center;
   height: 90%;
   background-size: 100% 100%;
-  //background: linear-gradient(120deg, rgba(84,58,183,1) 0%, rgba(0,172,193,1) 100%);
   color:white;
 }
 
@@ -264,7 +281,7 @@ export default {
   padding: 0;
 }
 
-.flex { /*Flexbox for containers*/
+.flex {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -275,22 +292,13 @@ export default {
   position:relative;
   width: 100%;
   height:15vh;
-  margin-bottom:-7px; /*Fix for safari gap*/
+  margin-bottom:-7px;
   min-height:100px;
   max-height:150px;
 }
 
-.content {
-  position:relative;
-  height:20vh;
-  text-align:center;
-  background-color: white;
-}
-
-/* Animation */
-
 .parallax > use {
-  animation: move-forever 25s cubic-bezier(.55,.5,.45,.5)     infinite;
+  animation: move-forever 25s cubic-bezier(.55,.5,.45,.5) infinite;
 }
 .parallax > use:nth-child(1) {
   animation-delay: -2s;
@@ -316,30 +324,17 @@ export default {
     transform: translate3d(85px,0,0);
   }
 }
-/*Shrinking for mobile*/
 @media (max-width: 768px) {
   .waves {
     height:40px;
     min-height:40px;
   }
-  .content {
-    height:30vh;
-  }
   h1 {
     font-size:24px;
   }
 }
-  /*APP安卓下载*/
-  .logo{
-    position: absolute;
-    top:10px;
-    left: 10px;
-  }
-  .logo img{
-    width: 70px;
-  }
   .boxer {
-    background-image:var(--bgImage);
+    background-image: linear-gradient(135deg, #0a1a3a 0%, #0d2b55 45%, #0a3d5c 100%);
     height: 100%;
     position: relative;
     overflow: hidden;
@@ -350,50 +345,98 @@ export default {
     width: 1156px;
     margin:6% auto 0;
     overflow: hidden;
-    box-shadow: 0px 0px 13px 5px rgba(14,25,80,.2);
-    border-radius: 10px;
+    box-shadow: 0px 0px 24px 8px rgba(0, 40, 80, .35);
+    border-radius: 12px;
+    background: rgba(8, 28, 58, 0.55);
+    border: 1px solid rgba(19, 194, 194, 0.25);
   }
   .middle1 {
     overflow: hidden;
   }
   .middle_left {
     float: left;
-    width: 500px;
+    width: 560px;
+    height: 600px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at 30% 20%, rgba(19,194,194,0.18), transparent 55%),
+      linear-gradient(160deg, rgba(10,40,80,0.9), rgba(8,24,50,0.95));
   }
-  .middle_left img {
-
+  .brand-panel {
+    padding: 40px 48px;
+    text-align: left;
+    color: #e8f7f7;
+  }
+  .brand-logo {
+    width: 88px;
+    height: 88px;
+    object-fit: contain;
+    margin-bottom: 20px;
+  }
+  .brand-title {
+    margin: 0 0 10px;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #ffffff;
+    line-height: 1.3;
+  }
+  .brand-subtitle {
+    margin: 0 0 28px;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    color: rgba(160, 220, 230, 0.85);
+  }
+  .brand-features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .brand-features li {
+    margin: 12px 0;
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: rgba(12, 40, 72, 0.65);
+    border: 1px solid rgba(19, 194, 194, 0.35);
+    color: #d7f3f3;
+    font-size: 15px;
   }
   .middle_right {
     width: 500px;
     height: 600px;
     float: right;
-    background: #ffffff;
+    background: rgba(255, 255, 255, 0.96);
   }
   .mr_box {
     width: 318px;
     margin: 0 auto;
-    margin-top: 50px;
+    margin-top: 40px;
+  }
+  .login-head {
+    text-align: center;
+    margin-bottom: 8px;
+  }
+  .login-card-logo {
+    width: 72px;
+    height: 72px;
+    object-fit: contain;
+  }
+  .login-welcome {
+    margin: -8px 0 24px;
+    color: #6b7c8a;
+    font-size: 13px;
   }
   .mr_box form{
     text-align: center;
   }
   .mr_box h2 {
     letter-spacing: 2px;
-    margin-bottom: 50px;
+    margin: 12px 0 8px;
     display: block;
     text-align: center;
     color: #13c2c2;
-    font-size: 30px;
-  }
-  input::-webkit-input-placeholder {
-    color: #c1c1c1;
-  }
-  .form-group {
-    margin-bottom: 44px;
-    position: relative;
-  }
-  .mar_b {
-    margin-bottom:20px;
+    font-size: 28px;
   }
   .form-control {
     height: 30px;
@@ -405,7 +448,7 @@ export default {
     width: 82%;
     border: none;
     border-radius: 60px;
-    background: #13c2c2;
+    background: linear-gradient(90deg, #13c2c2, #08979c);
     color: #fff;
     font-size: 18px;
     letter-spacing: 2px;
@@ -417,101 +460,19 @@ export default {
     background: #035757;
     transition: .3s all linear;
   }
-  /* 记住密码 */
-  .f_pass{
-    height: 40px;
-    line-height: 40px;
-    padding: 0 8px;
-    margin: 6px 0;
-  }
-  .font-s {
-    position: relative;
-  }
-  .custom-control {
-    position: relative;
-    display: block;
-    min-height: 1.5rem;
-    padding-left: 1.5rem;
-  }
-  .small, small {
-    font-size: 80%;
-    font-weight: 400;
-    text-align: right;
-  }
-  input[type=checkbox], input[type=radio] {
-    -webkit-box-sizing: border-box;
-    box-sizing: border-box;
-    padding: 0;
-  }
-  .custom-control-input {
+  .xunan-footer {
     position: absolute;
-    z-index: -1;
-    opacity: 0;
-  }
-  .custom-control-label{
-    font-size: 15px;
-  }
-  .custom-control-input:not(:disabled):active~.custom-control-label::before {
-    color: #fff;
-    background-color: #e5ebfa;
-    border-color: #e5ebfa;
-  }
-  .custom-control-input:focus:not(:checked)~.custom-control-label::before {
-    border-color: #bac8f3;
-  }
-  .custom-control-input:focus~.custom-control-label::before {
-    -webkit-box-shadow: 0 0 0 0.2rem rgba(78,115,223,.25);
-    box-shadow: 0 0 0 0.2rem rgba(78,115,223,.25);
-  }
-  .custom-control-input:checked~.custom-control-label::before {
-    color: #fff;
-    border-color: #059df6;
-    background-color: #059df6;
-  }
-  .custom-checkbox .custom-control-label::before {
-    border-radius:4px;
-  }
-  .custom-control-label::before, .custom-file-label, .custom-select {
-    -webkit-transition: background-color .15s ease-in-out,border-color .15s ease-in-out,-webkit-box-shadow .15s ease-in-out;
-    transition: background-color .15s ease-in-out,border-color .15s ease-in-out,-webkit-box-shadow .15s ease-in-out;
-    transition: background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
-    transition: background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out,-webkit-box-shadow .15s ease-in-out;
-  }
-  .custom-control-label::before {
-    position: absolute;
-    top:1px;
-    right: 64px;
-    display: block;
-    width:16px;
-    height: 16px;
+    left: 0;
+    right: 0;
+    bottom: 28px;
+    z-index: 5;
+    text-align: center;
+    color: rgba(210, 230, 240, 0.88);
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    line-height: 1.4;
     pointer-events: none;
-    content: "";
-    background-color: #fff;
-    border: #b7b9cc solid 1px;
-  }
-  .custom-checkbox .custom-control-input:checked~.custom-control-label::after {
-    background:url('../../assets/images/duigou.png') no-repeat;
-  }
-  .custom-control-label::after {
-    position: absolute;
-    top:5px;
-    right: 62px;
-    display: block;
-    width: 16px;
-    height: 16px;
-    content: "";
-    background: no-repeat 50%/50% 50%;
-  }
-  /* 密码错误 */
-  .f_pass_n{
-
-  }
-  .f_pass i{
-    margin:11px  6px 0 0;
-  }
-  .f_pass p{
-    color: #dc0a0a;
-    text-align: left;
+    white-space: nowrap;
   }
   @media screen and (min-width: 960px) and (max-width:1200px){
     .box1 {
@@ -521,14 +482,8 @@ export default {
     .mr_box{
       margin-top: 40px;
     }
-    .mr_box h2 {
-      margin-bottom: 26px;
-    }
     .middle_left {
       width: 560px;
-    }
-    .middle_left img {
-      width: 100%;
       height: 470px;
     }
     .middle1 {
@@ -540,11 +495,11 @@ export default {
       overflow: hidden;
       height: 470px;
     }
+    .brand-title {
+      font-size: 26px;
+    }
     .login {
       margin-top: 20px;
-    }
-    .form-group {
-      margin-bottom: 36px;
     }
   }
   @media screen and (max-width: 960px) {
@@ -554,9 +509,6 @@ export default {
     }
     .mr_box{
       margin-top: 40px;
-    }
-    .mr_box h2 {
-      margin-bottom: 34px;
     }
     .middle_left {
       display: none;
@@ -569,11 +521,13 @@ export default {
       height: 470px;
       width: 418px;
     }
+    .xunan-footer {
+      bottom: 16px;
+      white-space: normal;
+      padding: 0 16px;
+    }
     .login {
       margin-top: 18px;
-    }
-    .form-group {
-      margin-bottom: 28px;
     }
   }
 </style>

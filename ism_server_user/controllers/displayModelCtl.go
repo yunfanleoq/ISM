@@ -34,6 +34,49 @@ type DisplayModelController struct {
 	beego.Controller
 }
 
+func decodeDisplayModelLayer(row *models.DisplayModelLayer) {
+	if row.Components != "" {
+		if decoded, err := base64.StdEncoding.DecodeString(row.Components); err == nil {
+			row.Components = string(decoded)
+		}
+	}
+	if row.Layer != "" {
+		if decoded, err := base64.StdEncoding.DecodeString(row.Layer); err == nil {
+			row.Layer = string(decoded)
+		}
+	}
+}
+
+func decodeDisplayModelLayers(rows []models.DisplayModelLayer) {
+	for i := range rows {
+		decodeDisplayModelLayer(&rows[i])
+	}
+}
+
+func slimDisplayModelLayers(rows []models.DisplayModelLayer) []map[string]interface{} {
+	slim := make([]map[string]interface{}, 0, len(rows))
+	for _, row := range rows {
+		item := map[string]interface{}{
+			"ID":                row.ID,
+			"modelId":           row.ModelId,
+			"PageName":          row.PageName,
+			"PageId":            row.PageId,
+			"IsHome":            row.IsHome,
+			"IsLogin":           row.IsLogin,
+			"PageType":          row.PageType,
+			"layer":             row.Layer,
+			"components":        "",
+			"templateKind":      row.TemplateKind,
+			"templateModelUuid": row.TemplateModelUuid,
+		}
+		if row.IsHome == 1 {
+			item["components"] = row.Components
+		}
+		slim = append(slim, item)
+	}
+	return slim
+}
+
 func (c *DisplayModelController) ModelList() {
 
 	var getLists []models.DisplayModels
@@ -294,37 +337,14 @@ func (c *DisplayModelController) ModelLayerPagerGet() {
 		getModel, code = models.DisplayModelLayerPageGet(fmt.Sprintf("%s", getModelJson["pageid"]))
 	}
 
-	if getModel.Components != "" {
-		tempComponents, deErr := base64.StdEncoding.DecodeString(getModel.Components)
-		if deErr == nil {
-			getModel.Components = string(tempComponents)
-		}
-	}
-
-	if getModel.Layer != "" {
-		tempLayers, layErr := base64.StdEncoding.DecodeString(getModel.Layer)
-		if layErr == nil {
-			getModel.Layer = string(tempLayers)
-		}
-	}
+	decodeDisplayModelLayer(&getModel)
 
 	result := map[string]interface{}{
 		"code":  code,
 		"layer": getModel,
 	}
-	c.Ctx.Output.Header("Content-Encoding", "gzip")
-	gw := gzip.NewWriter(c.Ctx.ResponseWriter)
-
-	defer func() {
-		gw.Close()
-		result = nil
-		getModelJson = nil
-	}()
-
-	err1 := json.NewEncoder(gw).Encode(result)
-	if err1 != nil {
-		fmt.Println("encode err: ", err1)
-	}
+	c.Data["json"] = result
+	c.ServeJSON()
 }
 
 func (c *DisplayModelController) ModelLayerGet() {
@@ -357,53 +377,22 @@ func (c *DisplayModelController) ModelLayerGet() {
 		}
 		getDisplayInfo, _ = models.DisplayModelGet(fmt.Sprintf("%s", getModelJson["muid"]))
 	}
-	for key := range getModel {
-		// 空 components 跳过 base64 解码（metaOnly 非首页）
-		if getModel[key].Components != "" {
-			tempComponents, deErr := base64.StdEncoding.DecodeString(getModel[key].Components)
-			if deErr == nil {
-				getModel[key].Components = string(tempComponents)
-			}
-		}
-		if getModel[key].Layer != "" {
-			tempLayers, layErr := base64.StdEncoding.DecodeString(getModel[key].Layer)
-			if layErr == nil {
-				getModel[key].Layer = string(tempLayers)
-			}
-		}
-	}
+	decodeDisplayModelLayers(getModel)
 
 	var layerPayload interface{} = getModel
 	if metaOnly {
-		// 载荷瘦身：非首页只回元数据字段，避免把空 components/大字段重复序列化
-		slim := make([]map[string]interface{}, 0, len(getModel))
-		for _, row := range getModel {
-			item := map[string]interface{}{
-				"ID":                 row.ID,
-				"modelId":            row.ModelId,
-				"PageName":           row.PageName,
-				"PageId":             row.PageId,
-				"IsHome":             row.IsHome,
-				"IsLogin":            row.IsLogin,
-				"PageType":           row.PageType,
-				"layer":              row.Layer,
-				"templateKind":       row.TemplateKind,
-				"templateModelUuid":  row.TemplateModelUuid,
-			}
-			if row.IsHome == 1 {
-				item["components"] = row.Components
-			} else {
-				item["components"] = ""
-			}
-			slim = append(slim, item)
-		}
-		layerPayload = slim
+		layerPayload = slimDisplayModelLayers(getModel)
 	}
 
 	result := map[string]interface{}{
 		"code":    code,
 		"layer":   layerPayload,
 		"Display": getDisplayInfo,
+	}
+	if metaOnly {
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
 	}
 	c.Ctx.Output.Header("Content-Encoding", "gzip")
 	gw := gzip.NewWriter(c.Ctx.ResponseWriter)
@@ -426,6 +415,7 @@ func (c *DisplayModelController) ModelLayerGetByToken() {
 	var code int
 	var getModel []models.DisplayModelLayer
 	var getDisplayInfo models.DisplayModels
+	metaOnly := true
 
 	var getModelJson = make(map[string]interface{})
 
@@ -438,6 +428,11 @@ func (c *DisplayModelController) ModelLayerGetByToken() {
 	if err != nil {
 		code = -1
 	} else {
+		if v, ok := getModelJson["metaOnly"]; ok {
+			if b, ok2 := v.(bool); ok2 {
+				metaOnly = b
+			}
+		}
 		var getToken models.UserApiAccessToken
 		token := fmt.Sprintf("%s", getModelJson["token"])
 		if !protocolCommon.IsLicense {
@@ -447,31 +442,33 @@ func (c *DisplayModelController) ModelLayerGetByToken() {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				code = -4
 			} else {
-				getModel, code = models.DisplayModelLayerGet(fmt.Sprintf("%s", getModelJson["muid"]))
+				if metaOnly {
+					getModel, code = models.DisplayModelLayerGetMeta(fmt.Sprintf("%s", getModelJson["muid"]))
+				} else {
+					getModel, code = models.DisplayModelLayerGet(fmt.Sprintf("%s", getModelJson["muid"]))
+				}
 				getDisplayInfo, _ = models.DisplayModelGet(fmt.Sprintf("%s", getModelJson["muid"]))
 				tokenGet, expireAt, _ = middleware.SetToken("admin", "admin", "超级管理员", "662929b7-1d42-41fa-baa2-08b1988e4f54")
-
-				for key, _ := range getModel {
-					tempComponents, deErr := base64.StdEncoding.DecodeString(getModel[key].Components)
-					if deErr == nil {
-						getModel[key].Components = string(tempComponents)
-					}
-
-					tempLayers, layErr := base64.StdEncoding.DecodeString(getModel[key].Layer)
-					if layErr == nil {
-						getModel[key].Layer = string(tempLayers)
-					}
-				}
+				decodeDisplayModelLayers(getModel)
 			}
 		}
 	}
 
+	var layerPayload interface{} = getModel
+	if metaOnly {
+		layerPayload = slimDisplayModelLayers(getModel)
+	}
 	result := map[string]interface{}{
 		"code":     code,
-		"layer":    getModel,
+		"layer":    layerPayload,
 		"Display":  getDisplayInfo,
 		"expireAt": expireAt,
 		"token":    tokenGet,
+	}
+	if metaOnly {
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
 	}
 	c.Ctx.Output.Header("Content-Encoding", "gzip")
 	gw := gzip.NewWriter(c.Ctx.ResponseWriter)

@@ -73,10 +73,12 @@
             </template>
             <a-card-meta :description="item.description">
               <template slot="title">
-                <span>{{ item.name }}</span>
-                <a-tag v-if="item.uuid === homeDashboardUuid" color="blue" style="margin-left: 8px; vertical-align: middle">
+                <span class="display-card-title">
+                  <span class="display-card-title__name" :title="item.name">{{ item.name }}</span>
+                  <a-tag v-if="item.uuid === homeDashboardUuid" class="display-card-title__badge" color="blue">
                   <a-icon type="home" /> {{$t('displayModel.SystemHomeBadge')}}
-                </a-tag>
+                  </a-tag>
+                </span>
               </template>
             </a-card-meta>
           </a-card>
@@ -662,6 +664,25 @@ export default {
 }
 ::v-deep #displayCard .ant-card-meta-detail > div:not(:last-child)  {
   margin-bottom: 0px;
+}
+
+.display-card-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.display-card-title__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.display-card-title__badge {
+  flex: none;
+  margin-left: 8px;
+  vertical-align: middle;
 }
 
 ::v-deep #displayCard .ant-card-head {

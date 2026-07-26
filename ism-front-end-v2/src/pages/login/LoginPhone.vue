@@ -2,7 +2,8 @@
   <common-layout>
     <div class="top">
       <div class="header">
-        <img alt="logo" class="logo" :src="systemLogo" />
+        <img alt="循安" class="logo" :src="systemLogo" />
+        <div class="phone-brand-title">循安科技电力监控平台</div>
       </div>
     </div>
     <div class="login">
@@ -92,7 +93,11 @@ export default {
       return this.$store.state.setting.systemName
     },
     systemLogo () {
-      return this.$store.state.setting.SystemLogo
+      const logo = this.$store.state.setting.SystemLogo
+      if (!logo || String(logo).indexOf('data:image') === 0) {
+        return '/static/branding/logo-xunan-hexagon.png'
+      }
+      return logo
     },
   },
   methods: {
@@ -153,13 +158,21 @@ export default {
         this.$message.error(this.$t('loginPage.logonFailed'), 3)
       }
     },
-    // 与 Login.vue 保持一致：Admin/单项目自动进首页大屏，多项目进项目选择页
+    // 与 Login.vue 保持一致：Admin/单项目自动进该项目默认大屏，多项目进项目选择页
     enterAfterAuth(roles, user) {
       const _t = this
       const roleId = (roles && roles[0]) ? roles[0].id : ''
       const goHome = () => {
-        applyHomeProjectAuth(_t.$store)
-        _t.$router.push(_t.homeDashboardPath)
+        _t.$store.dispatch('setting/fetchSystemHomeDashboard').then(function () {
+          applyHomeProjectAuth(_t.$store)
+          if (!_t.$store.getters['setting/homeDashboardUuid']) {
+            _t.$router.push('/dashboard')
+            return
+          }
+          _t.$router.push(_t.homeDashboardPath)
+        }).catch(function () {
+          _t.$router.push('/dashboard')
+        })
       }
       if (roleId === 'User' || roleId === 'Operator') {
         if (user && user.ProjectUUID) {
@@ -198,6 +211,13 @@ export default {
           height: 44px;
           vertical-align: top;
           margin-right: 16px;
+        }
+        .phone-brand-title {
+          margin-top: 10px;
+          font-size: 18px;
+          font-weight: 600;
+          color: @title-color;
+          letter-spacing: 1px;
         }
         .title {
           font-size: 33px;

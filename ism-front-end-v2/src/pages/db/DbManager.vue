@@ -109,7 +109,7 @@
               {{$t('DbBack.BackupUpload')}}
             </a-button>
           </a-upload>
-        <a-spin :tip="$t('DbBack.Restoring')" :spinning="messageShowLoad">
+        <a-spin :tip="restoreTabSpinTip" :spinning="messageShowLoad">
         <a-table rowKey='FileName' :pagination="pagination" :columns="columns" :data-source="BackupList" >
           <template v-for="(item, index) in columns" :slot="item.slotName">
             <span :key="index">{{ $t(item.slotName) }}</span>
@@ -135,6 +135,8 @@ export default {
     return {
       checkAll: true,
       messageShowLoad:false,
+      // restore | download | loading — 还原页 spin tip，避免下载误显示「还原中」
+      restoreTabSpinMode: 'loading',
       indeterminate: false,
       SystemTables:[],
       DbType:"1",
@@ -176,6 +178,17 @@ export default {
     }
   },
   components: {},
+  computed: {
+    restoreTabSpinTip () {
+      if (this.restoreTabSpinMode === 'download') {
+        return this.$t('DbBack.Downloading')
+      }
+      if (this.restoreTabSpinMode === 'restore') {
+        return this.$t('DbBack.Restoring')
+      }
+      return this.$t('DbBack.Loading')
+    }
+  },
   mounted () {
     this.GetDbConfig()
   },
@@ -338,6 +351,7 @@ export default {
     },
     GetBackUpList(){
       let _t = this
+      this.restoreTabSpinMode = 'loading'
       this.messageShowLoad = true
       _t.BackupList=[]
       GetBackUpList().then(function (res){
@@ -351,6 +365,7 @@ export default {
     },
     DbRestore(name){
       let _t = this
+      this.restoreTabSpinMode = 'restore'
       this.messageShowLoad = true
       let params={
         DbFilePath : name
@@ -412,22 +427,42 @@ export default {
       let params={
         DbFilePath : name
       }
+      _t.restoreTabSpinMode = 'download'
+      _t.messageShowLoad = true
       DbDown(params).then(function (res){
-        if(res.data.code==0)
-        {
-          // 创建一个链接标签，用于下载文件
-          const link = document.createElement('a');
-          link.href = res.data.path;
-          link.target="_blank"
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+        const data = res.data
+        // 失败时后端仍可能返回 JSON blob
+        if (data instanceof Blob && data.type && data.type.indexOf('application/json') !== -1) {
+          const reader = new FileReader()
+          reader.onload = function () {
+            try {
+              const json = JSON.parse(reader.result)
+              if (json.code !== 0) {
+                _t.$message.error(_t.$t('DbBack.DownloadFailed'))
+              }
+            } catch (e) {
+              _t.$message.error(_t.$t('DbBack.DownloadFailed'))
+            }
+          }
+          reader.readAsText(data)
+          return
         }
-        else
-        {
-          _t.$message.error(_t.$t('DbBack.RestoreFailed'))
+        if (!(data instanceof Blob) || data.size === 0) {
+          _t.$message.error(_t.$t('DbBack.DownloadFailed'))
+          return
         }
-      }).finally(function (error) {
+        const fileName = (name ? String(name).replace(/\.[^.]+$/, '') : 'backup') + '.zip'
+        const url = window.URL.createObjectURL(data)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = fileName
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+      }).catch(function () {
+        _t.$message.error(_t.$t('DbBack.DownloadFailed'))
+      }).finally(function () {
         _t.messageShowLoad = false
       })
     }

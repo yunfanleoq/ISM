@@ -49,8 +49,8 @@ export async function UpdateCurrentAlarm(params) {
 /**
  * 一键清除实时告警（可按当前筛选条件批量清除）
  */
-export async function ClearAllCurrentAlarm(params) {
-    return request(CLEARALLCURRENTALARM, METHOD.POST, params || {})
+export async function ClearAllCurrentAlarm(params, config) {
+    return request(CLEARALLCURRENTALARM, METHOD.POST, params || {}, config)
 }
 export async function GetAlarmEventFeed(params, config) {
     return request(ALARMEVENTFEED, METHOD.POST, params || {}, config)

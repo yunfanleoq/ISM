@@ -360,8 +360,8 @@ function loadSinglePageLayer(pageid) {
 
 // ---------- 大屏按需加载 + 空闲 LRU 预取 ----------
 // 原则：用户展开/下钻时才同步拉取；浏览器空闲时按链接关系预测下一页并静默预取。
-// 预取失败不重试，避免打爆后端；候选数压到 3，降低并发。
-const PREFETCH_MAX_CANDIDATES = 3
+// 预取失败不重试，避免打爆后端；受限网络下完全禁用，正常网络也最多预取 1 页。
+const PREFETCH_MAX_CANDIDATES = 1
 const PREFETCH_TRIGGER_DELAY_MS = 800
 let prefetchQueue = []
 let prefetchTimer = null
@@ -542,6 +542,18 @@ function pumpIdlePrefetch(ctx, anchorPageId) {
 
 function triggerIdlePrefetch(ctx, anchorPageId) {
     if (!anchorPageId) {
+        return
+    }
+    if (typeof navigator !== 'undefined') {
+        const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection
+        if (!navigator.onLine || (connection && (connection.saveData
+            || connection.effectiveType === 'slow-2g' || connection.effectiveType === '2g'))) {
+            cancelIdlePrefetch()
+            return
+        }
+    }
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        cancelIdlePrefetch()
         return
     }
     if (prefetchTimer) {
@@ -843,7 +855,9 @@ export const updateAllLayerDataStruct = (ctx,data) => {
                     }
                     pageInfo.children = buildPageTreeChildren(tempConfigData)
                     mergePageLayerFromExisting(pageInfo, oldPc, oldPhone)
-                    pageInfo.pageLayerData = tempConfigData
+                    if (!pageInfo.pageLayerData) {
+                        pageInfo.pageLayerData = tempConfigData
+                    }
                     if(pageLayer[i].PageType==1)
                     {
                         pcPageData.push(pageInfo)
@@ -928,6 +942,24 @@ export const selectPopUpPagerContainerDisplayPageDataStruct = (ctx,page) => {
     {
         if(PCPageInfo[i].pageUuid==pageid)
         {
+            const cells = PCPageInfo[i].pageLayerData && PCPageInfo[i].pageLayerData.components
+                && PCPageInfo[i].pageLayerData.components.cells
+            if (!PCPageInfo[i]._lazyLoaded && PCPageInfo[i].IsHome != 1
+                && Array.isArray(cells) && cells.length === 0) {
+                const pageIndex = i
+                ctx.state.pageLayerLoading = true
+                loadSinglePageLayer(pageid).then(function (cfg) {
+                    ctx.state.pageLayerLoading = false
+                    if (!cfg) {
+                        page.callback(-1, bangDingData, bangDingDeviceSN)
+                        return
+                    }
+                    PCPageInfo[pageIndex]._lazyLoaded = true
+                    PCPageInfo[pageIndex].pageLayerData = cfg
+                    selectPopUpPagerContainerDisplayPageDataStruct(ctx, page)
+                })
+                return
+            }
             let tempConfigData = PCPageInfo[i].pageLayerData
             tempConfigData.name = page.page.title
             for(let k=0,componentsLen=tempConfigData.components.cells.length;k<componentsLen;k++)
@@ -945,6 +977,24 @@ export const selectPopUpPagerContainerDisplayPageDataStruct = (ctx,page) => {
     for(let i=0,PhonePageInfoLen=PhonePageInfo.length;i<PhonePageInfoLen;i++)
     {
         if(PhonePageInfo[i].pageUuid==pageid) {
+            const cells = PhonePageInfo[i].pageLayerData && PhonePageInfo[i].pageLayerData.components
+                && PhonePageInfo[i].pageLayerData.components.cells
+            if (!PhonePageInfo[i]._lazyLoaded && PhonePageInfo[i].IsHome != 1
+                && Array.isArray(cells) && cells.length === 0) {
+                const pageIndex = i
+                ctx.state.pageLayerLoading = true
+                loadSinglePageLayer(pageid).then(function (cfg) {
+                    ctx.state.pageLayerLoading = false
+                    if (!cfg) {
+                        page.callback(-1, bangDingData, bangDingDeviceSN)
+                        return
+                    }
+                    PhonePageInfo[pageIndex]._lazyLoaded = true
+                    PhonePageInfo[pageIndex].pageLayerData = cfg
+                    selectPopUpPagerContainerDisplayPageDataStruct(ctx, page)
+                })
+                return
+            }
             let tempConfigData = PhonePageInfo[i].pageLayerData
             tempConfigData.name = page.page.title
             for(let k=0,componentsLen=tempConfigData.components.cells.length;k<componentsLen;k++)
@@ -1090,7 +1140,8 @@ export const selectDisplayPageContainerDataStruct = (ctx,page) => {
 export const getLayerDataStructByTokenData = (ctx,data) => {
     let params={
         muid:data.uuid,
-        token:data.token
+        token:data.token,
+        metaOnly:data.metaOnly !== false
     }
     let bangDingData=[]
     let bangDingDeviceSN=[]
@@ -1347,6 +1398,14 @@ export const getLoginLayerDataStruct = (ctx,data) => {
 }
 
 export const saveLayerDataStruct = (ctx,page) => {
+    if (ctx.state.editorRuntimePreview && ctx.state.editorRuntimePreview.active) {
+        return Promise.resolve({
+            data: {
+                code: 4090,
+                message: '运行态预览不可直接保存，请编辑对应模板'
+            }
+        })
+    }
     let params={
         muid:page.uuid,
         pageid:page.pageid,
@@ -1453,6 +1512,63 @@ export const selectLayerDataStruct = (ctx,page) => {
             }
         }
     }
+}
+
+/**
+ * 编辑器运行态虚拟页预览。
+ * 始终对缓存中的原始模板做深拷贝后解析，resolved 结果只进入 LayerData，
+ * 不回写 PCPageList.pageLayerData，避免把设备上下文和分页数据保存进模板。
+ */
+export const selectEditorRuntimePreview = async (ctx, payload) => {
+    const pageid = payload && payload.pageUuid
+    if (!pageid) {
+        return null
+    }
+    const list = ctx.state.PCPageList || []
+    const idx = list.findIndex(item => item.pageUuid === pageid)
+    if (idx < 0) {
+        return null
+    }
+
+    const pageInfo = list[idx]
+    if (!pageInfo._lazyLoaded) {
+        ctx.state.pageLayerLoading = true
+        try {
+            const cfg = await loadSinglePageLayer(pageid)
+            if (!cfg) {
+                return null
+            }
+            pageInfo.pageLayerData = cfg
+            pageInfo.children = buildPageTreeChildren(cfg)
+            pageInfo._lazyLoaded = true
+        } finally {
+            ctx.state.pageLayerLoading = false
+        }
+    }
+    if (!pageInfo.pageLayerData) {
+        return null
+    }
+
+    ctx.commit('setNavContext', payload.navContext || null)
+    const rawTemplate = JSON.parse(JSON.stringify(pageInfo.pageLayerData))
+    const resolved = await applyNavContextToPageConfig(ctx, rawTemplate)
+    if (!resolved) {
+        return null
+    }
+    resolved.name = payload.virtualTitle || pageInfo.title
+    ctx.state.curPageUuid = pageid
+    ctx.state.prePageUuid = pageid
+    ctx.state.selectPageUuid = pageid
+    ctx.state.LayerData = resolved
+    ctx.commit('setEditorRuntimePreview', {
+        active: true,
+        virtualKey: payload.virtualKey,
+        virtualTitle: payload.virtualTitle,
+        templatePageUuid: pageid,
+        templateTitle: pageInfo.title,
+    })
+    touchAndReleaseLazyPages(ctx, pageid, pageInfo.IsHome == 1)
+    return resolved
 }
 
 export const selectDisplayPageDataStructFromDb = (ctx,page) => {
@@ -1745,6 +1861,24 @@ export const selectPopUpDisplayPageDataStruct = (ctx,page) => {
     {
         if(PCPageInfo[i].pageUuid==pageid)
         {
+            const cells = PCPageInfo[i].pageLayerData && PCPageInfo[i].pageLayerData.components
+                && PCPageInfo[i].pageLayerData.components.cells
+            if (!PCPageInfo[i]._lazyLoaded && PCPageInfo[i].IsHome != 1
+                && Array.isArray(cells) && cells.length === 0) {
+                const pageIndex = i
+                ctx.state.pageLayerLoading = true
+                loadSinglePageLayer(pageid).then(function (cfg) {
+                    ctx.state.pageLayerLoading = false
+                    if (!cfg) {
+                        page.callback(-1, bangDingData, bangDingDeviceSN)
+                        return
+                    }
+                    PCPageInfo[pageIndex]._lazyLoaded = true
+                    PCPageInfo[pageIndex].pageLayerData = cfg
+                    selectPopUpDisplayPageDataStruct(ctx, page)
+                })
+                return
+            }
             let tempConfigData = PCPageInfo[i].pageLayerData
             tempConfigData.name = page.page.title
             ctx.state.selectPageUuid = tempConfigData.PageId
@@ -1764,6 +1898,24 @@ export const selectPopUpDisplayPageDataStruct = (ctx,page) => {
     for(let i=0,PhonePageInfoLen=PhonePageInfo.length;i<PhonePageInfoLen;i++)
     {
         if(PhonePageInfo[i].pageUuid==pageid) {
+            const cells = PhonePageInfo[i].pageLayerData && PhonePageInfo[i].pageLayerData.components
+                && PhonePageInfo[i].pageLayerData.components.cells
+            if (!PhonePageInfo[i]._lazyLoaded && PhonePageInfo[i].IsHome != 1
+                && Array.isArray(cells) && cells.length === 0) {
+                const pageIndex = i
+                ctx.state.pageLayerLoading = true
+                loadSinglePageLayer(pageid).then(function (cfg) {
+                    ctx.state.pageLayerLoading = false
+                    if (!cfg) {
+                        page.callback(-1, bangDingData, bangDingDeviceSN)
+                        return
+                    }
+                    PhonePageInfo[pageIndex]._lazyLoaded = true
+                    PhonePageInfo[pageIndex].pageLayerData = cfg
+                    selectPopUpDisplayPageDataStruct(ctx, page)
+                })
+                return
+            }
             let tempConfigData = PhonePageInfo[i].pageLayerData
             tempConfigData.name = page.page.title
             ctx.state.selectPageUuid = tempConfigData.PageId
@@ -1780,9 +1932,15 @@ export const selectPopUpDisplayPageDataStruct = (ctx,page) => {
         }
     }
 
-    ctx.state.selectPageUuid=""
-    ctx.state.PopUpConfigData={ "name": "--", "layer": { "backColor": "", "backgroundImage": "", "widthHeightRatio": "", "width": 300, "height": 600 }, "components": [] }
-    page.callback(-1,bangDingData,bangDingDeviceSN)
+    ensurePageRegistered(ctx, pageid, page.page && page.page.displayUUID).then(function (pageInfo) {
+        if (pageInfo) {
+            selectPopUpDisplayPageDataStruct(ctx, page)
+            return
+        }
+        ctx.state.selectPageUuid=""
+        ctx.state.PopUpConfigData={ "name": "--", "layer": { "backColor": "", "backgroundImage": "", "widthHeightRatio": "", "width": 300, "height": 600 }, "components": [] }
+        page.callback(-1,bangDingData,bangDingDeviceSN)
+    })
 }
 
 export const updateLayerDataStruct = (ctx,layerData) => {

@@ -584,135 +584,75 @@ func (c *ModbusCtl) DealWithModbusHistoryData(HistoryData models.DevicesHistoryD
 	build.WriteString(HistoryData.DeviceUuid)
 	build.WriteString(HistoryData.DataUuid)
 	key := build.String()
+
+	// 整点存储：按周期截断后每个测点每周期只写一次（含首次采样，避免断线重连只采到一次时永远不落盘）
+	if HistoryData.RecordType == 4 {
+		c.saveTimedModbusHistoryData(HistoryData, key)
+		return
+	}
+
 	dataTemp, isExist := c.ModebusDeviceHistoryDataTemp[key]
 	if !isExist {
 		if HistoryData.RecordType == 2 {
 			protocol_common.HistoryDataWrite(HistoryData)
+			c.ModebusDeviceHistoryDataTemp[key] = HistoryData
 		} else {
+			// 定时/变化/变化率：首条只入缓存，作为后续比较基准
 			c.ModebusDeviceHistoryDataTemp[key] = HistoryData
 		}
+		return
+	}
 
-	} else {
-		if HistoryData.RecordType == 1 {
-			if HistoryData.RecordInterval == 0 {
-				HistoryData.RecordInterval = 1
-			}
-			if (HistoryData.RecordTime.Unix() - dataTemp.RecordTime.Unix()) >= int64(HistoryData.RecordInterval) {
-				//models.Db.Model(&models.DevicesHistoryDataList{}).Create(&HistoryData)
-				//protocol_common.GSaveHistoryDataQueue.QueuePush(HistoryData)
-				protocol_common.HistoryDataWrite(HistoryData)
-				c.ModebusDeviceHistoryDataTemp[key] = HistoryData
-			}
-		} else if HistoryData.RecordType == 0 {
-			ChargeValue, err3 := strconv.ParseFloat(HistoryData.RecordDataCharge, 32)
-			if err3 != nil {
-				return
-			}
-			currentValue, err := strconv.ParseFloat(HistoryData.DataValue, 32)
-			if err != nil {
-				return
-			}
-			oldValue, err1 := strconv.ParseFloat(dataTemp.DataValue, 32)
-			if err1 != nil {
-				return
-			}
-			if math.Abs(currentValue-oldValue) >= ChargeValue {
-				//models.Db.Model(&models.DevicesHistoryDataList{}).Create(&HistoryData)
-				//protocol_common.GSaveHistoryDataQueue.QueuePush(HistoryData)
-				protocol_common.HistoryDataWrite(HistoryData)
-				c.ModebusDeviceHistoryDataTemp[key] = HistoryData
-			}
-		} else if HistoryData.RecordType == 2 {
+	if HistoryData.RecordType == 1 {
+		if HistoryData.RecordInterval == 0 {
+			HistoryData.RecordInterval = 1
+		}
+		if (HistoryData.RecordTime.Unix() - dataTemp.RecordTime.Unix()) >= int64(HistoryData.RecordInterval) {
 			protocol_common.HistoryDataWrite(HistoryData)
-		} else if HistoryData.RecordType == 3 {
-			ChargeValue, err3 := strconv.ParseFloat(HistoryData.RecordDataCharge, 32)
-			if err3 != nil {
-				return
-			}
-			currentValue, err := strconv.ParseFloat(HistoryData.DataValue, 32)
-			if err != nil {
-				return
-			}
-			oldValue, err1 := strconv.ParseFloat(dataTemp.DataValue, 32)
-			if err1 != nil {
-				return
-			}
-			if oldValue == 0 {
-				c.ModebusDeviceHistoryDataTemp[key] = HistoryData
-				return
-			}
-			DiffValue := math.Abs(currentValue - oldValue)
-			cr := (DiffValue / oldValue) * 100
-			if cr >= ChargeValue {
-				protocol_common.HistoryDataWrite(HistoryData)
-				c.ModebusDeviceHistoryDataTemp[key] = HistoryData
-			}
-		} else if HistoryData.RecordType == 4 {
-			RecordDataTimelyStr := HistoryData.RecordDataTimely
-			RecordDataTimely, err := strconv.Atoi(RecordDataTimelyStr)
-			if err != nil {
-				return
-			}
-
-			now := time.Now()
-			min := now.Minute()
-
-			// 1. 只判断分钟，不判断秒（满足你的要求）
-			var needSave bool
-			switch RecordDataTimely {
-			case 1:
-				needSave = min%5 == 0
-			case 2:
-				needSave = min%10 == 0
-			case 3:
-				needSave = min%15 == 0
-			case 4:
-				needSave = min%30 == 0
-			case 5:
-				needSave = min == 0
-			default:
-				return
-			}
-			if !needSave {
-				return
-			}
-
-			// 2. 计算【标准整点时间】（存到数据库的是这个干净时间）
-			var cycleTime time.Time
-			switch RecordDataTimely {
-			case 1:
-				cycleTime = now.Truncate(5 * time.Minute)
-			case 2:
-				cycleTime = now.Truncate(10 * time.Minute)
-			case 3:
-				cycleTime = now.Truncate(15 * time.Minute)
-			case 4:
-				cycleTime = now.Truncate(30 * time.Minute)
-			case 5:
-				cycleTime = now.Truncate(60 * time.Minute)
-			}
-			cycleUnix := cycleTime.Unix() // 格式：14:05:00 的时间戳
-
-			// 3. 防重复：同一个整点，只存一次
-			lastSaveKey := fmt.Sprintf("%s_%s_%d", HistoryData.DeviceUuid, HistoryData.DataUuid, cycleUnix)
-			lastTime, ok := lastSaveMap.Load(lastSaveKey)
-			if !ok || cycleUnix != lastTime.(int64) {
-				// 把时间改成标准整点
-				HistoryData.RecordTime = cycleTime // 如果有时间字段就改这个
-				protocol_common.HistoryDataWrite(HistoryData)
-				c.ModebusDeviceHistoryDataTemp[key] = HistoryData
-				lastSaveMap.Store(lastSaveKey, cycleUnix)
-				// ========== 新增：清理当前点位所有旧key ==========
-				deviceDataPrefix := fmt.Sprintf("%s_%s_", HistoryData.DeviceUuid, HistoryData.DataUuid)
-				lastSaveMap.Range(func(k, v interface{}) bool {
-					keyStr := k.(string)
-					// 匹配同一个设备+同一个数据点，且不是当前最新key → 删除
-					if strings.HasPrefix(keyStr, deviceDataPrefix) && keyStr != lastSaveKey {
-						lastSaveMap.Delete(k)
-					}
-					return true
-				})
-			}
+			c.ModebusDeviceHistoryDataTemp[key] = HistoryData
+		}
+	} else if HistoryData.RecordType == 0 {
+		ChargeValue, err3 := strconv.ParseFloat(HistoryData.RecordDataCharge, 32)
+		if err3 != nil {
+			return
+		}
+		currentValue, err := strconv.ParseFloat(HistoryData.DataValue, 32)
+		if err != nil {
+			return
+		}
+		oldValue, err1 := strconv.ParseFloat(dataTemp.DataValue, 32)
+		if err1 != nil {
+			return
+		}
+		if math.Abs(currentValue-oldValue) >= ChargeValue {
+			protocol_common.HistoryDataWrite(HistoryData)
+			c.ModebusDeviceHistoryDataTemp[key] = HistoryData
+		}
+	} else if HistoryData.RecordType == 2 {
+		protocol_common.HistoryDataWrite(HistoryData)
+		c.ModebusDeviceHistoryDataTemp[key] = HistoryData
+	} else if HistoryData.RecordType == 3 {
+		ChargeValue, err3 := strconv.ParseFloat(HistoryData.RecordDataCharge, 32)
+		if err3 != nil {
+			return
+		}
+		currentValue, err := strconv.ParseFloat(HistoryData.DataValue, 32)
+		if err != nil {
+			return
+		}
+		oldValue, err1 := strconv.ParseFloat(dataTemp.DataValue, 32)
+		if err1 != nil {
+			return
+		}
+		if oldValue == 0 {
+			c.ModebusDeviceHistoryDataTemp[key] = HistoryData
+			return
+		}
+		DiffValue := math.Abs(currentValue - oldValue)
+		cr := (DiffValue / oldValue) * 100
+		if cr >= ChargeValue {
+			protocol_common.HistoryDataWrite(HistoryData)
+			c.ModebusDeviceHistoryDataTemp[key] = HistoryData
 		}
 	}
 }
@@ -1376,15 +1316,15 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 													signleAlarm.AlarmOnValue = data.AlarmOnValue
 													c.DealWithModbusAlarmData(signleAlarm)
 													// protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-												} else if data.IsRecord == 1 {
-													//存储信息
+												}
+												if data.IsRecord == 1 {
+													//存储信息（与告警独立，可同时开启）
 													signleHistoryData.DataName = data.Name
 													signleHistoryData.DeviceName = device.Name
 													signleHistoryData.RecordTime = time.Now()
 													signleHistoryData.RecordType = data.RecordType
 													signleHistoryData.RecordDataCharge = data.RecordDataCharge
 													signleHistoryData.RecordDataTimely = data.RecordDataTimely
-													// protocol_common.GHistoryDataQueue.QueuePush(signleHistoryData)
 													c.DealWithModbusHistoryData(signleHistoryData)
 												}
 												//触发器队列
@@ -2039,15 +1979,15 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 												signleAlarm.AlarmOnValue = data.AlarmOnValue
 												c.DealWithModbusAlarmData(signleAlarm)
 												//protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-											} else if data.IsRecord == 1 {
-												//存储信息
+											}
+											if data.IsRecord == 1 {
+												//存储信息（与告警独立，可同时开启）
 												signleHistoryData.DataName = data.Name
 												signleHistoryData.DeviceName = device.Name
 												signleHistoryData.RecordTime = time.Now()
 												signleHistoryData.RecordType = data.RecordType
 												signleHistoryData.RecordDataCharge = data.RecordDataCharge
 												signleHistoryData.RecordDataTimely = data.RecordDataTimely
-												// protocol_common.GHistoryDataQueue.QueuePush(signleHistoryData)
 												c.DealWithModbusHistoryData(signleHistoryData)
 											}
 										}
@@ -2117,6 +2057,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 						protocol_common.ErrorThrottled("modbus:reconn:"+device.Uuid, "设备:%s,连接断开,%d毫秒后尝试重连", device.Name, device.Interval)
 					}
 					if len(tempPushData.Data) > 0 {
+						// QueuePush 只写库；WSSend 单入口推前端（合并窗）。勿在队列出口再推 WS。
 						protocol_common.GGatherDataQueue.QueuePush(tempPushData)
 						go ismWebsocket.WSSend(tempPushData, tempPushData.ProjectUuid, 2)
 					}
@@ -2220,15 +2161,15 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 											signleAlarm.AlarmOnValue = data.AlarmOnValue
 											c.DealWithModbusAlarmData(signleAlarm)
 											// protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-										} else if data.IsRecord == 1 {
-											//存储信息
+										}
+										if data.IsRecord == 1 {
+											//存储信息（与告警独立，可同时开启）
 											signleHistoryData.DataName = data.Name
 											signleHistoryData.DeviceName = device.Name
 											signleHistoryData.RecordTime = time.Now()
 											signleHistoryData.RecordType = data.RecordType
 											signleHistoryData.RecordDataCharge = data.RecordDataCharge
 											signleHistoryData.RecordDataTimely = data.RecordDataTimely
-											// protocol_common.GHistoryDataQueue.QueuePush(signleHistoryData)
 											c.DealWithModbusHistoryData(signleHistoryData)
 										}
 										//触发器队列
@@ -2878,15 +2819,15 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 										signleAlarm.AlarmOnValue = data.AlarmOnValue
 										c.DealWithModbusAlarmData(signleAlarm)
 										//protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-									} else if data.IsRecord == 1 {
-										//存储信息
+									}
+									if data.IsRecord == 1 {
+										//存储信息（与告警独立，可同时开启）
 										signleHistoryData.DataName = data.Name
 										signleHistoryData.DeviceName = device.Name
 										signleHistoryData.RecordTime = time.Now()
 										signleHistoryData.RecordType = data.RecordType
 										signleHistoryData.RecordDataCharge = data.RecordDataCharge
 										signleHistoryData.RecordDataTimely = data.RecordDataTimely
-										// protocol_common.GHistoryDataQueue.QueuePush(signleHistoryData)
 										c.DealWithModbusHistoryData(signleHistoryData)
 									}
 								}
@@ -2958,6 +2899,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 				protocol_common.ErrorThrottled("modbus:reconn:"+device.Uuid, "设备:%s,连接断开,%d毫秒后尝试重连", device.Name, device.Interval)
 			}
 			if len(tempPushData.Data) > 0 {
+				// QueuePush 只写库；WSSend 单入口推前端（合并窗）。勿在队列出口再推 WS。
 				protocol_common.GGatherDataQueue.QueuePush(tempPushData)
 				go ismWebsocket.WSSend(tempPushData, tempPushData.ProjectUuid, 2)
 			}

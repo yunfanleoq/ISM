@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<title>ISM 接入 OceanBase 数据库 · 离线部署操作指南</title>
+<style>
+
+  @font-face {
+    font-family: ISMCJK;
+    src: url('file:///Users/yunfanleo/cursorProjects/ISM%E6%BA%90%E7%A0%81/docs/oceanbase-assets/fonts/ISM-CJK.ttc');
+    font-weight: normal;
+    font-style: normal;
+  }
+  @page {
+    size: A4;
+    margin: 18mm 16mm 20mm 16mm;
+    @bottom-center {
+      content: "第 " counter(page) " 页";
+      font-family: ISMCJK, sans-serif;
+      font-size: 9pt;
+      color: #666;
+    }
+  }
+  body, h1, h2, h3, p, li, td, th, blockquote, figcaption, .cover {
+    font-family: ISMCJK, sans-serif;
+  }
+  pre.code-block, code {
+    font-family: ISMCJK, "Menlo", "Consolas", monospace;
+  }
+
+  body {
+    font-size: 10.5pt;
+    line-height: 1.65;
+    color: #262626;
+  }
+  h1 {
+    font-size: 22pt;
+    color: #006D75;
+    border-bottom: 3px solid #13C2C2;
+    padding-bottom: 8px;
+    page-break-after: avoid;
+  }
+  h2 {
+    font-size: 15pt;
+    color: #08979C;
+    margin-top: 1.4em;
+    border-left: 4px solid #13C2C2;
+    padding-left: 10px;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 12pt;
+    color: #434343;
+    page-break-after: avoid;
+  }
+  p { margin: 0.5em 0; }
+  blockquote {
+    background: #FFFBE6;
+    border-left: 4px solid #FAAD14;
+    padding: 8px 12px;
+    margin: 10px 0;
+    color: #614700;
+  }
+  pre.code-block {
+    background: #1E1E1E;
+    color: #D4D4D4;
+    padding: 12px 14px;
+    border-radius: 6px;
+    font-size: 9pt;
+    line-height: 1.45;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  code {
+    background: #F5F5F5;
+    padding: 1px 4px;
+    border-radius: 3px;
+    font-size: 9.5pt;
+  }
+  pre code { background: transparent; color: inherit; padding: 0; }
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    font-size: 9.5pt;
+  }
+  table.data-table th {
+    background: #13C2C2;
+    color: white;
+    padding: 8px;
+    text-align: left;
+  }
+  table.data-table td {
+    border: 1px solid #E8E8E8;
+    padding: 7px 8px;
+  }
+  table.data-table tr:nth-child(even) td { background: #FAFAFA; }
+  figure {
+    margin: 16px 0;
+    text-align: center;
+    page-break-inside: avoid;
+  }
+  figure img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #E8E8E8;
+    border-radius: 4px;
+  }
+  figcaption {
+    font-size: 9pt;
+    color: #8C8C8C;
+    margin-top: 6px;
+  }
+  hr { border: none; border-top: 1px solid #E8E8E8; margin: 20px 0; }
+  ul, ol { margin: 0.4em 0 0.4em 1.2em; }
+  .cover {
+    text-align: center;
+    padding: 80px 20px 60px;
+    page-break-after: always;
+  }
+  .cover h1 { border: none; font-size: 26pt; }
+  .cover .sub { font-size: 12pt; color: #595959; margin-top: 24px; }
+  .cover .ver { margin-top: 40px; color: #8C8C8C; font-size: 10pt; }
+</style>
+</head>
+<body>
+<div class="cover">
+  <h1>ISM 接入 OceanBase 数据库</h1>
+  <p class="sub">离线部署与 SQLite 切换操作指南（图文并茂）</p>
+  <p class="ver">ISM V3.01.RC07 · 零界X Web 组态软件<br/>文档生成日期：2026-06-18</p>
+</div>
+<blockquote>适用对象：客户现场<strong>离线环境</strong>、已安装或计划安装 <strong>OceanBase</strong>，操作人员为<strong>非开发新手</strong>。</blockquote>
+<blockquote>软件版本参考：ISM V3.01.RC07 · 后端 <code>ism_server</code> · 前端端口 7080 · 后端端口 8081</blockquote>
+<blockquote>相关文件：<code>ism_server_user/conf/app.conf</code>、<code>scripts/migrate_sqlite_to_oceanbase.py</code></blockquote>
+<blockquote><strong>图文并茂 PDF 版</strong>：<code>docs/ISM-OceanBase部署与切换指南.pdf</code>（重新生成：<code>python3 scripts/build_oceanbase_guide_pdf.py</code>）</blockquote>
+
+<hr/>
+
+<h2>目录</h2>
+
+<ol><li>[先说清楚：ISM 和 OceanBase 是什么关系](#1-先说清楚ism-和-oceanbase-是什么关系)</li></ol>
+<ol><li>[部署前准备清单（离线环境）](#2-部署前准备清单离线环境)</li></ol>
+<ol><li>[两种常见场景，选哪条路](#3-两种常见场景选哪条路)</li></ol>
+<ol><li>[路径 A：全新安装，直接接客户已有 OceanBase](#4-路径-a全新安装直接接客户已有-oceanbase)</li></ol>
+<ol><li>[路径 B：先在 SQLite 试用，再迁到 OceanBase](#5-路径-b先在-sqlite-试用再迁到-oceanbase)</li></ol>
+<ol><li>[修改 app.conf（核心步骤）](#6-修改-appconf核心步骤)</li></ol>
+<ol><li>[首次启动后端与验证](#7-首次启动后端与验证)</li></ol>
+<ol><li>[启动完整 ISM 服务](#8-启动完整-ism-服务)</li></ol>
+<ol><li>[日常运维：备份与排障](#9-日常运维备份与排障)</li></ol>
+<ol><li>[常见问题 FAQ](#10-常见问题-faq)</li></ol>
+<ol><li>[附录：配置模板与命令速查](#11-附录配置模板与命令速查)</li></ol>
+
+<hr/>
+
+<h2>1. 先说清楚：ISM 和 OceanBase 是什么关系</h2>
+<figure><img src="oceanbase-assets/fig-01-architecture.png" alt="架构图"/><figcaption>图 1-1 ISM 与 OceanBase / SQLite 关系</figcaption></figure>
+
+<h3>1.1 ISM 默认装的是什么库？</h3>
+
+<p>ISM 出厂配置里，业务数据可以落在不同数据库上。配置文件里用 <strong><code>dbtype</code></strong> 一个数字决定连哪种库：</p>
+
+<table class="data-table">
+<tr><th>dbtype</th><th>数据库</th><th>典型场景</th></tr>
+<tr><td>`0`</td><td>MySQL</td><td>通用 MySQL</td></tr>
+<tr><td>`1`</td><td>**SQLite**（文件 `data/db/ism.db`）</td><td>单机试用、小项目、离线演示</td></tr>
+<tr><td>`2`</td><td>PostgreSQL</td><td>少数定制环境</td></tr>
+<tr><td>`3`</td><td>达梦 DM</td><td>国产库（部分平台不支持）</td></tr>
+<tr><td>**`4`**</td><td>**OceanBase（MySQL 兼容模式）**</td><td>**生产推荐、航信机房等项目**</td></tr>
+</table>
+
+<p>客户现场<strong>已有 OceanBase</strong> 时，应把 <code>dbtype</code> 改为 <strong><code>4</code></strong>，并填写 OceanBase 的连接账号。</p>
+
+<h3>1.2 OceanBase 在 ISM 里怎么连？</h3>
+
+<p>ISM 把 OceanBase 当作 <strong>MySQL 兼容协议</strong> 来访问（驱动与 MySQL 相同），默认：</p>
+
+<ul><li>端口：<strong>2881</strong>（OceanBase 常用 SQL 端口，以现场 DBA 为准）</li></ul>
+<ul><li>用户名格式：<strong><code>用户名@租户名</code></strong>，例如 <code>root@ism_tenant</code></li></ul>
+<ul><li>库名：建议 <strong><code>ism</code></strong>（可改，须与 <code>app.conf</code> 一致）</li></ul>
+
+<blockquote><strong>重要</strong>：改成 OceanBase 之后，<strong>不要再</strong>用 SQLite 文件 <code>ism.db</code> 查业务数据。后台、脚本、备份都会读 <code>app.conf</code> 里的 <code>dbtype</code>；若仍打开 <code>ism.db</code>，会看到<strong>旧数据或空数据</strong>，容易误判「系统坏了」。</blockquote>
+
+<h3>1.3 配置文件位置</h3>
+<figure><img src="oceanbase-assets/fig-04-app-conf.png" alt="app.conf"/><figcaption>图 1-2 配置文件核心项示意</figcaption></figure>
+
+<pre class="code-block"><code>
+ISM安装目录/
+└── ism_server_user/
+    ├── conf/app.conf          ← 数据库类型与连接参数（必改）
+    ├── ism_server             ← 后端程序
+    └── data/db/ism.db         ← 仅 dbtype=1 时使用
+</code></pre>
+
+<hr/>
+
+<h2>2. 部署前准备清单（离线环境）</h2>
+
+<p>请在现场实施前逐项确认：</p>
+
+<table class="data-table">
+<tr><th>序号</th><th>准备项</th><th>说明</th></tr>
+<tr><td>1</td><td>OceanBase 已安装并可登录</td><td>向 DBA 索取：**IP、端口、租户、用户名、密码**；或按 §4.2 用 Docker 单机版</td></tr>
+<tr><td>2</td><td>网络可达</td><td>运行 `ism_server` 的机器能 **ping / telnet** 到 OceanBase 端口（默认 2881）</td></tr>
+<tr><td>3</td><td>空库或专用库</td><td>建议单独建库 **`ism`**，不要与其他业务混用</td></tr>
+<tr><td>4</td><td>ISM 后端已解压/编译</td><td>存在 `ism_server_user/ism_server` 可执行文件</td></tr>
+<tr><td>5</td><td>Python 3 + pymysql（仅迁移时需要）</td><td>路径 B 从 SQLite 迁数据时需要：`pip install pymysql`</td></tr>
+<tr><td>6</td><td>备份习惯</td><td>改配置、迁库前**先停后端**，再备份 `ism.db` 或 OceanBase 库</td></tr>
+<tr><td>7</td><td>默认登录账号</td><td>Web：`admin` / `123456`（见 §7.3，与数据库类型无关）</td></tr>
+</table>
+
+<p><strong>离线包建议一并携带</strong>（若客户无公网）：</p>
+
+<ul><li>OceanBase 安装介质或 Docker 镜像 <code>oceanbase/oceanbase-ce</code>（若用容器）</li></ul>
+<ul><li>Python 3 安装包 + <code>pymysql</code> wheel</li></ul>
+<ul><li>本指南 + 《ISM 手工操作指南》</li></ul>
+
+<hr/>
+
+<h2>3. 两种常见场景，选哪条路</h2>
+<figure><img src="oceanbase-assets/fig-02-path-choice.png" alt="路径选择"/><figcaption>图 3-1 路径 A / 路径 B 选择</figcaption></figure>
+
+<pre class="code-block"><code>
+                    ┌─────────────────────────────────────┐
+                    │  ISM 已安装，当前 dbtype=1 (SQLite) │
+                    └─────────────────┬───────────────────┘
+                                      │
+              ┌───────────────────────┴───────────────────────┐
+              │                                               │
+     还没有业务数据 / 可丢弃试用数据                   已在 SQLite 里录了
+              │               项目、设备、大屏                     │
+              ▼                                               ▼
+        【路径 A】                                      【路径 B】
+   直接改 app.conf → dbtype=4                    先备份 ism.db → 迁库脚本
+   启动后端自动建表 + 空库或后续导入              → 再改 dbtype=4 → 重启
+</code></pre>
+
+<table class="data-table">
+<tr><th>场景</th><th>推荐路径</th></tr>
+<tr><td>第一次上线，客户只有 OceanBase，没有 SQLite 历史数据</td><td>**路径 A**</td></tr>
+<tr><td>在笔记本/试用机用 SQLite 配过项目，现在要迁到服务器 OceanBase</td><td>**路径 B**</td></tr>
+<tr><td>客户 OceanBase 里已有 DBA 建好的空库 `ism`</td><td>**路径 A**（启动后端自动建表）</td></tr>
+</table>
+
+<hr/>
+
+<h2>4. 路径 A：全新安装，直接接客户已有 OceanBase</h2>
+
+<h3>4.1 向 DBA 索取的信息（填表用）</h3>
+<figure><img src="oceanbase-assets/fig-06-dba-table.png" alt="DBA信息表"/><figcaption>图 4-1 DBA 连接信息对照表</figcaption></figure>
+
+<p>请 DBA 提供或自行记录：</p>
+
+<table class="data-table">
+<tr><th>参数</th><th>示例</th><th>对应 app.conf 键</th></tr>
+<tr><td>主机 IP</td><td>`192.168.1.100` 或 `127.0.0.1`</td><td>`oceanbasehost`</td></tr>
+<tr><td>端口</td><td>`2881`</td><td>`oceanbaseport`</td></tr>
+<tr><td>租户名</td><td>`ism_tenant`</td><td>用户名里 `@` 后面部分</td></tr>
+<tr><td>用户名</td><td>`root`</td><td>与租户拼成 `root@ism_tenant` → `oceanbaseuser`</td></tr>
+<tr><td>密码</td><td>（现场设定）</td><td>`oceanbasepwd`</td></tr>
+<tr><td>数据库名</td><td>`ism`</td><td>`oceanbasedbname`</td></tr>
+</table>
+
+<h3>4.2 若现场用 Docker 单机 OceanBase（无现成集群时）</h3>
+
+<p>适用于内网有一台 Linux 服务器、可运行 Docker 的情况。<strong>内存建议 ≥ 8GB</strong>。</p>
+
+<p><strong>① 导入镜像（离线）</strong></p>
+
+<pre class="code-block"><code>
+# 在有网络的机器上
+docker pull oceanbase/oceanbase-ce:latest
+docker save oceanbase/oceanbase-ce:latest -o oceanbase-ce.tar
+
+# 到现场服务器
+docker load -i oceanbase-ce.tar
+</code></pre>
+
+<p><strong>② 创建并启动容器（与项目 <code>start.sh</code> 一致）</strong></p>
+
+<pre class="code-block"><code>
+docker run -d --name oceanbase \
+  --ulimit nofile=65536:65536 --ulimit nproc=65536:65536 \
+  -p 2881:2881 \
+  -e MODE=mini \
+  -e OB_MEMORY_LIMIT=8G \
+  -e OB_DATAFILE_SIZE=10G \
+  -e OB_LOG_DISK_SIZE=5G \
+  -e OB_CLUSTER_NAME=ism_cluster \
+  -e OB_TENANT_NAME=ism_tenant \
+  -e OB_TENANT_PASSWORD='ism2024!' \
+  oceanbase/oceanbase-ce:latest
+</code></pre>
+
+<p><strong>③ 等待就绪（约 1～3 分钟）</strong></p>
+
+<pre class="code-block"><code>
+docker logs -f oceanbase
+# 另开终端测试：
+docker exec oceanbase obclient -h 127.0.0.1 -P 2881 \
+  -uroot@ism_tenant -p'ism2024!' -e "SELECT 1"
+</code></pre>
+
+<p>看到 <code>1</code> 即表示 SQL 端口可用。</p>
+
+<p><strong>④ 创建业务库 <code>ism</code></strong></p>
+
+<pre class="code-block"><code>
+docker exec oceanbase obclient -h 127.0.0.1 -P 2881 \
+  -uroot@ism_tenant -p'ism2024!' -e \
+  "CREATE DATABASE IF NOT EXISTS ism DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;"
+</code></pre>
+
+<blockquote>若客户是<strong>已有 OceanBase 集群</strong>，把上述 SQL 交给 DBA 在目标租户下执行即可，<strong>不必</strong> Docker。</blockquote>
+
+<h3>4.3 修改 app.conf 并启动</h3>
+
+<p>按 [§6](#6-修改-appconf核心步骤) 修改配置，然后按 [§7](#7-首次启动后端与验证) 启动后端。</p>
+
+<p>路径 A <strong>不需要</strong>运行 SQLite 迁移脚本。</p>
+
+<hr/>
+
+<h2>5. 路径 B：先在 SQLite 试用，再迁到 OceanBase</h2>
+
+<p>适用：已在 <code>dbtype=1</code> 下配置过项目/设备/大屏，需要把 <strong><code>ism.db</code> 里的数据</strong> 搬到 OceanBase。</p>
+
+<h3>5.1 总体顺序（务必按序，勿跳步）</h3>
+<figure><img src="oceanbase-assets/fig-03-migration-flow.png" alt="迁移流程"/><figcaption>图 5-1 SQLite 迁移到 OceanBase 流程</figcaption></figure>
+
+<pre class="code-block"><code>
+1. 停止 ism_server
+2. 备份 ism.db
+3. 确保 OceanBase 已就绪，且已 CREATE DATABASE ism
+4. 临时改 app.conf：dbtype=4，填好 oceanbase* 参数
+5. 启动 ism_server 一次 → 自动建表（AutoMigrate）→ 看到「系统表检查完成」后停止
+6. 运行 python3 scripts/migrate_sqlite_to_oceanbase.py
+7. 确认迁移验证全部为 OK
+8. 再次启动 ism_server（保持 dbtype=4）
+9. 登录 Web 核对项目、设备、大屏
+</code></pre>
+
+<blockquote><strong>为什么先启动一次后端？</strong></blockquote>
+<blockquote>迁移脚本只<strong>拷贝数据</strong>，表结构由 ISM 后端首次连接时自动创建。若跳过第 5 步，脚本会提示「表在 OceanBase 中不存在」并跳过，导致空库。</blockquote>
+
+<h3>5.2 详细步骤</h3>
+
+<p><strong>步骤 1：停止后端</strong></p>
+
+<pre class="code-block"><code>
+# 若用 start.sh 启动，Ctrl+C 或：
+pkill -f ism_server
+</code></pre>
+
+<p><strong>步骤 2：备份 SQLite</strong></p>
+
+<pre class="code-block"><code>
+cd ISM安装目录/ism_server_user
+cp data/db/ism.db data/db/ism.db.bak.$(date +%Y%m%d%H%M)
+ls -lh data/db/ism.db*
+</code></pre>
+
+<p><strong>步骤 3：确认 OceanBase 与空库 <code>ism</code></strong></p>
+
+<p>同 [§4.2 ④](#42-若现场用-docker-单机-oceanbase无现成集群时) 或 DBA 建库。</p>
+
+<p><strong>步骤 4～5：改 app.conf 并首次启动建表</strong></p>
+
+<p>见 [§6](#6-修改-appconf核心步骤)、[§7.1](#71-启动命令)。</p>
+
+<p><strong>步骤 6：运行迁移脚本</strong></p>
+
+<p>先编辑脚本顶部的连接参数（若与客户环境不一致）：</p>
+
+<p>文件：<code>scripts/migrate_sqlite_to_oceanbase.py</code></p>
+
+<pre class="code-block"><code>
+OCEANBASE_CONFIG = {
+    "host": "127.0.0.1",      # 改成客户 OB 地址
+    "port": 2881,
+    "user": "root@ism_tenant", # 改成客户账号
+    "password": "ism2024!",    # 改成客户密码
+    "database": "ism",
+    "charset": "utf8mb4",
+}
+</code></pre>
+
+<p>在<strong>项目根目录</strong>执行：</p>
+
+<pre class="code-block"><code>
+cd ISM安装目录
+python3 scripts/migrate_sqlite_to_oceanbase.py
+# 出现确认提示时输入 yes
+# 或非交互：python3 scripts/migrate_sqlite_to_oceanbase.py --yes
+</code></pre>
+
+<p>脚本会：</p>
+
+<ul><li>列出 SQLite 每张表的行数</li></ul>
+<ul><li>向 OceanBase 批量 INSERT</li></ul>
+<ul><li>最后做 <strong>SQLite vs OceanBase 行数对比</strong></li></ul>
+
+<p><strong>步骤 7：看验证结果</strong></p>
+
+<p>末尾应类似：</p>
+
+<pre class="code-block"><code>
+OK         | user                                     | SQLite:          1 | OceanBase:          1
+OK         | project_lists                            | SQLite:          3 | OceanBase:          3
+...
+迁移成功！所有表数据一致。
+</code></pre>
+
+<p>若有 <code>MISMATCH</code>，不要上线，联系技术支持并保留日志。</p>
+
+<p><strong>步骤 8～9：保持 dbtype=4，重启并验收</strong></p>
+
+<p>见 [§7](#7-首次启动后端与验证)、[§8](#8-启动完整-ism-服务)。</p>
+
+<hr/>
+
+<h2>6. 修改 app.conf（核心步骤）</h2>
+<figure><img src="oceanbase-assets/fig-04-app-conf.png" alt="app.conf配置"/><figcaption>图 6-1 必改配置项（红色 dbtype，蓝色 OceanBase 参数）</figcaption></figure>
+
+<h3>6.1 编辑文件</h3>
+
+<pre class="code-block"><code>
+cd ISM安装目录/ism_server_user/conf
+cp app.conf app.conf.bak.$(date +%Y%m%d)   # 先备份
+vi app.conf   # 或用记事本 / nano 编辑
+</code></pre>
+
+<h3>6.2 必改项</h3>
+
+<p>找到并修改以下行（<strong>等号两边不要加空格</strong>）：</p>
+
+<pre class="code-block"><code>
+# ① 数据库类型：OceanBase 必须为 4
+dbtype=4
+
+# ② OceanBase 连接五要素（按客户实际填写）
+oceanbaseuser=root@ism_tenant
+oceanbasepwd=ism2024!
+oceanbasehost=127.0.0.1
+oceanbaseport=2881
+oceanbasedbname=ism
+</code></pre>
+
+<h3>6.3 参数说明（给新手）</h3>
+
+<table class="data-table">
+<tr><th>配置项</th><th>含义</th><th>常见错误</th></tr>
+<tr><td>`dbtype`</td><td>`4` = OceanBase；若仍为 `1` 则继续用 SQLite 文件</td><td>改了 oceanbase* 但忘记改 dbtype</td></tr>
+<tr><td>`oceanbaseuser`</td><td>必须带 `@租户`，不能只写 `root`</td><td>登录报 Access denied</td></tr>
+<tr><td>`oceanbasepwd`</td><td>租户用户密码</td><td>与 MySQL 的 `mysqlpwd` 无关</td></tr>
+<tr><td>`oceanbasehost`</td><td>OB 服务器 IP；Docker 在本机则 `127.0.0.1`</td><td>填错网段连不上</td></tr>
+<tr><td>`oceanbaseport`</td><td>默认 2881，以 DBA 为准</td><td>与 MySQL 3306 混淆</td></tr>
+<tr><td>`oceanbasedbname`</td><td>业务库名，须已 `CREATE DATABASE`</td><td>库不存在会启动失败</td></tr>
+</table>
+
+<h3>6.4 无需修改的项</h3>
+
+<p>以下与 OceanBase <strong>无直接关系</strong>，一般保持默认即可：</p>
+
+<ul><li><code>httpport=8081</code> — 后端 API 端口</li></ul>
+<ul><li><code>mysqluser</code> / <code>mysqlpwd</code> 等 — 仅 <code>dbtype=0</code> 时使用</li></ul>
+<ul><li><code>history_keep_days=7</code> — 历史数据保留天数</li></ul>
+
+<h3>6.5 改完后的检查命令</h3>
+
+<pre class="code-block"><code>
+grep -E '^dbtype=|^oceanbase' ism_server_user/conf/app.conf
+</code></pre>
+
+<p>期望输出：</p>
+
+<pre class="code-block"><code>
+dbtype=4
+oceanbaseuser=root@ism_tenant
+oceanbasepwd=...
+oceanbasehost=...
+oceanbaseport=2881
+oceanbasedbname=ism
+</code></pre>
+
+<hr/>
+
+<h2>7. 首次启动后端与验证</h2>
+
+<h3>7.1 启动命令</h3>
+
+<p><strong>必须在 <code>ism_server_user</code> 目录下启动</strong>（相对路径 <code>data/</code> 才正确）：</p>
+
+<pre class="code-block"><code>
+cd ISM安装目录/ism_server_user
+./ism_server
+</code></pre>
+
+<p>或使用项目根目录脚本（会自动检查 <code>dbtype=4</code> 时 Docker 版 OceanBase）：</p>
+
+<pre class="code-block"><code>
+cd ISM安装目录
+./start.sh backend
+</code></pre>
+
+<h3>7.2 日志里应看到的关键行</h3>
+<figure><img src="oceanbase-assets/fig-05-startup-log.png" alt="启动日志"/><figcaption>图 7-1 后端启动成功日志示例</figcaption></figure>
+
+<pre class="code-block"><code>
+正在连接数据库,请稍等......
+数据库连接成功
+正在检查系统表,请稍等......
+系统表检查完成,耗时:...
+http server Running on http://:8081
+</code></pre>
+
+<p>若出现 <strong><code>panic: 数据库连接失败！</code></strong>，跳到 [§10 FAQ](#10-常见问题-faq)。</p>
+
+<h3>7.3 验证登录</h3>
+<figure><img src="oceanbase-assets/screen-login.png" alt="登录页"/><figcaption>图 7-2 ISM 登录页（默认 admin / 123456）</figcaption></figure>
+
+<pre class="code-block"><code>
+# 命令行测试（密码为 MD5(123456)）
+curl -s -X POST http://127.0.0.1:8081/login \
+  -H 'Content-Type: application/json' \
+  -d '{"Username":"admin","password":"e10adc3949ba59abbe56e057f20f883e"}'
+</code></pre>
+
+<p>返回 <code>"code":1000</code> 且含 <code>"token"</code> 即 API 正常。</p>
+
+<p>浏览器访问：<code>http://<服务器IP>:7080/#/login</code>，账号 <strong><code>admin</code></strong> / <strong><code>123456</code></strong>。</p>
+
+<h3>7.4 验证数据是否在 OceanBase（可选）</h3>
+
+<pre class="code-block"><code>
+docker exec oceanbase obclient -h 127.0.0.1 -P 2881 \
+  -uroot@ism_tenant -p'ism2024!' ism \
+  -e "SHOW TABLES; SELECT COUNT(*) FROM project_lists;"
+</code></pre>
+
+<p>或用客户提供的 OB 客户端工具执行相同 SQL。</p>
+
+<hr/>
+
+<h2>8. 启动完整 ISM 服务</h2>
+
+<h3>8.1 推荐顺序</h3>
+
+<table class="data-table">
+<tr><th>顺序</th><th>服务</th><th>命令 / 说明</th></tr>
+<tr><td>1</td><td>OceanBase</td><td>`docker start oceanbase` 或集群由 DBA 保障</td></tr>
+<tr><td>2</td><td>后端</td><td>`cd ism_server_user && ./ism_server`</td></tr>
+<tr><td>3</td><td>前端</td><td>`cd ism-front-end-v2 && npx vue-cli-service serve --port 7080`</td></tr>
+</table>
+
+<p>大项目前端编译需较大内存，可参考：</p>
+
+<pre class="code-block"><code>
+NODE_OPTIONS="--max-old-space-size=20480 --openssl-legacy-provider" \
+  npx vue-cli-service serve --port 7080
+</code></pre>
+
+<h3>8.2 一键启动（开发/演示环境）</h3>
+
+<pre class="code-block"><code>
+cd ISM安装目录
+./start.sh all
+</code></pre>
+
+<p>当 <code>dbtype=4</code> 时，脚本会先检查/启动名为 <code>oceanbase</code> 的 Docker 容器。</p>
+
+<h3>8.3 生产建议</h3>
+
+<ul><li>OceanBase 与 <code>ism_server</code> 建议分机或分容器，并做好<strong>磁盘与内存</strong>监控</li></ul>
+<ul><li>后端用 <strong>systemd / 守护进程</strong> 保活，不要依赖临时终端窗口</li></ul>
+<ul><li>改 <code>app.conf</code> 后<strong>必须重启</strong> <code>ism_server</code> 才生效</li></ul>
+
+<hr/>
+
+<h2>9. 日常运维：备份与排障</h2>
+
+<h3>9.1 项目备份（OceanBase 环境）</h3>
+
+<pre class="code-block"><code>
+cd ISM安装目录
+python3 scripts/backup_project.py --project-uuid &lt;项目UUID>
+</code></pre>
+
+<p>脚本会<strong>自动读取 <code>app.conf</code> 的 <code>dbtype</code></strong>，在 OceanBase 下用 pymysql 连接，无需手工改脚本。</p>
+
+<h3>9.2 导出 SQLite 快照（可选）</h3>
+
+<p>若需要把 OceanBase 数据拷到无 OB 的环境演示：</p>
+
+<pre class="code-block"><code>
+# 环境变量可覆盖连接
+export OB_HOST=127.0.0.1
+export OB_PORT=2881
+export OB_USER='root@ism_tenant'
+export OB_PASSWORD='ism2024!'
+export OB_DATABASE=ism
+
+python3 scripts/export_db_to_sqlite.py
+# 生成 ism_server_user/data/db/ism.db，再将 app.conf 改为 dbtype=1
+</code></pre>
+
+<p>详见 <code>docs/cloud-sqlite-deploy.md</code>。</p>
+
+<h3>9.3 改回 SQLite（仅应急，不推荐生产）</h3>
+
+<pre class="code-block"><code>
+dbtype=1
+</code></pre>
+
+<p>重启后端即可使用 <code>data/db/ism.db</code>。<strong>不会</strong>自动同步 OceanBase 里新产生的数据，两边是两套库。</p>
+
+<hr/>
+
+<h2>10. 常见问题 FAQ</h2>
+
+<h3>Q1：启动报「数据库连接失败」</h3>
+
+<table class="data-table">
+<tr><th>检查项</th><th>操作</th></tr>
+<tr><td>OceanBase 是否运行</td><td>`docker ps \</td><td>grep oceanbase` 或问 DBA</td></tr>
+<tr><td>端口是否通</td><td>`telnet <host> 2881` 或 `nc -zv <host> 2881`</td></tr>
+<tr><td>账号格式</td><td>必须是 `用户@租户`，如 `root@ism_tenant`</td></tr>
+<tr><td>库是否存在</td><td>执行 `SHOW DATABASES LIKE 'ism'`</td></tr>
+<tr><td>密码特殊字符</td><td>若含 `@#!` 等，与 DBA 确认是否需要转义</td></tr>
+</table>
+
+<h3>Q2：Web 能开，但项目列表为空，SQLite 里明明有数据</h3>
+
+<p><strong>原因</strong>：<code>app.conf</code> 已是 <code>dbtype=4</code>，Web 读的是 OceanBase，而数据还在 <code>ism.db</code>。</p>
+
+<p><strong>处理</strong>：按 [§5 路径 B](#5-路径-b先在-sqlite-试用再迁到-oceanbase) 做迁移；或把 <code>dbtype</code> 改回 <code>1</code> 仅用于核对旧库（临时）。</p>
+
+<h3>Q3：迁移脚本报「表在 OceanBase 中不存在，跳过」</h3>
+
+<p><strong>原因</strong>：未先启动过后端建表。</p>
+
+<p><strong>处理</strong>：<code>dbtype=4</code> 下启动 <code>ism_server</code> 一次，看到「系统表检查完成」后停止，再跑迁移脚本。</p>
+
+<h3>Q4：登录始终提示密码错误</h3>
+
+<p>ISM 密码链路固定：<strong>前端 MD5 → 后端 bcrypt</strong>。默认 <code>admin/123456</code> 与数据库类型无关。</p>
+
+<p>若 DBA 手工改过 <code>user</code> 表，需按规范写入 <code>bcrypt(MD5(明文密码))</code>，不要随意 <code>UPDATE password</code>。</p>
+
+<h3>Q5：设备很多时后端 CPU 高、进程退出</h3>
+
+<p>OceanBase 环境下大量 Modbus 设备并发采集会占用连接。建议：</p>
+
+<ul><li>分批启用设备（<code>is_enable</code>）</li></ul>
+<ul><li>确认 OceanBase 与服务器资源充足</li></ul>
+<ul><li>查看 <code>/tmp/ism_be.log</code> 或后台日志</li></ul>
+
+<h3>Q6：客户 OceanBase 不是 Docker，端口也不是 2881</h3>
+
+<p>完全正常。只需把 <code>oceanbasehost</code>、<code>oceanbaseport</code>、<code>oceanbaseuser</code>、<code>oceanbasepwd</code> 改成 DBA 提供的值，<strong><code>dbtype</code> 仍为 4</strong>。</p>
+
+<h3>Q7：离线机没有 Python，能否迁移？</h3>
+
+<ul><li><strong>路径 A（无历史数据）</strong>：不需要 Python，只改 <code>app.conf</code> + 启动后端即可。</li></ul>
+<ul><li><strong>路径 B（SQLite 有数据）</strong>：需要 Python3 + pymysql 运行迁移脚本，或请实施方在有 Python 的机器上迁好后，再连客户 OceanBase（需网络可达）。</li></ul>
+
+<hr/>
+
+<h2>11. 附录：配置模板与命令速查</h2>
+
+<h3>11.1 app.conf OceanBase 最小模板</h3>
+
+<pre class="code-block"><code>
+dbtype=4
+oceanbaseuser=root@ism_tenant
+oceanbasepwd=请填写现场密码
+oceanbasehost=127.0.0.1
+oceanbaseport=2881
+oceanbasedbname=ism
+httpport=8081
+enablehttp=true
+runmode=prod
+</code></pre>
+
+<h3>11.2 命令速查</h3>
+
+<pre class="code-block"><code>
+# 查看当前数据库类型
+grep '^dbtype=' ism_server_user/conf/app.conf
+
+# 测试 OceanBase 连接（Docker 示例）
+docker exec oceanbase obclient -h 127.0.0.1 -P 2881 \
+  -uroot@ism_tenant -p'密码' -e "SELECT 1"
+
+# 创建库
+docker exec oceanbase obclient -h 127.0.0.1 -P 2881 \
+  -uroot@ism_tenant -p'密码' -e "CREATE DATABASE IF NOT EXISTS ism;"
+
+# 备份 SQLite（迁移前）
+cp ism_server_user/data/db/ism.db ism_server_user/data/db/ism.db.bak
+
+# SQLite → OceanBase 迁移
+python3 scripts/migrate_sqlite_to_oceanbase.py --yes
+
+# 启动后端
+cd ism_server_user &amp;&amp; ./ism_server
+
+# 测试登录 API
+curl -s -X POST http://127.0.0.1:8081/login \
+  -H 'Content-Type: application/json' \
+  -d '{"Username":"admin","password":"e10adc3949ba59abbe56e057f20f883e"}'
+</code></pre>
+
+<h3>11.3 相关文档</h3>
+
+<table class="data-table">
+<tr><th>文档</th><th>内容</th></tr>
+<tr><td>`docs/ISM-手工操作指南.md`</td><td>登录、建项目、模型、设备、大屏</td></tr>
+<tr><td>`docs/cloud-sqlite-deploy.md`</td><td>OceanBase → SQLite 反向导出</td></tr>
+<tr><td>`start.sh`</td><td>含 Docker 版 OceanBase 创建示例</td></tr>
+</table>
+
+<hr/>
+
+<p><strong>文档维护</strong>：与 <code>ism_server_user/conf/app.conf</code>、<code>scripts/migrate_sqlite_to_oceanbase.py</code> 保持一致；客户现场账号密码请勿写入版本库，仅保存在现场实施记录中。</p>
+</body>
+</html>

@@ -1879,7 +1879,8 @@ export default {
     },
     GetDisplayPage(uuid){
       let params={
-        muid:uuid
+        muid:uuid,
+        metaOnly:true
       }
       let _t = this
       getDisplayModelLayerData(params).then(function (res){
@@ -2404,7 +2405,11 @@ export default {
             _t.$message.destroy()
             if(res.data.code==0)
             {
-              _t.$refs.deviceTree.getMonitorTree()
+              if (_t.$refs.deviceTree && _t.$refs.deviceTree.reloadKeepExpand) {
+                _t.$refs.deviceTree.reloadKeepExpand()
+              } else if (_t.$refs.deviceTree) {
+                _t.$refs.deviceTree.getMonitorTree()
+              }
               _t.getMonitorTree()
               _t.visible = false;
               _t.$message.success(_t.$t("monitor.EditSuccess"))
@@ -2744,15 +2749,32 @@ export default {
         uuid:key
       }
       let _t = this
-      this.$message.loading({ content: 'Waiting...',loadingKey,duration: 0 });
+      this.$message.loading({ content: 'Waiting...', key: loadingKey, duration: 0 });
       delMonitor(params).then(function (res) {
         if(res.data.code==0)
         {
           _t.tableDataSource = _t.tableDataSource.filter(item => item.key !== key)
           _t.selectedRows = _t.selectedRows.filter(item => item.key !== key)
           _t.$refs.deviceTree.getMonitorTree()
+          _t.$message.success({
+            content: _t.$t("dataModel.deleteSuccess"),
+            key: loadingKey
+          })
         }
-        _t.$message.destroy()
+        else
+        {
+          _t.$message.error({
+            content: _t.$t("dataModel.deleteFailed"),
+            key: loadingKey
+          })
+        }
+      }).catch(function (error) {
+        // 响应可能在网络切换/休眠时丢失，刷新树以对齐服务端最终状态。
+        _t.$refs.deviceTree.getMonitorTree()
+        _t.$message.error({
+          content: (error && error.message) || _t.$t("dataModel.deleteFailed"),
+          key: loadingKey
+        })
       })
     },
     backZoneList(){

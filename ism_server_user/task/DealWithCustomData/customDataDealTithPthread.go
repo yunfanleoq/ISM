@@ -294,7 +294,8 @@ func (c *CustomDataCtl) dealWithCustomDataAndExit(dealWithCustomData models.Cust
 		signleAlarm.HappenTime = time.Now()
 		c.DealWithCustomAlarmData(signleAlarm)
 		// protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-	} else if getRealData.IsRecord == 1 {
+	}
+	if getRealData.IsRecord == 1 {
 		//存储信息
 		signleHistoryData.DataValue = RealValue
 		signleHistoryData.DataName = getRealData.Name

@@ -52,9 +52,14 @@ export default {
     uid: { type: String, required: true },
   },
   created() {
-    if (shouldShowRunTreeNav(this.uid, this.$store)) {
-      applyHomeProjectAuth(this.$store)
-    }
+    if (shouldShowRunTreeNav(this.uid, this.$store)) applyHomeProjectAuth(this.$store)
+  },
+  watch: {
+    projectUuid(value) {
+      if (value && shouldShowRunTreeNav(this.uid, this.$store)) {
+        applyHomeProjectAuth(this.$store)
+      }
+    },
   },
   computed: {
     dashboardUuid() {

@@ -6,24 +6,10 @@
 // 底部分页已移除，49 是设备上下文、顶部页码和卡片切片的唯一容量口径。
 export const DEFAULT_DEVICE_PAGE_SIZE = 49
 
-/** 与 migrate_dashboard_to_templates.py TPL_PAGE['room'] 一致 */
-export const DEVICE_LIST_TEMPLATE_PAGE_ID = '89ea9d71b4ed5e16ae17c199049d416a'
-
-/** 纯设备列表页应使用的模板（优先 room，禁用 floor 主链路） */
-export function resolveDeviceListTemplateId(templateMap, pageList) {
+/** 设备列表只允许使用后端声明的 deviceList 模板，不猜名称、不硬编码记录 ID。 */
+export function resolveDeviceListTemplateId(templateMap) {
   const map = templateMap || {}
-  if (map.room) return map.room
-  if (map.zone) return map.zone
-  if (map.cabinet) return map.cabinet
-  const pages = pageList || []
-  const byStableId = pages.find(p => p && (p.pageUuid || p.pageUUID) === DEVICE_LIST_TEMPLATE_PAGE_ID)
-  if (byStableId) return byStableId.pageUuid || byStableId.pageUUID
-  const byName = pages.find(p => {
-    const t = String((p && (p.title || p.pageName)) || '')
-    return /模板[-_].*设备列表|模板-机房|设备列表模板/.test(t)
-  })
-  if (byName) return byName.pageUuid || byName.pageUUID
-  return DEVICE_LIST_TEMPLATE_PAGE_ID
+  return map.deviceList || ''
 }
 
 /** childrenList 模式推荐每页条数（表格懒加载，与 ViewRealTable 分页一致） */
@@ -51,13 +37,14 @@ export function isPureDeviceContainer(node) {
   return isPureGatewayContainer(node)
 }
 
-/** navContext 是否处于「列表分页」模式（A3 转机 / B2 寄存器组） */
+/** navContext 是否处于「列表分页」模式（A3 转机 / B2 寄存器组 / 虚拟列头柜） */
 export function isDeviceListNav(nav) {
   if (!nav) return false
+  if (nav.virtualCabinetListMode) return true
   if (isNavListPaged(nav)) return true
   const children = nav.children || []
   const hasContainers = children.some(c =>
-    c && c.kind && c.kind !== 'device' && c.kind !== 'gateway',
+    c && c.kind && c.kind !== 'device' && c.kind !== 'gateway' && c.kind !== 'virtualCabinet',
   )
   if (hasContainers) return false
   const total = nav.totalDevices != null
@@ -101,6 +88,8 @@ export function applyDeviceListPagination(nav, pageSizeOverride) {
     totalDevices: p.totalDevices,
     totalPages: p.totalPages,
     deviceListMode: p.totalDevices > 0,
+    virtualCabinetListMode: !!(nav.virtualCabinetListMode
+      || all.some(d => d && (d.kind === 'virtualCabinet' || d.virtualCabinet))),
   }
 }
 

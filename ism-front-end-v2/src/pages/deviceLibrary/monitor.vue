@@ -142,6 +142,11 @@ import ISMRender from '@/pages/ISMDisPlay/ISMRender';
 import {formatDate} from '@/utils/common';
 import {AUTH_TYPE, getAuthorization} from "@/utils/request";
 import {ismDebug} from '@/utils/ismDebug';
+import {
+  formatPointDisplayName,
+  formatPointDisplayValue,
+  splitNameByLastUnderscore,
+} from '@/pages/ISMDisPlay/utils/pointValueDisplay';
 export default {
   name: 'ISMMonitor',
   i18n: require('../../i18n/language'),
@@ -171,12 +176,29 @@ export default {
       settingVisible:false,
       columns: [
         {
-          width: '20%',
+          width: '18%',
+          slotName: 'readData.DeviceName',
+          scopedSlots: { filterDropdown: 'filterDropdown', filterIcon: 'filterIcon', customRender: 'customRender', title: 'readData.DeviceName' },
+          dataIndex: 'deviceName',
+          onFilter: (value, record) =>
+              String(record.deviceName || '')
+                  .toLowerCase()
+                  .includes(String(value || '').toLowerCase()),
+          onFilterDropdownVisibleChange: visible => {
+            if (visible) {
+              setTimeout(() => {
+                this.searchInput.focus();
+              }, 0);
+            }
+          },
+        },
+        {
+          width: '18%',
           slotName: 'readData.tableName',
           scopedSlots: { filterDropdown: 'filterDropdown', filterIcon: 'filterIcon', customRender: 'customRender', title: 'readData.tableName' },
           dataIndex: 'name',
           onFilter: (value, record) =>
-              record.name
+              String(record.name || '')
                   .toString()
                   .toLowerCase()
                   .includes(value.toLowerCase()),
@@ -439,11 +461,17 @@ export default {
               const nextRows = []
               for(let i=0;i<rows.length;i++)
               {
+                  const rawName = rows[i].name
+                  const rawValue = rows[i].value
+                  const split = splitNameByLastUnderscore(rawName)
+                  const pointName = split.pointName || formatPointDisplayName(rawName)
                   nextRows.push({
                     key: rows[i].ID || rows[i].id || rows[i].uuid,
                     no: rows[i].ID || rows[i].id,
-                    name: rows[i].name,
-                    value: rows[i].value,
+                    deviceName: split.deviceName || '',
+                    name: pointName,
+                    rawName: rawName,
+                    value: formatPointDisplayValue(rawName, rawValue),
                     uuid: rows[i].uuid,
                     unit: rows[i].unit,
                     mduid: rows[i].mduid,

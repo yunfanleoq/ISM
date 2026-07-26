@@ -885,6 +885,10 @@ export default {
       this.$refs.HeaderSystemImageModel.showModal(showType)
     },
     doSaveLayerData(uuid){
+      if (this.editorRuntimePreview && this.editorRuntimePreview.active) {
+        this.$message.warning(this.$t('displayConfig.RuntimePreviewSaveBlocked'))
+        return
+      }
       let _t = this
       let params = {
         uuid:uuid,
@@ -1468,6 +1472,7 @@ export default {
       UnSelectedComponent: state => store.state.ISMDisPlayEditorTool.UnSelectedComponent,
       configData: state => store.state.ISMDisPlayEditorTool.LayerData,
       selectPageUuid: state => store.state.ISMDisPlayEditorTool.selectPageUuid,
+      editorRuntimePreview: state => store.state.ISMDisPlayEditorTool.editorRuntimePreview,
       selectedComponentMap: state => store.state.ISMDisPlayEditorTool.selectedComponentMap,
       curComponent: state => store.state.ISMDisPlayEditorTool.selectedComponent,
       copySrcItems: state => store.state.ISMDisPlayEditorTool.copySrcItems,

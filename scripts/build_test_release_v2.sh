@@ -310,6 +310,10 @@ done
 STOPEOF
 
 chmod +x "$STAGING/start-test.sh" "$STAGING/stop-test.sh" "$STAGING/scripts/serve_test_frontend.py"
+if [[ -f "$ROOT/scripts/deploy_sqlite_release.sh" ]]; then
+  cp "$ROOT/scripts/deploy_sqlite_release.sh" "$STAGING/deploy.sh"
+  chmod +x "$STAGING/deploy.sh"
+fi
 
 cat > "$STAGING/README-部署说明.md" << READMEEOF
 # ISM 正式测试环境部署包
@@ -336,42 +340,38 @@ cat > "$STAGING/README-部署说明.md" << READMEEOF
 
 \`\`\`
 ${PKG_NAME}/
-├── start-test.sh          # 一键启动（读 ports.env / app.conf）
+├── deploy.sh              # ★ 一键部署（检查 + 启动 + 登录验活）
+├── start-test.sh          # 仅启动
 ├── stop-test.sh           # 停止服务
 ├── ports.env              # ISM_FE_PORT=7080, ISM_BE_PORT=8091
-├── build-on-target.sh     # Docker 构建失败时，在目标机编译（需 Go 源码）
+├── build-on-target.sh     # 目标机缺二进制时本地编译（需 Go+gcc）
 ├── ism_server_user/
-│   ├── ism_server         # Linux amd64 后端（CGO 编译）
-│   ├── conf/app.conf      # 配置（dbtype=1, httpport=8091）
+│   ├── ism_server         # Linux amd64 后端
+│   ├── conf/app.conf      # dbtype=1, httpport=8091
 │   ├── data/db/ism.db
 │   └── static/
 ├── web/dist/
 └── scripts/
-    ├── serve_test_frontend.py  # 静态 + /api 代理（--backend 可配置）
+    ├── serve_test_frontend.py  # 静态 + /api 代理
     └── modbus_simulator.py
 \`\`\`
 
-## 快速部署
+## 快速部署（推荐）
 
-1. 创建独立目录并上传解压:
-   \`\`\`bash
-   mkdir -p /opt/ism
-   cd /opt/ism
-   unzip ${PKG_NAME}.zip
-   cd ${PKG_NAME}
-   \`\`\`
-2. 确认 \`ports.env\` 中端口未与客户 **8081/8082** 冲突（默认 **7080/8091**）；若需调整:
-   \`\`\`bash
-   export ISM_FE_PORT=7080
-   export ISM_BE_PORT=8091
-   sed -i 's/^httpport=.*/httpport=8091/' ism_server_user/conf/app.conf
-   \`\`\`
-   > **禁止**占用客户 API **8081/8082**；前端 7080 与 cpolar 一致，若客户 ism_web 前端也在 7080 则勿同时启两套前端
-3. 确认包内 \`ism_server_user/ism_server\` 存在且可执行；若缺失:
-   - \`bash build-on-target.sh\`（目标机有 Go+gcc 与源码）
-   - 或从开发机重新构建完整 release 包
-4. 启动: \`bash start-test.sh\`
-5. 访问 \`http://<IP>:7080/#/login\` 或外网 \`https://largescreen.cpolar.cn\`，账号 **admin** / **123456**
+目标机：**Linux x86_64**，需 \`python3\` / \`curl\` / \`unzip\`。
+
+\`\`\`bash
+mkdir -p /opt/ism && cd /opt/ism
+unzip -o ${PKG_NAME}.zip
+cd ${PKG_NAME}
+bash deploy.sh
+# 仅检查: bash deploy.sh --check
+# 重启:   bash deploy.sh --restart
+\`\`\`
+
+访问 \`http://<IP>:7080/#/login\`，账号 **admin** / **123456**。
+
+> **禁止**占用客户 **8081/8082**；默认前端 **7080**、后端 **8091**。改端口：\`ISM_FE_PORT=7090 ISM_BE_PORT=8091 bash deploy.sh\`
 
 ## 端口说明（与客户生产隔离）
 

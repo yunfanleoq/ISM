@@ -770,7 +770,8 @@ func (c *SnmpCtl) GatherSnmpOids() {
 						signleAlarm.HappenTime = time.Now()
 						c.DealWithSnmpCtlAlarmData(signleAlarm)
 						// protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-					} else if temp.IsRecord == 1 {
+					}
+					if temp.IsRecord == 1 {
 						//存储信息
 						signleHistoryData.DataName = temp.Name
 						signleHistoryData.DeviceName = device.Name

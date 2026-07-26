@@ -247,12 +247,31 @@ func ResyncOfflineDeviceAlarms(projectUuid string, deviceUuids []string) int64 {
 	return synced
 }
 
+// alarmKeepTimeExpr 按数据库方言计算 keep_time（秒），避免 Find 全量再逐行 Updates。
+func alarmKeepTimeExpr(clearTime time.Time) interface{} {
+	clearTimeStr := clearTime.Format("2006-01-02 15:04:05")
+	switch Db.Dialector.Name() {
+	case "sqlite":
+		return gorm.Expr("(julianday(?) - julianday(happen_time)) * 86400.0", clearTimeStr)
+	case "postgres":
+		return gorm.Expr("EXTRACT(EPOCH FROM (?::timestamp - happen_time))", clearTimeStr)
+	default:
+		// MySQL / OceanBase MySQL 兼容模式
+		return gorm.Expr("TIMESTAMPDIFF(SECOND, happen_time, ?)", clearTimeStr)
+	}
+}
+
 func AlarmClearAll(params map[string]interface{}, ProjectUuid string) (int64, int) {
 	var deviceList []string
 	var dataList []string
+	skipOfflineResync := false
 
 	for k, v := range params {
 		switch value := v.(type) {
+		case bool:
+			if k == "skipOfflineResync" {
+				skipOfflineResync = value
+			}
 		case []interface{}:
 			if k == "deviceList" {
 				for _, u := range value {
@@ -268,7 +287,7 @@ func AlarmClearAll(params map[string]interface{}, ProjectUuid string) (int64, in
 
 	clearTime := time.Now()
 	query := Db.Model(&DevicesAlarmList{}).
-		Where("clear_time < ? AND project_uuid = ?", "2007-01-02 15:04:05", ProjectUuid)
+		Where("clear_time < ? AND project_uuid = ?", alarmActiveClearThreshold, ProjectUuid)
 
 	if len(deviceList) != 0 && len(dataList) != 0 {
 		query = query.Where("device_uuid IN ? AND model_data_uuid IN ?", deviceList, dataList)
@@ -278,27 +297,20 @@ func AlarmClearAll(params map[string]interface{}, ProjectUuid string) (int64, in
 		query = query.Where("model_data_uuid IN ?", dataList)
 	}
 
-	var alarms []DevicesAlarmList
-	if err := query.Find(&alarms).Error; err != nil {
+	result := query.Updates(map[string]interface{}{
+		"clear_time": clearTime,
+		"keep_time":  alarmKeepTimeExpr(clearTime),
+	})
+	if result.Error != nil {
 		return 0, errmsg.ERROR_DATABASE
 	}
-	if len(alarms) == 0 {
-		return 0, errmsg.SUCCSECODE
+
+	// 默认保持实时告警页的离线设备状态同步；告警设置页的人工全量清除可明确跳过补建。
+	if !skipOfflineResync {
+		ResyncOfflineDeviceAlarms(ProjectUuid, nil)
 	}
 
-	for _, alarm := range alarms {
-		keepTime := float64((clearTime.UnixMilli() - alarm.HappenTime.UnixMilli()) / 1000.0)
-		if err := Db.Model(&DevicesAlarmList{}).
-			Where("id = ?", alarm.ID).
-			Updates(DevicesAlarmList{ClearTime: clearTime, KeepTime: keepTime}).Error; err != nil {
-			return 0, errmsg.ERROR
-		}
-	}
-
-	// 离线设备告警被清除后，采集线程不会再次上报；补建仍离线设备的告警记录
-	ResyncOfflineDeviceAlarms(ProjectUuid, nil)
-
-	return int64(len(alarms)), errmsg.SUCCSECODE
+	return result.RowsAffected, errmsg.SUCCSECODE
 }
 
 func GetCurrentShieldAlarmList(params map[string]interface{}, ProjectUuid string) ([]DeviceRealData, int) {

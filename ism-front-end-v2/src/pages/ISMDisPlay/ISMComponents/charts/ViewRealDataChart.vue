@@ -723,13 +723,9 @@ export default {
             largeThreshold: 10000,
             dataID:this.detail.active[i].condition.deviceSN+this.detail.active[i].condition.dataID,
             data: [],
-            itemStyle: {
-              normal: {
-                lineStyle: {
+            itemStyle: {lineStyle: {
                   width:this.EchartsWidth
-                }
-              }
-            },
+                }},
             symbolSize: this.EchartsWidth,
           }
           this.option.series.push(series)
