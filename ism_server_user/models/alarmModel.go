@@ -9,6 +9,7 @@
 package models
 
 import (
+	protocol_common "ISMServer/protocol/common"
 	"ISMServer/utils/errmsg"
 	"errors"
 	"time"
@@ -187,12 +188,20 @@ func AlarmTriggerImportBatch(triggers []AlarmTrigger, ProjectUuid string) (int, 
 
 // AlarmClearAll 批量清除当前项目下未消除的实时告警（支持按设备/数据筛选，与 GetCurrentAlarmList 条件一致）
 const deviceStatusDataUuid = "sys.suid.device.status"
-const alarmActiveClearThreshold = "2007-01-02 15:04:05"
+
+// ActiveAlarmClearThreshold 与 protocol_common 一致：clear_time < 该值 = 实时未消除。
+const ActiveAlarmClearThreshold = protocol_common.ActiveAlarmClearThreshold
+
+// ActiveAlarmClearSentinel 协议写入未消除告警时的 clear_time 哨兵（必须 < ActiveAlarmClearThreshold）。
+const ActiveAlarmClearSentinel = "2006-01-02 15:04:05"
+
+// 兼容本文件内旧引用名
+const alarmActiveClearThreshold = ActiveAlarmClearThreshold
 
 // ResyncOfflineDeviceAlarms 清除告警后，为仍处于离线状态的设备补建实时离线告警。
 // deviceUuids 为空时处理项目下全部离线设备；否则仅处理指定设备（仍须 status=0）。
 func ResyncOfflineDeviceAlarms(projectUuid string, deviceUuids []string) int64 {
-	clearSentinel, _ := time.Parse("2006-01-02 15:04:05", alarmActiveClearThreshold)
+	clearSentinel, _ := time.ParseInLocation("2006-01-02 15:04:05", ActiveAlarmClearSentinel, time.Local)
 
 	query := Db.Model(&MonitorList{}).
 		Where("project_uuid = ? AND status = 0 AND is_enable = 1 AND type = 1 AND muid != '' AND muid IS NOT NULL", projectUuid)

@@ -397,6 +397,7 @@ func init() {
 	//
 	beego.Router("/UpdateDataModel/:muid", &controllers.ISMSystem{}, "*:UpdateDataModel")
 	beego.Router("/UpdateAllModbusDataModel", &controllers.ISMSystem{}, "*:UpdateAllModbusDataModel")
+	beego.Router("/UpdateAllVirtualDeviceDataModel", &controllers.VirtualDeviceController{}, "*:UpdateAllVirtualDeviceDataModel")
 
 	//系统脚本
 	beego.Router("/AddScript", &controllers.ISMScriptController{}, "*:AddScript")
@@ -545,6 +546,7 @@ var FilterUser = func(ctx *context.Context) {
 				!strings.Contains(ctx.Request.RequestURI, "/GetPhysicalIDCheck") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateAllModbusDataModel") &&
+				!strings.Contains(ctx.Request.RequestURI, "/UpdateAllVirtualDeviceDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateIEC104DataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateModbusTcpPushDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/setData") &&
@@ -593,6 +595,7 @@ var FilterUser = func(ctx *context.Context) {
 				!strings.Contains(ctx.Request.RequestURI, "/GetPhysicalIDCheck") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateAllModbusDataModel") &&
+				!strings.Contains(ctx.Request.RequestURI, "/UpdateAllVirtualDeviceDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateIEC104DataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateModbusTcpPushDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/setData") &&

@@ -4,8 +4,9 @@
  */
 export const DASHBOARD_PERFORMANCE = Object.freeze({
   // 1888×896 运行区按 10 列×8 行展示高密度实时卡片；始终服务端分页。
+  // 默认每页 80（一屏满格）；上限放宽到 200，减少「点位多只显示部分」的翻页次数。
   datapointPageSize: 80,
-  datapointMaxPageSize: 100,
+  datapointMaxPageSize: 200,
   deviceSummaryPageSize: 30,
   historySeriesLimit: 1,
   historyPointLimit: 300,

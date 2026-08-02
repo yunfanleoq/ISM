@@ -637,6 +637,21 @@ export default {
         : sourceSeries[0].unit
       this.option.yAxis.min = 'dataMin'
       this.option.yAxis.max = 'dataMax'
+      // 20260729：功率趋势数值显示整数即可
+      if (isPower) {
+        this.option.yAxis.axisLabel = Object.assign({}, this.option.yAxis.axisLabel || {}, {
+          formatter: (v) => {
+            const n = Number(v)
+            return Number.isFinite(n) ? String(Math.round(n)) : String(v)
+          },
+        })
+        sourceSeries.forEach(series => {
+          series.points = series.points.map(point => ({
+            time: point.time,
+            value: Math.round(Number(point.value)),
+          }))
+        })
+      }
       this.option.legend.show = hasPoints
       this.option.legend.data = hasPoints ? sourceSeries.map(series => series.name) : []
       this.option.tooltip.formatter = params => {
@@ -646,7 +661,11 @@ export default {
         }
         params.forEach(param => {
           const series = sourceSeries.find(item => item.name === param.seriesName)
-          rows.push(`${param.marker}${param.seriesName}: ${param.value}${series && series.unit ? ` ${series.unit}` : ''}`)
+          const rawVal = param.value
+          const shown = isPower && Number.isFinite(Number(rawVal))
+            ? String(Math.round(Number(rawVal)))
+            : rawVal
+          rows.push(`${param.marker}${param.seriesName}: ${shown}${series && series.unit ? ` ${series.unit}` : ''}`)
         })
         return rows.join('<br/>')
       }

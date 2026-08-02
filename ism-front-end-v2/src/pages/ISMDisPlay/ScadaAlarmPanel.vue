@@ -212,7 +212,10 @@ export default {
     },
     async clearAllAlarms() {
       if (this.clearing) return
-      if (!window.confirm('确定清除当前项目的全部实时告警吗？')) return
+      if (!window.confirm(
+        '确定清除当前项目的全部实时告警吗？\n\n' +
+        '说明：仅消除实时状态，告警记录会保留并可在「历史查询」中查看，不会物理删除。'
+      )) return
       this.clearing = true
       try {
         const res = await ClearAllCurrentAlarm(
@@ -221,7 +224,7 @@ export default {
         )
         if (res && res.data && res.data.code === 0) {
           this.alarms = []
-          this.$message.success('实时告警已清除（' + (res.data.count || 0) + '）')
+          this.$message.success('实时状态已清除，记录已进入历史（' + (res.data.count || 0) + '）')
           await this.fetchAlarms()
         } else {
           this.$message.error('清除实时告警失败')

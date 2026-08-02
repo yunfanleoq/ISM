@@ -6,8 +6,6 @@
       type="button"
       class="runtime-card"
       :class="{
-        'runtime-card--online': mode === 'device' && item.online,
-        'runtime-card--offline': mode === 'device' && !item.online,
         'runtime-card--device': mode === 'device',
         'runtime-card--point': mode === 'point',
         'runtime-card--active': mode === 'point' && isPointActive(item)
@@ -36,9 +34,7 @@
           </span>
         </template>
       </span>
-      <span v-if="mode === 'device'" class="runtime-card__status">
-        {{ item.online ? '在线' : '不在线' }}
-      </span>
+      <!-- 20260729：取消设备在线态文案与变色，卡片样式统一 -->
       <span v-if="mode === 'device'" class="runtime-card__enter">查看点位 ›</span>
     </button>
   </div>
@@ -70,16 +66,26 @@ export default {
     }
   },
   watch: {
+    // 避免 deep watch 在每帧数值刷新时遍历全部卡片属性（麒麟现场卡顿主因之一）
     items: {
       handler(items) {
-        this.syncActiveFromItems(items)
+        const list = Array.isArray(items) ? items : []
+        let fingerprint = `${list.length}`
+        for (let i = 0; i < list.length; i++) {
+          const it = list[i]
+          if (!it) continue
+          fingerprint += `|${it.key}:${it.value}`
+        }
+        if (fingerprint === this._itemsFingerprint) return
+        this._itemsFingerprint = fingerprint
+        this.syncActiveFromItems(list)
       },
-      deep: true,
       immediate: true,
     },
     mode() {
       this.clearAllActive()
       this._prevValues = Object.create(null)
+      this._itemsFingerprint = ''
       this.syncActiveFromItems(this.items)
     },
   },
@@ -541,54 +547,6 @@ export default {
 .runtime-card__content small {
   color: #6f98ad;
   font-size: 10px;
-}
-
-.runtime-card__status {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  color: #8497aa;
-  font-size: 10px;
-}
-
-.runtime-card__status::before {
-  content: "●";
-  margin-right: 4px;
-}
-
-.runtime-card--online .runtime-card__status {
-  color: #58e0ad;
-}
-
-.runtime-card--device.runtime-card--offline {
-  border-color: rgba(90, 105, 120, 0.45);
-  background: linear-gradient(135deg, rgba(28, 34, 42, 0.96), rgba(18, 22, 28, 0.98));
-  color: #8a97a5;
-  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.25), 0 4px 10px rgba(0, 0, 0, 0.22);
-  filter: grayscale(0.55) saturate(0.45);
-  opacity: 0.88;
-}
-
-.runtime-card--device.runtime-card--offline .runtime-card__icon {
-  color: #6b7886;
-  border-color: rgba(110, 122, 136, 0.4);
-  box-shadow: none;
-}
-
-.runtime-card--device.runtime-card--offline .runtime-card__name {
-  color: #9aa8b6;
-}
-
-.runtime-card--device.runtime-card--offline .runtime-card__status {
-  color: #8497aa;
-}
-
-.runtime-card--device.runtime-card--offline .runtime-card__enter {
-  color: #6a8090;
-}
-
-.runtime-card--device.runtime-card--offline .runtime-card__accent {
-  background: linear-gradient(90deg, #5a6774, transparent);
 }
 
 .runtime-card__enter {

@@ -55,36 +55,115 @@ type TaskJobPthread struct {
 
 const SavePath string = "data/dbbackup/"
 
-func MysqlSQLDump(host, port, dbname, user, password, char, backupfilePath, zippwd string, tables []string) (string, error) {
-	db, err := xorm.NewEngine("mysql", user+":"+password+"@("+host+":"+port+")/"+dbname+"?charset="+char)
-	defer db.Close()
+func ensureBackupDir(path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return os.MkdirAll(path, os.ModePerm)
+	}
+	return nil
+}
+
+// rejectEmptyBackup 备份文件为空则删除并报错，避免任务计划落 0B「假成功」。
+func rejectEmptyBackup(fullPath string) error {
+	info, err := os.Stat(fullPath)
 	if err != nil {
+		return err
+	}
+	if info.Size() <= 0 {
+		_ = os.Remove(fullPath)
+		return fmt.Errorf("备份文件为空(0B)，已删除: %s", fullPath)
+	}
+	return nil
+}
+
+// mysqlCliDump 优先用 mysqldump（与手工备份同路径），失败再回退 xorm DumpAllToFile。
+func mysqlCliDump(host, port, dbname, user, password, backupfilePath, dist string, tables []string) error {
+	mysqldumpPath, lookErr := exec.LookPath("mysqldump")
+	if lookErr != nil {
+		return lookErr
+	}
+	fullPath := filepath.Join(backupfilePath, dist)
+	args := []string{
+		"-h", host, "-P", port, "-u", user, "--password=" + password,
+		"--single-transaction", "--routines", "--triggers",
+		"--default-character-set=utf8mb4",
+		dbname,
+	}
+	if len(tables) > 0 {
+		args = append(args, tables...)
+	}
+	cmd := exec.Command(mysqldumpPath, args...)
+	outFile, err := os.Create(fullPath)
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
+	cmd.Stdout = outFile
+	var stderr strings.Builder
+	cmd.Stderr = &stderr
+	if err := cmd.Run(); err != nil {
+		_ = os.Remove(fullPath)
+		msg := strings.TrimSpace(stderr.String())
+		if msg == "" {
+			msg = err.Error()
+		}
+		return fmt.Errorf("mysqldump 失败: %s", msg)
+	}
+	return rejectEmptyBackup(fullPath)
+}
+
+func MysqlSQLDump(host, port, dbname, user, password, char, backupfilePath, zippwd string, tables []string) (string, error) {
+	if err := ensureBackupDir(backupfilePath); err != nil {
 		return "", err
 	}
-
 	nowtime := time.Now().Format("2006-01-02_15-04-05")
 	dist := "ISM_Mysql_Backup_" + nowtime + ".sql"
-	err = db.DumpAllToFile(backupfilePath+"/"+dist, tables)
+	fullPath := filepath.Join(backupfilePath, dist)
+
+	// 优先 mysqldump（现场手工备份能出 225MB 的同路径）
+	if err := mysqlCliDump(host, port, dbname, user, password, backupfilePath, dist, tables); err == nil {
+		return dist, nil
+	} else {
+		logs.Warn("mysqldump 不可用或失败，回退 xorm DumpAllToFile: %v", err)
+	}
+
+	db, err := xorm.NewEngine("mysql", user+":"+password+"@("+host+":"+port+")/"+dbname+"?charset="+char)
 	if err != nil {
 		return "", err
 	}
-	return dist, err
+	defer db.Close()
+	err = db.DumpAllToFile(fullPath, tables)
+	if err != nil {
+		_ = os.Remove(fullPath)
+		return "", err
+	}
+	if err := rejectEmptyBackup(fullPath); err != nil {
+		return "", err
+	}
+	return dist, nil
 }
 
 func SqliteSQLDump(dbpath, backupfilePath, zippwd string, tables []string) (string, error) {
+	if err := ensureBackupDir(backupfilePath); err != nil {
+		return "", err
+	}
 	db, err := xorm.NewEngine("sqlite3", dbpath)
-	defer db.Close()
 	if err != nil {
 		return "", err
 	}
+	defer db.Close()
 
 	nowtime := time.Now().Format("2006-01-02_15-04-05")
 	dist := "ISM_Sqlite3_Backup_" + nowtime + ".sql"
-	err = db.DumpAllToFile(backupfilePath+"/"+dist, tables)
+	fullPath := filepath.Join(backupfilePath, dist)
+	err = db.DumpAllToFile(fullPath, tables)
 	if err != nil {
+		_ = os.Remove(fullPath)
 		return "", err
 	}
-	return dist, err
+	if err := rejectEmptyBackup(fullPath); err != nil {
+		return "", err
+	}
+	return dist, nil
 }
 
 // 检查目录大小，如果超过限制，删除最老的文件
@@ -133,53 +212,61 @@ func checkDirSize(task models.TaskPlanList) error {
 }
 
 func backupDb(task models.TaskPlanList) {
-
 	DbType, _ := config.Int("dbtype")
 	var getTablesList = make([]string, 0)
 	var results string
 
+	// 与手工备份 GetTablesListFunc 一致：含 OceanBase(dbtype=4)
 	if DbType == 1 {
-		rows2, _ := models.Db.Raw("select name from sqlite_master where type='table' order by name").Rows()
-		defer rows2.Close()
-		for rows2.Next() {
-			rows2.Scan(&results)
-			getTablesList = append(getTablesList, results)
+		rows2, err := models.Db.Raw("select name from sqlite_master where type='table' order by name").Rows()
+		if err == nil {
+			defer rows2.Close()
+			for rows2.Next() {
+				rows2.Scan(&results)
+				getTablesList = append(getTablesList, results)
+			}
 		}
-	} else if DbType == 0 {
-		rows2, _ := models.Db.Raw("show tables;").Rows()
-		defer rows2.Close()
-		for rows2.Next() {
-			rows2.Scan(&results)
-			getTablesList = append(getTablesList, results)
+	} else if DbType == 0 || DbType == 4 {
+		rows2, err := models.Db.Raw("show tables;").Rows()
+		if err == nil {
+			defer rows2.Close()
+			for rows2.Next() {
+				rows2.Scan(&results)
+				getTablesList = append(getTablesList, results)
+			}
 		}
 	}
 	if len(getTablesList) == 0 {
-		var tableslist string = "alarm_notice,alarm_trigger,custom_data,device_real_data,devices_alarm_list,devices_history_data_list,devices_model,devices_support_list,display_model_layer,display_models,modbus_devices_data_model,modbus_devices_register_group,monitor_list,opcua_devices_data_model,project_lists,project_user,project_video_list,roles_list,snmp_devices_data_model,static_data,system_data_model,system_imge,system_journal,user"
-		getTablesList = strings.Split(tableslist, ",")
+		logs.Error("执行任务失败", task.TaskName, "无法枚举数据库表，拒绝空 fallback 备份")
+		return
 	}
 
+	var (
+		dist string
+		err  error
+	)
 	if DbType == 1 {
-		_, err := SqliteSQLDump("data/db/ism.db", SavePath, "", getTablesList)
-		if err != nil {
-			logs.Error("执行任务失败", task.TaskName, err)
-		} else {
-			logs.Info("执行任务成功", task.TaskName)
-		}
+		dist, err = SqliteSQLDump("data/db/ism.db", SavePath, "", getTablesList)
+	} else if DbType == 4 {
+		oceabaseuser, _ := config.String("oceanbaseuser")
+		oceabasepwd, _ := config.String("oceanbasepwd")
+		oceabasehost, _ := config.String("oceanbasehost")
+		oceabaseport, _ := config.String("oceanbaseport")
+		oceabasedbname, _ := config.String("oceanbasedbname")
+		dist, err = MysqlSQLDump(oceabasehost, oceabaseport, oceabasedbname, oceabaseuser, oceabasepwd, "utf8mb4", SavePath, "", getTablesList)
 	} else {
 		mysqluser, _ := config.String("mysqluser")
 		mysqlpwd, _ := config.String("mysqlpwd")
 		mysqlhost, _ := config.String("mysqlhost")
 		mysqlport, _ := config.String("mysqlport")
 		mysqldbname, _ := config.String("mysqldbname")
-
-		_, err := MysqlSQLDump(mysqlhost, mysqlport, mysqldbname, mysqluser, mysqlpwd, "utf8", SavePath, "", getTablesList)
-		if err != nil {
-			logs.Error("执行任务失败", task.TaskName, err)
-		} else {
-			logs.Info("执行任务成功", task.TaskName)
-		}
+		dist, err = MysqlSQLDump(mysqlhost, mysqlport, mysqldbname, mysqluser, mysqlpwd, "utf8", SavePath, "", getTablesList)
 	}
-
+	if err != nil {
+		logs.Error("执行任务失败", task.TaskName, err)
+		return
+	}
+	logs.Info("执行任务成功", task.TaskName, "备份文件", dist)
 }
 func setDeviceData(task models.TaskPlanList) {
 
@@ -545,29 +632,28 @@ func delHistoryData(task models.TaskPlanList) {
 func delAlarmHistoryData(task models.TaskPlanList) {
 	day := -task.KeepHistoryDay
 	_, date := GetBeforeTime(day)
-	err := models.Db.Model(&models.DevicesAlarmList{}).Unscoped().Where("clear_time < ? and project_uuid = ?", date, task.ProjectUuid).Delete(models.DevicesAlarmList{}).Error
+	// 只硬删已消除告警（clear_time >= 阈值）；禁止删除实时哨兵行（2006-01-02）
+	threshold := protocol_common.ActiveAlarmClearThreshold
+	err := models.Db.Model(&models.DevicesAlarmList{}).Unscoped().
+		Where("clear_time >= ? AND clear_time < ? AND project_uuid = ?", threshold, date, task.ProjectUuid).
+		Delete(models.DevicesAlarmList{}).Error
 	if err != nil {
 		logs.Error("执行任务失败", task.TaskName, err)
 	} else {
-		logs.Info("执行任务成功", task.TaskName)
+		logs.Info("执行任务成功", task.TaskName, "已消除告警清理截止", date)
 	}
 	dbtype, _ := config.Int("dbtype")
 	if dbtype == 1 {
 		models.Db.Exec("VACUUM;")
 	}
 }
+
+// CheckRecordVideoSize 按录像目录大小清理旧文件（不再误删告警表）。
 func CheckRecordVideoSize(task models.TaskPlanList) {
-	day := -task.KeepHistoryDay
-	_, date := GetBeforeTime(day)
-	err := models.Db.Model(&models.DevicesAlarmList{}).Unscoped().Where("clear_time < ? and project_uuid = ?", date, task.ProjectUuid).Delete(models.DevicesAlarmList{}).Error
-	if err != nil {
+	if err := checkDirSize(task); err != nil {
 		logs.Error("执行任务失败", task.TaskName, err)
 	} else {
 		logs.Info("执行任务成功", task.TaskName)
-	}
-	dbtype, _ := config.Int("dbtype")
-	if dbtype == 1 {
-		models.Db.Exec("VACUUM;")
 	}
 }
 func SyncNTPTime(task models.TaskPlanList) {

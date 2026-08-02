@@ -82,8 +82,8 @@ module.exports = {
         current:{
           Clear:"清除",
           ClearAll:"一键清除",
-          ClearAllTips:"确定清除当前筛选条件下的全部实时告警吗？",
-          ClearAllSuccess:"已全部清除",
+          ClearAllTips:"确定清除当前筛选条件下的全部实时告警吗？仅消除实时状态，记录保留并可在历史中查询，不会物理删除。",
+          ClearAllSuccess:"实时状态已清除，记录已进入历史",
           ClearAllFailed:"一键清除失败",
           ClearAllApiFailed:"后端批量清除失败，请检查服务日志后重试或使用 clear_all_alarms.py",
           ClearAllFallback:"兼容模式：逐条清除...",
@@ -3316,8 +3316,8 @@ module.exports = {
         "current":{
           "Clear":"Clear",
           "ClearAll":"Clear All",
-          "ClearAllTips":"Clear all real-time alarms matching current filters?",
-          "ClearAllSuccess":"All alarms cleared",
+          "ClearAllTips":"Clear all real-time alarms matching current filters? This only clears live status; records remain available in history and are not physically deleted.",
+          "ClearAllSuccess":"Live status cleared; records moved to history",
           "ClearAllFailed":"Bulk clear failed",
           "ClearAllApiFailed":"Backend bulk clear failed; check server logs or use clear_all_alarms.py",
           "ClearAllFallback":"Legacy mode: clearing one by one...",

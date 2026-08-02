@@ -95,15 +95,14 @@
 <script>
 import ISMChildAutoMixin from '@/mixins/ISMChildAutoMixin';
 import RuntimeDataCardGrid from './RuntimeDataCardGrid.vue'
-import { formatPointDisplayValue, isDeviceOnlineFromStatusValue } from '@/pages/ISMDisPlay/utils/pointValueDisplay'
-
-const DEVICE_ONLINE_POLL_MS = 8000
+import { formatPointDisplayValue } from '@/pages/ISMDisPlay/utils/pointValueDisplay'
 
 // 勿静态 import @/store / @/services/device / @/utils/realDataBatch ——
 // 主 chunk 已引用它们；ism-render 异步 chunk 再静态引用会触发 webpack4 scope-hoisting
 // unused reexport bug，令本组件 export.default.data 丢失。
 const REAL_DATA_DEFAULT_PAGE_SIZE = 30
-const REAL_DATA_MAX_PAGE_SIZE = 100
+// 与 dashboardPerformance.datapointMaxPageSize 对齐，避免点位多时「显示不全」被硬截断
+const REAL_DATA_MAX_PAGE_SIZE = 200
 
 function clampPageSize(size, fallback = REAL_DATA_DEFAULT_PAGE_SIZE) {
   const n = parseInt(size, 10)
@@ -401,7 +400,6 @@ export default {
         this.$nextTick(() => {
           if (!this.editMode && !this.IsToolBox) {
             this.QueryRealData()
-            this.refreshDeviceOnlineStatus()
           }
         })
       },
@@ -684,7 +682,6 @@ export default {
               : (device.sid || device.uuid || `${name || 'device'}-${index}`),
             name,
             displayName: name,
-            online: this.resolveDeviceOnline(device, index),
             title: name,
             source: device,
           }
@@ -1170,45 +1167,10 @@ export default {
       // 尚未拉到状态点时回退设备树 Status（on/off）
       return !!(device && device.status === 'on')
     },
-    refreshDeviceOnlineStatus() {
-      if (!this.isDeviceCardMode || this.editMode || this.IsToolBox) return
-      const devices = this.cardDevices
-      if (!devices.length) {
-        this.deviceOnlineMap = Object.create(null)
-        return
-      }
-      const bindings = devices.map((d) => {
-        const name = String((d && (d.name || d.label)) || '').trim()
-        // 系统内置在线状态点；无设备名时跳过该行
-        return name ? [`${name}->device.DeviceStatus`] : ['']
-      })
-      const seq = ++this.deviceOnlineReqSeq
-      postRealDataByBindings(bindings)
-        .then((res) => {
-          if (seq !== this.deviceOnlineReqSeq || this._isBeingDestroyed || this._isDestroyed) return
-          const rows = res && res.data && res.data.code === 0 && Array.isArray(res.data.realData)
-            ? res.data.realData
-            : null
-          if (!rows) return
-          const next = Object.create(null)
-          for (let i = 0; i < devices.length; i++) {
-            const device = devices[i]
-            const key = this.deviceOnlineKey(device, i)
-            const raw = Array.isArray(rows[i]) ? rows[i][0] : rows[i]
-            const fromPoint = isDeviceOnlineFromStatusValue(raw)
-            next[key] = fromPoint == null ? !!(device && device.status === 'on') : fromPoint
-          }
-          this.deviceOnlineMap = next
-        })
-        .catch(() => { /* 保持上一轮/树状态，避免闪全绿 */ })
-    },
+    // 20260729：取消设备卡在线态轮询（仅为变色/「不在线」文案服务，导致列表卡顿）
+    refreshDeviceOnlineStatus() {},
     startDeviceOnlinePolling() {
       this.stopDeviceOnlinePolling()
-      if (!this.isDeviceCardMode || this.editMode || this.IsToolBox) return
-      this.refreshDeviceOnlineStatus()
-      this.deviceOnlineTimer = setInterval(() => {
-        this.refreshDeviceOnlineStatus()
-      }, DEVICE_ONLINE_POLL_MS)
     },
     stopDeviceOnlinePolling() {
       if (this.deviceOnlineTimer) {

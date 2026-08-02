@@ -200,6 +200,10 @@ func ReconnectDbServer() {
 	if historyKeepDays > 0 {
 		protocol_common.HistoryKeepDays = historyKeepDays
 	}
+	// alarm_keep_days：未配置时沿用默认 90；显式 0 表示关闭告警硬删
+	if alarmKeepDays, alarmKeepErr := config.Int("alarm_keep_days"); alarmKeepErr == nil {
+		protocol_common.AlarmKeepDays = alarmKeepDays
+	}
 
 	gormlog.Info("正在连接数据库,请稍等......")
 
@@ -289,19 +293,12 @@ func ReconnectDbServer() {
 	}
 	protocol_common.ClearAlarmType, err = config.Int("clearalarmtype")
 	if err != nil {
-		protocol_common.ClearAlarmType = 0 //默认清除告警
+		// 默认保持未结束告警，禁止启动时静默全量消除
+		protocol_common.ClearAlarmType = 1
 	}
+	// 严禁：启动时把全部实时告警写 clear_time。是否清除由客户「一键清除/清除」决定。
 	if protocol_common.ClearAlarmType == 0 {
-		//把告警没有结束的全部结束,不再更新keeptime
-		var clearAlarm []DevicesAlarmList
-		Db.Model(&DevicesAlarmList{}).Where("clear_time < ?", "2007-01-02 15:04:05").Find(&clearAlarm)
-		for _, device := range clearAlarm {
-			var upateAlarm DevicesAlarmList
-
-			upateAlarm.ClearTime = time.Now()
-			upateAlarm.KeepTime = (float64)((upateAlarm.ClearTime.UnixMilli() - device.HappenTime.UnixMilli()) / 1000.0)
-			Db.Model(&DevicesAlarmList{}).Where("clear_time < ?", "2007-01-02 15:04:05").Updates(&upateAlarm)
-		}
+		gormlog.Warn("clearalarmtype=0：已忽略启动全量结束告警的旧逻辑，未消除告警保持原状")
 	}
 	//单机版初始化超级管理员数据
 	AdminUserError := userTable().Where("username = 'admin'").First(&adminUser)

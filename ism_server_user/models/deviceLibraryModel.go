@@ -1256,7 +1256,7 @@ func GetRealData(uuid string) ([]DeviceRealData, int) {
 const (
 	// 数据仓库/大屏点位分页：默认 30，硬上限 100，避免上万点一次打满浏览器内存
 	RealDataDefaultPageSize = 30
-	RealDataMaxPageSize     = 100
+	RealDataMaxPageSize     = 200 // 与前端 datapointMaxPageSize 对齐，减少点位多时分页截断感
 )
 
 /*

@@ -43,7 +43,12 @@ var HistoryRecordInfluxdbBucket string
 var HistoryRecordClickHouseDb *gorm.DB
 var InsideDbType int
 var ClearAlarmType int
-var HistoryKeepDays int = 7 // 默认保留7天历史数据
+var HistoryKeepDays int = 7 // 默认保留7天历史测点数据
+// AlarmKeepDays 已消除告警硬删保留天数；0 表示不自动硬删告警。默认 90。
+var AlarmKeepDays int = 90
+// ActiveAlarmClearThreshold：clear_time 严格小于该值视为「未消除」实时告警（协议写入哨兵为 2006-01-02）。
+// 自动硬删只允许 clear_time >= 该阈值（已人工/恢复消除）且早于保留截止日。
+const ActiveAlarmClearThreshold = "2007-01-02 15:04:05"
 
 var HistoryRecordPG *gorm.DB
 
