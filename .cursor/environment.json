@@ -1,0 +1,21 @@
+{
+  "name": "ISM Web SCADA",
+  "install": "bash .cursor/install.sh",
+  "start": "bash .cursor/start.sh",
+  "terminals": [
+    {
+      "name": "backend",
+      "command": "cd ism_server_user && ./ism_server",
+      "description": "ISM Go backend API + MQTT/OPC-UA. HTTP on :8081 (SQLite, dbtype=1)."
+    },
+    {
+      "name": "frontend",
+      "command": "cd ism-front-end-v2 && NODE_OPTIONS='--max-old-space-size=8192 --openssl-legacy-provider' BROWSER=none npm run serve",
+      "description": "ISM Vue dev server on :7080; proxies /api and /SSEPushData to the backend on :8081."
+    }
+  ],
+  "ports": [
+    { "name": "frontend", "port": 7080 },
+    { "name": "backend", "port": 8081 }
+  ]
+}
