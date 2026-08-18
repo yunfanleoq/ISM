@@ -590,6 +590,10 @@ func (c *ModbusCtl) DealWithModbusHistoryData(HistoryData models.DevicesHistoryD
 		c.saveTimedModbusHistoryData(HistoryData, key)
 		return
 	}
+	// RecordType==1 定时存储改由实时库快照任务写入，采集路径不再落历史
+	if HistoryData.RecordType == 1 {
+		return
+	}
 
 	dataTemp, isExist := c.ModebusDeviceHistoryDataTemp[key]
 	if !isExist {

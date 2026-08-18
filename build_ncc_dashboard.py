@@ -1919,21 +1919,12 @@ def append_overview_stats_row(out, seed_prefix):
 
 
 def append_overview_side_panels(out, seed_prefix, panel_top_y, panel_h, right_x, right_w):
-    """右侧科技感监测区：功率趋势 + 右下角活跃告警（已去掉用电量趋势）。
+    """右侧科技感监测区：功率趋势占满（20260803：活跃告警改由顶栏 ScadaAlarmPanel）。
 
-    历史查询不再内嵌侧栏（AlarmHistoryComponents 表单过重），由 ScadaAlarmPanel
-    标题栏「历史查询」打开全屏抽屉。
-
-    告警区坐标须与 ScadaAlarmPanel.panelStyle 对齐：
-      alarm_x = right_x + 8, alarm_w = right_w - 16, alarm_h = 540
-      alarm_y = panel_top_y + hdr_h + chart_h + chart_gap
-    无顶部 KPI 时标准布局约为 (1312, 516, 584×540)——功率图再矮、告警区再高。
+    不再生成右下角静态活跃告警区；功率趋势数值显示整数由前端 ViewRealDataSmoothChart 保证。
     """
-    chart_gap = 12
-    alarm_h = 540  # 与 ScadaAlarmPanel.panelStyle 高度对齐（告警区再加高）
     hdr_h = 34  # 顶部留给“● 实时监测”角标的标题带，避免压在边框线上
-    # 单功率图：占满告警区以上空间（告警加高后功率图自动变矮）
-    chart_h = panel_h - hdr_h - chart_gap - alarm_h - 8
+    chart_h = panel_h - hdr_h - 8
 
     out.append(make_box13(f'{seed_prefix}-side-frame', right_x, panel_top_y - 4, right_w, panel_h, z=1))
     out.append(make_panel_bg(f'{seed_prefix}-side-glow', right_x + 4, panel_top_y, right_w - 8, panel_h - 8,
@@ -1952,13 +1943,32 @@ def append_overview_side_panels(out, seed_prefix, panel_top_y, panel_h, right_x,
         z=6, show_title=False
     ), 'power24h'))
 
-    alarm_y = power_y + chart_h + chart_gap
-    append_overview_alarm_panel(out, seed_prefix, right_x + 8, alarm_y, right_w - 16, alarm_h)
+
+def strip_overview_kpi_cells(cells):
+    """移除总功率/总能耗/在线设备/旧活跃告警 KPI 相关 cell（兼容旧 JSON 重生）。"""
+    ban_parts = (
+        '-stat-power', '-stat-energy', '-stat-online', '-stat-alarm',
+        '-stats-rule', '-stats-accent', '-alarm-panel', '-alarm-title',
+        '-alarm-row', '-alarm-more', '-alarm-empty',
+    )
+    kept = []
+    for cell in cells:
+        cid = str((cell or {}).get('id') or '')
+        shape = ''
+        try:
+            shape = str((((cell or {}).get('data') or {}).get('shape')) or '')
+        except Exception:
+            shape = ''
+        blob = cid + ' ' + shape
+        if any(p in blob for p in ban_parts):
+            continue
+        kept.append(cell)
+    return kept
 
 
 def append_overview_main_body(out, seed_prefix, substations):
-    """首页主体：左运行时组织总览外框 + 右功率趋势/告警（无顶部 KPI）。"""
-    # RC08bate-20260724：删除顶部四卡，左区结构图上移占满
+    """首页主体：左运行时组织总览外框 + 右功率趋势（无顶部 KPI；活跃告警在顶栏）。"""
+    # RC08bate-20260724：删除顶部四卡；20260803：活跃告警改顶栏，右侧只留功率趋势
     content_top = BODY_Y + 16
     panel_h = 1080 - content_top - 16
     left_w = int((MAIN_W - 16) * 0.68)
@@ -2074,6 +2084,7 @@ cells.extend(build_header_cells('ov', [
     ('📊 全局总览', C_TEXT, PAGE_ID_MAIN),
 ]))
 append_overview_main_body(cells, 'ov', substations)
+cells = strip_overview_kpi_cells(cells)
 report_overlaps(cells, 'Overview layout')
 
 components_json_main = json.dumps({"cells": cells}, ensure_ascii=False)

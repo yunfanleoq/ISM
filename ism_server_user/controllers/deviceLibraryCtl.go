@@ -563,6 +563,7 @@ func (c *DeviceLibraryController) GetRealData() {
 	var total int64 = 0
 	var page int = 0
 	var pageSize int = models.RealDataDefaultPageSize
+	var syncedFromModel bool
 
 	data := c.Ctx.Input.RequestBody
 	SProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
@@ -654,8 +655,17 @@ func (c *DeviceLibraryController) GetRealData() {
 			}
 			// 新导入设备可能尚未物化 device_real_data；此时仍按物模型定义返回当前页。
 			// 物模型只决定点位集合，不参与页面模板选择。
+			// 若请求未带 muid，从 monitor_list 反查，避免数据仓库空表。
+			if !fetchAll && code == 0 && total == 0 && muid == "" && uuid != "" {
+				var ml models.MonitorList
+				if err := models.Db.Model(&models.MonitorList{}).
+					Select("muid").Where("uuid = ? AND deleted_at IS NULL", uuid).First(&ml).Error; err == nil {
+					muid = strings.TrimSpace(ml.Muid)
+				}
+			}
 			if !fetchAll && code == 0 && total == 0 && muid != "" {
 				realData, total = models.ModelDataPointsPageByMuid(muid, keyword, page, pageSize)
+				syncedFromModel = total > 0
 			}
 			// 实时值一律从内存 Map 覆盖（socket/采集写入），与 dbtype 无关；库里的 value 只是落盘快照
 			for key, v := range realData {
@@ -675,12 +685,13 @@ func (c *DeviceLibraryController) GetRealData() {
 		}
 	}
 	result := map[string]interface{}{
-		"code":     code,
-		"realData": realData,
-		"total":    total,
-		"page":     page,
-		"pageSize": pageSize,
-		"hasMore":  int64(page*pageSize) < total,
+		"code":             code,
+		"realData":         realData,
+		"total":            total,
+		"page":             page,
+		"pageSize":         pageSize,
+		"hasMore":          int64(page*pageSize) < total,
+		"syncedFromModel":  syncedFromModel,
 	}
 
 	// 不要手写 gzip：app.conf 已 enablegzip=true，再手动 Content-Encoding+gzip.Writer
@@ -863,7 +874,7 @@ func (c *DeviceLibraryController) SetRealData() {
 						signleHistoryData.RecordTime = time.Now()
 						signleHistoryData.RecordType = readData.RecordType
 						signleHistoryData.RecordDataCharge = readData.RecordDataCharge
-						protocol_common.GHistoryDataQueue.QueuePush(signleHistoryData)
+						protocol_common.EnqueueHistorySample(signleHistoryData)
 					}
 
 				} else {
@@ -979,7 +990,7 @@ func (c *DeviceLibraryController) SetRealData() {
 								signleHistoryData.RecordTime = time.Now()
 								signleHistoryData.RecordType = readData.RecordType
 								signleHistoryData.RecordDataCharge = readData.RecordDataCharge
-								protocol_common.GHistoryDataQueue.QueuePush(signleHistoryData)
+								protocol_common.EnqueueHistorySample(signleHistoryData)
 							}
 							//触发器队列
 							_, isExist := protocol_common.DeviceAlarmTriggerMap.Load(pushTriggerAlarm.ModelDataUuid)

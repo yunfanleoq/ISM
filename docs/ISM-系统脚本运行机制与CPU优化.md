@@ -16,6 +16,8 @@
 - `native-bitunpack: <脚本名> rules=<N>` — 已原生化，无 Anko 协程
 - `anko-onchange: <脚本名> deps=<N> delay=<ms>` — 变化驱动 + 兜底定时
 
+> **告警说明（20260812）**：BitUnpack 与 Anko 均通过同一 `SetDeviceData` 写点并推入告警队列（已带 `AlarmOnValue`）。现场「只有 anko-onchange 日志像能报警」通常是点值/告警配置问题，**不要回退原生化**。排查：目标点 `IsAlarm`、`AlarmOnValue(0/1)`、屏蔽位、实时值是否变化。
+
 ## 运维
 
 - 升级后无需改 UI / 迁表；编辑脚本仍走原 CRUD，会触发 `ScriptCloseChan` 全量重载并重新编译。

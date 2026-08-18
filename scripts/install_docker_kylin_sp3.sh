@@ -43,6 +43,9 @@ getent group docker >/dev/null || groupadd docker
 mkdir -p /var/lib/docker /etc/docker
 chmod 711 /var/lib/docker
 
+echo "[3.5/5] 配置 Docker 日志轮转（单容器上限约 10GB，防 /var 撑满）..."
+bash "$(dirname "$0")/ensure_docker_log_limits.sh" --apply-daemon
+
 echo "[4/5] 配置 systemd 服务 ..."
 cat > /etc/systemd/system/docker.service << 'UNIT'
 [Unit]

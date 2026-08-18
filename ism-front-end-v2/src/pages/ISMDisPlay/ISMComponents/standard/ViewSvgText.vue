@@ -1,6 +1,6 @@
 <template>
   <div xmlns="http://www.w3.org/1999/xhtml"
-       v-show="(detail.style.visible==1||isStart) && !isRetiredOverviewHint && !isOverviewAlarmBackdrop"
+       v-show="(detail.style.visible==1||isStart) && !isRetiredOverviewHint && !isOverviewAlarmBackdrop && !isRetiredOverviewKpi"
        @mousedown="onTextMouseDown"
        @click="onTextClick"
        :title="pagerInfoTitle || (isEnergyOverviewMode ? energyOverviewCoverageTitle : (labelRole === 'deviceBreadcrumb' ? displayText : null))"
@@ -277,7 +277,19 @@ export default {
       },
       isOverviewAlarmBackdrop() {
         const name = String((this.detail && this.detail.name) || '')
-        return /stat-alarm-(?:glow|fill|val)$/.test(name)
+        return /stat-alarm-(?:glow|fill|val|bg|accent|icon|lab)$/.test(name)
+      },
+      /** 20260803：取消总功率/总能耗/在线设备顶栏数值卡（兼容旧 JSON 未重生） */
+      isRetiredOverviewKpi() {
+        const name = String((this.detail && this.detail.name) || '')
+        if (/stat-(?:power|energy|online)-(?:glow|fill|val|bg|accent|icon|lab)$/.test(name)) {
+          return true
+        }
+        if (this.isEnergyOverviewMode) {
+          return true
+        }
+        const text = String((this.detail && this.detail.style && this.detail.style.text) || '').trim()
+        return text === '总功率' || text === '今日用电量' || text === '在线设备'
       },
       /** 按文本/尺寸/链接自动识别大屏标签角色（不改模板 DB 也能图形化） */
       labelRole() {

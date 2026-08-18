@@ -1670,6 +1670,28 @@ func DataModelGet(modelType int, project_uuid string) []SnmpDevicesDataModel {
 	return getMibs
 }
 
+// SyncAllProjectsDeviceRealData 扫描 monitor_list 中全部项目并补建缺失的 device_real_data
+func SyncAllProjectsDeviceRealData() (int, int) {
+	var projectUuids []string
+	err := Db.Model(&MonitorList{}).
+		Where("type >= 1 AND muid != '' AND deleted_at IS NULL").
+		Distinct("project_uuid").
+		Pluck("project_uuid", &projectUuids).Error
+	if err != nil || len(projectUuids) == 0 {
+		return 0, 0
+	}
+	totalCreated, totalSkipped := 0, 0
+	for _, pu := range projectUuids {
+		if strings.TrimSpace(pu) == "" {
+			continue
+		}
+		c, s := SyncDeviceRealData(pu)
+		totalCreated += c
+		totalSkipped += s
+	}
+	return totalCreated, totalSkipped
+}
+
 // SyncDeviceRealData 根据项目的 monitor_list 设备实例，补建缺失的 device_real_data
 // 用于设备已创建但实时数据点未自动生成时的修复场景（常见于批量导入）
 func SyncDeviceRealData(projectUuid string) (int, int) {

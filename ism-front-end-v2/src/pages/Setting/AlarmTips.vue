@@ -4,6 +4,9 @@
       <a-button icon="setting" @click="openStartupAlarmDelay">
         {{$t('AlarmTips.Management.StartupDelay')}}
       </a-button>
+      <a-button icon="history" @click="openHistoryAlarmClear">
+        历史告警自动清除
+      </a-button>
       <a-popconfirm :title="$t('AlarmTips.Management.ClearAllTips')" @confirm="clearAllAlarms">
         <a-button type="danger" icon="delete">
           {{$t('AlarmTips.Management.ClearAll')}}
@@ -532,12 +535,35 @@
       />
       <p class="startup-delay-hint">{{$t('AlarmTips.Management.StartupDelayHint')}}</p>
     </a-modal>
+    <a-modal
+      v-model="historyAlarmClearVisible"
+      title="历史告警自动清除"
+      :ok-text="$t('AlarmTips.Save')"
+      :confirmLoading="historyAlarmClearSaving"
+      @ok="saveHistoryAlarmClear"
+    >
+      <p>按保留天数自动清理历史告警（任务类型：删除历史告警）。与「一键清除报警」不同：后者只清实时告警。</p>
+      <a-form layout="vertical">
+        <a-form-item label="启用自动清除">
+          <a-switch v-model="historyAlarmClearEnabled" checked-children="开" un-checked-children="关" />
+        </a-form-item>
+        <a-form-item label="历史告警保留天数">
+          <a-input-number v-model="historyAlarmKeepDays" :min="1" :max="3650" :precision="0" style="width:100%" />
+        </a-form-item>
+        <a-form-item label="每天执行时间">
+          <a-time-picker v-model="historyAlarmClearTime" format="HH:mm:ss" style="width:100%" />
+        </a-form-item>
+      </a-form>
+      <p v-if="historyAlarmClearTaskId" class="startup-delay-hint">已绑定任务计划 ID：{{ historyAlarmClearTaskId }}</p>
+    </a-modal>
   </a-card>
 </template>
 
 <script>
 import {TestSend,GetAlarmNoticeByType,UpdateAlarmNoticeByType} from "@/services/alarmNotice";
 import {ClearAllCurrentAlarm} from "@/services/alarm";
+import {AddTaskPlan, EditTaskPlan, GetTaskPlanList, DelTaskPlan} from "@/services/taskplan";
+import moment from 'moment';
 
 export default {
   name: "AlarmTips",
@@ -547,6 +573,12 @@ export default {
       labelCol: { span: 2 },
       WEBSpeechEnable:true,
       AlarmWindowsEnable:true,
+      historyAlarmClearVisible: false,
+      historyAlarmClearSaving: false,
+      historyAlarmClearEnabled: false,
+      historyAlarmKeepDays: 30,
+      historyAlarmClearTime: null,
+      historyAlarmClearTaskId: null,
       AlarmWindowsAutoClose:true,
       WEBSpeechSpeed:1,
       tabKey:"1",
@@ -709,6 +741,113 @@ export default {
     openStartupAlarmDelay(){
       this.startupAlarmDelayVisible = true
       this.GetAlarmNotice("StartupAlarmDelay")
+    },
+    openHistoryAlarmClear(){
+      this.historyAlarmClearVisible = true
+      this.historyAlarmClearTime = this.historyAlarmClearTime || moment('03:00:00', 'HH:mm:ss')
+      const _t = this
+      GetTaskPlanList().then(function (res) {
+        const list = (res && res.data && res.data.code === 200 && Array.isArray(res.data.list))
+          ? res.data.list
+          : []
+        const hit = list.find(item => Number(item.TaskContent) === 4
+          || String(item.TaskName || '').indexOf('历史告警') >= 0)
+        if (hit) {
+          _t.historyAlarmClearEnabled = true
+          _t.historyAlarmClearTaskId = hit.TaskUuid || null
+          _t.historyAlarmKeepDays = Number(hit.KeepHistoryDay) > 0 ? Number(hit.KeepHistoryDay) : 30
+          // CronExpression like "0 0 3 * * ?"
+          const cron = String(hit.CronExpression || '').trim().split(/\s+/)
+          if (cron.length >= 3) {
+            const hh = String(cron[2] || '3').padStart(2, '0')
+            const mm = String(cron[1] || '0').padStart(2, '0')
+            const ss = String(cron[0] || '0').padStart(2, '0')
+            _t.historyAlarmClearTime = moment(`${hh}:${mm}:${ss}`, 'HH:mm:ss')
+          }
+        } else {
+          _t.historyAlarmClearEnabled = false
+          _t.historyAlarmClearTaskId = null
+        }
+      }).catch(function () { /* ignore */ })
+    },
+    saveHistoryAlarmClear(){
+      const days = Number(this.historyAlarmKeepDays)
+      if (!Number.isInteger(days) || days < 1) {
+        this.$message.error('保留天数必须是大于 0 的整数')
+        return
+      }
+      const t = this.historyAlarmClearTime || moment('03:00:00', 'HH:mm:ss')
+      const hh = t.format('HH')
+      const mm = t.format('mm')
+      const ss = t.format('ss')
+      const cron = `${Number(ss)} ${Number(mm)} ${Number(hh)} * * ?`
+      const _t = this
+      this.historyAlarmClearSaving = true
+
+      const finish = function (ok, msg) {
+        _t.historyAlarmClearSaving = false
+        if (ok) {
+          _t.historyAlarmClearVisible = false
+          _t.$message.success(msg || '已保存历史告警自动清除设置')
+        } else {
+          _t.$message.error(msg || '保存失败')
+        }
+      }
+
+      if (!_t.historyAlarmClearEnabled) {
+        if (_t.historyAlarmClearTaskId) {
+          DelTaskPlan({ TaskUuid: _t.historyAlarmClearTaskId }).then(function (res) {
+            if (res && res.data && (res.data.code === 200 || res.data.code === 0)) {
+              _t.historyAlarmClearTaskId = null
+              finish(true, '已关闭历史告警自动清除')
+            } else {
+              finish(false)
+            }
+          }).catch(function () { finish(false) })
+        } else {
+          finish(true, '未启用历史告警自动清除')
+        }
+        return
+      }
+
+      if (_t.historyAlarmClearTaskId) {
+        EditTaskPlan({
+          uuid: _t.historyAlarmClearTaskId,
+          data: {
+            TaskName: '历史告警自动清除',
+            TaskContent: 4,
+            Description: '由告警通知页配置',
+            CronExpression: cron,
+            TaskType: 2,
+            Status: 1,
+            KeepHistoryDay: days,
+            SetDeviceList: '[]',
+          }
+        }).then(function (res) {
+          finish(res && res.data && (res.data.code === 200 || res.data.code === 0))
+        }).catch(function () { finish(false) })
+      } else {
+        AddTaskPlan({
+          TaskName: '历史告警自动清除',
+          TaskContent: 4,
+          Description: '由告警通知页配置',
+          CronExpression: cron,
+          TaskType: 2,
+          KeepHistoryDay: days,
+          SetDeviceList: '[]',
+        }).then(function (res) {
+          // AddTaskPlan 成功码为 2002（与任务计划页一致）
+          const code = res && res.data ? res.data.code : null
+          if (code === 2002 || code === 200 || code === 0) {
+            finish(true)
+            _t.openHistoryAlarmClear()
+          } else if (code === 2001) {
+            finish(false, '已存在同名任务，请先在任务计划中编辑')
+          } else {
+            finish(false, (res && res.data && res.data.msg) || '保存失败')
+          }
+        }).catch(function () { finish(false) })
+      }
     },
     saveStartupAlarmDelay(){
       const minutes = Number(this.startupAlarmDelayMinutes)

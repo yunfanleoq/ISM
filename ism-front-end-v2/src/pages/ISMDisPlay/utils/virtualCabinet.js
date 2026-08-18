@@ -11,8 +11,8 @@ import { splitNameByLastUnderscore } from './pointValueDisplay'
 const _cabinetCache = Object.create(null)
 const _inflight = Object.create(null)
 
-/** 缓存版本：规则从 first `_` 改为 last `_` 后自动失效旧缓存 */
-const CACHE_VER = 'dw-last-v1'
+/** 缓存版本：规则从 first `_` 改为 last `_` 后自动失效旧缓存；20260803 强制重拉列尾 */
+const CACHE_VER = 'dw-last-v2-20260803'
 
 /**
  * 与数据仓库「设备名」列一致：最后一个 `_` 前的段。

@@ -40,6 +40,20 @@
             </div>
             <div v-else-if="deviceType==1">
 <!--              <ISMRender :showUuid="showModelUuid" :showDeviceUuid="showDeviceUuid" v-if="!showRealData"/>-->
+              <div v-if="virtualGroups.length" class="dw-virtual-cats">
+                <a-tag
+                  :color="!virtualCategory ? 'cyan' : undefined"
+                  style="cursor:pointer;margin-bottom:6px"
+                  @click="selectVirtualCategory('')"
+                >全部</a-tag>
+                <a-tag
+                  v-for="g in virtualGroups"
+                  :key="g.prefix"
+                  :color="virtualCategory === g.prefix ? 'cyan' : undefined"
+                  style="cursor:pointer;margin-bottom:6px"
+                  @click="selectVirtualCategory(g.prefix)"
+                >{{ g.prefix }} ({{ g.count }})</a-tag>
+              </div>
 
               <a-table rowKey="uuid" :pagination="pagination" :columns="columns" :data-source="tableDataSource" >
                 <div
@@ -146,7 +160,11 @@ import {
   formatPointDisplayName,
   formatPointDisplayValue,
   splitNameByLastUnderscore,
-} from '@/pages/ISMDisPlay/utils/pointValueDisplay';
+} from '@/pages/ISMDisPlay/utils/pointValueDisplay'
+import {
+  ensureVirtualCabinetsForDevice,
+  shouldUseVirtualCabinetLayer,
+} from '@/pages/ISMDisPlay/utils/virtualCabinet'
 export default {
   name: 'ISMMonitor',
   i18n: require('../../i18n/language'),
@@ -158,6 +176,8 @@ export default {
       settingLoading:false,
       error: '',
       showRealData:true,
+      virtualCategory: '',
+      virtualGroups: [],
       getReadDataResponse:true,
       deviceType:-1,
       searchText: '',
@@ -368,6 +388,31 @@ export default {
         this._suppressPaginationEvent = false
       })
     },
+    async loadVirtualGroups(nodeValue) {
+      try {
+        const device = {
+          uuid: (nodeValue && (nodeValue.uuid || nodeValue.configUid)) || this.selectDeviceKey,
+          muid: (nodeValue && (nodeValue.muid || nodeValue.Muid)) || '',
+          label: (nodeValue && (nodeValue.name || nodeValue.title)) || '',
+          name: (nodeValue && (nodeValue.name || nodeValue.title)) || '',
+        }
+        const result = await ensureVirtualCabinetsForDevice(device)
+        const groups = (result && result.groups) || []
+        this.virtualGroups = shouldUseVirtualCabinetLayer(groups) ? groups : []
+      } catch (e) {
+        this.virtualGroups = []
+        ismDebug('DW.loadVirtualGroups.error', { message: e && e.message })
+      }
+    },
+    selectVirtualCategory(prefix) {
+      const next = String(prefix || '')
+      if (next === this.virtualCategory) return
+      this.virtualCategory = next
+      this.realDataPage = 1
+      this.tableDataSource = []
+      this.messageShowLoad = true
+      this.getRealData(this.selectDeviceKey, 1, this.realDataPageSize)
+    },
     getRealData(uuid, page, pageSize){
       let _t = this
       const currentPage = page || _t.realDataPage || 1
@@ -379,6 +424,14 @@ export default {
         pageSize: currentSize,
         IsRemoveGW: !!nodeVal.IsRemoteGw,
         ProjectUuid: nodeVal.ProjectUUID || nodeVal.project_uuid || '',
+        // 供后端 total=0 时按物模型 fallback / 补建提示
+        muid: nodeVal.muid || nodeVal.Muid || '',
+      }
+      if (this.virtualCategory) {
+        // 与大屏一致：category 用「前缀_」做 LIKE 前缀匹配
+        params.category = this.virtualCategory.endsWith('_')
+          ? this.virtualCategory
+          : (this.virtualCategory + '_')
       }
       ismDebug('DW.getRealData.enter', {
         uuid,
@@ -473,16 +526,20 @@ export default {
                     rawName: rawName,
                     value: formatPointDisplayValue(rawName, rawValue),
                     uuid: rows[i].uuid,
-                    unit: rows[i].unit,
-                    mduid: rows[i].mduid,
+                    unit: rows[i].unit || rows[i].data_unit || rows[i].DataUnit,
+                    mduid: rows[i].mduid || rows[i].model_data_uuid,
                     UpdateTime: rows[i].UpdatedAt || rows[i].updated_at,
                   })
               }
               _t.tableDataSource = nextRows
               _t.deviceType = 1
+              if (body.syncedFromModel && currentPage === 1 && nextRows.length > 0) {
+                _t.$message.info('该设备实时点位尚未物化，已按物模型临时展示；请执行「同步实时数据」或重新还原后自动补建')
+              }
               ismDebug('DW.getRealData.rendered', {
                 tableLen: nextRows.length,
                 deviceType: _t.deviceType,
+                syncedFromModel: !!body.syncedFromModel,
                 messageShowLoad: false,
               })
             } catch (e) {
@@ -540,12 +597,15 @@ export default {
       if(nodeValue && nodeValue.type==1)
       {
         this.showDeviceUuid = nodeValue.uuid || nodeValue.configUid
+        this.virtualCategory = ''
+        this.virtualGroups = []
         _t.$nextTick(() => {
           _t.deviceType=1
           _t.messageShowLoad = true
           _t.realDataPage = 1
           _t.selectDeviceKey = selectData.key
           ismDebug('DW.onSelect.deviceTick', {key: selectData.key, deviceType: _t.deviceType})
+          _t.loadVirtualGroups(nodeValue)
           _t.getRealData(selectData.key, 1, _t.realDataPageSize)
           _t.$EventBus.$off("readDataPush")
           _t.$EventBus.$off("StaticData")
@@ -703,5 +763,10 @@ export default {
   //background: #f8f8f8;
   //border-bottom: 1px solid #e8e8e8;
   transition: background .3s ease;
+}
+.dw-virtual-cats {
+  padding: 8px 10px 2px;
+  border-bottom: 1px solid #f0f0f0;
+  margin-bottom: 6px;
 }
 </style>

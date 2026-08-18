@@ -672,7 +672,7 @@ func (c *MqttCtl) DealWithDeviceDataPthread() {
 			signleHistoryData.RecordTime = time.Now()
 			signleHistoryData.RecordType = item.RecordType
 			signleHistoryData.RecordDataCharge = item.RecordDataCharge
-			protocol_common.GHistoryDataQueue.QueuePush(signleHistoryData)
+			protocol_common.EnqueueHistorySample(signleHistoryData)
 		}
 
 	}

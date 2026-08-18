@@ -341,7 +341,7 @@ func RESTFulDataDealWith(RecvData UpdateDeviceData) (int, string) {
 				signleHistoryData.RecordTime = time.Now()
 				signleHistoryData.RecordType = getRealData.RecordType
 				signleHistoryData.RecordDataCharge = getRealData.RecordDataCharge
-				protocol_common.GHistoryDataQueue.QueuePush(signleHistoryData)
+				protocol_common.EnqueueHistorySample(signleHistoryData)
 			}
 			protocol_common.DeviceRealDataMapByUUID.Store(getRealData.Uuid, v.Value)
 			protocol_common.DeviceRealDataMap.Store(getDevice.Name+"->"+getRealData.Name, v.Value)

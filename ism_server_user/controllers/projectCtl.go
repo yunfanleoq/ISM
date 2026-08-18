@@ -45,7 +45,13 @@ func (c *ProjectController) ExportProject() {
 		c.ServeJSON()
 		return
 	}
-	BackProjectData(export.Uuid)
+	if dumpCode := BackProjectData(export.Uuid); dumpCode != 0 {
+		result["code"] = dumpCode
+		result["msg"] = "项目备份失败"
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
 
 	result["code"] = 0
 	c.Data["json"] = result

@@ -270,6 +270,20 @@
                   </a-input>
                 </a-form-item>
               </a-col>
+              <a-col :span="12">
+                <a-form-item label="报警触发值(0/1)">
+                  <a-select autocomplete="autocomplete" v-decorator="[
+                  'alarmOnValue',
+                  {
+                    rules: [{ required: true, message: '报警触发值' }],
+                    initialValue: '1',
+                  },
+                ]">
+                    <a-select-option value="1">1 报警</a-select-option>
+                    <a-select-option value="0">0 报警</a-select-option>
+                  </a-select>
+                </a-form-item>
+              </a-col>
             </div>
             <!--存储            -->
             <div v-else>
@@ -449,6 +463,10 @@ export default {
         "告警等级": "alarmLevel",
         "告警消息": "AlarmMessage",
         "告警消除消息": "AlarmClearMessage",
+        "报警触发值(0,1)": {
+          field: "alarmOnValue",
+          callback: v => (v === 0 || v === '0') ? '0' : '1',
+        },
       },
     }
   },
@@ -533,6 +551,7 @@ export default {
               alarmLevel: parseInt(rowObj['告警等级'] || rowObj.alarmLevel || 0),
               AlarmMessage: rowObj['告警消息'] || rowObj.AlarmMessage || '',
               AlarmClearMessage: rowObj['告警消除消息'] || rowObj.AlarmClearMessage || '',
+              alarmOnValue: (rowObj['报警触发值(0,1)'] === 0 || rowObj['报警触发值(0,1)'] === '0') ? 0 : 1,
               record: 0,
             }
             const res = await VirtualDeviceModelDataAdd(params)
@@ -585,6 +604,7 @@ export default {
                 dataRecord:item.record.toString(),
                 AlarmMessage :item.AlarmMessage,
                 AlarmClearMessage : item.AlarmClearMessage,
+                alarmOnValue: (item.alarmOnValue === 0 || item.alarmOnValue === '0') ? '0' : '1',
               })
         }
         else  if (item.record==1)
@@ -633,6 +653,7 @@ export default {
             params.data.alarmLevel= parseInt(this.RegisterForm.getFieldValue('AlarmLevel'))
             params.data.AlarmMessage= this.RegisterForm.getFieldValue('AlarmMessage')
             params.data.AlarmClearMessage=this.RegisterForm.getFieldValue('AlarmClearMessage')
+            params.data.alarmOnValue= parseInt(this.RegisterForm.getFieldValue('alarmOnValue') || '1')
           }
           if (params.data.record==1)
           {
@@ -658,6 +679,7 @@ export default {
                 target.alarmLevel=parseInt(_t.RegisterForm.getFieldValue('AlarmLevel'))
                 target.AlarmMessage = _t.RegisterForm.getFieldValue('AlarmMessage')
                 target.AlarmClearMessage = _t.RegisterForm.getFieldValue('AlarmClearMessage')
+                target.alarmOnValue = parseInt(_t.RegisterForm.getFieldValue('alarmOnValue') || '1')
                 target.record=parseInt(_t.RegisterForm.getFieldValue('dataRecord'))
                 target.RecordType=parseInt(_t.RegisterForm.getFieldValue('dataRecordType'))
                 target.recordInterval=parseInt(_t.RegisterForm.getFieldValue('dataRecordTime'))
@@ -715,6 +737,7 @@ export default {
             alarmLevel:parseInt(this.RegisterForm.getFieldValue('AlarmLevel')),
             AlarmMessage:this.RegisterForm.getFieldValue('AlarmMessage'),
             AlarmClearMessage:this.RegisterForm.getFieldValue('AlarmClearMessage'),
+            alarmOnValue:parseInt(this.RegisterForm.getFieldValue('alarmOnValue') || '1'),
             record:parseInt(this.RegisterForm.getFieldValue('dataRecord')),
             RecordType:this.RegisterForm.getFieldValue('dataRecordType')?parseInt(this.RegisterForm.getFieldValue('dataRecordType')):0,
             recordInterval:this.RegisterForm.getFieldValue('dataRecordTime')?parseInt(this.RegisterForm.getFieldValue('dataRecordTime')):0,

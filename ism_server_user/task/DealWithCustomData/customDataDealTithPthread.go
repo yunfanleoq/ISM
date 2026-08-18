@@ -303,7 +303,7 @@ func (c *CustomDataCtl) dealWithCustomDataAndExit(dealWithCustomData models.Cust
 		signleHistoryData.RecordTime = time.Now()
 		signleHistoryData.RecordType = getRealData.RecordType
 		signleHistoryData.RecordDataCharge = getRealData.RecordDataCharge
-		protocol_common.GHistoryDataQueue.QueuePush(signleHistoryData)
+		protocol_common.EnqueueHistorySample(signleHistoryData)
 	}
 	return RealValue
 }

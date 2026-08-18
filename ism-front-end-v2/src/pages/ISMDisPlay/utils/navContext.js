@@ -388,17 +388,18 @@ export async function fetchDeviceDatapoints(muid, deviceLabel = '', deviceUuid =
   // 有逻辑设备名时优先只按 namePrefix 拉（共享模型全名点），避免 OR device_uuid 混入短名/系统点
   if (uuid || label) {
     try {
-      const pageSize = 100
+      const pageSize = 200
       const collected = []
       let page = 1
       let total = Infinity
-      const maxPages = 50 // 硬顶 5000，与后端 GetRealDataAllByNamePrefix 对齐但走分页
+      const maxPages = 100 // 硬顶约 20000，避免大机柜列尾被截断
       while (page <= maxPages && collected.length < total) {
         const primary = label
           ? {
             muid: muid || undefined,
             namePrefix: label,
             deviceLabel: label,
+            uuid: uuid || undefined,
             page,
             pageSize,
             IsRemoveGW: false,
@@ -417,7 +418,8 @@ export async function fetchDeviceDatapoints(muid, deviceLabel = '', deviceUuid =
         if (!rows.length) break
         collected.push(...rows)
         total = Math.max(0, Number(body.total) || collected.length)
-        if (!body.hasMore && rows.length < pageSize) break
+        const hasMore = body.hasMore === true || collected.length < total
+        if (!hasMore && rows.length < pageSize) break
         if (collected.length >= total) break
         page += 1
       }

@@ -244,10 +244,12 @@ cp "$ROOT/scripts/clear_all_alarms.py" "$STAGING/scripts/" 2>/dev/null || true
 cp "$ROOT/scripts/prune_legacy_dashboard_pages.py" "$STAGING/scripts/"
 cp "$ROOT/scripts/prune_legacy_dashboard_pages_on_start.sh" "$STAGING/scripts/"
 cp "$ROOT/scripts/install_docker_kylin_sp3.sh" "$STAGING/scripts/"
+cp "$ROOT/scripts/ensure_docker_log_limits.sh" "$STAGING/scripts/"
 cp "$ROOT/scripts/ensure_python.sh" "$STAGING/scripts/"
 cp "$ROOT/scripts/install_python_kylin_sp3.sh" "$STAGING/scripts/"
 cp "$ROOT/scripts/fix_compose_offline.sh" "$STAGING/scripts/"
 chmod +x "$STAGING/scripts/install_docker_kylin_sp3.sh" \
+  "$STAGING/scripts/ensure_docker_log_limits.sh" \
   "$STAGING/scripts/ensure_python.sh" \
   "$STAGING/scripts/install_python_kylin_sp3.sh" \
   "$STAGING/scripts/fix_compose_offline.sh" \
@@ -312,6 +314,11 @@ services:
         hard: 65536
     ports:
       - "${OB_PORT:-2881}:2881"
+    logging:
+      driver: json-file
+      options:
+        max-size: "500m"
+        max-file: "20"
     environment:
       MODE: mini
       OB_MEMORY_LIMIT: 8G
@@ -334,6 +341,11 @@ services:
     ports:
       - "${TD_PORT:-6041}:6041"
       - "${TD_NATIVE_PORT:-6030}:6030"
+    logging:
+      driver: json-file
+      options:
+        max-size: "500m"
+        max-file: "20"
     volumes:
       - tdengine-data:/var/lib/taos
       - tdengine-log:/var/log/taos
@@ -569,7 +581,9 @@ for cand in \
 done
 [[ -n "$PKG_SCRIPTS_SRC" ]] || PKG_SCRIPTS_SRC="$ROOT/releases/ism-release-oceanbase-20260708"
 for script in start-all.sh stop-all.sh deploy-offline.sh; do
-  if [[ -f "$PKG_SCRIPTS_SRC/$script" ]]; then
+  if [[ -f "$ROOT/scripts/$script" ]]; then
+    cp "$ROOT/scripts/$script" "$STAGING/$script"
+  elif [[ -f "$PKG_SCRIPTS_SRC/$script" ]]; then
     cp "$PKG_SCRIPTS_SRC/$script" "$STAGING/$script"
   fi
 done

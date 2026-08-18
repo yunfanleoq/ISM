@@ -1,23 +1,44 @@
 <template>
   <!--
     运行态浮层：定时拉取真实告警表 GetCurrentAlarmList。
-    RC08bate-20260724：顶部 KPI 四卡已从大屏删除，不再覆盖「在线设备/活跃告警」数值；
-    仅保留右下角活跃告警列表面板（可配条数、可滚动；「历史查询」开全屏抽屉）。
+    20260803：活跃告警移至顶栏红框位（header 紧凑面板）；总功率/总能耗/在线设备取消。
     仅在总览页(page === modelId)显示；钻探到子页时自动隐藏。
   -->
   <div class="scada-alarm-root">
-    <div v-show="visible" class="scada-alarm" :style="panelStyle">
+    <div v-show="visible" class="scada-alarm scada-alarm-header" :style="panelStyle">
     <div class="sa-inner">
       <div class="sa-head">
-        <span class="sa-title">活跃告警</span>
+        <span class="sa-title">🔔 活跃告警</span>
         <span class="sa-head-right">
+          <span class="sa-badge" :class="{ 'sa-badge-ok': activeCount === 0 }">
+            ● {{ activeCount }}
+          </span>
           <button
             class="sa-history-btn"
             type="button"
             title="打开告警历史查询"
             aria-label="打开告警历史查询"
             @click="openHistoryDrawer"
-          >历史查询</button>
+          >历史</button>
+          <button
+            class="sa-toggle-btn"
+            type="button"
+            :title="expanded ? '收起列表' : '展开列表'"
+            @click="expanded = !expanded"
+          >{{ expanded ? '▴' : '▾' }}</button>
+          <button
+            class="sa-clear-alarm"
+            type="button"
+            title="一键清除当前项目告警"
+            aria-label="一键清除当前项目告警"
+            :disabled="clearing"
+            @click="clearAllAlarms"
+          >🧹</button>
+        </span>
+      </div>
+
+      <div v-show="expanded" class="sa-body">
+        <div class="sa-tools">
           <span class="sa-delay-label">条数</span>
           <input
             v-model.number="rowLimit"
@@ -42,40 +63,29 @@
             @change="saveStartupAlarmDelay"
           >
           <span class="sa-delay-label">分</span>
-          <span class="sa-badge" :class="{ 'sa-badge-ok': activeCount === 0 }">
-            ● {{ activeCount }} 条
-          </span>
-          <button
-            class="sa-clear-alarm"
-            type="button"
-            title="一键清除当前项目告警"
-            aria-label="一键清除当前项目告警"
-            :disabled="clearing"
-            @click="clearAllAlarms"
-          >🧹</button>
-        </span>
-      </div>
-
-      <div v-if="loading && !alarms.length" class="sa-empty sa-loading">⏳ 加载告警中…</div>
-
-      <div v-else-if="!alarms.length" class="sa-empty sa-ok">
-        <div class="sa-ok-icon">✓ 当前无活跃告警</div>
-        <div class="sa-ok-sub">全园区设备运行正常</div>
-      </div>
-
-      <div v-else class="sa-list">
-        <div
-          v-for="(a, i) in shownAlarms"
-          :key="a.ID || (a.DeviceUuid + a.DataUuid + i)"
-          class="sa-row"
-        >
-          <span class="sa-dot" :style="{ background: levelColor(a.AlarmLevel) }"></span>
-          <span class="sa-dev" :title="a.DeviceName">{{ a.DeviceName }}</span>
-          <span class="sa-name" :title="alarmText(a)">{{ alarmText(a) }}</span>
-          <span class="sa-time">{{ shortTime(a.HappenTime) }}</span>
         </div>
-        <div v-if="moreCount > 0" class="sa-more">
-          已显示 {{ rowLimit }} / {{ activeCount }} · 调大「条数」可看更多
+
+        <div v-if="loading && !alarms.length" class="sa-empty sa-loading">⏳ 加载告警中…</div>
+
+        <div v-else-if="!alarms.length" class="sa-empty sa-ok">
+          <div class="sa-ok-icon">✓ 当前无活跃告警</div>
+          <div class="sa-ok-sub">全园区设备运行正常</div>
+        </div>
+
+        <div v-else class="sa-list">
+          <div
+            v-for="(a, i) in shownAlarms"
+            :key="a.ID || (a.DeviceUuid + a.DataUuid + i)"
+            class="sa-row"
+          >
+            <span class="sa-dot" :style="{ background: levelColor(a.AlarmLevel) }"></span>
+            <span class="sa-dev" :title="a.DeviceName">{{ a.DeviceName }}</span>
+            <span class="sa-name" :title="alarmText(a)">{{ alarmText(a) }}</span>
+            <span class="sa-time">{{ shortTime(a.HappenTime) }}</span>
+          </div>
+          <div v-if="moreCount > 0" class="sa-more">
+            已显示 {{ rowLimit }} / {{ activeCount }} · 调大「条数」可看更多
+          </div>
         </div>
       </div>
     </div>
@@ -126,6 +136,7 @@ export default {
       savingStartupDelay: false,
       rowLimit: readStoredRowLimit(),
       historyDrawerVisible: false,
+      expanded: false,
     }
   },
   computed: {
@@ -144,14 +155,24 @@ export default {
       const limit = Math.max(MIN_ROW_LIMIT, Math.min(MAX_ROW_LIMIT, Number(this.rowLimit) || DEFAULT_ROW_LIMIT))
       return Math.max(0, this.alarms.length - limit)
     },
-    // 画布 1920×1080：右下角告警区（与 build_ncc_dashboard 单功率趋势 + alarm_h=540 对齐）
-    // 无顶部 KPI 时 alarm_y≈516；历史查询走标题栏按钮 → 全屏抽屉
+    // 20260803：顶栏红框位（时钟左侧），展开后下拉列表
     panelStyle() {
+      const collapsedH = 40
+      const expandedH = 420
       return {
-        left: `${(1312 / 1920) * 100}vw`,
-        top: `${(516 / 1080) * 100}vh`,
-        width: `${(584 / 1920) * 100}vw`,
-        height: `${(540 / 1080) * 100}vh`,
+        left: `${(1180 / 1920) * 100}vw`,
+        top: `${(8 / 1080) * 100}vh`,
+        width: `${(450 / 1920) * 100}vw`,
+        height: `${((this.expanded ? expandedH : collapsedH) / 1080) * 100}vh`,
+        zIndex: 80,
+      }
+    },
+  },
+  watch: {
+    activeCount(n) {
+      if (n > 0 && !this.expanded) {
+        // 有告警时自动展开一次，便于现场立刻看到
+        this.expanded = true
       }
     },
   },
@@ -314,6 +335,43 @@ export default {
   font-family: 'Microsoft YaHei', 'PingFang SC', sans-serif;
   box-sizing: border-box;
   padding: 0 8px 8px;
+}
+.scada-alarm-header {
+  padding: 0;
+}
+.scada-alarm-header .sa-inner {
+  clip-path: none;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 107, 53, 0.45);
+  padding: 6px 10px;
+}
+.scada-alarm-header .sa-head {
+  margin-bottom: 0;
+}
+.scada-alarm-header .sa-body {
+  margin-top: 8px;
+  min-height: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.scada-alarm-header .sa-tools {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 6px;
+  flex-shrink: 0;
+}
+.sa-toggle-btn {
+  border: 1px solid rgba(0, 229, 255, 0.35);
+  background: rgba(0, 40, 60, 0.55);
+  color: #7dd3fc;
+  border-radius: 4px;
+  font-size: 12px;
+  line-height: 1;
+  padding: 2px 6px;
+  cursor: pointer;
 }
 /* 告警区嵌入右侧统一外框，仅用分隔光轨区分内容，避免完整边框套叠。 */
 .sa-inner {

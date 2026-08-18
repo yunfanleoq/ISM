@@ -542,7 +542,7 @@ func (c *ISMNetNodeClientCtl) NetNodeReadLoop() {
 								signleHistoryData.RecordTime = time.Now()
 								signleHistoryData.RecordType = readData.RecordType
 								signleHistoryData.RecordDataCharge = readData.RecordDataCharge
-								protocol_common.GHistoryDataQueue.QueuePush(signleHistoryData)
+								protocol_common.EnqueueHistorySample(signleHistoryData)
 							}
 
 						} else {
@@ -637,7 +637,7 @@ func (c *ISMNetNodeClientCtl) NetNodeReadLoop() {
 										signleHistoryData.RecordTime = time.Now()
 										signleHistoryData.RecordType = readData.RecordType
 										signleHistoryData.RecordDataCharge = readData.RecordDataCharge
-										protocol_common.GHistoryDataQueue.QueuePush(signleHistoryData)
+										protocol_common.EnqueueHistorySample(signleHistoryData)
 									}
 								}
 							}
