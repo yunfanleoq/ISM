@@ -43,6 +43,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/beego/beego/v2/adapter/logs"
 	"github.com/shiena/ansicolor"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -173,6 +174,9 @@ func GetDeviceRealData(deviceData string) interface{} {
 }
 
 func loadDeviceValue(deviceName, pointName string) (string, bool) {
+	if protocol_common.IsRestoreDb == 1 {
+		return "", false
+	}
 	if value, exists := protocol_common.LoadDeviceRealValue("", deviceName, pointName); exists {
 		return value, true
 	}
@@ -192,6 +196,82 @@ func PeekDeviceDataValue(deviceName, pointName string) (string, bool) {
 	return loadDeviceValue(deviceName, pointName)
 }
 
+var (
+	alarmQueueDropMu   sync.Mutex
+	alarmQueueDropLast time.Time
+)
+
+func normalizeAlarmBinaryValue(v string) string {
+	if v == "true" {
+		return "1"
+	}
+	if v == "false" {
+		return "0"
+	}
+	value, err := strconv.ParseFloat(v, 32)
+	if err != nil {
+		return "0"
+	}
+	if value >= 1 {
+		return "1"
+	}
+	return "0"
+}
+
+func pushAlarmToQueue(signleAlarm protocol_common.PushAlarm) {
+	if protocol_common.GAlarmQueue == nil {
+		return
+	}
+	if code := protocol_common.GAlarmQueue.QueuePush(signleAlarm); code != 0 {
+		alarmQueueDropMu.Lock()
+		defer alarmQueueDropMu.Unlock()
+		now := time.Now()
+		if now.Sub(alarmQueueDropLast) < 5*time.Second {
+			return
+		}
+		alarmQueueDropLast = now
+		logs.Error("GAlarmQueue push failed (full), device=%s data=%s value=%s",
+			signleAlarm.DeviceName, signleAlarm.DataName, signleAlarm.Value)
+	}
+}
+
+func buildPushAlarmFromReal(getRealData models.DeviceRealData, setValue string) protocol_common.PushAlarm {
+	var signleAlarm protocol_common.PushAlarm
+	signleAlarm.DeviceUuid = getRealData.DeviceUuid
+	signleAlarm.ProjectUuid = getRealData.ProjectUuid
+	signleAlarm.DataUuid = getRealData.Uuid
+	signleAlarm.ModelDataUuid = getRealData.ModelDataUuid
+	signleAlarm.AlarmLevel = getRealData.AlarmLevel
+	signleAlarm.Value = normalizeAlarmBinaryValue(setValue)
+	signleAlarm.AlarmClearMessage = getRealData.AlarmClearMessage
+	signleAlarm.AlarmMessage = getRealData.AlarmMessage
+	signleAlarm.DataName = getRealData.Name
+	signleAlarm.DeviceName = getRealData.DeviceName
+	signleAlarm.HappenTime = time.Now()
+	signleAlarm.AlarmOnValue = getRealData.AlarmOnValue
+	return signleAlarm
+}
+
+// EnqueueCurrentPointAlarm 按当前实时值完整入队一次（启动抑警窗结束后 SyncAlarms 用）。
+func EnqueueCurrentPointAlarm(deviceData string) {
+	parts := strings.Split(deviceData, "->")
+	if len(parts) != 2 {
+		return
+	}
+	getRealData, _, metaCode := getDevicePointMeta(parts[0], parts[1])
+	if metaCode != 0 {
+		return
+	}
+	if getRealData.IsAlarm != 1 || getRealData.AlarmShield != 0 {
+		return
+	}
+	val, ok := loadDeviceValue(parts[0], parts[1])
+	if !ok {
+		return
+	}
+	pushAlarmToQueue(buildPushAlarmFromReal(getRealData, val))
+}
+
 type devicePointMeta struct {
 	Real     models.DeviceRealData
 	IsStatic bool
@@ -200,6 +280,9 @@ type devicePointMeta struct {
 var devicePointMetaCache sync.Map // key: deviceName->pointName
 
 func getDevicePointMeta(deviceName, pointName string) (models.DeviceRealData, bool, int) {
+	if protocol_common.IsRestoreDb == 1 {
+		return models.DeviceRealData{}, false, -2
+	}
 	key := deviceName + "->" + pointName
 	if cached, ok := devicePointMetaCache.Load(key); ok {
 		meta := cached.(devicePointMeta)
@@ -224,6 +307,15 @@ func GetModuleDeviceList(moduleName string) []moduleDeviceStu {
 	return results
 }
 func SetDeviceData(deviceData string, floatValue interface{}) int {
+	return setDeviceDataEx(deviceData, floatValue, false)
+}
+
+// SetDeviceDataSkipAlarm 写实时值但不推告警队列（BitUnpack SettleAll 用）。
+func SetDeviceDataSkipAlarm(deviceData string, floatValue interface{}) int {
+	return setDeviceDataEx(deviceData, floatValue, true)
+}
+
+func setDeviceDataEx(deviceData string, floatValue interface{}, skipAlarm bool) int {
 	var code int = 0
 	data := strings.Split(deviceData, "->")
 	if len(data) != 2 {
@@ -259,14 +351,7 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 		}
 		// tempPushData.Cmd = "RealData"
 
-		var signleAlarm protocol_common.PushAlarm
 		var signleHistoryData models.DevicesHistoryDataList
-
-		signleAlarm.DeviceUuid = getRealData.DeviceUuid
-		signleAlarm.ProjectUuid = getRealData.ProjectUuid
-		signleAlarm.DataUuid = getRealData.Uuid
-		signleAlarm.ModelDataUuid = getRealData.ModelDataUuid
-		signleAlarm.AlarmLevel = getRealData.AlarmLevel
 
 		signleHistoryData.DeviceUuid = getRealData.DeviceUuid
 		signleHistoryData.ProjectUuid = getRealData.ProjectUuid
@@ -279,31 +364,8 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 		// protocol_common.GGatherDataQueue.QueuePush(tempPushData)
 		// go ismWebsocket.WSSend(tempPushData, tempPushData.ProjectUuid, 2)
 		//设备主动告警信息
-		if getRealData.IsAlarm == 1 && getRealData.AlarmShield == 0 {
-			signleAlarm.Value = SetValue
-			if signleAlarm.Value == "true" {
-				signleAlarm.Value = "1"
-			} else if signleAlarm.Value == "false" {
-				signleAlarm.Value = "0"
-			} else {
-				value, err := strconv.ParseFloat(signleAlarm.Value, 32)
-				if err == nil {
-					if value >= 1 {
-						signleAlarm.Value = "1"
-					} else {
-						signleAlarm.Value = "0"
-					}
-				} else {
-					signleAlarm.Value = "0"
-				}
-			}
-			signleAlarm.AlarmLevel = getRealData.AlarmLevel
-			signleAlarm.AlarmClearMessage = getRealData.AlarmClearMessage
-			signleAlarm.AlarmMessage = getRealData.AlarmMessage
-			signleAlarm.DataName = getRealData.Name
-			signleAlarm.DeviceName = getRealData.DeviceName
-			signleAlarm.HappenTime = time.Now()
-			protocol_common.GAlarmQueue.QueuePush(signleAlarm)
+		if !skipAlarm && getRealData.IsAlarm == 1 && getRealData.AlarmShield == 0 {
+			pushAlarmToQueue(buildPushAlarmFromReal(getRealData, SetValue))
 		}
 		if getRealData.IsRecord == 1 {
 			//存储信息
@@ -313,7 +375,7 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 			signleHistoryData.RecordTime = time.Now()
 			signleHistoryData.RecordType = getRealData.RecordType
 			signleHistoryData.RecordDataCharge = getRealData.RecordDataCharge
-			protocol_common.GHistoryDataQueue.QueuePush(signleHistoryData)
+			protocol_common.EnqueueHistorySample(signleHistoryData)
 		}
 
 		protocol_common.StoreDeviceRealValue(getRealData.Uuid, getRealData.DeviceName, getRealData.Name, SetValue)
@@ -364,7 +426,6 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 
 				tempPushData.Cmd = "RealData"
 
-				var signleAlarm protocol_common.PushAlarm
 				var signleHistoryData models.DevicesHistoryDataList
 				var pushTriggerAlarm protocol_common.TriggerRealData
 				//触发器告警信息
@@ -379,12 +440,6 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 
 				pushTriggerAlarm.ModelDataUuid = readData.ModelDataUuid
 
-				signleAlarm.DeviceUuid = readData.DeviceUuid
-				signleAlarm.ProjectUuid = readData.ProjectUuid
-				signleAlarm.DataUuid = readData.Uuid
-				signleAlarm.ModelDataUuid = readData.ModelDataUuid
-				signleAlarm.AlarmLevel = readData.AlarmLevel
-
 				signleHistoryData.DeviceUuid = readData.DeviceUuid
 				signleHistoryData.ProjectUuid = readData.ProjectUuid
 				signleHistoryData.DataUuid = readData.Uuid
@@ -396,31 +451,8 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 				// protocol_common.GGatherDataQueue.QueuePush(tempPushData)
 				go ismWebsocket.WSSend(tempPushData, tempPushData.ProjectUuid, 2)
 				//设备主动告警信息
-				if readData.IsAlarm == 1 && readData.AlarmShield == 0 {
-					signleAlarm.Value = SetValue
-					if signleAlarm.Value == "true" {
-						signleAlarm.Value = "1"
-					} else if signleAlarm.Value == "false" {
-						signleAlarm.Value = "0"
-					} else {
-						value, err := strconv.ParseFloat(signleAlarm.Value, 32)
-						if err == nil {
-							if value >= 1 {
-								signleAlarm.Value = "1"
-							} else {
-								signleAlarm.Value = "0"
-							}
-						} else {
-							signleAlarm.Value = "0"
-						}
-					}
-					signleAlarm.AlarmLevel = readData.AlarmLevel
-					signleAlarm.AlarmClearMessage = readData.AlarmClearMessage
-					signleAlarm.AlarmMessage = readData.AlarmMessage
-					signleAlarm.DataName = readData.Name
-					signleAlarm.DeviceName = readData.DeviceName
-					signleAlarm.HappenTime = time.Now()
-					protocol_common.GAlarmQueue.QueuePush(signleAlarm)
+				if !skipAlarm && readData.IsAlarm == 1 && readData.AlarmShield == 0 {
+					pushAlarmToQueue(buildPushAlarmFromReal(readData, SetValue))
 				}
 				if readData.IsRecord == 1 {
 					//存储信息
@@ -430,7 +462,7 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 					signleHistoryData.RecordTime = time.Now()
 					signleHistoryData.RecordType = readData.RecordType
 					signleHistoryData.RecordDataCharge = readData.RecordDataCharge
-					protocol_common.GHistoryDataQueue.QueuePush(signleHistoryData)
+					protocol_common.EnqueueHistorySample(signleHistoryData)
 				}
 				//触发器队列
 				_, isExist := protocol_common.DeviceAlarmTriggerMap.Load(pushTriggerAlarm.ModelDataUuid)

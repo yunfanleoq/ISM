@@ -1166,6 +1166,10 @@ export default {
         this.$EventBus.$off("ChargePage", h.ChargePage)
         this.$EventBus.$on("ChargePage", h.ChargePage)
       }
+      if (h.MenuConfigPage) {
+        this.$EventBus.$off("MenuConfigPage", h.MenuConfigPage)
+        this.$EventBus.$on("MenuConfigPage", h.MenuConfigPage)
+      }
       if (h.PlayVoice) {
         this.$EventBus.$off("PlayVoice", h.PlayVoice)
         this.$EventBus.$on("PlayVoice", h.PlayVoice)
@@ -5310,9 +5314,19 @@ export default {
           }
           linkInfo.Inside.pageUUID = data.PageID
           _t.showPage(linkInfo)
+        } else {
+          _t.$message && _t.$message.warning('菜单未绑定页面，无法跳转')
         }
       };
       _t.$EventBus.$on("ChargePage", _t.eventHandlers.ChargePage);
+      // ViewMenu ClickType==1 发 MenuConfigPage；运行态原先未监听导致菜单无响应
+      _t.eventHandlers.MenuConfigPage = (data) => {
+        if (_t.eventHandlers.ChargePage) {
+          _t.eventHandlers.ChargePage(data)
+        }
+      };
+      _t.$EventBus.$off("MenuConfigPage", _t.eventHandlers.MenuConfigPage)
+      _t.$EventBus.$on("MenuConfigPage", _t.eventHandlers.MenuConfigPage);
 
 
     });
@@ -5339,6 +5353,7 @@ export default {
     this.$EventBus.$off("StaticData", h.StaticData)
     this.$EventBus.$off("RealAlarm", h.RealAlarm)
     this.$EventBus.$off("ChargePage", h.ChargePage)
+    this.$EventBus.$off("MenuConfigPage", h.MenuConfigPage)
     this.$EventBus.$off("PlayVoice", h.PlayVoice)
     this.$EventBus.$off("GoPage", h.GoPage)
     this.$EventBus.$off("NavPageChange", h.NavPageChange)

@@ -78,10 +78,21 @@
           v-if="errorMsg"
           type="error"
           message="验证失败"
-          description="密码错误，请重新输入"
+          :description="errorMsg"
           show-icon
           class="error-alert"
       />
+
+      <!-- 服务异常时逃生：清除锁屏并重新登录，避免 LockState 永久卡死 -->
+      <a-button
+          v-if="showEscape"
+          type="link"
+          block
+          class="escape-btn"
+          @click="handleEscapeRelogin"
+      >
+        清除锁屏并重新登录
+      </a-button>
 
       <!-- 底部状态指示 -->
       <div class="status-bar">
@@ -94,7 +105,7 @@
 
 <script>
 import { mapState, mapActions } from 'vuex';
-import {login, getRoutesConfig, UserUnlockScreen} from '@/services/user'
+import {login, getRoutesConfig, UserUnlockScreen, logout} from '@/services/user'
 import md5 from "js-md5";
 import {unLockScreen} from "@/store/ISM/actions";
 export default {
@@ -104,6 +115,7 @@ export default {
     return {
       inputPassword: '',
       errorMsg: '',
+      showEscape: false,
       focused: false // 密码框焦点状态
     };
   },
@@ -115,6 +127,27 @@ export default {
   methods: {
     ...mapActions('ISMDisPlayEditorTool', ['unLockScreen']),
 
+    unlockMsgStyle() {
+      return { backgroundColor: '#0f172a', color: '#00e5ff' }
+    },
+    shakePasswordInput() {
+      const input = this.$el && this.$el.querySelector('.tech-input')
+      if (!input) return
+      input.classList.add('shake-animation')
+      setTimeout(() => input.classList.remove('shake-animation'), 600)
+    },
+    handleEscapeRelogin() {
+      this.unLockScreen()
+      logout()
+      this.errorMsg = ''
+      this.showEscape = false
+      this.inputPassword = ''
+      if (this.$router) {
+        this.$router.push('/login')
+      } else {
+        window.location.hash = '#/login'
+      }
+    },
     async handleUnlock() {
       if (!this.inputPassword) {
         this.$message.warning({
@@ -124,40 +157,55 @@ export default {
         return;
       }
 
+      const _t = this
+      this.errorMsg = '';
+      this.showEscape = false;
+      const params = {
+        Password: md5(this.inputPassword)
+      }
       try {
-        let _t = this
-        this.errorMsg = '';
-        const params = {
-          Password:md5(this.inputPassword)
+        const res = await UserUnlockScreen(params)
+        const code = res && res.data ? res.data.code : undefined
+        if (code === 200) {
+          _t.$message.success({
+            content: '解锁成功，系统正在恢复',
+            style: _t.unlockMsgStyle()
+          });
+          _t.unLockScreen()
+          return
         }
-        UserUnlockScreen(params).then(function (res){
-          if(res.data.code==200)
-          {
-            _t.$message.success({
-              content: '解锁成功，系统正在恢复',
-              style: { backgroundColor: '#0f172a', color: '#00e5ff' }
-            });
-            _t.unLockScreen()
-          }
-          else
-          {
-            _t.$message.error({
-              content: '解锁失败',
-              style: { backgroundColor: '#0f172a', color: '#00e5ff' }
-            });
-          }
-        }).catch(function(){
-          _t.logging = false
-          _t.$message.error(_t.$t('loginPage.serverError'), 3)
-        })
-
+        let tip = '解锁失败'
+        let escape = false
+        if (code === 1002) {
+          tip = '密码错误'
+        } else if (code === -7 || code === -8 || code === 1004 || code === 1005 || code === 1006) {
+          tip = '登录已过期，请重新登录'
+          escape = true
+        } else if (code === undefined || code === -1) {
+          tip = '服务不可用'
+          escape = true
+        }
+        _t.errorMsg = tip
+        _t.showEscape = escape
+        _t.$message.error({ content: tip, style: _t.unlockMsgStyle() })
+        _t.inputPassword = ''
+        _t.shakePasswordInput()
       } catch (err) {
-        this.errorMsg = err.message;
-        this.inputPassword = '';
-        // 错误时密码框抖动效果
-        const input = _t.$el.querySelector('.tech-input');
-        input.classList.add('shake-animation');
-        setTimeout(() => input.classList.remove('shake-animation'), 600);
+        const status = err && err.response && err.response.status
+        let tip = '服务不可用'
+        let escape = true
+        if (status === 401 || status === 403) {
+          tip = '登录已过期，请重新登录'
+        } else if (status === 404) {
+          tip = '解锁接口不可用，请重新登录或升级服务'
+        } else if (err && err.message && /Network Error|timeout/i.test(err.message)) {
+          tip = '网络异常，请检查服务后重试'
+        }
+        _t.errorMsg = tip
+        _t.showEscape = escape
+        _t.inputPassword = ''
+        _t.$message.error({ content: tip, style: _t.unlockMsgStyle() })
+        _t.shakePasswordInput()
       }
     },
 
@@ -393,6 +441,16 @@ export default {
 }
 
 /* 解锁按钮 */
+.escape-btn {
+  margin-top: 12px;
+  color: #94a3b8 !important;
+  z-index: 2;
+  position: relative;
+}
+.escape-btn:hover {
+  color: #00e5ff !important;
+}
+
 .unlock-btn {
   background: linear-gradient(90deg, #00b4d8, #00e5ff) !important;
   border: none !important;

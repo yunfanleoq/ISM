@@ -32,7 +32,12 @@ var valueChangeDepth int32
 
 func init() {
 	valueChangeHookOnce.Do(func() {
-		bitunpack.Configure(ISMScriptFunc.SetDeviceData, ISMScriptFunc.PeekDeviceDataValue)
+		bitunpack.Configure(
+			ISMScriptFunc.SetDeviceData,
+			ISMScriptFunc.SetDeviceDataSkipAlarm,
+			ISMScriptFunc.PeekDeviceDataValue,
+			ISMScriptFunc.EnqueueCurrentPointAlarm,
+		)
 		protocolCommon.SetDeviceValueChangeHandler(onDeviceValueChanged)
 	})
 }
@@ -85,6 +90,16 @@ func ISMScriptMailPthread() {
 	var is_starting = 0
 	go StartSysScript()
 	for {
+		// 数据库还原窗口：停止重载与调度，避免 DROP 表时脚本仍查 device_real_data
+		if protocolCommon.IsRestoreDb == 1 {
+			ScriptCloseChan()
+			if is_starting == 1 {
+				scriptWg.Wait()
+				is_starting = 0
+			}
+			time.Sleep(time.Second * 2)
+			continue
+		}
 		if is_starting == 1 {
 			scriptWg.Wait()
 		}

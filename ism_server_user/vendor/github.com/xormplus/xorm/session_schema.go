@@ -503,8 +503,11 @@ func (session *Session) Import(r io.Reader) ([]sql.Result, error) {
 		}
 	}
 	if backUpType == 0 {
-		return results, lastError
+		// 无 xorm magic 头时原先直接成功返回，导致「还原成功但零执行」
+		return results, fmt.Errorf("invalid backup: missing xorm magic header (sqlite3 to sqlite3 / mysql to mysql)")
 	}
+	var execCount, failCount int
+	var firstFailSQL string
 	for scanner.Scan() {
 		query := strings.Trim(scanner.Text(), " \t\n\r")
 		if driverName == "sqlite3" {
@@ -545,11 +548,27 @@ func (session *Session) Import(r io.Reader) ([]sql.Result, error) {
 			result, err := session.Exec(query)
 			fmt.Println(err)
 			results = append(results, result)
+			execCount++
 			if err != nil {
+				failCount++
+				lastError = err
+				if firstFailSQL == "" {
+					if len(query) > 200 {
+						firstFailSQL = query[:200] + "..."
+					} else {
+						firstFailSQL = query
+					}
+				}
 				continue
 			}
 		}
 	}
 
-	return results, lastError
+	if execCount == 0 {
+		return results, fmt.Errorf("backup import executed 0 statements")
+	}
+	if failCount > 0 {
+		return results, fmt.Errorf("backup import partial failure: %d/%d statements failed, first=%v sql=%s", failCount, execCount, lastError, firstFailSQL)
+	}
+	return results, nil
 }

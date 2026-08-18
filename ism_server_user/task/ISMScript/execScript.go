@@ -31,6 +31,9 @@ type ISMScriptPthread struct {
 
 // ExecScript runs a script once (used by manual/task paths). Still parses each call.
 func ExecScript(sct models.ISMScript) {
+	if protocolCommon.IsRestoreDb == 1 {
+		return
+	}
 	GoSctVm := protocolCommonFunc.ScriptDefine()
 	_, err := vm.Execute(GoSctVm, nil, sct.ScriptContent)
 	if err != nil {
@@ -53,6 +56,9 @@ func (t *ISMScriptPthread) prepare() error {
 }
 
 func (t *ISMScriptPthread) runOnce() {
+	if protocolCommon.IsRestoreDb == 1 {
+		return
+	}
 	_, err := vm.Run(t.env, nil, t.stmt)
 	if err != nil {
 		protocolCommon.ErrorThrottled("script:"+t.Script.ScriptName, "%s,Execute error: %v", t.Script.ScriptName, err)

@@ -38,6 +38,7 @@ func TasksServer() {
 	alarmTask.InitializeStartupAlarmGuard()
 	go alarmTask.DealWithAlarm()
 	go dataHistoryTask.DealWithHistoryData()
+	go dataHistoryTask.DealWithTimedRealtimeHistorySnapshot()
 	go triggerAlarmTask.AlarmTriggerTask()
 	go customDataTask.CustomDataTask()
 	go staticDataTask.PushStaticDataTask()

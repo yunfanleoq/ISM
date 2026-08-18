@@ -11,6 +11,7 @@ package alarmTask
 import (
 	"ISMServer/models"
 	protocol_common "ISMServer/protocol/common"
+	"ISMServer/task/ISMScript/bitunpack"
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
@@ -408,7 +409,9 @@ func SendAlarmNotice(alarm protocol_common.PushAlarm) int {
 func DealWithAlarm() {
 	InitializeStartupAlarmGuard()
 	for {
-		protocol_common.ExpireStartupAlarmWindows(time.Now())
+		if protocol_common.ExpireStartupAlarmWindows(time.Now()) {
+			bitunpack.SyncAlarms()
+		}
 		data, code := protocol_common.GAlarmQueue.QueuePull()
 		if data == nil {
 			time.Sleep(time.Millisecond * 1000)
@@ -423,7 +426,7 @@ func DealWithAlarm() {
 			key := build.String()
 			alarmTemp, isExist := DeviceAlarmTemp[key]
 
-			if protocol_common.ObserveStartupAlarm(alarm, alarm.Value == "1") {
+			if protocol_common.ObserveStartupAlarm(alarm, protocol_common.IsAlarmValueActive(alarm.Value, alarm.AlarmOnValue)) {
 				// Silent baseline only: no DB create / notice during startup window.
 				DeviceAlarmTemp[key] = alarm
 				if alarm.DataUuid == "sys.suid.device.status" {
@@ -478,8 +481,13 @@ func DealWithAlarm() {
 			alarm.AlarmClearMessage = updateAlarm.AlarmClearMessage
 			alarm.AlarmMessage = updateAlarm.AlarmMessage
 
+			alarmActive := protocol_common.IsAlarmValueActive(alarm.Value, alarm.AlarmOnValue)
+			if alarm.DataUuid == "sys.suid.device.status" {
+				alarmActive = alarm.Value == "1"
+			}
+
 			if !isExist {
-				if alarm.Value == "1" {
+				if alarmActive {
 					ClearTime, _ := time.Parse("2006-01-02 15:04:05", "2006-01-02 15:04:05")
 					updateAlarm.ClearTime = ClearTime
 					models.Db.Model(&models.DevicesAlarmList{}).Create(&updateAlarm)
@@ -504,7 +512,7 @@ func DealWithAlarm() {
 			} else {
 				if alarmTemp.Value != alarm.Value {
 					var status int = 0
-					if alarm.Value == "1" {
+					if alarmActive {
 						ClearTime, _ := time.Parse("2006-01-02 15:04:05", "2006-01-02 15:04:05")
 						updateAlarm.ClearTime = ClearTime
 						models.Db.Model(&models.DevicesAlarmList{}).Create(&updateAlarm)

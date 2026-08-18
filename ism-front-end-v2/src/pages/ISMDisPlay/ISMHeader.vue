@@ -889,6 +889,10 @@ export default {
         this.$message.warning(this.$t('displayConfig.RuntimePreviewSaveBlocked'))
         return
       }
+      if (!this.selectPageUuid) {
+        this.$message.error(this.$t('displayModel.SaveDataFailed') + ' (empty pageId)')
+        return
+      }
       let _t = this
       let params = {
         uuid:uuid,
@@ -907,7 +911,8 @@ export default {
       LayerData.components = normalizedLayerData.components
       params.LayerData = LayerData
       this.saveLayerDataStruct(params).then(function (res){
-        if(res.data.code == 200)
+        const code = res && res.data ? res.data.code : null
+        if(code == 200)
         {
           let uid = _t.$route.params.uid
           _t.updateAllLayerDataStruct({pageType:_t.isMobile,uuid:uid,metaOnly:true,cb:function (){}});
@@ -915,10 +920,16 @@ export default {
           _t.isCharge=false
           _t.$message.success(_t.$t('displayModel.SaveDataSuccess'))
         }
+        else if (code == 4090)
+        {
+          _t.$message.warning((res.data && res.data.message) || '运行态预览不可直接保存，请编辑对应模板后再保存')
+        }
         else
         {
-          _t.$message.error(_t.$t('displayModel.SaveDataFailed'))
+          _t.$message.error((_t.$t('displayModel.SaveDataFailed') || '保存失败') + (code != null ? ` (code=${code})` : ''))
         }
+      }).catch(function (err) {
+        _t.$message.error((_t.$t('displayModel.SaveDataFailed') || '保存失败') + (err && err.message ? `: ${err.message}` : ''))
       })
     },
     zoomOut(){

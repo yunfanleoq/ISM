@@ -251,6 +251,7 @@ func init() {
 	beego.Router("/GetUserInfo", &controllers.UserController{}, "*:GetUserInfo")
 	beego.Router("/SetUserInfo", &controllers.UserController{}, "*:SetUserInfo")
 	beego.Router("/SetUserPassword", &controllers.UserController{}, "*:SetUserPassword")
+	beego.Router("/UserUnlock", &controllers.UserController{}, "*:UserUnlock")
 	beego.Router("/SystemDisplayUserList", &controllers.UserController{}, "*:SystemDisplayUserList")
 
 	beego.Router("/SystemUserAdd", &controllers.UserController{}, "*:SystemUserAdd")
@@ -300,9 +301,13 @@ func init() {
 	beego.Router("/DbBackUp", &controllers.DbOptController{}, "*:DbBackUp")
 	beego.Router("/GetBackUpList", &controllers.DbOptController{}, "*:GetBackUpList")
 	beego.Router("/DbRestore", &controllers.DbOptController{}, "*:DbRestore")
+	beego.Router("/DbDeleteBackup", &controllers.DbOptController{}, "*:DbDeleteBackup")
 	beego.Router("/GetDbConfig", &controllers.DbOptController{}, "*:GetDbConfig")
 	beego.Router("/SetDbConfig", &controllers.DbOptController{}, "*:SetDbConfig")
 	beego.Router("/DbDown", &controllers.DbOptController{}, "*:DbDown")
+	beego.Router("/HisDbBackUp", &controllers.HisDbOptController{}, "*:HisDbBackUp")
+	beego.Router("/GetHisBackUpList", &controllers.HisDbOptController{}, "*:GetHisBackUpList")
+	beego.Router("/HisDbDown", &controllers.HisDbOptController{}, "*:HisDbDown")
 
 	//系统数据
 	beego.Router("/GetSystemData", &controllers.ISMSystem{}, "*:GetSystemData")
@@ -398,6 +403,8 @@ func init() {
 	beego.Router("/UpdateDataModel/:muid", &controllers.ISMSystem{}, "*:UpdateDataModel")
 	beego.Router("/UpdateAllModbusDataModel", &controllers.ISMSystem{}, "*:UpdateAllModbusDataModel")
 	beego.Router("/UpdateAllVirtualDeviceDataModel", &controllers.VirtualDeviceController{}, "*:UpdateAllVirtualDeviceDataModel")
+	beego.Router("/ExportAllModbusDataModel", &controllers.ISMSystem{}, "*:ExportAllModbusDataModel")
+	beego.Router("/ExportAllVirtualDeviceDataModel", &controllers.VirtualDeviceController{}, "*:ExportAllVirtualDeviceDataModel")
 
 	//系统脚本
 	beego.Router("/AddScript", &controllers.ISMScriptController{}, "*:AddScript")
@@ -547,6 +554,8 @@ var FilterUser = func(ctx *context.Context) {
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateAllModbusDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateAllVirtualDeviceDataModel") &&
+				!strings.Contains(ctx.Request.RequestURI, "/ExportAllModbusDataModel") &&
+				!strings.Contains(ctx.Request.RequestURI, "/ExportAllVirtualDeviceDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateIEC104DataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateModbusTcpPushDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/setData") &&
@@ -596,6 +605,8 @@ var FilterUser = func(ctx *context.Context) {
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateAllModbusDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateAllVirtualDeviceDataModel") &&
+				!strings.Contains(ctx.Request.RequestURI, "/ExportAllModbusDataModel") &&
+				!strings.Contains(ctx.Request.RequestURI, "/ExportAllVirtualDeviceDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateIEC104DataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateModbusTcpPushDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/setData") &&

@@ -73,6 +73,13 @@
             style="margin-bottom: 12px"
             message="海量历史表（device_record_*）建议排除或使用 scripts/ism_project_backup_core.py 分批备份；全表 SQL 导出可能超时或内存不足。"
           />
+          <a-alert
+            v-if="missingRequiredTables.length"
+            type="warning"
+            show-icon
+            style="margin-bottom: 12px"
+            :message="'未勾选必选表，还原后可能缺设备/点位：' + missingRequiredTables.join(', ')"
+          />
           <a-spin :tip="$t('DbBack.BackingUp')" :spinning="messageShowLoad">
           <a-checkbox-group
               style="margin-bottom: 10px"
@@ -83,7 +90,9 @@
             <a-row>
               <a-col :span="8" v-for="(tableName,index) in SystemTables" :key="index">
                 <a-checkbox :value="tableName" >
-                  <span  style="font-size: 20px;font-weight: 400">{{ tableName }}</span>
+                  <span :style="{fontSize: '20px', fontWeight: isRequiredTable(tableName) ? 600 : 400, color: isRequiredTable(tableName) ? '#cf1322' : undefined}">
+                    {{ tableName }}<span v-if="isRequiredTable(tableName)" style="font-size:12px;margin-left:4px">*</span>
+                  </span>
                 </a-checkbox>
               </a-col>
             </a-row>
@@ -94,6 +103,7 @@
           <a-checkbox :indeterminate="indeterminate" :checked="checkAll" @change="onCheckAllChange" style="margin-left: 20px">
             {{$t('DbBack.CheckAll')}}
           </a-checkbox>
+          <div v-if="lastBackupSummary" style="margin-top:12px;color:#595959;font-size:13px;white-space:pre-wrap">{{ lastBackupSummary }}</div>
           </a-spin>
         </a-tab-pane>
         <a-tab-pane key="2" v-if="DbType!=3" :tab="$t('DbBack.Restore')" >
@@ -118,6 +128,10 @@
             <a type="link"   @click="DbRestore(record.FilePath)" style="cursor: pointer;color: #13C2C2"><a-icon type="reload" /><span style="margin-left: 2px;">{{$t('DbBack.Restore')}}</span></a>
             <a-divider type="vertical" />
             <a type="link"   @click="DbDown(record.FilePath)" style="cursor: pointer;color: #13C2C2"><a-icon type="download" /><span style="margin-left: 2px;">{{$t('DbBack.download')}}</span></a>
+            <a-divider type="vertical" />
+            <a-popconfirm title="确认删除该备份文件？" ok-text="删除" cancel-text="取消" @confirm="DbDelete(record.FilePath)">
+              <a type="link" style="cursor: pointer;color: #ff4d4f"><a-icon type="delete" /><span style="margin-left: 2px;">删除</span></a>
+            </a-popconfirm>
           </div>
         </a-table>
         </a-spin>
@@ -127,7 +141,7 @@
   </div>
 </template>
 <script>
-import {DbBackup,DbDown, GetDbConfig,SetDbConfig,DbRestore, GetBackUpList, GetTablesList} from "@/services/dbbackup";
+import {DbBackup,DbDown, DbDeleteBackup, GetDbConfig,SetDbConfig,DbRestore, GetBackUpList, GetTablesList} from "@/services/dbbackup";
 import {SQLUPLOAD} from "@/services/api";
 export default {
   i18n: require('../../i18n/language'),
@@ -139,6 +153,8 @@ export default {
       restoreTabSpinMode: 'loading',
       indeterminate: false,
       SystemTables:[],
+      requiredBackupTables: ['monitor_list', 'device_real_data', 'devices_model', 'modbus_devices_data_model'],
+      lastBackupSummary: '',
       DbType:"1",
       DbConfig:{},
       localUpgradeUrl:SQLUPLOAD,
@@ -187,12 +203,19 @@ export default {
         return this.$t('DbBack.Restoring')
       }
       return this.$t('DbBack.Loading')
+    },
+    missingRequiredTables () {
+      const selected = this.GetTables || []
+      return (this.requiredBackupTables || []).filter(t => this.SystemTables.indexOf(t) >= 0 && selected.indexOf(t) < 0)
     }
   },
   mounted () {
     this.GetDbConfig()
   },
   methods: {
+    isRequiredTable(name){
+      return (this.requiredBackupTables || []).indexOf(name) >= 0
+    },
     chargeDb(v){
       this.DbType = v
     },
@@ -214,18 +237,38 @@ export default {
         _t.$message.error(_t.$t('DbBack.BackupsTips'))
         return
       }
+      if (this.missingRequiredTables.length) {
+        _t.$message.warning('未勾选必选表：' + this.missingRequiredTables.join(', ') + '，还原后可能缺设备/点位')
+      }
       let params={
         tables:this.GetTables
       }
       this.messageShowLoad = true
+      this.lastBackupSummary = ''
       DbBackup(params).then(function (res){
         if(res.data.code==0)
         {
-          _t.$message.success(_t.$t('DbBack.BackupsSuccess'))
+          const sizeStr = res.data.fileSizeStr || ''
+          const name = res.data.fileName || ''
+          const counts = res.data.tableCounts || []
+          const countText = counts.map(function (c) {
+            return c.table + ': sql=' + c.sqlCount + '/db=' + c.dbCount
+          }).join('; ')
+          _t.lastBackupSummary = [name, sizeStr, countText].filter(Boolean).join('\n')
+          _t.$message.success(_t.$t('DbBack.BackupsSuccess') + (sizeStr ? (' (' + sizeStr + ')') : ''))
+          _t.GetBackUpList()
+        }
+        else if(res.data.code==-6)
+        {
+          _t.$message.error('备份校验失败（关键表行数不足，疑似导出不全）: ' + (res.data.msg || ''))
+        }
+        else if(res.data.code==-7)
+        {
+          _t.$message.error('备份查询超时（OceanBase ob_query_timeout）: ' + (res.data.msg || '请抬高会话超时后重试'))
         }
         else
         {
-          _t.$message.error(_t.$t('DbBack.BackupsFailed'))
+          _t.$message.error(_t.$t('DbBack.BackupsFailed') + (res.data.msg ? (': ' + res.data.msg) : ''))
         }
       }).finally(function (error) {
         _t.messageShowLoad = false
@@ -373,12 +416,23 @@ export default {
       DbRestore(params).then(function (res){
         if(res.data.code==0)
         {
-          _t.$message.success(_t.$t('DbBack.RestoreSuccess'))
+          const syncTip = (res.data.syncCreated != null)
+            ? ('；补建点位 ' + res.data.syncCreated + '，跳过 ' + (res.data.syncSkipped || 0))
+            : ''
+          _t.$message.success(_t.$t('DbBack.RestoreSuccess') + syncTip)
           _t.$router.push("/login")
+        }
+        else if(res.data.code==-4)
+        {
+          _t.$message.error('还原部分失败（含 max_allowed_packet/语句错误），未当作成功。请增大库 max_allowed_packet 后重试')
+        }
+        else if(res.data.code==-5)
+        {
+          _t.$message.error('无效备份：缺少 xorm magic 头（非本软件导出的 SQL）')
         }
         else
         {
-          _t.$message.error(_t.$t('DbBack.RestoreFailed'))
+          _t.$message.error(_t.$t('DbBack.RestoreFailed') + (res.data.msg ? (': ' + res.data.msg) : ''))
         }
       }).finally(function (error) {
         _t.messageShowLoad = false
@@ -464,6 +518,19 @@ export default {
         _t.$message.error(_t.$t('DbBack.DownloadFailed'))
       }).finally(function () {
         _t.messageShowLoad = false
+      })
+    },
+    DbDelete(name){
+      let _t = this
+      DbDeleteBackup({ DbFilePath: name }).then(function (res){
+        if (res.data && res.data.code === 0) {
+          _t.$message.success('备份已删除')
+          _t.GetBackUpList()
+        } else {
+          _t.$message.error((res.data && res.data.msg) || '删除失败')
+        }
+      }).catch(function () {
+        _t.$message.error(_t.$t('loginPage.serverError'))
       })
     }
   },

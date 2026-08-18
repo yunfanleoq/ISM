@@ -1402,7 +1402,7 @@ export const saveLayerDataStruct = (ctx,page) => {
         return Promise.resolve({
             data: {
                 code: 4090,
-                message: '运行态预览不可直接保存，请编辑对应模板'
+                message: '运行态预览不可直接保存，请编辑对应模板后再保存'
             }
         })
     }

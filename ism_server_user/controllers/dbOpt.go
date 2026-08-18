@@ -14,6 +14,7 @@ import (
 	protocolCommon "ISMServer/protocol/common"
 	ISMScript "ISMServer/task/ISMScript"
 	staticDataTask "ISMServer/task/staticData"
+	"ISMServer/utils/backupverify"
 	"ISMServer/utils/errmsg"
 	"archive/zip"
 	"encoding/json"
@@ -24,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/beego/beego/v2/adapter/logs"
 	"github.com/beego/beego/v2/core/config"
 	beego "github.com/beego/beego/v2/server/web"
 	"github.com/xormplus/xorm"
@@ -37,39 +39,120 @@ type DbOptController struct {
 
 const SavePath string = "data/dbbackup/"
 
+// 备份完整性校验关注的关键表（见 utils/backupverify.CriticalTables）
+var _ = backupverify.CriticalTables
+
+// 客户端/会话侧抬高包上限，避免大 INSERT（组态/能源快照）Error 1153
+// 现场 315MB+ 备份中大 INSERT 需 ≥256MB；取 512MB 留余量（会话 SET + DSN maxAllowedPacket）
+const mysqlMaxAllowedPacket = 512 * 1024 * 1024
+
+// OceanBase 专有：整表 dump 会撞默认 ob_query_timeout=10s（Error 4012）
+// 单位微秒；1 小时。非 OB 上 SET 失败仅 Warn。
+const obQueryTimeoutUs = int64(3600 * 1000 * 1000)
+
+type backupTableCount struct {
+	Table    string `json:"table"`
+	DbCount  int64  `json:"dbCount"`
+	SqlCount int64  `json:"sqlCount"`
+	Ok       bool   `json:"ok"`
+}
+
+func rejectEmptyBackupFile(fullPath string) error {
+	info, err := os.Stat(fullPath)
+	if err != nil {
+		return err
+	}
+	if info.Size() <= 0 {
+		_ = os.Remove(fullPath)
+		return fmt.Errorf("备份文件为空(0B)，已删除: %s", fullPath)
+	}
+	return nil
+}
+
+// verifyBackupSQLCounts 对比关键表库内 COUNT 与 SQL INSERT 行数；SQL 少于库内则判失败并删除文件。
+func verifyBackupSQLCounts(sqlPath string, tables []string, projectID string) ([]backupTableCount, error) {
+	raw, err := backupverify.VerifySQLCounts(sqlPath, tables, projectID)
+	results := make([]backupTableCount, 0, len(raw))
+	for _, c := range raw {
+		results = append(results, backupTableCount{Table: c.Table, DbCount: c.DbCount, SqlCount: c.SqlCount, Ok: c.Ok})
+	}
+	return results, err
+}
+
+func mysqlDumpDSN(user, password, host, port, dbname, char string) string {
+	return fmt.Sprintf("%s:%s@(%s:%s)/%s?charset=%s&maxAllowedPacket=%d&timeout=120s&readTimeout=3600s&writeTimeout=3600s",
+		user, password, host, port, dbname, char, mysqlMaxAllowedPacket)
+}
+
+// applyOceanBaseDumpSessionTimeouts 抬高 OB 查询/事务超时，避免 dump 大表 Error 4012。
+// 纯 MySQL / SQLite 上变量不存在，失败仅打 Warn。
+func applyOceanBaseDumpSessionTimeouts(engine *xorm.Engine) {
+	if engine == nil {
+		return
+	}
+	if _, err := engine.Exec(fmt.Sprintf("SET SESSION ob_query_timeout=%d", obQueryTimeoutUs)); err != nil {
+		logs.Warn("SET SESSION ob_query_timeout failed (continue, non-OB?): %v", err)
+	}
+	if _, err := engine.Exec(fmt.Sprintf("SET SESSION ob_trx_timeout=%d", obQueryTimeoutUs)); err != nil {
+		logs.Warn("SET SESSION ob_trx_timeout failed (continue, non-OB?): %v", err)
+	}
+}
+
+func isObQueryTimeoutErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "4012") ||
+		strings.Contains(msg, "ob_query_timeout") ||
+		strings.Contains(msg, "maximum query timeout")
+}
+
 // MysqlSQLDump ...
 func MysqlSQLDump(host, port, dbname, user, password, char, backupfilePath, zippwd string, tables []string, ProjectID string) (string, error) {
-	db, err := xorm.NewEngine("mysql", user+":"+password+"@("+host+":"+port+")/"+dbname+"?charset="+char)
-	defer db.Close()
+	db, err := xorm.NewEngine("mysql", mysqlDumpDSN(user, password, host, port, dbname, char))
 	if err != nil {
 		return "", err
 	}
+	defer db.Close()
+
+	applyOceanBaseDumpSessionTimeouts(db)
 
 	nowtime := time.Now().Format("2006-01-02_15-04-05")
 	dist := "Mysql_Backup_" + nowtime + ".sql"
+	fullPath := filepath.Join(backupfilePath, dist)
 	db.ProjectUUid = ProjectID
-	err = db.DumpAllToFile(backupfilePath+"/"+dist, tables)
+	err = db.DumpAllToFile(fullPath, tables)
 	if err != nil {
+		_ = os.Remove(fullPath)
 		return "", err
 	}
-	return dist, err
+	if err := rejectEmptyBackupFile(fullPath); err != nil {
+		return "", err
+	}
+	return dist, nil
 }
 
 func SqliteSQLDump(dbpath, backupfilePath, zippwd string, tables []string, ProjectID string) (string, error) {
 	db, err := xorm.NewEngine("sqlite3", dbpath)
-	defer db.Close()
 	if err != nil {
 		return "", err
 	}
+	defer db.Close()
 
 	nowtime := time.Now().Format("2006-01-02_15-04-05")
 	dist := "Sqlite3_Backup_" + nowtime + ".sql"
+	fullPath := filepath.Join(backupfilePath, dist)
 	db.ProjectUUid = ProjectID
-	err = db.DumpAllToFile(backupfilePath+"/"+dist, tables)
+	err = db.DumpAllToFile(fullPath, tables)
 	if err != nil {
+		_ = os.Remove(fullPath)
 		return "", err
 	}
-	return dist, err
+	if err := rejectEmptyBackupFile(fullPath); err != nil {
+		return "", err
+	}
+	return dist, nil
 }
 func MysqlSQLTables(host, port, dbname, user, password, char string) ([]string, error) {
 	var tablesList []string
@@ -105,32 +188,32 @@ func BackProjectData(ProjectID string) int {
 	var code int
 	Tables := GetTablesListFunc()
 	DbType, _ := config.Int("dbtype")
+	var fileName string
+	var err error
 	if DbType == 1 {
-		_, err := SqliteSQLDump("data/db/ism.db", SavePath, "", Tables, ProjectID)
-		if err != nil {
-			code = -2
-		}
+		fileName, err = SqliteSQLDump("data/db/ism.db", SavePath, "", Tables, ProjectID)
 	} else if DbType == 4 {
 		oceabaseuser, _ := config.String("oceanbaseuser")
 		oceabasepwd, _ := config.String("oceanbasepwd")
 		oceabasehost, _ := config.String("oceanbasehost")
 		oceabaseport, _ := config.String("oceanbaseport")
 		oceabasedbname, _ := config.String("oceanbasedbname")
-		_, err := MysqlSQLDump(oceabasehost, oceabaseport, oceabasedbname, oceabaseuser, oceabasepwd, "utf8mb4", SavePath, "", Tables, ProjectID)
-		if err != nil {
-			code = -2
-		}
+		fileName, err = MysqlSQLDump(oceabasehost, oceabaseport, oceabasedbname, oceabaseuser, oceabasepwd, "utf8mb4", SavePath, "", Tables, ProjectID)
 	} else {
 		mysqluser, _ := config.String("mysqluser")
 		mysqlpwd, _ := config.String("mysqlpwd")
 		mysqlhost, _ := config.String("mysqlhost")
 		mysqlport, _ := config.String("mysqlport")
 		mysqldbname, _ := config.String("mysqldbname")
-
-		_, err := MysqlSQLDump(mysqlhost, mysqlport, mysqldbname, mysqluser, mysqlpwd, "utf8", SavePath, "", Tables, ProjectID)
-		if err != nil {
-			code = -2
-		}
+		fileName, err = MysqlSQLDump(mysqlhost, mysqlport, mysqldbname, mysqluser, mysqlpwd, "utf8", SavePath, "", Tables, ProjectID)
+	}
+	if err != nil {
+		logs.Error("BackProjectData dump failed: %v", err)
+		return -2
+	}
+	if _, vErr := verifyBackupSQLCounts(filepath.Join(SavePath, fileName), Tables, ProjectID); vErr != nil {
+		logs.Error("BackProjectData verify failed: %v", vErr)
+		return -6
 	}
 	return code
 }
@@ -179,6 +262,10 @@ func (c *DbOptController) DbBackUp() {
 	}
 	var code int = 0
 	var getParams TablesStu
+	var fileName string
+	var fileSize int64
+	var tableCounts []backupTableCount
+	var errMsg string
 
 	_, errMk := os.Stat(SavePath)
 
@@ -194,38 +281,57 @@ func (c *DbOptController) DbBackUp() {
 		code = errmsg.NOTJSON
 	} else {
 		DbType, _ := config.Int("dbtype")
+		var dumpErr error
 		if DbType == 1 {
-			_, err := SqliteSQLDump("data/db/ism.db", SavePath, "", getParams.Tables, "")
-			if err != nil {
-				code = -2
-			}
+			fileName, dumpErr = SqliteSQLDump("data/db/ism.db", SavePath, "", getParams.Tables, "")
 		} else if DbType == 4 {
 			oceabaseuser, _ := config.String("oceanbaseuser")
 			oceabasepwd, _ := config.String("oceanbasepwd")
 			oceabasehost, _ := config.String("oceanbasehost")
 			oceabaseport, _ := config.String("oceanbaseport")
 			oceabasedbname, _ := config.String("oceanbasedbname")
-			_, err := MysqlSQLDump(oceabasehost, oceabaseport, oceabasedbname, oceabaseuser, oceabasepwd, "utf8mb4", SavePath, "", getParams.Tables, "")
-			if err != nil {
-				code = -2
-			}
+			fileName, dumpErr = MysqlSQLDump(oceabasehost, oceabaseport, oceabasedbname, oceabaseuser, oceabasepwd, "utf8mb4", SavePath, "", getParams.Tables, "")
 		} else {
 			mysqluser, _ := config.String("mysqluser")
 			mysqlpwd, _ := config.String("mysqlpwd")
 			mysqlhost, _ := config.String("mysqlhost")
 			mysqlport, _ := config.String("mysqlport")
 			mysqldbname, _ := config.String("mysqldbname")
-
-			_, err := MysqlSQLDump(mysqlhost, mysqlport, mysqldbname, mysqluser, mysqlpwd, "utf8", SavePath, "", getParams.Tables, "")
-			if err != nil {
+			fileName, dumpErr = MysqlSQLDump(mysqlhost, mysqlport, mysqldbname, mysqluser, mysqlpwd, "utf8", SavePath, "", getParams.Tables, "")
+		}
+		if dumpErr != nil {
+			if isObQueryTimeoutErr(dumpErr) {
+				code = -7
+				errMsg = "备份查询超时(OceanBase ob_query_timeout)：大表 dump 超过会话时限。请确认 ism_server 已含 SET SESSION ob_query_timeout，或执行 scripts/tune_ob_max_allowed_packet.sh 抬高全局超时后重试。详情: " + dumpErr.Error()
+			} else {
 				code = -2
+				errMsg = dumpErr.Error()
+			}
+			logs.Error("DbBackUp dump failed: %v", dumpErr)
+		} else {
+			fullPath := filepath.Join(SavePath, fileName)
+			if info, stErr := os.Stat(fullPath); stErr == nil {
+				fileSize = info.Size()
+			}
+			counts, vErr := verifyBackupSQLCounts(fullPath, getParams.Tables, "")
+			tableCounts = counts
+			if vErr != nil {
+				code = -6
+				errMsg = vErr.Error()
+				fileName = ""
+				fileSize = 0
+				logs.Error("DbBackUp verify failed: %v", vErr)
 			}
 		}
-
 	}
 
 	result := map[string]interface{}{
-		"code": code,
+		"code":        code,
+		"fileName":    fileName,
+		"fileSize":    fileSize,
+		"fileSizeStr": formatFileSize(fileSize),
+		"tableCounts": tableCounts,
+		"msg":         errMsg,
 	}
 
 	c.Data["json"] = result
@@ -287,12 +393,20 @@ func (c *DbOptController) GetBackUpList() {
 
 func SqliteSQLImport(dbpath string, dbName string) int {
 	db, err := xorm.NewEngine("sqlite3", dbpath)
-	defer db.Close()
 	if err != nil {
 		return -1
 	}
+	defer db.Close()
 	_, err1 := db.ImportFile(dbName)
 	if err1 != nil {
+		fmt.Printf("SqliteSQLImport failed: %v\n", err1)
+		logs.Error("SqliteSQLImport failed: %v", err1)
+		if strings.Contains(err1.Error(), "missing xorm magic") {
+			return -5
+		}
+		if strings.Contains(err1.Error(), "partial failure") {
+			return -4
+		}
 		return -3
 	}
 	return 0
@@ -337,15 +451,110 @@ func ZipFiles(filename string, files []string, oldform, newform string) error {
 	return nil
 }
 
-func MysqlSQLImport(host, port, dbname, user, password, char string, dbName string) int {
-	db, err := xorm.NewEngine("mysql", user+":"+password+"@("+host+":"+port+")/"+dbname+"?charset="+char)
-	defer db.Close()
+// lastMysqlImportErr 供 DbRestore 区分主键冲突 / packet / 其它部分失败文案。
+var lastMysqlImportErr error
+
+// clearMysqlTablesBeforeImport 还原前清空目标库表，避免 INSERT 撞已有 PRIMARY（Error 1062）。
+func clearMysqlTablesBeforeImport(db *xorm.Engine) error {
+	if db == nil {
+		return fmt.Errorf("nil engine")
+	}
+	sqlDB := db.DB()
+	if sqlDB == nil {
+		return fmt.Errorf("nil sql.DB")
+	}
+	_, _ = sqlDB.Exec("SET FOREIGN_KEY_CHECKS=0")
+	rows, err := sqlDB.Query("SHOW TABLES")
 	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	var tables []string
+	for rows.Next() {
+		var name string
+		if scanErr := rows.Scan(&name); scanErr != nil {
+			continue
+		}
+		if name == "" {
+			continue
+		}
+		tables = append(tables, name)
+	}
+	for _, t := range tables {
+		// TRUNCATE 失败（权限/引擎）则 DELETE
+		if _, terr := sqlDB.Exec(fmt.Sprintf("TRUNCATE TABLE `%s`", t)); terr != nil {
+			if _, derr := sqlDB.Exec(fmt.Sprintf("DELETE FROM `%s`", t)); derr != nil {
+				logs.Warn("restore clear table %s failed: truncate=%v delete=%v", t, terr, derr)
+			}
+		}
+	}
+	_, _ = sqlDB.Exec("SET FOREIGN_KEY_CHECKS=1")
+	logs.Info("restore: cleared %d tables before import", len(tables))
+	return nil
+}
+
+func classifyMysqlImportCode(err error) int {
+	if err == nil {
+		return 0
+	}
+	msg := err.Error()
+	if strings.Contains(msg, "missing xorm magic") {
+		return -5
+	}
+	if strings.Contains(msg, "Duplicate entry") || strings.Contains(msg, "1062") {
+		return -4
+	}
+	if strings.Contains(msg, "partial failure") {
+		return -4
+	}
+	if strings.Contains(msg, "max_allowed_packet") || strings.Contains(msg, "1153") {
+		return -4
+	}
+	return -3
+}
+
+func restoreFailureMsg(code int, importErr error) string {
+	if code != -4 {
+		return fmt.Sprintf("restore failed code=%d", code)
+	}
+	msg := ""
+	if importErr != nil {
+		msg = importErr.Error()
+	}
+	if strings.Contains(msg, "Duplicate entry") || strings.Contains(msg, "1062") {
+		return "还原失败：主键冲突(Duplicate entry)。已尝试清空表后仍冲突，请检查备份 SQL 是否自带重复主键，或联系支持。"
+	}
+	if strings.Contains(msg, "max_allowed_packet") || strings.Contains(msg, "1153") {
+		return "还原失败：语句过大(max_allowed_packet)。请执行 scripts/tune_ob_max_allowed_packet.sh 抬高 GLOBAL 后重试（OceanBase 上 SESSION 该变量只读）。"
+	}
+	return "还原数据库失败（含语句错误），未当作成功。请查看 ism_server 日志中 MysqlSQLImport 详情后重试。"
+}
+
+func MysqlSQLImport(host, port, dbname, user, password, char string, dbName string) int {
+	lastMysqlImportErr = nil
+	db, err := xorm.NewEngine("mysql", mysqlDumpDSN(user, password, host, port, dbname, char))
+	if err != nil {
+		lastMysqlImportErr = err
 		return -1
+	}
+	defer db.Close()
+	// OceanBase：SESSION max_allowed_packet 常为只读，优先抬 GLOBAL（需权限；失败仅 Warn）
+	if _, setErr := db.DB().Exec(fmt.Sprintf("SET GLOBAL max_allowed_packet=%d", mysqlMaxAllowedPacket)); setErr != nil {
+		logs.Warn("SET GLOBAL max_allowed_packet failed (continue; 请执行 scripts/tune_ob_max_allowed_packet.sh): %v", setErr)
+	}
+	if _, setErr := db.DB().Exec(fmt.Sprintf("SET SESSION max_allowed_packet=%d", mysqlMaxAllowedPacket)); setErr != nil {
+		logs.Warn("SET SESSION max_allowed_packet failed (OB 上多为只读，依赖 GLOBAL): %v", setErr)
+	}
+	applyOceanBaseDumpSessionTimeouts(db)
+	if clearErr := clearMysqlTablesBeforeImport(db); clearErr != nil {
+		logs.Warn("restore clear tables failed (continue import): %v", clearErr)
 	}
 	_, err1 := db.ImportFile(dbName)
 	if err1 != nil {
-		return -3
+		lastMysqlImportErr = err1
+		fmt.Printf("MysqlSQLImport failed: %v\n", err1)
+		logs.Error("MysqlSQLImport failed: %v", err1)
+		return classifyMysqlImportCode(err1)
 	}
 	return 0
 }
@@ -355,7 +564,9 @@ func (c *DbOptController) DbRestore() {
 		DbFilePath string `json:"DbFilePath"`
 	}
 	var code int = 0
+	var syncCreated, syncSkipped int
 	var getParams RestoreStu
+	var errMsg string
 	data := c.Ctx.Input.RequestBody
 
 	//json数据封装到对象中
@@ -364,8 +575,11 @@ func (c *DbOptController) DbRestore() {
 		code = errmsg.NOTJSON
 	} else {
 		DbType, _ := config.Int("dbtype")
-		protocolCommonFunc.CloseChanel()
+		// 先置还原标志，再停采集/脚本，避免 DROP 表时仍有并发读 → Error 1146
 		protocolCommon.IsRestoreDb = 1
+		protocolCommonFunc.CloseChanel()
+		ISMScript.ScriptCloseChan()
+		time.Sleep(2 * time.Second)
 		if DbType == 1 {
 			err1 := SqliteSQLImport("data/db/ism.db", getParams.DbFilePath)
 			if err1 != 0 {
@@ -395,11 +609,29 @@ func (c *DbOptController) DbRestore() {
 		}
 		ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
 		WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "还原了数据库"+getParams.DbFilePath, errmsg.JournalLevelInfo, c.Ctx.Input)
-		models.CheckAllTables()
+		if code == 0 {
+			models.CheckAllTables()
+			// 重建 GORM 连接，避免还原用独立 xorm 引擎写库后运行时连接池读到旧状态
+			models.ReconnectDbServer()
+			syncCreated, syncSkipped = models.SyncAllProjectsDeviceRealData()
+			protocolCommonFunc.CloseChanel()
+			WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid,
+				fmt.Sprintf("还原后补建实时点位：创建%d条, 跳过%d条", syncCreated, syncSkipped),
+				errmsg.JournalLevelInfo, c.Ctx.Input)
+		} else {
+			errMsg = restoreFailureMsg(code, lastMysqlImportErr)
+			logs.Error("DbRestore failed: code=%d path=%s msg=%s", code, getParams.DbFilePath, errMsg)
+			WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid,
+				fmt.Sprintf("还原数据库失败 code=%d file=%s", code, getParams.DbFilePath),
+				errmsg.JournalLevelInfo, c.Ctx.Input)
+		}
 	}
 
 	result := map[string]interface{}{
-		"code": code,
+		"code":        code,
+		"syncCreated": syncCreated,
+		"syncSkipped": syncSkipped,
+		"msg":         errMsg,
 	}
 	protocolCommon.IsRestoreDb = 0
 	c.Data["json"] = result
@@ -539,6 +771,60 @@ func (c *DbOptController) SetDbConfig() {
 
 	c.ServeJSON() //返回json格式
 }
+func (c *DbOptController) DbDeleteBackup() {
+	type DelStu struct {
+		DbFilePath string `json:"DbFilePath"`
+	}
+	result := map[string]interface{}{"code": errmsg.ERROR}
+	var getParams DelStu
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &getParams); err != nil {
+		result["code"] = errmsg.NOTJSON
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	if getParams.DbFilePath == "" {
+		result["msg"] = "empty path"
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	absSave, _ := filepath.Abs(SavePath)
+	absTarget, err := filepath.Abs(getParams.DbFilePath)
+	if err != nil {
+		result["msg"] = "invalid path"
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	rel, err := filepath.Rel(absSave, absTarget)
+	if err != nil || strings.HasPrefix(rel, "..") {
+		result["code"] = -9
+		result["msg"] = "path outside backup dir"
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	info, err := os.Stat(absTarget)
+	if err != nil || info.IsDir() {
+		result["msg"] = "file not found"
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	if err := os.Remove(absTarget); err != nil {
+		result["msg"] = err.Error()
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
+	WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "删除备份 "+filepath.Base(absTarget), errmsg.JournalLevelInfo, c.Ctx.Input)
+	result["code"] = errmsg.SUCCSECODE
+	c.Data["json"] = result
+	c.ServeJSON()
+}
+
 func (c *DbOptController) DbDown() {
 
 	var fileslist []string

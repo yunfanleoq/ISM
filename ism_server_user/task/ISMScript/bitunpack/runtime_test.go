@@ -8,7 +8,7 @@ func TestApplySourceWritesBits(t *testing.T) {
 	Configure(func(deviceData string, value interface{}) int {
 		writes = append(writes, deviceData+":"+toStr(value))
 		return 0
-	}, nil)
+	}, nil, nil, nil)
 	Register([]Rule{
 		{SourceDevice: "d", SourcePoint: "p", Bit: 1, TargetDevice: "t", TargetPoint: "b1"},
 		{SourceDevice: "d", SourcePoint: "p", Bit: 2, TargetDevice: "t", TargetPoint: "b2"},

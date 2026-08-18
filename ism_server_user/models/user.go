@@ -287,13 +287,29 @@ func SetUserPassword(username string, Password string, NewPassword string) int {
 	return errmsg.SUCCSE
 }
 
-// 密修改码
+// CheckPassword 校验解锁密码：先系统用户表，失败再试项目用户表（与登录链路对齐）。
 func CheckPassword(username string, Password string) int {
 	errPassword, _ := CheckLogin(username, Password)
-	if errPassword != errmsg.LOGIN_SUCCSE {
+	if errPassword == errmsg.LOGIN_SUCCSE {
+		return errmsg.SUCCSE
+	}
+	errPU, _, _ := CheckProjectUserLogin(username, Password)
+	if errPU == errmsg.LOGIN_SUCCSE {
+		return errmsg.SUCCSE
+	}
+	return errmsg.ERROR_PASSWORD_WRONG
+}
+
+// CheckPasswordWithProject 对齐 SetUserPassword：Admin 走系统用户；非 Admin 且带 ProjectUuid 走项目用户。
+func CheckPasswordWithProject(username, Password, ProjectUuid, Role, AdminUuid string) int {
+	if Role != "Admin" && ProjectUuid != "" && AdminUuid != "" {
+		errPassword, _ := CheckProjectLogin(ProjectUuid, AdminUuid, username, Password)
+		if errPassword == errmsg.LOGIN_SUCCSE {
+			return errmsg.SUCCSE
+		}
 		return errmsg.ERROR_PASSWORD_WRONG
 	}
-	return errmsg.SUCCSE
+	return CheckPassword(username, Password)
 }
 
 // 密修改码

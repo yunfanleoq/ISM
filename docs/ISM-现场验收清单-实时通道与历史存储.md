@@ -153,6 +153,36 @@ curl -s -u root:taosdata \
 | 有数据但显示比墙钟快/慢约 8 小时 | 时区链路未对齐（确认二进制含 `FormatTDengineTimestamp` + 系统时区） |
 | 长期只有 1 个 data_name / 几乎无新行 | 回到 3.2 开 `is_record`，并确认 `historyrecorddbtype=2` |
 
+### 3.4 定时历史存档逻辑（实时库快照）
+
+`RecordType=1`（定时存储）由后台任务 **到点从实时内存库取最新值** 写入历史，**不依赖**当轮采集是否成功。
+
+- 任务：`DealWithTimedRealtimeHistorySnapshot`
+- 存档时间：按 `record_interval`（秒）截断，如 600 → `10:50:00`、`11:00:00`
+- 采集路径对 type=1 不再写历史（避免双写）
+
+```bash
+grep -E 'timed history snapshot|no realtime value' ism_server_user/logs/ism.log*
+```
+
+### 3.5 缺档诊断日志（`loglevel=3` 可见）
+
+路径：`ism_server_user/logs/ism.log`（非 Docker / 非 `tdengine/log`）。
+
+```bash
+grep -E 'timed history snapshot|history archive gap|history queue full|history pipeline pressure|write history data batch failed|history (change|pct)-store skip' \
+  ism_server_user/logs/ism.log*
+```
+
+| 关键词 | 含义 |
+|--------|------|
+| `timed history snapshot` | 定时快照 tick / 点数加载 / 无实时值 |
+| `history archive gap` | （旧采集驱动路径）间隔翻倍空档 |
+| `history queue full` | 入队丢样（含点位名，按点节流） |
+| `history pipeline pressure` | drops/flushFail > 0 |
+| `write history data batch failed` | 写历史库失败 |
+| `history change-store skip` / `history pct-store skip` | 变化/百分比存档解析失败 |
+
 ---
 
 ## 4. 一票否决（任一条失败则本轮验收不通过）

@@ -54,16 +54,20 @@ func ObserveStartupAlarm(alarm PushAlarm, _ bool) bool {
 }
 
 // ExpireStartupAlarmWindows closes windows whose deadline has passed.
-// Startup-period active values are intentionally not recovered as alarms.
-func ExpireStartupAlarmWindows(now time.Time) {
+// Returns true when at least one window expired in this call (caller may SyncAlarms).
+// Startup-period active values are intentionally not recovered as alarms by this helper alone.
+func ExpireStartupAlarmWindows(now time.Time) bool {
 	startupAlarmState.Lock()
 	defer startupAlarmState.Unlock()
 
+	expired := false
 	for projectUuid, window := range startupAlarmState.windows {
 		if !now.Before(window.deadline) {
 			delete(startupAlarmState.windows, projectUuid)
+			expired = true
 		}
 	}
+	return expired
 }
 
 // NormalizeRealValue makes numeric formatting differences irrelevant while

@@ -236,7 +236,8 @@ func writeHistoryBatch(batch historyWriteBatch) error {
 func historyWriteWorker(jobCh <-chan historyWriteBatch) {
 	for batch := range jobCh {
 		if err := writeHistoryBatch(batch); err != nil {
-			logs.Error(fmt.Sprintf("write history data batch failed: %v", err))
+			// 写失败不删 LevelDB key，下次扫描可重试
+			logs.Error(fmt.Sprintf("write history data batch failed (keys retained for retry): %v", err))
 		} else {
 			deleteHistoryBatchKeys(batch.keys)
 		}
@@ -311,6 +312,7 @@ func insertHistoryPgData(writeDeviceHistoryData []models.DevicesPgHistoryData, O
 	return ee
 }
 func DealWithHistoryData() {
+	var processed uint64
 	for {
 		data, code := protocol_common.GHistoryDataQueue.QueuePull()
 		if data == nil {
@@ -320,6 +322,10 @@ func DealWithHistoryData() {
 		if code != -1 {
 			var build strings.Builder
 			HistoryData := data.(models.DevicesHistoryDataList)
+			// 定时存储改由实时库快照任务写入，队列里残留的 type=1 样直接丢弃
+			if HistoryData.RecordType == 1 {
+				continue
+			}
 			build.WriteString(HistoryData.DeviceUuid)
 			build.WriteString(HistoryData.DataUuid)
 			key := build.String()
@@ -328,38 +334,34 @@ func DealWithHistoryData() {
 				if HistoryData.RecordType == 2 {
 					protocol_common.HistoryDataWrite(HistoryData)
 				} else {
+					// 变化/即时：先落第一条作为基线，避免冷启动后长时间无点
+					protocol_common.HistoryDataWrite(HistoryData)
 					DeviceHistoryDataTemp[key] = HistoryData
 				}
 			} else {
-				if HistoryData.RecordType == 1 {
-					if HistoryData.RecordInterval == 0 {
-						HistoryData.RecordInterval = 1
-					}
-					if (HistoryData.RecordTime.Unix() - dataTemp.RecordTime.Unix()) >= int64(HistoryData.RecordInterval) {
-						//models.Db.Model(&models.DevicesHistoryDataList{}).Create(&HistoryData)
-						//protocol_common.GSaveHistoryDataQueue.QueuePush(HistoryData)
-						protocol_common.HistoryDataWrite(HistoryData)
-						DeviceHistoryDataTemp[key] = HistoryData
-					}
-				} else if HistoryData.RecordType == 0 {
+				if HistoryData.RecordType == 0 {
 					ChargeValue, err3 := strconv.ParseFloat(HistoryData.RecordDataCharge, 32)
 					if err3 != nil {
-						time.Sleep(time.Millisecond * 100)
+						protocol_common.ErrorThrottled("history:parse:charge:"+key,
+							"history change-store skip: bad RecordDataCharge device=%s data=%s charge=%q err=%v",
+							HistoryData.DeviceName, HistoryData.DataName, HistoryData.RecordDataCharge, err3)
 						continue
 					}
 					currentValue, err := strconv.ParseFloat(HistoryData.DataValue, 32)
 					if err != nil {
-						time.Sleep(time.Millisecond * 100)
+						protocol_common.ErrorThrottled("history:parse:cur:"+key,
+							"history change-store skip: bad DataValue device=%s data=%s value=%q err=%v",
+							HistoryData.DeviceName, HistoryData.DataName, HistoryData.DataValue, err)
 						continue
 					}
 					oldValue, err1 := strconv.ParseFloat(dataTemp.DataValue, 32)
 					if err1 != nil {
-						time.Sleep(time.Millisecond * 100)
+						protocol_common.ErrorThrottled("history:parse:old:"+key,
+							"history change-store skip: bad last DataValue device=%s data=%s value=%q err=%v",
+							HistoryData.DeviceName, HistoryData.DataName, dataTemp.DataValue, err1)
 						continue
 					}
 					if math.Abs(currentValue-oldValue) >= ChargeValue {
-						//models.Db.Model(&models.DevicesHistoryDataList{}).Create(&HistoryData)
-						//protocol_common.GSaveHistoryDataQueue.QueuePush(HistoryData)
 						protocol_common.HistoryDataWrite(HistoryData)
 						DeviceHistoryDataTemp[key] = HistoryData
 					}
@@ -368,17 +370,23 @@ func DealWithHistoryData() {
 				} else if HistoryData.RecordType == 3 {
 					ChargeValue, err3 := strconv.ParseFloat(HistoryData.RecordDataCharge, 32)
 					if err3 != nil {
-						time.Sleep(time.Millisecond * 100)
+						protocol_common.ErrorThrottled("history:parse:pctcharge:"+key,
+							"history pct-store skip: bad RecordDataCharge device=%s data=%s charge=%q err=%v",
+							HistoryData.DeviceName, HistoryData.DataName, HistoryData.RecordDataCharge, err3)
 						continue
 					}
 					currentValue, err := strconv.ParseFloat(HistoryData.DataValue, 32)
 					if err != nil {
-						time.Sleep(time.Millisecond * 100)
+						protocol_common.ErrorThrottled("history:parse:pctcur:"+key,
+							"history pct-store skip: bad DataValue device=%s data=%s value=%q err=%v",
+							HistoryData.DeviceName, HistoryData.DataName, HistoryData.DataValue, err)
 						continue
 					}
 					oldValue, err1 := strconv.ParseFloat(dataTemp.DataValue, 32)
 					if err1 != nil {
-						time.Sleep(time.Millisecond * 100)
+						protocol_common.ErrorThrottled("history:parse:pctold:"+key,
+							"history pct-store skip: bad last DataValue device=%s data=%s value=%q err=%v",
+							HistoryData.DeviceName, HistoryData.DataName, dataTemp.DataValue, err1)
 						continue
 					}
 					if oldValue == 0 {
@@ -393,8 +401,22 @@ func DealWithHistoryData() {
 					}
 				}
 			}
+			processed++
+			if processed%5000 == 0 {
+				qLen, drops, flushOk, flushFail := protocol_common.HistoryQueueStats()
+				logs.Info("history pipeline: processed=%d queueLen=%d drops=%d flushOk=%d flushFail=%d tempKeys=%d",
+					processed, qLen, drops, flushOk, flushFail, len(DeviceHistoryDataTemp))
+				if drops > 0 || flushFail > 0 {
+					// Error 级：正式 loglevel=3 可见
+					logs.Error("history pipeline pressure: processed=%d queueLen=%d drops=%d flushOk=%d flushFail=%d tempKeys=%d — 定时入库可能丢点，请检查队列/TDengine/磁盘",
+						processed, qLen, drops, flushOk, flushFail, len(DeviceHistoryDataTemp))
+				}
+			}
 		}
-
+		// 队列有积压时不额外 sleep，尽快排空
+		if protocol_common.GHistoryDataQueue != nil && protocol_common.GHistoryDataQueue.QueueLength() > 100 {
+			continue
+		}
 		time.Sleep(time.Millisecond * 1)
 	}
 }

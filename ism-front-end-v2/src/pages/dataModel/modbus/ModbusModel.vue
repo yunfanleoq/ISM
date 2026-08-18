@@ -40,12 +40,9 @@
 import {
   DeviceModellist,
   modbusModelDelete,
-  modbusModelGroupList,
-  modbusModelRegisterList,
 } from "../../../services/modbusModel";
-import { LOCALUPGATEALLMODBUSDATAMODEL } from "@/services/api";
+import { LOCALUPGATEALLMODBUSDATAMODEL, EXPORTALLMODBUSDATAMODEL } from "@/services/api";
 import { AUTH_TYPE, getAuthorization } from "@/utils/request";
-import { exportExcelWithStyle } from "@/services/excelExport.js"
 import axios from 'axios'
 
 // 全量导入点位量大（OceanBase 尤其慢），需远长于全局 30s
@@ -279,27 +276,6 @@ export default {
         this.$message.error(detail)
       }
     },
-    mapExportRow(item, model, group) {
-      const source = {
-        ...item,
-        modelName: model.modelName,
-        registerGroupName: group.name,
-        registerGroupUuid: group.uuid,
-        muid: model.key,
-        modeltype: item.modeltype != null ? item.modeltype : 2,
-      }
-      const row = {}
-      for (const key in this.exportFields) {
-        const fieldConfig = this.exportFields[key]
-        if (typeof fieldConfig === 'string') {
-          row[key] = source[fieldConfig]
-        } else if (typeof fieldConfig === 'object' && fieldConfig.field) {
-          const rawValue = source[fieldConfig.field]
-          row[key] = fieldConfig.callback ? fieldConfig.callback(rawValue) : rawValue
-        }
-      }
-      return row
-    },
     async handleExportAll() {
       if (this.exportLoading) {
         return
@@ -310,27 +286,44 @@ export default {
       }
       this.exportLoading = true
       try {
-        const allRows = []
-        for (const model of this.dataSource) {
-          const groupRes = await modbusModelGroupList({ muid: model.key })
-          const groups = groupRes.data.list || []
-          for (const group of groups) {
-            const regRes = await modbusModelRegisterList({ uuid: group.uuid })
-            const regs = regRes.data.list || []
-            for (const item of regs) {
-              allRows.push(this.mapExportRow(item, model, group))
-            }
-          }
-        }
-        if (!allRows.length) {
-          this.$message.warning(this.$t('dataModel.exportAllNoPoints'))
+        const res = await axios.post(EXPORTALLMODBUSDATAMODEL, {}, {
+          headers: { ...this.importHeaders },
+          responseType: 'blob',
+          timeout: IMPORT_ALL_TIMEOUT_MS,
+        })
+        const ct = (res.headers && res.headers['content-type']) || ''
+        if (ct.indexOf('application/json') !== -1) {
+          const text = await res.data.text()
+          let msg = this.$t('dataModel.exportAllFailed')
+          try {
+            const j = JSON.parse(text)
+            if (j.msg) msg = j.msg
+            else if (j.code === -2) msg = this.$t('dataModel.exportAllNoPoints')
+          } catch (e) { /* ignore */ }
+          this.$message.warning(msg)
           return
         }
         const stamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '')
-        await exportExcelWithStyle(allRows, this.exportFields, `Modbus全量点位_${stamp}`, '', false)
-        this.$message.success(`${this.$t('dataModel.exportAllSuccess')}${allRows.length}`)
+        const blob = new Blob([res.data], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `Modbus全量点位_${stamp}.xlsx`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url)
+        this.$message.success(this.$t('dataModel.exportAllSuccess'))
       } catch (e) {
-        this.$message.error(this.$t('dataModel.exportAllFailed'))
+        let detail = this.$t('dataModel.exportAllFailed')
+        if (e && (e.code === 'ECONNABORTED' || /timeout/i.test(e.message || ''))) {
+          detail = `${detail}（请求超时）`
+        } else if (e && e.response && e.response.status) {
+          detail = `${detail}（HTTP ${e.response.status}）`
+        }
+        this.$message.error(detail)
       } finally {
         this.exportLoading = false
       }

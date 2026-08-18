@@ -1,6 +1,7 @@
 import {
     DBBACKUP,GETTABLESLIST,GETBACKUPLIST,DBRESTORE,
-    GETDBCONFIG,SETDBCONFIG,DBDOWN
+    GETDBCONFIG,SETDBCONFIG,DBDOWN,DBDELETEBACKUP,
+    HISHISTORYBACKUP,GETHISHISTORYBACKUPLIST,HISHISTORYBACKUPDOWN
 } from '@/services/api'
 import {request, METHOD} from '@/utils/request'
 
@@ -32,6 +33,27 @@ export async function DbDown(params) {
         responseType: 'blob'
     })
 }
+export async function DbDeleteBackup(params) {
+    return request(DBDELETEBACKUP, METHOD.POST,params,{
+        timeout:60000
+    })
+}
+export async function HisDbBackup(params) {
+    return request(HISHISTORYBACKUP, METHOD.POST,params,{
+        timeout:600000
+    })
+}
+export async function GetHisBackUpList(params) {
+    return request(GETHISHISTORYBACKUPLIST, METHOD.POST,params,{
+        timeout:600000
+    })
+}
+export async function HisDbDown(params) {
+    return request(HISHISTORYBACKUPDOWN, METHOD.POST,params,{
+        timeout:60*60*1000,
+        responseType: 'blob'
+    })
+}
 export async function GetDbConfig(params) {
     return request(GETDBCONFIG, METHOD.POST,params,{
         timeout:600000
@@ -50,5 +72,9 @@ export default {
     DbRestore,
     SetDbConfig,
     GetDbConfig,
-    DbDown
+    DbDown,
+    DbDeleteBackup,
+    HisDbBackup,
+    GetHisBackUpList,
+    HisDbDown
 }

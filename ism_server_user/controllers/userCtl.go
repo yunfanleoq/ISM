@@ -736,6 +736,8 @@ func (c *UserController) SystemDisplayUserList() {
 func (c *UserController) UserUnlock() {
 
 	var username string
+	var Role string
+	var adminUuid string
 	var updateUserPassword map[string]interface{}
 
 	result := map[string]interface{}{
@@ -750,7 +752,7 @@ func (c *UserController) UserUnlock() {
 		return
 	} else {
 		var tokenCode int
-		tokenCode, username, _, _, _ = middleware.JwtToken(token)
+		tokenCode, username, Role, _, adminUuid = middleware.JwtToken(token)
 		if tokenCode != errmsg.SUCCSE {
 			result["code"] = -7
 			c.Data["json"] = result
@@ -760,13 +762,29 @@ func (c *UserController) UserUnlock() {
 	}
 
 	data := c.Ctx.Input.RequestBody
-	//json数据封装到对象中
 	err := json.Unmarshal(data, &updateUserPassword)
 	if err != nil {
 		result["code"] = -1
-	} else {
-		result["code"] = models.CheckPassword(username, updateUserPassword["Password"].(string))
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
 	}
+	pwdRaw, ok := updateUserPassword["Password"]
+	if !ok || pwdRaw == nil {
+		result["code"] = errmsg.ERROR_PASSWORD_WRONG
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	pwd, ok := pwdRaw.(string)
+	if !ok || pwd == "" {
+		result["code"] = errmsg.ERROR_PASSWORD_WRONG
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	projectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
+	result["code"] = models.CheckPasswordWithProject(username, pwd, projectUuid, Role, adminUuid)
 
 	c.Data["json"] = result
 	c.ServeJSON()

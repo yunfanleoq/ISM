@@ -112,11 +112,9 @@ import {
   VirtualDeviceModelDelete,
   VirtualDeviceModelEdit,
   VirtualDeviceModellist,
-  VirtualDeviceModelDataList
 } from "@/services/VirtualDeviceModel";
-import { LOCALUPGATEALLVIRTUALDEVICEDATAMODEL } from "@/services/api";
+import { LOCALUPGATEALLVIRTUALDEVICEDATAMODEL, EXPORTALLVIRTUALDEVICEDATAMODEL } from "@/services/api";
 import { AUTH_TYPE, getAuthorization } from "@/utils/request";
-import { exportExcelWithStyle } from "@/services/excelExport.js"
 import axios from 'axios'
 
 const IMPORT_ALL_TIMEOUT_MS = 2 * 60 * 60 * 1000
@@ -178,6 +176,10 @@ export default {
         "告警等级(提示、次要、重要、紧急、致命)": { field: "alarmLevel", callback: alarmLevelText },
         "告警消息": "AlarmMessage",
         "告警消除消息": "AlarmClearMessage",
+        "报警触发值(0,1)": {
+          field: "alarmOnValue",
+          callback: value => (value === 0 || value === '0') ? '0' : '1',
+        },
         "是否存储(是,否)": { field: "record", callback: recordText },
         "存储类型(变化存储、定时存储、即时存储)": { field: "RecordType", callback: recordTypeText },
         "定时时间": "recordInterval",
@@ -269,25 +271,6 @@ export default {
     }
   },
   methods: {
-    mapExportRow(item, model) {
-      const source = {
-        ...item,
-        modelName: model.modelName,
-        muid: model.key,
-        modeltype: item.modeltype != null ? item.modeltype : 480,
-      }
-      const row = {}
-      for (const key in this.exportFields) {
-        const fieldConfig = this.exportFields[key]
-        if (typeof fieldConfig === 'string') {
-          row[key] = source[fieldConfig]
-        } else if (typeof fieldConfig === 'object' && fieldConfig.field) {
-          const rawValue = source[fieldConfig.field]
-          row[key] = fieldConfig.callback ? fieldConfig.callback(rawValue) : rawValue
-        }
-      }
-      return row
-    },
     async handleExportAll() {
       if (this.exportLoading) return
       if (!this.dataSource.length) {
@@ -296,23 +279,44 @@ export default {
       }
       this.exportLoading = true
       try {
-        const allRows = []
-        for (const model of this.dataSource) {
-          const res = await VirtualDeviceModelDataList({ muid: model.key })
-          const list = (res.data && res.data.list) || []
-          for (const item of list) {
-            allRows.push(this.mapExportRow(item, model))
-          }
-        }
-        if (!allRows.length) {
-          this.$message.warning(this.$t('dataModel.exportAllNoPoints'))
+        const res = await axios.post(EXPORTALLVIRTUALDEVICEDATAMODEL, {}, {
+          headers: { ...this.importHeaders },
+          responseType: 'blob',
+          timeout: IMPORT_ALL_TIMEOUT_MS,
+        })
+        const ct = (res.headers && res.headers['content-type']) || ''
+        if (ct.indexOf('application/json') !== -1) {
+          const text = await res.data.text()
+          let msg = this.$t('dataModel.exportAllFailed')
+          try {
+            const j = JSON.parse(text)
+            if (j.msg) msg = j.msg
+            else if (j.code === -2) msg = this.$t('dataModel.exportAllNoPoints')
+          } catch (e) { /* ignore */ }
+          this.$message.warning(msg)
           return
         }
         const stamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '')
-        await exportExcelWithStyle(allRows, this.exportFields, `虚拟设备全量点位_${stamp}`, '', false)
-        this.$message.success(`${this.$t('dataModel.exportAllSuccess')}${allRows.length}`)
+        const blob = new Blob([res.data], {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = `虚拟设备全量点位_${stamp}.xlsx`
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url)
+        this.$message.success(this.$t('dataModel.exportAllSuccess'))
       } catch (e) {
-        this.$message.error(this.$t('dataModel.exportAllFailed'))
+        let detail = this.$t('dataModel.exportAllFailed')
+        if (e && (e.code === 'ECONNABORTED' || /timeout/i.test(e.message || ''))) {
+          detail = `${detail}（请求超时）`
+        } else if (e && e.response && e.response.status) {
+          detail = `${detail}（HTTP ${e.response.status}）`
+        }
+        this.$message.error(detail)
       } finally {
         this.exportLoading = false
       }

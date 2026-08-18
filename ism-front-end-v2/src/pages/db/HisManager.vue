@@ -2,7 +2,7 @@
   <div class="page-header-index-wide">
 
       <a-card :bordered="false" :bodyStyle="{ padding: '16px', height: '100%' }" :style="{ height: '100%' }">
-      <a-tabs default-active-key="3">
+      <a-tabs default-active-key="1">
         <a-tab-pane key="1" :tab="$t('DbBack.DbConfig')">
           <a-spin :tip="$t('DbBack.Loading')" :spinning="messageShowLoad">
             <a-form :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
@@ -203,17 +203,48 @@
             </a-form>
           </a-spin>
         </a-tab-pane>
+        <a-tab-pane key="3" :tab="$t('DbBack.Backups') || '备份'">
+          <a-spin :tip="$t('DbBack.Loading')" :spinning="hisBackupLoading">
+            <a-alert
+              v-if="hisBackupHint"
+              type="info"
+              show-icon
+              :message="hisBackupHint"
+              style="margin-bottom: 12px"
+            />
+            <a-button type="primary" @click="doHisBackup" :loading="hisBackupLoading" style="margin-bottom:12px">
+              {{$t('DbBack.Backups') || '备份'}}
+            </a-button>
+            <a-table rowKey="FileName" :pagination="{ pageSize: 10 }" :columns="hisBackupColumns" :data-source="hisBackupList">
+              <div slot="Opt" slot-scope="text, record">
+                <a type="link" @click="doHisDown(record.FilePath)" style="cursor: pointer;color: #13C2C2">
+                  <a-icon type="download" /><span style="margin-left: 2px;">{{$t('DbBack.download')}}</span>
+                </a>
+              </div>
+            </a-table>
+          </a-spin>
+        </a-tab-pane>
       </a-tabs>
     </a-card>
   </div>
 </template>
 <script>
 import {GetSystemHistoryConfig, SaveSystemHistoryConfig} from "../../services/system";
+import {HisDbBackup, GetHisBackUpList, HisDbDown} from "@/services/dbbackup";
 export default {
   i18n: require('../../i18n/language'),
   data () {
     return {
       messageShowLoad:false,
+      hisBackupLoading:false,
+      hisBackupHint:'当前支持 TDengine 历史库备份：优先本机 taosdump；若无客户端则自动尝试 docker exec tdengine taosdump。其它库类型会提示不支持。',
+      hisBackupList:[],
+      hisBackupColumns: [
+        { title: '名称', dataIndex: 'FileName', width: '40%' },
+        { title: '备份时间', dataIndex: 'CreateTime', width: '25%' },
+        { title: '大小', dataIndex: 'FileSize', width: '15%' },
+        { title: '操作', scopedSlots: { customRender: 'Opt' }, width: '20%' },
+      ],
       DbType:"1",
       OnceWriteHistoryCounts:100,
       PartitionType:1,
@@ -250,10 +281,56 @@ export default {
   components: {},
   mounted () {
     this.GetDbConfig()
+    this.loadHisBackupList()
   },
   methods: {
     chargeDb(v){
       this.DbType = v
+    },
+    loadHisBackupList(){
+      let _t = this
+      GetHisBackUpList({}).then(function (res){
+        if (res.data && res.data.code === 0) {
+          _t.hisBackupList = res.data.list || []
+        }
+      }).catch(function () {})
+    },
+    doHisBackup(){
+      let _t = this
+      _t.hisBackupLoading = true
+      HisDbBackup({}).then(function (res){
+        _t.hisBackupLoading = false
+        if (res.data && res.data.code === 0) {
+          _t.$message.success('历史库备份成功: ' + (res.data.fileName || ''))
+          _t.loadHisBackupList()
+        } else {
+          _t.$message.error((res.data && res.data.msg) || '历史库备份失败')
+        }
+      }).catch(function () {
+        _t.hisBackupLoading = false
+        _t.$message.error(_t.$t('loginPage.serverError'))
+      })
+    },
+    doHisDown(path){
+      let _t = this
+      HisDbDown({ DbFilePath: path }).then(function (res){
+        const data = res.data
+        if (!(data instanceof Blob) || data.size === 0) {
+          _t.$message.error(_t.$t('DbBack.DownloadFailed'))
+          return
+        }
+        const fileName = (path ? String(path).split('/').pop() : 'his-backup.zip')
+        const url = window.URL.createObjectURL(data)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = fileName
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+      }).catch(function () {
+        _t.$message.error(_t.$t('DbBack.DownloadFailed'))
+      })
     },
     GetDbConfig(){
       let _t = this

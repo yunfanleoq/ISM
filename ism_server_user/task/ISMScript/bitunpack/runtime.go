@@ -25,18 +25,29 @@ type SetFunc func(deviceData string, value interface{}) int
 // LoadFunc loads a live/DB value for settle fallback.
 type LoadFunc func(deviceName, pointName string) (string, bool)
 
+// AlarmEnqueueFunc pushes current point value into alarm queue once.
+type AlarmEnqueueFunc func(deviceData string)
+
 var (
-	mu            sync.RWMutex
-	rulesBySource = make(map[string][]Rule)
-	setDeviceData SetFunc
-	loadDevice    LoadFunc
+	mu                 sync.RWMutex
+	rulesBySource      = make(map[string][]Rule)
+	setDeviceData      SetFunc
+	setDeviceDataSettle SetFunc
+	loadDevice         LoadFunc
+	enqueueAlarm       AlarmEnqueueFunc
 )
 
-// Configure wires SetDeviceData / value loader from the script package.
-func Configure(set SetFunc, load LoadFunc) {
+// Configure wires SetDeviceData / settle(skip-alarm) / value loader / alarm sync from the script package.
+func Configure(set SetFunc, settle SetFunc, load LoadFunc, alarmSync AlarmEnqueueFunc) {
 	mu.Lock()
 	setDeviceData = set
+	if settle != nil {
+		setDeviceDataSettle = settle
+	} else {
+		setDeviceDataSettle = set
+	}
 	loadDevice = load
+	enqueueAlarm = alarmSync
 	mu.Unlock()
 }
 
@@ -110,6 +121,7 @@ func applyRules(rules []Rule, value string, setter SetFunc) {
 }
 
 // SettleAll runs every registered source once using current cache/DB values.
+// Writes realtime values only — does not push GAlarmQueue (startup baseline).
 func SettleAll() {
 	mu.RLock()
 	snapshot := make(map[string][]Rule, len(rulesBySource))
@@ -118,7 +130,10 @@ func SettleAll() {
 		copy(cp, v)
 		snapshot[k] = cp
 	}
-	setter := setDeviceData
+	setter := setDeviceDataSettle
+	if setter == nil {
+		setter = setDeviceData
+	}
 	loader := loadDevice
 	mu.RUnlock()
 	if setter == nil {
@@ -141,4 +156,34 @@ func SettleAll() {
 		applyRules(rules, val, setter)
 	}
 	logs.Info("native-bitunpack: settle complete, sources=%d rules=%d", len(snapshot), RuleCount())
+}
+
+// SyncAlarms enqueues current target bit values once after startup alarm window expires.
+func SyncAlarms() {
+	mu.RLock()
+	snapshot := make(map[string][]Rule, len(rulesBySource))
+	for k, v := range rulesBySource {
+		cp := make([]Rule, len(v))
+		copy(cp, v)
+		snapshot[k] = cp
+	}
+	alarmFn := enqueueAlarm
+	mu.RUnlock()
+	if alarmFn == nil || len(snapshot) == 0 {
+		return
+	}
+	seen := make(map[string]struct{})
+	n := 0
+	for _, rules := range snapshot {
+		for _, r := range rules {
+			key := r.TargetKey()
+			if _, ok := seen[key]; ok {
+				continue
+			}
+			seen[key] = struct{}{}
+			alarmFn(key)
+			n++
+		}
+	}
+	logs.Info("native-bitunpack: SyncAlarms targets=%d", n)
 }

@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"reflect"
 	"strconv"
 	"sync"
 	"time"
@@ -75,6 +76,9 @@ var (
 	historyDataBufferSize  int
 	historyDataMutex       sync.Mutex
 	historyDataFlushTicker *time.Ticker
+	historyFlushOkCount    uint64
+	historyFlushFailCount  uint64
+	historyQueueDropCount  uint64
 )
 
 var RecordPath string
@@ -257,34 +261,74 @@ func flushHistoryDataBuffer() {
 		wb := new(leveldb.Batch)
 
 		// 遍历缓冲区数据，添加到批量写入中
-		// 遍历缓冲区数据，添加到批量写入中
 		for _, data := range historyDataBuffer {
 			// 使用 gob 序列化，比 JSON 更高效
 			var buf bytes.Buffer
 			err := gob.NewEncoder(&buf).Encode(data)
-			if err == nil {
-				// 使用时间戳+随机数作为键
-				timestamp := time.Now().UnixNano()
-				random := rand.Intn(1000000) // 增加随机数范围，减少冲突概率
-				key := fmt.Sprintf("%d_%d", timestamp, random)
-				wb.Put([]byte(key), buf.Bytes())
+			if err != nil {
+				ErrorThrottled("history:gob:encode", "history gob encode failed (sample skipped): %v", err)
+				continue
 			}
+			timestamp := time.Now().UnixNano()
+			random := rand.Intn(1000000) // 增加随机数范围，减少冲突概率
+			key := fmt.Sprintf("%d_%d", timestamp, random)
+			wb.Put([]byte(key), buf.Bytes())
 		}
 
 		// 执行批量写入
 		if err := GSaveHistoryDataLevelDb.Write(wb, nil); err != nil {
-			// 写入失败，记录错误
-			logs.Error("批量写入历史数据失败: ", err)
+			// 写入失败，保留缓冲区以便下次重试，禁止静默丢数据
+			logs.Error("批量写入历史数据失败(保留缓冲重试): ", err)
+			historyFlushFailCount++
 		} else {
 			// 写入成功，清空缓冲区
 			historyDataBuffer = make([]interface{}, 0, historyDataBufferSize)
+			historyFlushOkCount++
 		}
 	}
 }
 
 // HistoryDataWrite 写入历史数据（批量写入版本）
-// 数据会先进入内存缓冲区，达到一定数量或时间后批量写入LevelDB
+// 数据会先进入内存缓冲区，达到一定数量或时间后批量写入LevelDB。
+// RecordType==1（定时存储）由实时库快照任务独占，采集路径调用本函数会被忽略。
 func HistoryDataWrite(HistoryData any) {
+	if isTimedRecordOwnedBySnapshot(HistoryData) {
+		return
+	}
+	historyDataWriteInternal(HistoryData)
+}
+
+// HistoryDataWriteSnapshot 仅供定时快照任务写入 RecordType==1。
+func HistoryDataWriteSnapshot(HistoryData any) {
+	historyDataWriteInternal(HistoryData)
+}
+
+func isTimedRecordOwnedBySnapshot(sample interface{}) bool {
+	if sample == nil {
+		return false
+	}
+	v := reflect.ValueOf(sample)
+	for v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return false
+		}
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return false
+	}
+	f := v.FieldByName("RecordType")
+	if !f.IsValid() {
+		return false
+	}
+	switch f.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return f.Int() == 1
+	}
+	return false
+}
+
+func historyDataWriteInternal(HistoryData any) {
 	historyDataMutex.Lock()
 	defer historyDataMutex.Unlock()
 
@@ -296,6 +340,71 @@ func HistoryDataWrite(HistoryData any) {
 		// 异步刷新，避免阻塞
 		go flushHistoryDataBuffer()
 	}
+}
+
+// historySampleBrief 从采样结构体反射取出点位信息（避免 protocol/common → models 循环依赖）。
+func historySampleBrief(sample interface{}) (deviceUuid, dataUuid, deviceName, dataName string) {
+	if sample == nil {
+		return
+	}
+	v := reflect.ValueOf(sample)
+	for v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return
+		}
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return
+	}
+	if f := v.FieldByName("DeviceUuid"); f.IsValid() && f.Kind() == reflect.String {
+		deviceUuid = f.String()
+	}
+	if f := v.FieldByName("DataUuid"); f.IsValid() && f.Kind() == reflect.String {
+		dataUuid = f.String()
+	}
+	if f := v.FieldByName("DeviceName"); f.IsValid() && f.Kind() == reflect.String {
+		deviceName = f.String()
+	}
+	if f := v.FieldByName("DataName"); f.IsValid() && f.Kind() == reflect.String {
+		dataName = f.String()
+	}
+	return
+}
+
+// EnqueueHistorySample 入队历史采样；队列满时累计丢弃并打 Error（loglevel=3 可见），按点位节流。
+// 定时存储（RecordType=1）不入队，改由实时库快照任务写入。
+func EnqueueHistorySample(sample interface{}) bool {
+	if isTimedRecordOwnedBySnapshot(sample) {
+		return true
+	}
+	if GHistoryDataQueue == nil {
+		ErrorThrottled("history:queue:nil", "history queue not ready, drop sample")
+		return false
+	}
+	if GHistoryDataQueue.QueuePush(sample) != 0 {
+		historyQueueDropCount++
+		dev, data, dname, pname := historySampleBrief(sample)
+		ErrorThrottled(
+			"history:queue:full:"+dev+":"+data,
+			"history queue full, drop sample total=%d len=%d device=%s(%s) data=%s(%s)",
+			historyQueueDropCount, GHistoryDataQueue.QueueLength(), dname, dev, pname, data,
+		)
+		if historyQueueDropCount%100 == 1 {
+			logs.Error("history queue full summary: totalDrops=%d queueLen=%d", historyQueueDropCount, GHistoryDataQueue.QueueLength())
+		}
+		return false
+	}
+	return true
+}
+
+// HistoryQueueStats 供运维日志。
+func HistoryQueueStats() (qLen int, drops, flushOk, flushFail uint64) {
+	qLen = 0
+	if GHistoryDataQueue != nil {
+		qLen = GHistoryDataQueue.QueueLength()
+	}
+	return qLen, historyQueueDropCount, historyFlushOkCount, historyFlushFailCount
 }
 
 // HistoryDataFlush 手动刷新历史数据缓冲区

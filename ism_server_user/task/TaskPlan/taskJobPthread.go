@@ -22,6 +22,7 @@ import (
 	snmpprotocols "ISMServer/protocol/snmp"
 	ismWebsocket "ISMServer/protocol/websocket"
 	alarmTask "ISMServer/task/alarm"
+	"ISMServer/utils/backupverify"
 	"ISMServer/utils/errmsg"
 	"crypto/tls"
 	"encoding/base64"
@@ -119,18 +120,30 @@ func MysqlSQLDump(host, port, dbname, user, password, char, backupfilePath, zipp
 	dist := "ISM_Mysql_Backup_" + nowtime + ".sql"
 	fullPath := filepath.Join(backupfilePath, dist)
 
-	// 优先 mysqldump（现场手工备份能出 225MB 的同路径）
-	if err := mysqlCliDump(host, port, dbname, user, password, backupfilePath, dist, tables); err == nil {
+	// 与手工备份对齐：默认走 xorm + OceanBase 会话超时（大表完整导出）。
+	// 仅当 ISM_PREFER_MYSQLDUMP=1 时优先 mysqldump；失败则硬失败（不再静默残缺）。
+	preferMysqldump := strings.TrimSpace(os.Getenv("ISM_PREFER_MYSQLDUMP")) == "1"
+	if preferMysqldump {
+		if err := mysqlCliDump(host, port, dbname, user, password, backupfilePath, dist, tables); err != nil {
+			_ = os.Remove(fullPath)
+			return "", fmt.Errorf("mysqldump 失败(ISM_PREFER_MYSQLDUMP=1): %w", err)
+		}
 		return dist, nil
-	} else {
-		logs.Warn("mysqldump 不可用或失败，回退 xorm DumpAllToFile: %v", err)
 	}
 
-	db, err := xorm.NewEngine("mysql", user+":"+password+"@("+host+":"+port+")/"+dbname+"?charset="+char)
+	db, err := xorm.NewEngine("mysql", user+":"+password+"@("+host+":"+port+")/"+dbname+"?charset="+char+"&timeout=120s&readTimeout=3600s&writeTimeout=3600s")
 	if err != nil {
 		return "", err
 	}
 	defer db.Close()
+	// OceanBase：整表 dump 需抬高会话查询超时（默认 10s → Error 4012）
+	const obQueryTimeoutUs = int64(3600 * 1000 * 1000)
+	if _, setErr := db.Exec(fmt.Sprintf("SET SESSION ob_query_timeout=%d", obQueryTimeoutUs)); setErr != nil {
+		logs.Warn("SET SESSION ob_query_timeout failed (continue): %v", setErr)
+	}
+	if _, setErr := db.Exec(fmt.Sprintf("SET SESSION ob_trx_timeout=%d", obQueryTimeoutUs)); setErr != nil {
+		logs.Warn("SET SESSION ob_trx_timeout failed (continue): %v", setErr)
+	}
 	err = db.DumpAllToFile(fullPath, tables)
 	if err != nil {
 		_ = os.Remove(fullPath)
@@ -266,7 +279,17 @@ func backupDb(task models.TaskPlanList) {
 		logs.Error("执行任务失败", task.TaskName, err)
 		return
 	}
-	logs.Info("执行任务成功", task.TaskName, "备份文件", dist)
+	fullPath := filepath.Join(SavePath, dist)
+	counts, vErr := backupverify.VerifySQLCounts(fullPath, getTablesList, "")
+	if vErr != nil {
+		logs.Error("执行任务失败", task.TaskName, "备份校验失败", vErr)
+		return
+	}
+	var fileSize int64
+	if info, stErr := os.Stat(fullPath); stErr == nil {
+		fileSize = info.Size()
+	}
+	logs.Info("执行任务成功", task.TaskName, "备份文件", dist, "size=", fileSize, "counts=", backupverify.FormatCounts(counts))
 }
 func setDeviceData(task models.TaskPlanList) {
 
@@ -411,7 +434,7 @@ func setDeviceData(task models.TaskPlanList) {
 						signleHistoryData.RecordTime = time.Now()
 						signleHistoryData.RecordType = readData.RecordType
 						signleHistoryData.RecordDataCharge = readData.RecordDataCharge
-						protocol_common.GHistoryDataQueue.QueuePush(signleHistoryData)
+						protocol_common.EnqueueHistorySample(signleHistoryData)
 					}
 					//触发器队列
 					_, isExist := protocol_common.DeviceAlarmTriggerMap.Load(pushTriggerAlarm.ModelDataUuid)

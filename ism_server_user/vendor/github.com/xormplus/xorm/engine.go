@@ -619,12 +619,13 @@ func (engine *Engine) dumpTables(tables []*schemas.Table, getTables []string, w 
 			dest := make([]interface{}, len(cols))
 			err = rows.ScanSlice(&dest)
 			if err != nil {
-				continue
+				// 禁止静默跳过：否则备份体积变小、还原缺行且 UI 仍可能 code=0
+				return fmt.Errorf("dump table %s scan row failed: %w", tableName, err)
 			}
 
 			_, err = io.WriteString(w, "INSERT INTO "+dstDialect.Quoter().Quote(tableName)+" ("+destColNames+") VALUES (")
 			if err != nil {
-				continue
+				return fmt.Errorf("dump table %s write INSERT prefix failed: %w", tableName, err)
 			}
 
 			var temp string
@@ -639,6 +640,9 @@ func (engine *Engine) dumpTables(tables []*schemas.Table, getTables []string, w 
 			if err != nil {
 				return err
 			}
+		}
+		if err = rows.Err(); err != nil {
+			return fmt.Errorf("dump table %s rows iteration failed: %w", tableName, err)
 		}
 
 		// FIXME: Hack for postgres

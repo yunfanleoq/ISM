@@ -575,22 +575,30 @@ export default {
       handleMenuClick(e) {
         this.updateMenuScrollState()
         const menudata = this.findMenuByKey (this.detail.style.MenuConfig,e.key)
-        if(menudata!=null&&menudata.path!="")
+        if(menudata==null)
         {
-          let item={
-            DisPlayID:menudata.DisPlayID,
-            IsPopUp:menudata.IsPopUp,
-            MenuName:menudata.title,
-            PageID:menudata.path,
-          }
-          if(this.ClickType==1)
-          {
-            this.$EventBus.$emit("MenuConfigPage", item);
-          }
-          else
-          {
-            this.JumpPage(item)
-          }
+          return
+        }
+        if(!menudata.path)
+        {
+          this.$message && this.$message.warning('菜单未绑定页面，请在编辑菜单中选择目标页面')
+          return
+        }
+        let item={
+          DisPlayID:menudata.DisPlayID,
+          IsPopUp:menudata.IsPopUp,
+          MenuName:menudata.title,
+          PageID:menudata.path,
+        }
+        if(this.ClickType==1)
+        {
+          // 运行态由 ISMRender 监听 MenuConfigPage；弹窗容器内由 ViewPagerContainer 处理
+          this.$EventBus.$emit("MenuConfigPage", item);
+          this.$EventBus.$emit("ChargePage", item);
+        }
+        else
+        {
+          this.JumpPage(item)
         }
       },
       generateTargetPage (uuid) {
