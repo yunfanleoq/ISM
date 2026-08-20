@@ -13,6 +13,7 @@ import (
 	"ISMServer/models"
 	protocolCommonFunc "ISMServer/protocol/commFunc"
 	protocolCommon "ISMServer/protocol/common"
+	ISMScript "ISMServer/task/ISMScript"
 	"ISMServer/utils/errmsg"
 	"archive/zip"
 	"bytes"
@@ -47,7 +48,6 @@ import (
 	"github.com/denisbrodbeck/machineid"
 	"github.com/forgoer/openssl"
 	"github.com/gogf/gf/v2/util/gconv"
-	"github.com/mattn/anko/vm"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/host"
@@ -2166,15 +2166,10 @@ func (c *ISMSystem) ExecSysScript() {
 			code = -1
 			message = "JSON格式错误"
 		} else {
-			e := protocolCommonFunc.ScriptDefine()
 			err := models.Db.Model(&models.ISMScript{}).Where("script_uuid in ?", recvList.Script).Find(&GetScriptList).Error
 			if err == nil && len(GetScriptList) > 0 {
 				for _, v := range GetScriptList {
-					tempComponents, deErr := base64.StdEncoding.DecodeString(v.ScriptContent)
-					if deErr == nil {
-						v.ScriptContent = string(tempComponents)
-					}
-					exceResult, err = vm.Execute(e, nil, v.ScriptContent)
+					exceResult, err = ISMScript.ManualExec(v)
 					if err != nil {
 						isError = 1
 					}

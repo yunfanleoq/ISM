@@ -1,5 +1,5 @@
 import {
-    DBBACKUP,GETTABLESLIST,GETBACKUPLIST,DBRESTORE,
+    DBBACKUP,HISDBBACKUP,GETTABLESLIST,GETBACKUPLIST,DBRESTORE,
     GETDBCONFIG,SETDBCONFIG,DBDOWN
 } from '@/services/api'
 import {request, METHOD} from '@/utils/request'
@@ -7,6 +7,12 @@ import {request, METHOD} from '@/utils/request'
 export async function DbBackup(params) {
     return request(DBBACKUP, METHOD.POST,params,{
         timeout:600000
+    })
+}
+
+export async function HisDbBackup(params) {
+    return request(HISDBBACKUP, METHOD.POST,params,{
+        timeout:60*60*1000
     })
 }
 
@@ -45,6 +51,7 @@ export async function SetDbConfig(params) {
 
 export default {
     DbBackup,
+    HisDbBackup,
     GetTablesList,
     GetBackUpList,
     DbRestore,

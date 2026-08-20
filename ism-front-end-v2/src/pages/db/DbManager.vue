@@ -97,6 +97,12 @@
           </a-spin>
         </a-tab-pane>
         <a-tab-pane key="2" v-if="DbType!=3" :tab="$t('DbBack.Restore')" >
+          <a-alert
+            type="warning"
+            show-icon
+            style="margin-bottom: 12px"
+            message="上传 ≠ 还原：上传只把 SQL 文件存到备份目录，不会自动覆盖业务库。覆盖数据库必须在下方列表点击「还原」。"
+          />
           <a-upload
               name="file"
               :multiple="false"
@@ -395,10 +401,8 @@ export default {
         let result = info.file.response
         this.$message.destroy();
         if(result.Code==0) {
-          this.$message.success(`${info.file.name} `+this.$t("SystemUpgrade.AuthUploadLoading"));
-          _t.$store.state.setting.IsOEM = result.Oem
-          // 刷新页面
-          window.location.reload();
+          this.$message.success('文件已加入还原列表，不会自动覆盖业务库；请在下方点还原。')
+          _t.GetBackUpList()
         }
         else if(result.Code==-2)
         {
@@ -413,11 +417,7 @@ export default {
         //this.$message.success(`${info.file.name} `+this.$t("SystemUpgrade.BeginUpgradeUploading"));
       }
       else if (info.file.status === 'error') {
-        let _t = this
-        _t.$message.loading(_t.$t("SystemUpgrade.BeginUpgradeLoading"),0)
-        setTimeout(function (){
-          location.reload()
-        },10000)
+        this.$message.error(`${info.file.name} `+this.$t("SystemUpgrade.UpgradeFileSaveError"));
       }
 
       this.messageShowLoad = false

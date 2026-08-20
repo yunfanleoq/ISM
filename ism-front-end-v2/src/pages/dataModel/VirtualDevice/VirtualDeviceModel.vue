@@ -111,12 +111,10 @@ import {
   VirtualDeviceModelAdd,
   VirtualDeviceModelDelete,
   VirtualDeviceModelEdit,
-  VirtualDeviceModellist,
-  VirtualDeviceModelDataList
+  VirtualDeviceModellist
 } from "@/services/VirtualDeviceModel";
-import { LOCALUPGATEALLVIRTUALDEVICEDATAMODEL } from "@/services/api";
+import { LOCALUPGATEALLVIRTUALDEVICEDATAMODEL, EXPORTALLVIRTUALDEVICEDATAMODEL } from "@/services/api";
 import { AUTH_TYPE, getAuthorization } from "@/utils/request";
-import { exportExcelWithStyle } from "@/services/excelExport.js"
 import axios from 'axios'
 
 const IMPORT_ALL_TIMEOUT_MS = 2 * 60 * 60 * 1000
@@ -178,6 +176,10 @@ export default {
         "告警等级(提示、次要、重要、紧急、致命)": { field: "alarmLevel", callback: alarmLevelText },
         "告警消息": "AlarmMessage",
         "告警消除消息": "AlarmClearMessage",
+        "报警触发值(0,1)": {
+          field: "alarmOnValue",
+          callback: value => (value === 0 || value === '0') ? '0' : '1',
+        },
         "是否存储(是,否)": { field: "record", callback: recordText },
         "存储类型(变化存储、定时存储、即时存储)": { field: "RecordType", callback: recordTypeText },
         "定时时间": "recordInterval",
@@ -290,27 +292,42 @@ export default {
     },
     async handleExportAll() {
       if (this.exportLoading) return
-      if (!this.dataSource.length) {
-        this.$message.warning(this.$t('dataModel.exportAllEmpty'))
-        return
-      }
       this.exportLoading = true
       try {
-        const allRows = []
-        for (const model of this.dataSource) {
-          const res = await VirtualDeviceModelDataList({ muid: model.key })
-          const list = (res.data && res.data.list) || []
-          for (const item of list) {
-            allRows.push(this.mapExportRow(item, model))
-          }
-        }
-        if (!allRows.length) {
-          this.$message.warning(this.$t('dataModel.exportAllNoPoints'))
+        const res = await axios.post(EXPORTALLVIRTUALDEVICEDATAMODEL, {}, {
+          headers: {
+            ...this.importHeaders,
+          },
+          responseType: 'blob',
+          timeout: IMPORT_ALL_TIMEOUT_MS,
+        })
+        const data = res.data
+        if (data instanceof Blob && data.type && data.type.indexOf('application/json') !== -1) {
+          const text = await data.text()
+          let msg = this.$t('dataModel.exportAllFailed')
+          try {
+            const json = JSON.parse(text)
+            if (json.msg) msg = json.msg
+          } catch (e) { /* ignore */ }
+          this.$message.error(msg)
           return
         }
-        const stamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '')
-        await exportExcelWithStyle(allRows, this.exportFields, `虚拟设备全量点位_${stamp}`, '', false)
-        this.$message.success(`${this.$t('dataModel.exportAllSuccess')}${allRows.length}`)
+        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        const disp = (res.headers && (res.headers['content-disposition'] || res.headers['Content-Disposition'])) || ''
+        let fileName = `虚拟设备全量点位_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '')}.xlsx`
+        const m = /filename\*?=(?:UTF-8'')?["']?([^"';]+)/i.exec(disp)
+        if (m && m[1]) {
+          try { fileName = decodeURIComponent(m[1]) } catch (e) { fileName = m[1] }
+        }
+        a.href = url
+        a.download = fileName
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url)
+        this.$message.success(this.$t('dataModel.exportAllSuccess'))
       } catch (e) {
         this.$message.error(this.$t('dataModel.exportAllFailed'))
       } finally {

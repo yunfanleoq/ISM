@@ -288,6 +288,11 @@ export default {
     },
     doSaveLayerData(uuid){
       if (this.editorRuntimePreview && this.editorRuntimePreview.active) {
+        this.$message.warning('运行态预览不可直接保存，请编辑对应模板后再保存')
+        return Promise.resolve()
+      }
+      if (!this.selectPageUuid) {
+        this.$message.error(this.$t('displayModel.SaveDataFailed') + ' (empty pageId)')
         return Promise.resolve()
       }
       let _t = this
@@ -312,6 +317,10 @@ export default {
         {
           let uid = _t.$route.params.uid
           _t.updateAllLayerDataStruct({pageType:_t.isMobile,uuid:uid,metaOnly:true,cb:function (){}});
+        }
+        else if (res.data.code == 4090)
+        {
+          _t.$message.warning((res.data && res.data.message) || '运行态预览不可直接保存，请编辑对应模板后再保存')
         }
         else
         {
@@ -372,19 +381,49 @@ export default {
             pageType:parseInt(this.pageType)
           };
           DisplayModelPageAdd(params).then(function (res){
-            if (res.data.code == 4002) {
+            const code = res && res.data ? res.data.code : null
+            const newPageId = res && res.data ? res.data.pageId : ''
+            if (code == 4002) {
               _t.$message.success(_t.$t('ISMResources.PageAddSuccess'), 3)
+              _t.setEditorRuntimePreview && _t.setEditorRuntimePreview(null)
+              _t.setNavContext && _t.setNavContext(null)
               _t.getLayerDataStruct({uuid:_t.$route.params.uid,metaOnly:true,cb:function (){
                   _t.spinning = false
+                  _t.logging = false
+                  if (newPageId) {
+                    try {
+                      _t.$store.state.ISMDisPlayEditorTool.selectPageUuid = newPageId
+                    } catch (e) { /* ignore */ }
+                    const list = parseInt(_t.pageType) === 1
+                      ? (_t.PCPageList || [])
+                      : (_t.PhonePageList || [])
+                    const page = list.find(p => p && (p.pageUuid === newPageId || p.PageId === newPageId))
+                    if (page) {
+                      if (parseInt(_t.pageType) === 1) {
+                        _t.PCPageCheckKey = [newPageId]
+                        _t.PhonePageCheckKey = []
+                      } else {
+                        _t.PhonePageCheckKey = [newPageId]
+                        _t.PCPageCheckKey = []
+                      }
+                      _t.selectTreeKey = newPageId
+                      _t.checkPageInfo = page
+                      _t.selectLayerDataStruct(page)
+                      document.title = (page.AppName || '') + ' | ' + (page.title || page.name || '')
+                    }
+                  }
                 }});
               _t.AddPageVisible=false
-            }else if (res.data.code == 4005) {
+            }else if (code == 4005) {
+              _t.logging = false
               _t.$message.error(_t.$t('ISMResources.PageCountOut'), 3)
-            }else if (res.data.code == 4006) {
+            }else if (code == 4006) {
+              _t.logging = false
               _t.$message.error(_t.$t('ISMResources.LoginPageNoAuth'), 3)
             }
             else{
-              _t.$message.error(_t.$t('ISMResources.PageAddFailed'), 3)
+              _t.logging = false
+              _t.$message.error((_t.$t('ISMResources.PageAddFailed') || '页面添加失败') + (code != null ? ` (code=${code})` : ''), 3)
             }
           }).catch(function (){
             _t.logging = false

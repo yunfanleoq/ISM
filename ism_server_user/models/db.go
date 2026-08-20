@@ -55,7 +55,7 @@ func (w Writer) Printf(format string, args ...interface{}) {
 // ensureCriticalSchema 大包 AutoMigrate 可能在 display_model_layer 处中断，
 // 关键点表/模型表必须独立补齐（SQLite 与 OceanBase 均走 Migrator，缺列才加）。
 func ensureCriticalSchema() {
-	if e := Db.AutoMigrate(&DeviceRealData{}, &ModbusDevicesDataModel{}); e != nil {
+	if e := Db.AutoMigrate(&DeviceRealData{}, &ModbusDevicesDataModel{}, &VirtualDeviceDataModel{}); e != nil {
 		gormlog.Info("关键表独立迁移失败: %v", e)
 	}
 	for _, item := range []struct {
@@ -65,6 +65,7 @@ func ensureCriticalSchema() {
 	}{
 		{&DeviceRealData{}, "alarm_on_value", "device_real_data.alarm_on_value"},
 		{&ModbusDevicesDataModel{}, "alarm_on_value", "modbus_devices_data_model.alarm_on_value"},
+		{&VirtualDeviceDataModel{}, "alarm_on_value", "virtual_device_data_model.alarm_on_value"},
 	} {
 		if Db.Migrator().HasColumn(item.model, item.col) {
 			continue

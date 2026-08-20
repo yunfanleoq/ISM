@@ -10,8 +10,9 @@ package ISMScript
 
 import (
 	"ISMServer/models"
-	protocolCommon "ISMServer/protocol/common"
 	protocolCommonFunc "ISMServer/protocol/commFunc"
+	protocolCommon "ISMServer/protocol/common"
+	"ISMServer/task/ISMScript/bitunpack"
 	"time"
 
 	"github.com/beego/beego/v2/adapter/logs"
@@ -50,6 +51,25 @@ func (t *ISMScriptPthread) prepare() error {
 	t.wakeCh = make(chan struct{}, 1)
 	registerScriptWake(t.Script.ScriptUuid, t.deps, t.wakeCh)
 	return nil
+}
+
+// ManualExec runs one script from ExecSysScript: native-bitunpack if compilable, else Anko.
+// Success and failure both emit Info/Error logs (field: "手动执行没有脚本日志").
+func ManualExec(script models.ISMScript) (any, error) {
+	decodeScriptContent(&script)
+	if rules, ok := bitunpack.Compile(script.ScriptUuid, script.ScriptName, script.ScriptContent); ok {
+		bitunpack.RunRules(rules)
+		logs.Info("ExecSysScript native-bitunpack ok: %s rules=%d", script.ScriptName, len(rules))
+		return "native-bitunpack", nil
+	}
+	env := protocolCommonFunc.ScriptDefine()
+	result, err := vm.Execute(env, nil, script.ScriptContent)
+	if err != nil {
+		logs.Error("ExecSysScript anko failed: %s err=%v", script.ScriptName, err)
+		return result, err
+	}
+	logs.Info("ExecSysScript anko-onchange ok: %s result=%v", script.ScriptName, result)
+	return result, nil
 }
 
 func (t *ISMScriptPthread) runOnce() {

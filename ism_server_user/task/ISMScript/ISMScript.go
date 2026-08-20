@@ -10,8 +10,8 @@ package ISMScript
 
 import (
 	"ISMServer/models"
-	protocolCommon "ISMServer/protocol/common"
 	protocolCommonFunc "ISMServer/protocol/commFunc"
+	protocolCommon "ISMServer/protocol/common"
 	"ISMServer/task/ISMScript/bitunpack"
 	ISMScriptFunc "ISMServer/task/ISMScript/func"
 	"ISMServer/utils/errmsg"
@@ -32,7 +32,12 @@ var valueChangeDepth int32
 
 func init() {
 	valueChangeHookOnce.Do(func() {
-		bitunpack.Configure(ISMScriptFunc.SetDeviceData, ISMScriptFunc.PeekDeviceDataValue)
+		bitunpack.Configure(
+			ISMScriptFunc.SetDeviceData,
+			ISMScriptFunc.SetDeviceDataSkipAlarm,
+			ISMScriptFunc.PeekDeviceDataValue,
+			nil,
+		)
 		protocolCommon.SetDeviceValueChangeHandler(onDeviceValueChanged)
 	})
 }
@@ -123,17 +128,34 @@ func ISMScriptMailPthread() {
 		if ankoCount > 0 {
 			// Wait on next loop until CRUD closes GScriptChan and anko workers exit.
 			is_starting = 1
+			if nativeCount > 0 {
+				go runNativeSettleUntilReload()
+			}
 			time.Sleep(1 * time.Second)
 		} else if nativeCount > 0 {
-			// Pure native path: no WaitGroup workers; block until reload signal.
+			// Pure native path: periodic SettleAll (align anko delay, default 1s)
+			// so outputs keep updating when source never changes after start.
 			is_starting = 0
-			<-GScriptChan
+			runNativeSettleUntilReload()
 		} else {
 			is_starting = 0
 			time.Sleep(time.Millisecond * 1000)
 		}
 	}
 }
+func runNativeSettleUntilReload() {
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-GScriptChan:
+			return
+		case <-ticker.C:
+			bitunpack.SettleAllQuiet()
+		}
+	}
+}
+
 func StartSysScript() {
 
 	var systemScriptPath string = "sys_script/"

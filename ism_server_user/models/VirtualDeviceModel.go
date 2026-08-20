@@ -33,6 +33,7 @@ type VirtualDeviceDataModel struct {
 	AlarmLevel           int    `gorm:"type:int;" json:"alarmLevel" validate:"required" label:"告警等级 0:提示,1:次要,2:重要,3:严重,4:致命"`
 	AlarmMessage         string `gorm:"type:text;" json:"AlarmMessage" validate:"required" label:"告警显示信息"`
 	AlarmClearMessage    string `gorm:"type:text;" json:"AlarmClearMessage" validate:"required" label:"消除显示信息"`
+	AlarmOnValue         int    `gorm:"type:int;default:1" json:"alarmOnValue" label:"告警触发值(0或1)"`
 	IsRecord             int    `gorm:"index;type:int;" json:"record" validate:"required" label:"是否存储"`
 	RecordType           int    `gorm:"type:int;" json:"RecordType" validate:"required" label:"存储方式"`
 	RecordInterval       int    `gorm:"type:int;" json:"recordInterval" validate:"required" label:"存储间隔，单位分钟"`
@@ -146,6 +147,11 @@ func VirtualDeviceDataAdd(data VirtualDeviceDataModel) int {
 
 			writeDeviceRealData[k].DataUnit = data.DataUnit
 			writeDeviceRealData[k].IsAlarm = data.IsAlarm
+			if data.AlarmOnValue == 0 {
+				writeDeviceRealData[k].AlarmOnValue = 0
+			} else {
+				writeDeviceRealData[k].AlarmOnValue = 1
+			}
 			writeDeviceRealData[k].AlarmLevel = data.AlarmLevel
 			writeDeviceRealData[k].AlarmMessage = data.AlarmMessage
 			writeDeviceRealData[k].AlarmClearMessage = data.AlarmClearMessage
@@ -176,7 +182,7 @@ func VirtualDeviceDataEdit(muid, uuid string, data VirtualDeviceDataModel) int {
 		return errmsg.SNMP_MODEL_EXIST
 	}
 
-	result := Db.Model(&VirtualDeviceDataModel{}).Select("type", "data_unit", "conversion_expression", "name", "auth", "is_alarm", "record_data_charge", "record_type", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message").Where("uuid = ?", uuid).Updates(data)
+	result := Db.Model(&VirtualDeviceDataModel{}).Select("type", "data_unit", "conversion_expression", "name", "auth", "is_alarm", "alarm_on_value", "record_data_charge", "record_type", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message").Where("uuid = ?", uuid).Updates(data)
 	if result.Error != nil {
 		return errmsg.SNMP_MODEL_ADD_FAILED
 	}
@@ -205,6 +211,11 @@ func VirtualDeviceDataEdit(muid, uuid string, data VirtualDeviceDataModel) int {
 	}
 
 	updateRealData.IsAlarm = data.IsAlarm
+	if data.AlarmOnValue == 0 {
+		updateRealData.AlarmOnValue = 0
+	} else {
+		updateRealData.AlarmOnValue = 1
+	}
 	updateRealData.IsRecord = data.IsRecord
 	updateRealData.RecordType = data.RecordType
 	updateRealData.RecordDataCharge = data.RecordDataCharge
@@ -212,7 +223,7 @@ func VirtualDeviceDataEdit(muid, uuid string, data VirtualDeviceDataModel) int {
 	updateRealData.AlarmLevel = data.AlarmLevel
 	updateRealData.AlarmClearMessage = data.AlarmClearMessage
 	updateRealData.AlarmMessage = data.AlarmMessage
-	err := Db.Model(&DeviceRealData{}).Select("data_unit", "conversion_expression", "name", "auth", "is_alarm", "record_type", "record_data_charge", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message").Where("model_data_uuid = ?", uuid).Updates(updateRealData).Error
+	err := Db.Model(&DeviceRealData{}).Select("data_unit", "conversion_expression", "name", "auth", "is_alarm", "alarm_on_value", "record_type", "record_data_charge", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message").Where("model_data_uuid = ?", uuid).Updates(updateRealData).Error
 	if err != nil {
 		return errmsg.ERROR
 	}

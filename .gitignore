@@ -23,6 +23,9 @@ __pycache__/
 # ============================================
 ism_server_user/ism_server*
 ism_server_user/ISMServer*
+patches/**/ism_server
+patches/ism-server-kylin-glibc228/
+releases/
 
 # ============================================
 # 数据库备份

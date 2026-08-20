@@ -8,7 +8,7 @@ func TestApplySourceWritesBits(t *testing.T) {
 	Configure(func(deviceData string, value interface{}) int {
 		writes = append(writes, deviceData+":"+toStr(value))
 		return 0
-	}, nil)
+	}, nil, nil, nil)
 	Register([]Rule{
 		{SourceDevice: "d", SourcePoint: "p", Bit: 1, TargetDevice: "t", TargetPoint: "b1"},
 		{SourceDevice: "d", SourcePoint: "p", Bit: 2, TargetDevice: "t", TargetPoint: "b2"},
@@ -24,6 +24,25 @@ func TestApplySourceWritesBits(t *testing.T) {
 		if !want[w] {
 			t.Fatalf("unexpected write %s in %v", w, writes)
 		}
+	}
+}
+
+func TestRunRulesUsesLoader(t *testing.T) {
+	Clear()
+	var writes []string
+	Configure(func(deviceData string, value interface{}) int {
+		writes = append(writes, deviceData+":"+toStr(value))
+		return 0
+	}, nil, func(deviceName, pointName string) (string, bool) {
+		if deviceName == "d" && pointName == "p" {
+			return "1", true
+		}
+		return "", false
+	}, nil)
+	rules := []Rule{{SourceDevice: "d", SourcePoint: "p", Bit: 1, TargetDevice: "t", TargetPoint: "b1", ScriptName: "s"}}
+	RunRules(rules)
+	if len(writes) != 1 || writes[0] != "t->b1:1" {
+		t.Fatalf("writes=%v", writes)
 	}
 }
 
