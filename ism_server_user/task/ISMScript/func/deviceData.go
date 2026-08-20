@@ -224,6 +224,15 @@ func GetModuleDeviceList(moduleName string) []moduleDeviceStu {
 	return results
 }
 func SetDeviceData(deviceData string, floatValue interface{}) int {
+	return setDeviceDataEx(deviceData, floatValue, false)
+}
+
+// SetDeviceDataSkipAlarm writes the point without enqueueing device alarms (periodic native settle).
+func SetDeviceDataSkipAlarm(deviceData string, floatValue interface{}) int {
+	return setDeviceDataEx(deviceData, floatValue, true)
+}
+
+func setDeviceDataEx(deviceData string, floatValue interface{}, skipAlarm bool) int {
 	var code int = 0
 	data := strings.Split(deviceData, "->")
 	if len(data) != 2 {
@@ -303,7 +312,9 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 			signleAlarm.DataName = getRealData.Name
 			signleAlarm.DeviceName = getRealData.DeviceName
 			signleAlarm.HappenTime = time.Now()
-			protocol_common.GAlarmQueue.QueuePush(signleAlarm)
+			if !skipAlarm {
+				protocol_common.GAlarmQueue.QueuePush(signleAlarm)
+			}
 		}
 		if getRealData.IsRecord == 1 {
 			//存储信息
@@ -420,7 +431,9 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 					signleAlarm.DataName = readData.Name
 					signleAlarm.DeviceName = readData.DeviceName
 					signleAlarm.HappenTime = time.Now()
-					protocol_common.GAlarmQueue.QueuePush(signleAlarm)
+					if !skipAlarm {
+						protocol_common.GAlarmQueue.QueuePush(signleAlarm)
+					}
 				}
 				if readData.IsRecord == 1 {
 					//存储信息

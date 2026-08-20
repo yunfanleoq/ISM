@@ -2,11 +2,11 @@
   <div :style="animatedStyle" v-show="detail.style.visible==1 ||isStart? true:false">
     <div class="view-menu-panel" :class="{
           'animated':true,[`${detail.style.animate}`]: true,
-          'color-animation':isStart&&animateType.includes('millcolorGrad')&&!IsToolBox,
-          'blink-animation':isStart&&animateType.includes('blink')&&!IsToolBox,
-          'scale-animation':isStart&&animateType.includes('Zoom')&&!IsToolBox,
-          'rotate-animation':isStart&&animateType.includes('animateSpin')&&!IsToolBox&&spinDirection==0,
-          'rotate-anti-animation':isStart&&animateType.includes('animateSpin')&&!IsToolBox&&spinDirection==1
+          'color-animation':isStart&&(animateType||[]).includes('millcolorGrad')&&!IsToolBox,
+          'blink-animation':isStart&&(animateType||[]).includes('blink')&&!IsToolBox,
+          'scale-animation':isStart&&(animateType||[]).includes('Zoom')&&!IsToolBox,
+          'rotate-animation':isStart&&(animateType||[]).includes('animateSpin')&&!IsToolBox&&spinDirection==0,
+          'rotate-anti-animation':isStart&&(animateType||[]).includes('animateSpin')&&!IsToolBox&&spinDirection==1
         }"
          :style="{
                                 width: detail.style.position.w + 'px',
@@ -575,22 +575,30 @@ export default {
       handleMenuClick(e) {
         this.updateMenuScrollState()
         const menudata = this.findMenuByKey (this.detail.style.MenuConfig,e.key)
-        if(menudata!=null&&menudata.path!="")
+        if(menudata==null)
         {
-          let item={
-            DisPlayID:menudata.DisPlayID,
-            IsPopUp:menudata.IsPopUp,
-            MenuName:menudata.title,
-            PageID:menudata.path,
-          }
-          if(this.ClickType==1)
-          {
-            this.$EventBus.$emit("MenuConfigPage", item);
-          }
-          else
-          {
-            this.JumpPage(item)
-          }
+          return
+        }
+        if(!menudata.path)
+        {
+          this.$message && this.$message.warning('菜单未绑定页面，请在编辑菜单中选择目标页面')
+          return
+        }
+        let item={
+          DisPlayID:menudata.DisPlayID,
+          IsPopUp:menudata.IsPopUp,
+          MenuName:menudata.title,
+          PageID:menudata.path,
+        }
+        if(this.ClickType==1)
+        {
+          // 运行态由 ISMRender 监听 MenuConfigPage；同时发 ChargePage 兼容旧页
+          this.$EventBus.$emit("MenuConfigPage", item);
+          this.$EventBus.$emit("ChargePage", item);
+        }
+        else
+        {
+          this.JumpPage(item)
         }
       },
       generateTargetPage (uuid) {
@@ -718,24 +726,26 @@ export default {
         this.backColor=this.detail.style.backColor
         this.foreColor=this.detail.style.foreColor
         let i=0
-        for( i=0;i<option.style.diy.length;i++)
+        const diy = (option.style && option.style.diy) || []
+        for( i=0;i<diy.length;i++)
         {
-          if(option.style.diy[i].key=="hoverBack")
+          if(diy[i].key=="hoverBack")
           {
-            this.hoverBackColor=option.style.diy[i].value
+            this.hoverBackColor=diy[i].value
           }
-          else if(option.style.diy[i].key=="hoverForce")
+          else if(diy[i].key=="hoverForce")
           {
-            this.hoverForeColor=option.style.diy[i].value
+            this.hoverForeColor=diy[i].value
           }
-          else if(option.style.diy[i].key=="ClickType")
+          else if(diy[i].key=="ClickType")
           {
-            this.ClickType=option.style.diy[i].value
+            this.ClickType=diy[i].value
           }
         }
         i=0
-        this.animateType = option.animate.selected
-        if(option.animate.isExpression)
+        const animate = option.animate || {}
+        this.animateType = animate.selected || []
+        if(animate.isExpression)
         {
           this.isStart = false
         }
@@ -743,42 +753,46 @@ export default {
         {
           this.isStart = true
         }
-        for( i=0;i<option.animate.animateElement.length;i++)
+        const animateElement = animate.animateElement || []
+        for( i=0;i<animateElement.length;i++)
         {
-          if(option.animate.animateElement[i].id=="millcolorGrad")
+          if(animateElement[i].id=="millcolorGrad")
           {
-            for(let k =0;k<option.animate.animateElement[i].elementList.length;k++)
+            const elementList = (animateElement[i].elementList) || []
+            for(let k =0;k<elementList.length;k++)
             {
-              if(option.animate.animateElement[i].elementList[k].key=="startColor")
+              if(elementList[k].key=="startColor")
               {
-                this.startColor=option.animate.animateElement[i].elementList[k].value
+                this.startColor=elementList[k].value
               }
-              else if(option.animate.animateElement[i].elementList[k].key=="stopColor")
+              else if(elementList[k].key=="stopColor")
               {
-                this.stopColor=option.animate.animateElement[i].elementList[k].value
+                this.stopColor=elementList[k].value
               }
-              else if(option.animate.animateElement[i].elementList[k].key=="animateSpeed")
+              else if(elementList[k].key=="animateSpeed")
               {
-                this.animateSpeed=option.animate.animateElement[i].elementList[k].value
+                this.animateSpeed=elementList[k].value
               }
             }
           }
-          else if(option.animate.animateElement[i].id=="blink")
+          else if(animateElement[i].id=="blink")
           {
-            for(let k =0;k<option.animate.animateElement[i].elementList.length;k++) {
-              if (option.animate.animateElement[i].elementList[k].key == "blinkSpeed") {
-                this.blinkSpeed = option.animate.animateElement[i].elementList[k].value
+            const elementList = (animateElement[i].elementList) || []
+            for(let k =0;k<elementList.length;k++) {
+              if (elementList[k].key == "blinkSpeed") {
+                this.blinkSpeed = elementList[k].value
               }
             }
           }
-          else if(option.animate.animateElement[i].id=="animateSpin")
+          else if(animateElement[i].id=="animateSpin")
           {
-            for(let k =0;k<option.animate.animateElement[i].elementList.length;k++) {
-              if (option.animate.animateElement[i].elementList[k].key == "spinSpeed") {
-                this.animateSpinSpeed = option.animate.animateElement[i].elementList[k].value
+            const elementList = (animateElement[i].elementList) || []
+            for(let k =0;k<elementList.length;k++) {
+              if (elementList[k].key == "spinSpeed") {
+                this.animateSpinSpeed = elementList[k].value
               }
-              else if (option.animate.animateElement[i].elementList[k].key == "spinDirection") {
-                this.spinDirection = option.animate.animateElement[i].elementList[k].value
+              else if (elementList[k].key == "spinDirection") {
+                this.spinDirection = elementList[k].value
               }
             }
           }

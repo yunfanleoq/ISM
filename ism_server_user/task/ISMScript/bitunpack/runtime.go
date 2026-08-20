@@ -25,18 +25,25 @@ type SetFunc func(deviceData string, value interface{}) int
 // LoadFunc loads a live/DB value for settle fallback.
 type LoadFunc func(deviceName, pointName string) (string, bool)
 
+// AlarmSyncFunc optionally re-evaluates alarms after skip-alarm settle.
+type AlarmSyncFunc func()
+
 var (
-	mu            sync.RWMutex
-	rulesBySource = make(map[string][]Rule)
-	setDeviceData SetFunc
-	loadDevice    LoadFunc
+	mu               sync.RWMutex
+	rulesBySource    = make(map[string][]Rule)
+	setDeviceData    SetFunc
+	settleDeviceData SetFunc
+	loadDevice       LoadFunc
+	syncAlarms       AlarmSyncFunc
 )
 
-// Configure wires SetDeviceData / value loader from the script package.
-func Configure(set SetFunc, load LoadFunc) {
+// Configure wires SetDeviceData / settle setter / value loader / optional alarm sync.
+func Configure(set SetFunc, settle SetFunc, load LoadFunc, alarmSync AlarmSyncFunc) {
 	mu.Lock()
 	setDeviceData = set
+	settleDeviceData = settle
 	loadDevice = load
+	syncAlarms = alarmSync
 	mu.Unlock()
 }
 
@@ -92,10 +99,16 @@ func ApplySource(deviceName, pointName, value string) {
 }
 
 func applyRules(rules []Rule, value string, setter SetFunc) {
+	if len(rules) == 0 || setter == nil {
+		return
+	}
 	iv, err := strconv.Atoi(value)
 	if err != nil {
 		fv, ferr := strconv.ParseFloat(value, 64)
 		if ferr != nil {
+			protocol_common.ErrorThrottled("bitunpack:parse:"+rules[0].SourceKey(),
+				"native-bitunpack: source value not numeric, skip BitGet %s=%s script=%s",
+				rules[0].SourceKey(), value, rules[0].ScriptName)
 			return
 		}
 		iv = int(fv)
@@ -109,36 +122,96 @@ func applyRules(rules []Rule, value string, setter SetFunc) {
 	}
 }
 
-// SettleAll runs every registered source once using current cache/DB values.
-func SettleAll() {
+func snapshotRules() (map[string][]Rule, SetFunc, SetFunc, LoadFunc, AlarmSyncFunc) {
 	mu.RLock()
+	defer mu.RUnlock()
 	snapshot := make(map[string][]Rule, len(rulesBySource))
 	for k, v := range rulesBySource {
 		cp := make([]Rule, len(v))
 		copy(cp, v)
 		snapshot[k] = cp
 	}
-	setter := setDeviceData
-	loader := loadDevice
-	mu.RUnlock()
-	if setter == nil {
+	return snapshot, setDeviceData, settleDeviceData, loadDevice, syncAlarms
+}
+
+func loadSourceValue(device, point string, loader LoadFunc) (string, bool) {
+	val, ok := protocol_common.LoadDeviceRealValue("", device, point)
+	if !ok && loader != nil {
+		val, ok = loader(device, point)
+	}
+	return val, ok
+}
+
+func settleSnapshot(snapshot map[string][]Rule, setter SetFunc, loader LoadFunc, logComplete bool) {
+	if setter == nil || len(snapshot) == 0 {
 		return
 	}
-
 	for _, rules := range snapshot {
 		if len(rules) == 0 {
 			continue
 		}
 		device := rules[0].SourceDevice
 		point := rules[0].SourcePoint
-		val, ok := protocol_common.LoadDeviceRealValue("", device, point)
-		if !ok && loader != nil {
-			val, ok = loader(device, point)
-		}
+		val, ok := loadSourceValue(device, point, loader)
 		if !ok {
+			protocol_common.ErrorThrottled("bitunpack:src:"+device+"->"+point,
+				"native-bitunpack: source has no value yet, skip settle %s->%s script=%s",
+				device, point, rules[0].ScriptName)
 			continue
 		}
 		applyRules(rules, val, setter)
 	}
-	logs.Info("native-bitunpack: settle complete, sources=%d rules=%d", len(snapshot), RuleCount())
+	if logComplete {
+		logs.Info("native-bitunpack: settle complete, sources=%d rules=%d", len(snapshot), RuleCount())
+	}
+}
+
+// SettleAll runs every registered source once using current cache/DB values (with Info log).
+func SettleAll() {
+	snapshot, setFn, settleFn, loader, alarmSync := snapshotRules()
+	setter := settleFn
+	if setter == nil {
+		setter = setFn
+	}
+	settleSnapshot(snapshot, setter, loader, true)
+	if alarmSync != nil {
+		alarmSync()
+	}
+}
+
+// SettleAllQuiet is the 1s tick path: same settle, no completion Info (source-miss still throttled Warn/Error).
+func SettleAllQuiet() {
+	snapshot, setFn, settleFn, loader, _ := snapshotRules()
+	setter := settleFn
+	if setter == nil {
+		setter = setFn
+	}
+	settleSnapshot(snapshot, setter, loader, false)
+}
+
+// RunRules applies a one-shot rule list (manual ExecSysScript). Uses alarm-enabled setter.
+func RunRules(rules []Rule) {
+	if len(rules) == 0 {
+		return
+	}
+	mu.RLock()
+	setter := setDeviceData
+	loader := loadDevice
+	mu.RUnlock()
+	if setter == nil {
+		return
+	}
+	grouped := make(map[string][]Rule, len(rules))
+	for _, r := range rules {
+		grouped[r.SourceKey()] = append(grouped[r.SourceKey()], r)
+	}
+	for _, rs := range grouped {
+		val, ok := loadSourceValue(rs[0].SourceDevice, rs[0].SourcePoint, loader)
+		if !ok {
+			logs.Warn("native-bitunpack manual: source has no value %s->%s script=%s",
+				rs[0].SourceDevice, rs[0].SourcePoint, rs[0].ScriptName)
+			continue
+		}
+		applyRules(rs, val, setter)
+	}
 }

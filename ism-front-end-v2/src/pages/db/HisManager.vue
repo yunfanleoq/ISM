@@ -163,6 +163,16 @@
                 </a-button>
               </a-form-item>
             </a-form>
+            <a-alert
+              v-if="DbType==2"
+              type="info"
+              show-icon
+              style="margin: 16px 0 12px"
+              message="TDengine 历史库备份：优先使用本机 taosdump；若无客户端则尝试 docker exec tdengine（可用环境变量 TD_CONTAINER 改容器名）。备份目录 data/hisdbbackup/。"
+            />
+            <a-button v-if="DbType==2" type="default" :loading="hisBackingUp" @click="HisDbBackUp">
+              备份 TDengine 历史库
+            </a-button>
           </a-spin>
         </a-tab-pane>
         <a-tab-pane key="2" :tab="$t('DbBack.Partition')">
@@ -209,11 +219,13 @@
 </template>
 <script>
 import {GetSystemHistoryConfig, SaveSystemHistoryConfig} from "../../services/system";
+import {HisDbBackup} from "@/services/dbbackup";
 export default {
   i18n: require('../../i18n/language'),
   data () {
     return {
       messageShowLoad:false,
+      hisBackingUp:false,
       DbType:"1",
       OnceWriteHistoryCounts:100,
       PartitionType:1,
@@ -339,6 +351,21 @@ export default {
         }
       }).finally(function (error) {
         _t.Configuring = false
+      })
+    },
+    HisDbBackUp(){
+      let _t = this
+      this.hisBackingUp = true
+      HisDbBackup({}).then(function (res){
+        if(res.data && res.data.code==0) {
+          _t.$message.success((res.data.msg || '备份成功') + (res.data.path ? ('：' + res.data.path) : ''))
+        } else {
+          _t.$message.error((res.data && res.data.msg) || '历史库备份失败')
+        }
+      }).catch(function (){
+        _t.$message.error('历史库备份请求失败')
+      }).finally(function (){
+        _t.hisBackingUp = false
       })
     },
   },

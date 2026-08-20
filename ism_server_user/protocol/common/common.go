@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"reflect"
 	"strconv"
 	"sync"
 	"time"
@@ -283,17 +284,51 @@ func flushHistoryDataBuffer() {
 }
 
 // HistoryDataWrite 写入历史数据（批量写入版本）
-// 数据会先进入内存缓冲区，达到一定数量或时间后批量写入LevelDB
+// 数据会先进入内存缓冲区，达到一定数量或时间后批量写入LevelDB。
+// RecordType==1（定时存储）由实时库快照任务独占，采集路径调用本函数会被忽略。
 func HistoryDataWrite(HistoryData any) {
+	if isTimedRecordOwnedBySnapshot(HistoryData) {
+		return
+	}
+	historyDataWriteInternal(HistoryData)
+}
+
+// HistoryDataWriteSnapshot 仅供定时快照任务写入 RecordType==1。
+func HistoryDataWriteSnapshot(HistoryData any) {
+	historyDataWriteInternal(HistoryData)
+}
+
+func isTimedRecordOwnedBySnapshot(sample interface{}) bool {
+	if sample == nil {
+		return false
+	}
+	v := reflect.ValueOf(sample)
+	for v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return false
+		}
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return false
+	}
+	f := v.FieldByName("RecordType")
+	if !f.IsValid() {
+		return false
+	}
+	switch f.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return f.Int() == 1
+	}
+	return false
+}
+
+func historyDataWriteInternal(HistoryData any) {
 	historyDataMutex.Lock()
 	defer historyDataMutex.Unlock()
 
-	// 将数据添加到缓冲区
 	historyDataBuffer = append(historyDataBuffer, HistoryData)
-
-	// 如果缓冲区达到阈值，立即刷新
 	if len(historyDataBuffer) >= historyDataBufferSize {
-		// 异步刷新，避免阻塞
 		go flushHistoryDataBuffer()
 	}
 }

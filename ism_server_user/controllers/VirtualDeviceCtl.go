@@ -448,6 +448,11 @@ func (c *VirtualDeviceController) UpdateAllVirtualDeviceDataModel() {
 				Uuid:                 safeCell(row, "数据ID(勿修改)"),
 				Nodeid:               safeCell(row, "NodeID"),
 			}
+			if alarmOn := firstNonEmpty(safeCell(row, "报警触发值(0,1)"), safeCell(row, "报警触发值")); alarmOn == "0" {
+				setparams.AlarmOnValue = 0
+			} else {
+				setparams.AlarmOnValue = 1
+			}
 			if interval, err := strconv.Atoi(safeCell(row, "定时时间")); err == nil {
 				setparams.RecordInterval = interval
 			} else {
