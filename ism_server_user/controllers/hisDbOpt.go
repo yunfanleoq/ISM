@@ -20,6 +20,35 @@ type HisDbOptController struct {
 	beego.Controller
 }
 
+// tdengineHistoryDB 与 dealWithHistoryData 建库名一致，备份只 dump 业务历史库。
+const tdengineHistoryDB = "ISMHistoryDb"
+
+func taosdumpPasswordArg(pass string) string {
+	return "-p" + pass
+}
+
+func buildTaosdumpArgs(host, port, user, pass, outDir string) []string {
+	return []string{
+		"-h", host,
+		"-P", port,
+		"-u", user,
+		taosdumpPasswordArg(pass),
+		"-D", tdengineHistoryDB,
+		"-o", outDir,
+	}
+}
+
+func taosdumpArgsForLog(args []string) string {
+	parts := make([]string, len(args))
+	copy(parts, args)
+	for i, a := range parts {
+		if strings.HasPrefix(a, "-p") && len(a) > 2 {
+			parts[i] = "-p***"
+		}
+	}
+	return strings.Join(parts, " ")
+}
+
 func resolveTaosdump() (bin string, viaDocker bool, container string) {
 	if p, err := exec.LookPath("taosdump"); err == nil {
 		return p, false, ""
@@ -93,9 +122,17 @@ func (c *HisDbOptController) HisDbBackUp() {
 		return
 	}
 
+	dumpHost := host
+	dumpPort := port
+	if viaDocker {
+		// 容器内 taosdump 走 native 6030，REST 6041 不可用
+		dumpHost = "127.0.0.1"
+		dumpPort = "6030"
+	}
+
 	if viaDocker {
 		containerDir := "/tmp/" + distName
-		mkdirCmd := exec.Command("docker", "exec", tdContainer, "mkdir", "-p", containerDir)
+		mkdirCmd := exec.Command("docker", "exec", "-T", tdContainer, "mkdir", "-p", containerDir)
 		if mkdirErr := mkdirCmd.Run(); mkdirErr != nil {
 			logs.Error("HisDbBackUp docker mkdir failed: %v", mkdirErr)
 			result["msg"] = "docker 内创建备份目录失败: " + mkdirErr.Error()
@@ -103,10 +140,9 @@ func (c *HisDbOptController) HisDbBackUp() {
 			c.ServeJSON()
 			return
 		}
-		dockerArgs := []string{"exec", "-i", tdContainer, taosdump,
-			"-h", host, "-P", port, "-u", user, "-p", pass,
-			"-o", containerDir, "-A",
-		}
+		dumpArgs := buildTaosdumpArgs(dumpHost, dumpPort, user, pass, containerDir)
+		dockerArgs := append([]string{"exec", "-T", tdContainer, taosdump}, dumpArgs...)
+		logs.Info("HisDbBackUp docker taosdump: docker exec -T %s %s %s", tdContainer, taosdump, taosdumpArgsForLog(dumpArgs))
 		cmd := exec.Command("docker", dockerArgs...)
 		out, runErr := cmd.CombinedOutput()
 		msg := strings.TrimSpace(string(out))
@@ -122,8 +158,10 @@ func (c *HisDbOptController) HisDbBackUp() {
 			return
 		}
 		_ = exec.Command("docker", "cp", fmt.Sprintf("%s:%s/.", tdContainer, containerDir), hostOut).Run()
+		_ = exec.Command("docker", "exec", "-T", tdContainer, "rm", "-rf", containerDir).Run()
 	} else {
-		args := []string{"-h", host, "-P", port, "-u", user, "-p", pass, "-o", hostOut, "-A"}
+		args := buildTaosdumpArgs(dumpHost, dumpPort, user, pass, hostOut)
+		logs.Info("HisDbBackUp taosdump: %s %s", taosdump, taosdumpArgsForLog(args))
 		cmd := exec.Command(taosdump, args...)
 		out, runErr := cmd.CombinedOutput()
 		msg := strings.TrimSpace(string(out))
