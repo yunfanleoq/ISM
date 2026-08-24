@@ -884,25 +884,60 @@ export default {
     showSystemImageModel(showType){
       this.$refs.HeaderSystemImageModel.showModal(showType)
     },
+    resolveSavePageId(){
+      if (this.selectPageUuid) {
+        return this.selectPageUuid
+      }
+      const resources = this.$parent && this.$parent.$refs && this.$parent.$refs.ISMResources
+      if (resources) {
+        if (resources.selectTreeKey && resources.selectTreeKey !== 0 && resources.selectTreeKey !== '0') {
+          return resources.selectTreeKey
+        }
+        const page = resources.checkPageInfo
+        if (page) {
+          return page.pageUuid || page.PageId || page.key || page.uuid || ''
+        }
+        if (resources.PCPageCheckKey && resources.PCPageCheckKey[0]) {
+          return resources.PCPageCheckKey[0]
+        }
+        if (resources.PhonePageCheckKey && resources.PhonePageCheckKey[0]) {
+          return resources.PhonePageCheckKey[0]
+        }
+      }
+      return ''
+    },
     doSaveLayerData(uuid){
       if (this.editorRuntimePreview && this.editorRuntimePreview.active) {
         this.$message.warning(this.$t('displayConfig.RuntimePreviewSaveBlocked') || '运行态预览不可直接保存，请编辑对应模板后再保存')
         return
       }
-      if (!this.selectPageUuid) {
+      const pageId = this.resolveSavePageId()
+      if (!pageId) {
         this.$message.error((this.$t('displayModel.SaveDataFailed') || '保存失败') + ' (empty pageId)')
         return
+      }
+      if (pageId !== this.selectPageUuid) {
+        try {
+          this.$store.state.ISMDisPlayEditorTool.selectPageUuid = pageId
+        } catch (e) { /* ignore */ }
       }
       let _t = this
       let params = {
         uuid:uuid,
-        pageid:this.selectPageUuid,
+        pageid:pageId,
         LayerData:null,
       }
       const LayerData = JSON.parse(JSON.stringify(this.configData))
+      let cellsJson
+      try {
+        cellsJson = this.ISMCavasContainer.toJSON()
+      } catch (e) {
+        this.$message.error((this.$t('displayModel.SaveDataFailed') || '保存失败') + ' (toJSON: ' + ((e && e.message) || e) + ')')
+        return
+      }
       const normalizedLayerData = normalizeISMScene({
         layer: LayerData.layer,
-        components: this.ISMCavasContainer.toJSON()
+        components: cellsJson
       })
       LayerData.layer = {
         ...LayerData.layer,

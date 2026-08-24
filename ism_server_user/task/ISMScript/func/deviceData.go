@@ -173,18 +173,34 @@ func GetDeviceRealData(deviceData string) interface{} {
 }
 
 func loadDeviceValue(deviceName, pointName string) (string, bool) {
-	if value, exists := protocol_common.LoadDeviceRealValue("", deviceName, pointName); exists {
-		return value, true
+	pairs := [][2]string{{deviceName, pointName}}
+	if i := strings.LastIndex(pointName, "_"); i > 0 {
+		pairs = append(pairs, [2]string{deviceName + "->" + pointName[:i], pointName[i+1:]})
 	}
-	var point models.DeviceRealData
-	err := models.Db.Model(&models.DeviceRealData{}).
-		Select("value").
-		Where("device_name = ? and name = ?", deviceName, pointName).
-		First(&point).Error
-	if err != nil {
-		return "", false
+	if i := strings.LastIndex(deviceName, "->"); i > 0 {
+		pairs = append(pairs, [2]string{deviceName[:i], deviceName[i+2:] + "_" + pointName})
 	}
-	return point.Value, true
+	for _, pair := range pairs {
+		if value, exists := protocol_common.LoadDeviceRealValue("", pair[0], pair[1]); exists {
+			value = strings.TrimSpace(value)
+			if value != "" {
+				return value, true
+			}
+		}
+		var point models.DeviceRealData
+		err := models.Db.Model(&models.DeviceRealData{}).
+			Select("value").
+			Where("device_name = ? and name = ?", pair[0], pair[1]).
+			First(&point).Error
+		if err != nil {
+			continue
+		}
+		val := strings.TrimSpace(point.Value)
+		if val != "" {
+			return val, true
+		}
+	}
+	return "", false
 }
 
 // PeekDeviceDataValue exposes loadDeviceValue for BitUnpack settle fallback.

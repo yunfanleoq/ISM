@@ -286,25 +286,57 @@ export default {
     handleSelectPageSizeChange(value){
         this.pageSize = value
     },
+    resolveSavePageId(){
+      if (this.selectPageUuid) {
+        return this.selectPageUuid
+      }
+      if (this.selectTreeKey && this.selectTreeKey !== 0 && this.selectTreeKey !== '0') {
+        return this.selectTreeKey
+      }
+      const page = this.checkPageInfo
+      if (page) {
+        return page.pageUuid || page.PageId || page.key || page.uuid || ''
+      }
+      if (this.PCPageCheckKey && this.PCPageCheckKey[0]) {
+        return this.PCPageCheckKey[0]
+      }
+      if (this.PhonePageCheckKey && this.PhonePageCheckKey[0]) {
+        return this.PhonePageCheckKey[0]
+      }
+      return ''
+    },
     doSaveLayerData(uuid){
       if (this.editorRuntimePreview && this.editorRuntimePreview.active) {
         this.$message.warning('运行态预览不可直接保存，请编辑对应模板后再保存')
         return Promise.resolve()
       }
-      if (!this.selectPageUuid) {
+      const pageId = this.resolveSavePageId()
+      if (!pageId) {
         this.$message.error(this.$t('displayModel.SaveDataFailed') + ' (empty pageId)')
         return Promise.resolve()
+      }
+      if (pageId !== this.selectPageUuid) {
+        try {
+          this.$store.state.ISMDisPlayEditorTool.selectPageUuid = pageId
+        } catch (e) { /* ignore */ }
       }
       let _t = this
       let params = {
         uuid:uuid,
-        pageid:this.selectPageUuid,
+        pageid:pageId,
         LayerData:null,
       }
       const LayerData = JSON.parse(JSON.stringify(this.configData))
+      let cellsJson
+      try {
+        cellsJson = this.ISMCavasContainer.toJSON()
+      } catch (e) {
+        this.$message.error(this.$t('displayModel.SaveDataFailed') + ' (toJSON: ' + ((e && e.message) || e) + ')')
+        return Promise.resolve()
+      }
       const normalizedLayerData = normalizeISMScene({
         layer: LayerData.layer,
-        components: this.ISMCavasContainer.toJSON()
+        components: cellsJson
       })
       LayerData.layer = {
         ...LayerData.layer,

@@ -19,14 +19,35 @@ import (
 )
 
 type timedHistoryPoint struct {
-	DataUuid       string
-	DeviceUuid     string
-	ProjectUuid    string
-	DeviceName     string
-	DataName       string
-	ModelDataUuid  string
-	DataUnit       string
-	RecordInterval int // 秒
+	DataUuid         string
+	DeviceUuid       string
+	ProjectUuid      string
+	DeviceName       string
+	DataName         string
+	ModelDataUuid    string
+	DataUnit         string
+	RecordInterval   int // 秒
+	RecordType       int
+	RecordDataTimely string
+}
+
+func hourlyIntervalSeconds(timely string, recordInterval int) int {
+	switch strings.TrimSpace(timely) {
+	case "1":
+		return 5 * 60
+	case "2":
+		return 10 * 60
+	case "3":
+		return 15 * 60
+	case "4":
+		return 30 * 60
+	case "5":
+		return 60 * 60
+	}
+	if recordInterval > 0 {
+		return recordInterval
+	}
+	return 3600
 }
 
 const timedDbFallbackChunk = 500
@@ -42,8 +63,8 @@ var (
 func reloadTimedHistoryPoints() {
 	var rows []models.DeviceRealData
 	err := models.Db.Model(&models.DeviceRealData{}).
-		Select("uuid, device_uuid, project_uuid, device_name, name, model_data_uuid, data_unit, record_interval, record_type").
-		Where("is_record = ? AND record_type = ?", 1, 1).
+		Select("uuid, device_uuid, project_uuid, device_name, name, model_data_uuid, data_unit, record_interval, record_type, record_data_timely").
+		Where("is_record = ? AND record_type IN ?", 1, []int{1, 4}).
 		Find(&rows).Error
 	if err != nil {
 		logs.Error("reload timed history points failed: %v", err)
@@ -52,18 +73,22 @@ func reloadTimedHistoryPoints() {
 	next := make([]timedHistoryPoint, 0, len(rows))
 	for _, row := range rows {
 		interval := row.RecordInterval
-		if interval <= 0 {
+		if row.RecordType == 4 {
+			interval = hourlyIntervalSeconds(row.RecordDataTimely, row.RecordInterval)
+		} else if interval <= 0 {
 			interval = 1
 		}
 		next = append(next, timedHistoryPoint{
-			DataUuid:       row.Uuid,
-			DeviceUuid:     row.DeviceUuid,
-			ProjectUuid:    row.ProjectUuid,
-			DeviceName:     row.DeviceName,
-			DataName:       row.Name,
-			ModelDataUuid:  row.ModelDataUuid,
-			DataUnit:       row.DataUnit,
-			RecordInterval: interval,
+			DataUuid:         row.Uuid,
+			DeviceUuid:       row.DeviceUuid,
+			ProjectUuid:      row.ProjectUuid,
+			DeviceName:       row.DeviceName,
+			DataName:         row.Name,
+			ModelDataUuid:    row.ModelDataUuid,
+			DataUnit:         row.DataUnit,
+			RecordInterval:   interval,
+			RecordType:       row.RecordType,
+			RecordDataTimely: row.RecordDataTimely,
 		})
 	}
 	timedPointsMu.Lock()
@@ -125,9 +150,9 @@ func writeTimedSnapshot(p timedHistoryPoint, val string, interval int, cycleTime
 		DataUnit:         p.DataUnit,
 		DataValue:        val,
 		RecordInterval:   interval,
-		RecordType:       1,
+		RecordType:       p.RecordType,
 		RecordDataCharge: "",
-		RecordDataTimely: "",
+		RecordDataTimely: p.RecordDataTimely,
 	}
 	protocol_common.HistoryDataWriteSnapshot(sample)
 	timedLastCycle.Store(key, cycleUnix)

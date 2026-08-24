@@ -507,11 +507,10 @@ func AlarmUpdate(updateAlarm DevicesAlarmList) int {
 
 	err2 := Db.Model(&DevicesAlarmList{}).Where("device_uuid = ? and data_uuid = ? and clear_time < ?", updateAlarm.DeviceUuid, updateAlarm.DataUuid, "2007-01-02 15:04:05").First(&getDevicesAlarmList)
 
-	if errors.Is(err2.Error, gorm.ErrRecordNotFound) {
-		updateAlarm.KeepTime = 0
-	} else {
-		updateAlarm.KeepTime = (float64)((updateAlarm.ClearTime.UnixMilli() - getDevicesAlarmList.HappenTime.UnixMilli()) / 1000.0)
+	if err2.Error != nil {
+		return errmsg.ERROR
 	}
+	updateAlarm.KeepTime = (float64)((updateAlarm.ClearTime.UnixMilli() - getDevicesAlarmList.HappenTime.UnixMilli()) / 1000.0)
 
 	err1 := Db.Model(&DevicesAlarmList{}).Where("device_uuid = ? and data_uuid = ? and ID = ?", updateAlarm.DeviceUuid, updateAlarm.DataUuid, getDevicesAlarmList.ID).Updates(updateAlarm).Error
 

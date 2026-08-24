@@ -68,6 +68,9 @@
           v-for="(a, i) in shownAlarms"
           :key="a.ID || (a.DeviceUuid + a.DataUuid + i)"
           class="sa-row"
+          :class="{ 'sa-row-busy': clearingRow }"
+          title="点击清除该条告警"
+          @click="clearOneAlarm(a)"
         >
           <span class="sa-dot" :style="{ background: levelColor(a.AlarmLevel) }"></span>
           <span class="sa-dev" :title="a.DeviceName">{{ a.DeviceName }}</span>
@@ -89,7 +92,7 @@
 </template>
 
 <script>
-import { GetCurrentAlarmList, ClearAllCurrentAlarm } from '@/services/alarm'
+import { GetCurrentAlarmList, ClearAllCurrentAlarm, UpdateCurrentAlarm } from '@/services/alarm'
 import { GetAlarmNoticeByType, UpdateAlarmNoticeByType } from '@/services/alarmNotice'
 import ScadaAlarmHistoryDrawer from './ScadaAlarmHistoryDrawer.vue'
 
@@ -122,6 +125,7 @@ export default {
       pollTimer: null,
       reqSeq: 0, // 注意：不能用下划线前缀，Vue 不会代理 data 中以 _ 开头的属性
       clearing: false,
+      clearingRow: false,
       startupAlarmDelayMinutes: 10,
       savingStartupDelay: false,
       rowLimit: readStoredRowLimit(),
@@ -209,6 +213,38 @@ export default {
       try {
         localStorage.setItem(ROW_LIMIT_KEY, String(n))
       } catch (e) { /* ignore */ }
+    },
+    async clearOneAlarm(item) {
+      if (!item || this.clearingRow || this.clearing) return
+      const deviceUuid = item.DeviceUuid || item.deviceUuid || item.duid
+      const dataUuid = item.DataUuid || item.dataUuid || item.uuid
+      if (!deviceUuid || !dataUuid) {
+        this.$message.error('该告警缺少设备或测点标识，无法清除')
+        return
+      }
+      this.clearingRow = true
+      try {
+        const res = await UpdateCurrentAlarm({
+          type: 1,
+          update: {
+            duid: deviceUuid,
+            uuid: dataUuid,
+          }
+        })
+        if (res && res.data && res.data.code === 0) {
+          this.alarms = this.alarms.filter(a =>
+            !((a.DeviceUuid || a.deviceUuid) === deviceUuid && (a.DataUuid || a.dataUuid) === dataUuid)
+          )
+          this.$message.success('该条告警已清除')
+          await this.fetchAlarms()
+        } else {
+          this.$message.error('清除该条告警失败')
+        }
+      } catch (e) {
+        this.$message.error('清除该条告警失败')
+      } finally {
+        this.clearingRow = false
+      }
     },
     async clearAllAlarms() {
       if (this.clearing) return
@@ -476,6 +512,14 @@ export default {
   border-radius: 3px;
   background: rgba(16, 29, 51, 0.7);
   margin-bottom: 3px;
+  cursor: pointer;
+}
+.sa-row:hover {
+  background: rgba(0, 229, 255, 0.12);
+}
+.sa-row-busy {
+  pointer-events: none;
+  opacity: 0.6;
 }
 .sa-dot {
   flex-shrink: 0;

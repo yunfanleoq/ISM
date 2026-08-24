@@ -157,7 +157,7 @@ func (c *AlarmController) AlarmOpt() {
 			ClearAlarm.DataUuid = getParams.Data.Uuid
 			ClearAlarm.DeviceUuid = getParams.Data.DeviceUuid
 			code = models.AlarmUpdate(ClearAlarm)
-			if code == errmsg.SUCCSECODE && getParams.Data.Uuid == "sys.suid.device.status" {
+			if code == errmsg.SUCCSECODE && getParams.Type != 1 && getParams.Data.Uuid == "sys.suid.device.status" {
 				models.ResyncOfflineDeviceAlarms(ProjectUuid, []string{getParams.Data.DeviceUuid})
 			}
 			WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "alarm.trigger.Journal.ClearAlarm&"+getParams.Data.Name, errmsg.JournalLevelInfo, c.Ctx.Input)

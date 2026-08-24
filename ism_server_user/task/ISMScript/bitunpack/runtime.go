@@ -3,6 +3,7 @@ package bitunpack
 import (
 	protocol_common "ISMServer/protocol/common"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/beego/beego/v2/adapter/logs"
@@ -35,6 +36,7 @@ var (
 	settleDeviceData SetFunc
 	loadDevice       LoadFunc
 	syncAlarms       AlarmSyncFunc
+	lastSourceValues sync.Map // sourceKey -> last numeric source value
 )
 
 // Configure wires SetDeviceData / settle setter / value loader / optional alarm sync.
@@ -52,6 +54,10 @@ func Clear() {
 	mu.Lock()
 	rulesBySource = make(map[string][]Rule)
 	mu.Unlock()
+	lastSourceValues.Range(func(k, _ interface{}) bool {
+		lastSourceValues.Delete(k)
+		return true
+	})
 }
 
 // Register appends rules into the source-key index.
@@ -102,6 +108,13 @@ func applyRules(rules []Rule, value string, setter SetFunc) {
 	if len(rules) == 0 || setter == nil {
 		return
 	}
+	value = strings.TrimSpace(value)
+	if value == "" {
+		protocol_common.ErrorThrottled("bitunpack:parse:"+rules[0].SourceKey(),
+			"native-bitunpack: source value empty, skip BitGet %s script=%s",
+			rules[0].SourceKey(), rules[0].ScriptName)
+		return
+	}
 	iv, err := strconv.Atoi(value)
 	if err != nil {
 		fv, ferr := strconv.ParseFloat(value, 64)
@@ -134,12 +147,45 @@ func snapshotRules() (map[string][]Rule, SetFunc, SetFunc, LoadFunc, AlarmSyncFu
 	return snapshot, setDeviceData, settleDeviceData, loadDevice, syncAlarms
 }
 
-func loadSourceValue(device, point string, loader LoadFunc) (string, bool) {
-	val, ok := protocol_common.LoadDeviceRealValue("", device, point)
-	if !ok && loader != nil {
-		val, ok = loader(device, point)
+func sourceLookupPairs(device, point string) [][2]string {
+	device = strings.TrimSpace(device)
+	point = strings.TrimSpace(point)
+	pairs := [][2]string{{device, point}}
+	if i := strings.LastIndex(point, "_"); i > 0 {
+		pairs = append(pairs, [2]string{device + "->" + point[:i], point[i+1:]})
 	}
-	return val, ok
+	if i := strings.LastIndex(device, "->"); i > 0 {
+		left, right := device[:i], device[i+2:]
+		pairs = append(pairs, [2]string{left, right + "_" + point})
+	}
+	return pairs
+}
+
+func usableSourceValue(val string, ok bool) (string, bool) {
+	if !ok {
+		return "", false
+	}
+	val = strings.TrimSpace(val)
+	if val == "" {
+		return "", false
+	}
+	return val, true
+}
+
+func loadSourceValue(device, point string, loader LoadFunc) (string, bool) {
+	for _, pair := range sourceLookupPairs(device, point) {
+		val, ok := usableSourceValue(protocol_common.LoadDeviceRealValue("", pair[0], pair[1]))
+		if ok {
+			return val, true
+		}
+		if loader != nil {
+			val, ok = usableSourceValue(loader(pair[0], pair[1]))
+			if ok {
+				return val, true
+			}
+		}
+	}
+	return "", false
 }
 
 func settleSnapshot(snapshot map[string][]Rule, setter SetFunc, loader LoadFunc, logComplete bool) {
@@ -152,13 +198,20 @@ func settleSnapshot(snapshot map[string][]Rule, setter SetFunc, loader LoadFunc,
 		}
 		device := rules[0].SourceDevice
 		point := rules[0].SourcePoint
+		key := device + "->" + point
 		val, ok := loadSourceValue(device, point, loader)
 		if !ok {
-			protocol_common.ErrorThrottled("bitunpack:src:"+device+"->"+point,
-				"native-bitunpack: source has no value yet, skip settle %s->%s script=%s",
-				device, point, rules[0].ScriptName)
+			if last, hit := lastSourceValues.Load(key); hit {
+				val, ok = usableSourceValue(last.(string), true)
+			}
+		}
+		if !ok {
+			protocol_common.ErrorThrottled("bitunpack:src:"+key,
+				"native-bitunpack: source has no value yet, skip settle %s script=%s",
+				key, rules[0].ScriptName)
 			continue
 		}
+		lastSourceValues.Store(key, val)
 		applyRules(rules, val, setter)
 	}
 	if logComplete {
@@ -169,9 +222,10 @@ func settleSnapshot(snapshot map[string][]Rule, setter SetFunc, loader LoadFunc,
 // SettleAll runs every registered source once using current cache/DB values (with Info log).
 func SettleAll() {
 	snapshot, setFn, settleFn, loader, alarmSync := snapshotRules()
-	setter := settleFn
+	// Prefer alarm-enabled setter so restored bits actually push alarms.
+	setter := setFn
 	if setter == nil {
-		setter = setFn
+		setter = settleFn
 	}
 	settleSnapshot(snapshot, setter, loader, true)
 	if alarmSync != nil {
@@ -182,9 +236,9 @@ func SettleAll() {
 // SettleAllQuiet is the 1s tick path: same settle, no completion Info (source-miss still throttled Warn/Error).
 func SettleAllQuiet() {
 	snapshot, setFn, settleFn, loader, _ := snapshotRules()
-	setter := settleFn
+	setter := setFn
 	if setter == nil {
-		setter = setFn
+		setter = settleFn
 	}
 	settleSnapshot(snapshot, setter, loader, false)
 }
@@ -206,12 +260,19 @@ func RunRules(rules []Rule) {
 		grouped[r.SourceKey()] = append(grouped[r.SourceKey()], r)
 	}
 	for _, rs := range grouped {
+		key := rs[0].SourceDevice + "->" + rs[0].SourcePoint
 		val, ok := loadSourceValue(rs[0].SourceDevice, rs[0].SourcePoint, loader)
 		if !ok {
-			logs.Warn("native-bitunpack manual: source has no value %s->%s script=%s",
-				rs[0].SourceDevice, rs[0].SourcePoint, rs[0].ScriptName)
+			if last, hit := lastSourceValues.Load(key); hit {
+				val, ok = usableSourceValue(last.(string), true)
+			}
+		}
+		if !ok {
+			logs.Warn("native-bitunpack manual: source has no value %s script=%s",
+				key, rs[0].ScriptName)
 			continue
 		}
+		lastSourceValues.Store(key, val)
 		applyRules(rs, val, setter)
 	}
 }

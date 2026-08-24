@@ -21,6 +21,10 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value || {}))
 }
 
+function asArray(value) {
+  return Array.isArray(value) ? value : []
+}
+
 function readCellPosition(cell, sourcePosition) {
   const graphPosition = cell && cell.position ? cell.position : {}
   return {
@@ -210,11 +214,11 @@ export function normalizeISMCell(cell, options = {}) {
         active: Array.isArray(sourceDetail.active) ? sourceDetail.active : [],
         ...sourceDetail,
         animate: {
-          selected: sourceDetail.animate && sourceDetail.animate.selected || [],
+          selected: asArray(sourceDetail.animate && sourceDetail.animate.selected),
           condition: (sourceDetail.animate && sourceDetail.animate.condition) || { ...DEFAULT_CONDITION },
           isExpression: sourceDetail.animate ? !!sourceDetail.animate.isExpression : false,
-          animateList: (sourceDetail.animate && sourceDetail.animate.animateList) || [],
-          animateElement: (sourceDetail.animate && sourceDetail.animate.animateElement) || []
+          animateList: asArray(sourceDetail.animate && sourceDetail.animate.animateList),
+          animateElement: asArray(sourceDetail.animate && sourceDetail.animate.animateElement)
         },
         type: cell.shape,
         style: {

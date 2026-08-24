@@ -320,8 +320,8 @@ func DealWithHistoryData() {
 		if code != -1 {
 			var build strings.Builder
 			HistoryData := data.(models.DevicesHistoryDataList)
-			if HistoryData.RecordType == 1 {
-				// 定时存储由 DealWithTimedRealtimeHistorySnapshot 独占
+			if HistoryData.RecordType == 1 || HistoryData.RecordType == 4 {
+				// 定时/整点存储由 DealWithTimedRealtimeHistorySnapshot 独占
 				continue
 			}
 			build.WriteString(HistoryData.DeviceUuid)

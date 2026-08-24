@@ -585,9 +585,8 @@ func (c *ModbusCtl) DealWithModbusHistoryData(HistoryData models.DevicesHistoryD
 	build.WriteString(HistoryData.DataUuid)
 	key := build.String()
 
-	// 整点存储：按周期截断后每个测点每周期只写一次（含首次采样，避免断线重连只采到一次时永远不落盘）
+	// 整点存储改由定时快照独占，避免采集线程只写到 1～2 个点
 	if HistoryData.RecordType == 4 {
-		c.saveTimedModbusHistoryData(HistoryData, key)
 		return
 	}
 

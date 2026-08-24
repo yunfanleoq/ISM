@@ -31,8 +31,6 @@ import (
 	"github.com/zcx1218029121/go645"
 )
 
-var dlt645LastSaveMap sync.Map
-
 type extraData struct {
 	DLT645 map[string]interface{}
 }
@@ -187,61 +185,8 @@ func (c *DLT645Ctl) DealWithDLT645HistoryData(HistoryData models.DevicesHistoryD
 				c.DeviceHistoryDataTemp[key] = HistoryData
 			}
 		} else if HistoryData.RecordType == 4 {
-			RecordDataTimelyStr := HistoryData.RecordDataTimely
-			RecordDataTimely, err := strconv.Atoi(RecordDataTimelyStr)
-			if err != nil {
-				return
-			}
-
-			now := time.Now()
-			min := now.Minute()
-
-			// 1. 只判断分钟，不判断秒（满足你的要求）
-			var needSave bool
-			switch RecordDataTimely {
-			case 1:
-				needSave = min%5 == 0
-			case 2:
-				needSave = min%10 == 0
-			case 3:
-				needSave = min%15 == 0
-			case 4:
-				needSave = min%30 == 0
-			case 5:
-				needSave = min == 0
-			default:
-				return
-			}
-			if !needSave {
-				return
-			}
-
-			// 2. 计算【标准整点时间】（存到数据库的是这个干净时间）
-			var cycleTime time.Time
-			switch RecordDataTimely {
-			case 1:
-				cycleTime = now.Truncate(5 * time.Minute)
-			case 2:
-				cycleTime = now.Truncate(10 * time.Minute)
-			case 3:
-				cycleTime = now.Truncate(15 * time.Minute)
-			case 4:
-				cycleTime = now.Truncate(30 * time.Minute)
-			case 5:
-				cycleTime = now.Truncate(60 * time.Minute)
-			}
-			cycleUnix := cycleTime.Unix() // 格式：14:05:00 的时间戳
-
-			// 3. 防重复：同一个整点，只存一次
-			lastSaveKey := HistoryData.DataUuid + "_" + cycleTime.Format("20060102")
-			lastTime, ok := dlt645LastSaveMap.Load(lastSaveKey)
-			if !ok || cycleUnix != lastTime.(int64) {
-				// 把时间改成标准整点
-				HistoryData.RecordTime = cycleTime // 如果有时间字段就改这个
-				protocol_common.HistoryDataWrite(HistoryData)
-				c.DeviceHistoryDataTemp[key] = HistoryData
-				dlt645LastSaveMap.Store(lastSaveKey, cycleUnix)
-			}
+			// 整点存储改由定时快照独占
+			return
 		}
 	}
 }

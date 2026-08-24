@@ -46,6 +46,60 @@ func TestRunRulesUsesLoader(t *testing.T) {
 	}
 }
 
+func TestSettleAllPrefersAlarmSetter(t *testing.T) {
+	Clear()
+	var alarmWrites, skipWrites int
+	Configure(func(deviceData string, value interface{}) int {
+		alarmWrites++
+		return 0
+	}, func(deviceData string, value interface{}) int {
+		skipWrites++
+		return 0
+	}, func(deviceName, pointName string) (string, bool) {
+		return "1", true
+	}, nil)
+	Register([]Rule{{SourceDevice: "d", SourcePoint: "p", Bit: 1, TargetDevice: "t", TargetPoint: "b1"}})
+	SettleAll()
+	if alarmWrites == 0 {
+		t.Fatalf("SettleAll should use alarm-enabled setter, alarmWrites=%d skipWrites=%d", alarmWrites, skipWrites)
+	}
+}
+
+func TestSettleReusesLastSourceValue(t *testing.T) {
+	Clear()
+	hits := 0
+	var writes int
+	Configure(func(deviceData string, value interface{}) int {
+		writes++
+		return 0
+	}, nil, func(deviceName, pointName string) (string, bool) {
+		hits++
+		if hits == 1 {
+			return "5", true
+		}
+		return "", false
+	}, nil)
+	Register([]Rule{{SourceDevice: "d", SourcePoint: "p", Bit: 1, TargetDevice: "t", TargetPoint: "b1"}})
+	SettleAll()
+	SettleAll()
+	if writes < 2 {
+		t.Fatalf("expected last source value reuse, writes=%d hits=%d", writes, hits)
+	}
+}
+
+func TestSourceLookupPairsMovesUnderscorePrefix(t *testing.T) {
+	pairs := sourceLookupPairs("机房模块4B1", "H列头_支路状态1-16")
+	found := false
+	for _, p := range pairs {
+		if p[0] == "机房模块4B1->H列头" && p[1] == "支路状态1-16" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("pairs=%v", pairs)
+	}
+}
+
 func toStr(v interface{}) string {
 	switch x := v.(type) {
 	case int8:

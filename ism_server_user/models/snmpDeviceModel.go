@@ -88,6 +88,7 @@ type DeviceRealData struct {
 	RecordType           int    `gorm:"type:int;" json:"RecordType" validate:"required" label:"存储方式"`
 	RecordInterval       int    `gorm:"type:int;" json:"recordInterval" validate:"required" label:"存储间隔，单位分钟"`
 	RecordDataCharge     string `gorm:"type:varchar(250);" json:"RecordDataCharge" validate:"required" label:""`
+	RecordDataTimely     string `gorm:"type:varchar(250);" json:"RecordDataTimely"`
 	AlarmShield          int    `gorm:"index;type:int;" json:"AlarmShield" validate:"required" label:"告警屏蔽"`
 }
 

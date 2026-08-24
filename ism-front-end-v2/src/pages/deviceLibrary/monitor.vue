@@ -468,7 +468,7 @@ export default {
                   nextRows.push({
                     key: rows[i].ID || rows[i].id || rows[i].uuid,
                     no: rows[i].ID || rows[i].id,
-                    deviceName: split.deviceName || '',
+                    deviceName: rows[i].DeviceName || rows[i].deviceName || split.deviceName || '',
                     name: pointName,
                     rawName: rawName,
                     value: formatPointDisplayValue(rawName, rawValue),
