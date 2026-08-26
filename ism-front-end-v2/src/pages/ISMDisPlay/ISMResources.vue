@@ -275,6 +275,10 @@ export default {
       if (!item || item.isComponents || item.pageType !== 1) {
         return item && item.title ? item.title : ''
       }
+      const showTags = typeof localStorage !== 'undefined' && localStorage.getItem('ismShowPageTemplateTags') === '1'
+      if (!showTags) {
+        return item.title
+      }
       if (this.runtimeTemplatePageIds().has(item.pageUuid)) {
         return `${item.title}（${this.$t('displayConfig.RuntimeTemplate')}）`
       }
@@ -305,12 +309,12 @@ export default {
       }
       return ''
     },
-    doSaveLayerData(uuid){
+    doSaveLayerData(uuid, explicitPageId){
       if (this.editorRuntimePreview && this.editorRuntimePreview.active) {
         this.$message.warning('运行态预览不可直接保存，请编辑对应模板后再保存')
         return Promise.resolve()
       }
-      const pageId = this.resolveSavePageId()
+      const pageId = explicitPageId || this.resolveSavePageId()
       if (!pageId) {
         this.$message.error(this.$t('displayModel.SaveDataFailed') + ' (empty pageId)')
         return Promise.resolve()
@@ -344,11 +348,14 @@ export default {
       }
       LayerData.components = normalizedLayerData.components
       params.LayerData = LayerData
-      this.saveLayerDataStruct(params).then(function (res){
+      const fromSwitch = !!explicitPageId
+      const savePromise = this.saveLayerDataStruct(params).then(function (res){
         if(res.data.code == 200)
         {
-          let uid = _t.$route.params.uid
-          _t.updateAllLayerDataStruct({pageType:_t.isMobile,uuid:uid,metaOnly:true,cb:function (){}});
+          if (!fromSwitch) {
+            let uid = _t.$route.params.uid
+            _t.updateAllLayerDataStruct({pageType:_t.isMobile,uuid:uid,metaOnly:true,cb:function (){}});
+          }
         }
         else if (res.data.code == 4090)
         {
@@ -358,9 +365,16 @@ export default {
         {
           _t.$message.error(_t.$t('displayModel.SaveDataFailed'))
         }
+        return res
+      }).finally(function () {
+        if (_t._pageSaveQueue === savePromise) {
+          _t._pageSaveQueue = null
+        }
       })
+      this._pageSaveQueue = savePromise
+      return savePromise
     },
-    chargePage(key,info){
+    async chargePage(key,info){
       if(info.selectedNodes.length>0)
       {
         let page = info.selectedNodes[0].data.props.dataRef
@@ -373,6 +387,16 @@ export default {
         }
         else
         {
+          const targetId = key && key.length > 0 ? key[0] : ''
+          const prevPageId = this.selectPageUuid || this.selectTreeKey
+          if (this._pageSaveQueue) {
+            try { await this._pageSaveQueue } catch (e) { /* keep switching */ }
+          }
+          if (prevPageId && targetId && String(prevPageId) !== String(targetId)) {
+            try {
+              await this.doSaveLayerData(this.$route.params.uid, prevPageId)
+            } catch (e) { /* keep switching */ }
+          }
           if(key.length>0)
           {
             this.selectTreeKey = key[0]
@@ -385,14 +409,11 @@ export default {
             this.PCPageCheckKey = []
           }
           this.checkPageInfo = page
-          //保存上个页面
-          this.doSaveLayerData(this.$route.params.uid)
           this.setEditorRuntimePreview(null)
           this.setNavContext(null)
           this.selectLayerDataStruct(page)
           document.title = page.AppName + ' | ' + page.title
         }
-        // this.setGroupList()
       }
     },
     addModelPage(e,type) {

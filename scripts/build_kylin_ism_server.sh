@@ -18,7 +18,7 @@ echo ""
 if command -v go >/dev/null 2>&1; then
   echo "  使用本机 Go: $(go version)"
   (cd "$SRC" && GOOS=linux GOARCH=amd64 CGO_ENABLED=0 \
-    go build -ldflags "-w -s" -o "$OUT_BIN" .)
+    go build -mod=vendor -ldflags "-w -s" -o "$OUT_BIN" .)
 else
   echo "  本机无 Go，使用 Docker golang:1.22-bullseye ..."
   docker run --rm --platform linux/amd64 \

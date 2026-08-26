@@ -18,7 +18,6 @@ import (
 	"encoding/gob"
 	"fmt"
 	"math"
-	"math/rand"
 	"net"
 	"net/http"
 	"runtime"
@@ -108,35 +107,6 @@ func writeInsideHistoryData(writeDeviceHistoryData []models.DevicesHistoryDataLi
 		return insertHistoryData(writeDeviceHistoryData, OnceWriteHistoryNumber)
 	}
 	return models.Db.Model(&models.DevicesHistoryDataList{}).CreateInBatches(&writeDeviceHistoryData, OnceWriteHistoryNumber).Error
-}
-
-func writeTDengineHistoryData(writeDeviceHistoryData []models.DevicesHistoryDataList) error {
-	if len(writeDeviceHistoryData) == 0 {
-		return nil
-	}
-	if protocol_common.HistoryRecordTsDb == nil {
-		return fmt.Errorf("history record tdengine db is nil")
-	}
-
-	var insertSQL strings.Builder
-	insertSQL.Grow(len(writeDeviceHistoryData) * 256)
-	tagNo := rand.New(rand.NewSource(time.Now().UnixNano())).Intn(0xFFFFFF)
-	insertSQL.WriteString(fmt.Sprintf("INSERT INTO ISMHistoryDb.HistoryDatas USING ISMHistoryDb.TempleteHistoryDatas  TAGS(%d) VALUES", tagNo))
-	for _, historyData := range writeDeviceHistoryData {
-		insertSQL.WriteString(fmt.Sprintf(" ('%s', '%s','%s','%s','%s','%s','%s','%s','%s') ",
-			protocol_common.FormatTDengineTimestamp(historyData.RecordTime),
-			historyData.DataName,
-			historyData.DeviceUuid,
-			historyData.ProjectUuid,
-			historyData.DeviceName,
-			historyData.DataUuid,
-			historyData.ModelDataUuid,
-			historyData.DataUnit,
-			historyData.DataValue,
-		))
-	}
-	_, err := protocol_common.HistoryRecordTsDb.Exec(insertSQL.String())
-	return err
 }
 
 func writeInfluxHistoryData(writeDeviceHistoryData []models.DevicesHistoryDataList) error {

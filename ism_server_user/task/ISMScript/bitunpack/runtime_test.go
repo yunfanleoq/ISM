@@ -87,6 +87,17 @@ func TestSettleReusesLastSourceValue(t *testing.T) {
 	}
 }
 
+func TestSplitDevicePointKeyLastArrow(t *testing.T) {
+	dev, pt, ok := splitDevicePointKey("配电室1A1_1A3->1A1配电室->P1A1_U1总有功")
+	if !ok || dev != "配电室1A1_1A3->1A1配电室" || pt != "P1A1_U1总有功" {
+		t.Fatalf("dev=%q pt=%q ok=%v", dev, pt, ok)
+	}
+	dev, pt, ok = splitDevicePointKey("配电室3B1->配电室3B1_U21_UPS使用模式")
+	if !ok || dev != "配电室3B1" || pt != "配电室3B1_U21_UPS使用模式" {
+		t.Fatalf("simple dev=%q pt=%q ok=%v", dev, pt, ok)
+	}
+}
+
 func TestSourceLookupPairsMovesUnderscorePrefix(t *testing.T) {
 	pairs := sourceLookupPairs("机房模块4B1", "H列头_支路状态1-16")
 	found := false

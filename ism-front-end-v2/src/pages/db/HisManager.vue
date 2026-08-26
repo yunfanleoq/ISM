@@ -168,7 +168,7 @@
               type="info"
               show-icon
               style="margin: 16px 0 12px"
-              message="TDengine 历史库备份：优先使用本机 taosdump；若无客户端则尝试 docker exec tdengine（可用环境变量 TD_CONTAINER 改容器名）。备份目录 data/hisdbbackup/。"
+              message="这是 TDengine 历史库备份（不是业务库 MariaDB/OceanBase）。优先本机 taosdump；没有则 docker exec tdengine（可用 TD_CONTAINER 改容器名）。超时约 15 分钟。备份目录 data/hisdbbackup/。业务库请走「数据库管理」页。"
             />
             <a-button v-if="DbType==2" type="default" :loading="hisBackingUp" @click="HisDbBackUp">
               备份 TDengine 历史库

@@ -311,6 +311,21 @@ function buildPageInfoFromConfig(pageid, displayUUID, cfg) {
     }
 }
 
+function resolveModelHomePageUuid(pageList, displayUUID) {
+    if (!pageList || !pageList.length) {
+        return ''
+    }
+    const ofModel = displayUUID
+        ? pageList.filter(function (p) { return p.pageModelUuid == displayUUID })
+        : pageList
+    const pool = ofModel.length ? ofModel : pageList
+    const home = pool.find(function (p) { return p.IsHome == 1 })
+    if (home && home.pageUuid) {
+        return home.pageUuid
+    }
+    return (pool[0] && pool[0].pageUuid) ? pool[0].pageUuid : ''
+}
+
 /** PCPageList 缺页或整表为空时，按需拉取并注入条目（导航模板页 fallback 依赖此路径） */
 function ensurePageRegistered(ctx, pageid, displayUUID) {
     if (!pageid) return Promise.resolve(null)
@@ -1412,6 +1427,24 @@ export const saveLayerDataStruct = (ctx,page) => {
         saveData:page.LayerData
     }
     return setDisplayModelLayerData(params).then(function (res){
+        if (res && res.data && res.data.code == 200 && page.LayerData && page.pageid) {
+            const lists = [ctx.state.PCPageList, ctx.state.PhonePageList]
+            let copied = null
+            try {
+                copied = JSON.parse(JSON.stringify(page.LayerData))
+            } catch (e) {
+                copied = page.LayerData
+            }
+            for (let li = 0; li < lists.length; li++) {
+                const list = lists[li] || []
+                for (let i = 0; i < list.length; i++) {
+                    if (list[i] && list[i].pageUuid === page.pageid) {
+                        list[i].pageLayerData = copied
+                        list[i]._lazyLoaded = true
+                    }
+                }
+            }
+        }
         return res
     })
 }
@@ -1672,6 +1705,15 @@ export const selectDisplayPageDataStruct = (ctx,page) => {
         }});
         return
     }
+    if (pageid && page.page && page.page.displayUUID && pageid === page.page.displayUUID) {
+        const homeId = resolveModelHomePageUuid(PCPageInfo, page.page.displayUUID)
+        if (homeId && homeId !== pageid) {
+            ismDebug('SCADA.selectPage.homeFromModelUuid', {pageid, homeId, displayUUID: page.page.displayUUID})
+            page.page.pageUuid = homeId
+            selectDisplayPageDataStruct(ctx, page)
+            return
+        }
+    }
     for(let i=0,PCPageInfoLen=PCPageInfo.length;i<PCPageInfoLen;i++)
     {
         if(PCPageInfo[i].pageUuid==pageid)
@@ -1814,6 +1856,16 @@ export const selectDisplayPageDataStruct = (ctx,page) => {
                 page.callback(bangDingData,bangDingDeviceSN,false)
             }
             })
+            return
+        }
+    }
+
+    if (displayUUID && targetPageId === displayUUID) {
+        const homeId = resolveModelHomePageUuid(PCPageInfo, displayUUID)
+        if (homeId && homeId !== targetPageId) {
+            ismDebug('SCADA.selectPage.homeFromModelUuid.late', {pageid: targetPageId, homeId, displayUUID})
+            page.page.pageUuid = homeId
+            selectDisplayPageDataStruct(ctx, page)
             return
         }
     }

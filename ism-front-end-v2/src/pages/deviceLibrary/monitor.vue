@@ -39,62 +39,21 @@
               <a-empty :description="$t('monitor.SelectDeviceTips')" />
             </div>
             <div v-else-if="deviceType==1">
-<!--              <ISMRender :showUuid="showModelUuid" :showDeviceUuid="showDeviceUuid" v-if="!showRealData"/>-->
-
+              <div v-if="categoryTags.length" class="dw-category-tags">
+                <a-tag
+                    class="dw-category-tag"
+                    :color="selectedCategory === '' ? 'cyan' : undefined"
+                    @click="onSelectCategory('')"
+                >全部</a-tag>
+                <a-tag
+                    v-for="tag in categoryTags"
+                    :key="tag.prefix"
+                    class="dw-category-tag"
+                    :color="selectedCategory === tag.prefix ? 'cyan' : undefined"
+                    @click="onSelectCategory(tag.prefix)"
+                >{{ tag.prefix }} ({{ tag.count }})</a-tag>
+              </div>
               <a-table rowKey="uuid" :pagination="pagination" :columns="columns" :data-source="tableDataSource" >
-                <div
-                    slot="filterDropdown"
-                    slot-scope="{ setSelectedKeys, selectedKeys, confirm, clearFilters, column }"
-                    style="padding: 8px"
-                >
-                  <a-input
-                      v-ant-ref="c => (searchInput = c)"
-                      :placeholder="`Search ${column.dataIndex}`"
-                      :value="selectedKeys[0]"
-                      style="width: 188px; margin-bottom: 8px; display: block;"
-                      @change="e => setSelectedKeys(e.target.value ? [e.target.value] : [])"
-                      @pressEnter="() => handleSearch(selectedKeys, confirm, column.dataIndex)"
-                  />
-                  <a-button
-                      type="primary"
-                      icon="search"
-                      size="small"
-                      style="width: 90px; margin-right: 8px"
-                      @click="() => handleSearch(selectedKeys, confirm, column.dataIndex)"
-                  >
-
-                    {{$t('readData.Search')}}
-                  </a-button>
-                  <a-button size="small" style="width: 90px" @click="() => handleReset(clearFilters)">
-
-                    {{$t('readData.Reset')}}
-                  </a-button>
-                </div>
-                <a-icon
-                    slot="filterIcon"
-                    slot-scope="filtered"
-                    type="search"
-                    :style="{ color: filtered ? '#108ee9' : undefined }"
-                />
-                <template slot="customRender" slot-scope="text, record, index, column">
-                    <span v-if="searchText && searchedColumn === column.dataIndex">
-                      <template
-                          v-for="(fragment, i) in String(text == null ? '' : text)
-                          .split(new RegExp(`(${searchText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'i'))"
-                      >
-                        <mark
-                            v-if="fragment.toLowerCase() === searchText.toLowerCase()"
-                            :key="i"
-                            class="highlight"
-                        >{{ fragment }}</mark
-                        >
-                        <template v-else>{{ fragment }}</template>
-                      </template>
-                    </span>
-                  <template v-else>
-                    {{ text == null ? '' : text }}
-                  </template>
-                </template>
                 <span slot="UpdateTime" slot-scope="UpdateTime">
                  {{UpdateTime|formatDate}}
                 </span>
@@ -143,10 +102,10 @@ import {formatDate} from '@/utils/common';
 import {AUTH_TYPE, getAuthorization} from "@/utils/request";
 import {ismDebug} from '@/utils/ismDebug';
 import {
-  formatPointDisplayName,
   formatPointDisplayValue,
   splitNameByLastUnderscore,
 } from '@/pages/ISMDisPlay/utils/pointValueDisplay';
+import { ensureVirtualCabinetsForDevice } from '@/pages/ISMDisPlay/utils/virtualCabinet';
 export default {
   name: 'ISMMonitor',
   i18n: require('../../i18n/language'),
@@ -160,9 +119,8 @@ export default {
       showRealData:true,
       getReadDataResponse:true,
       deviceType:-1,
-      searchText: '',
-      searchInput: null,
-      searchedColumn: '',
+      selectedCategory: '',
+      categoryTags: [],
       intervalId:null,
       setDataUuid:"",
       firstLoad : true,
@@ -178,37 +136,14 @@ export default {
         {
           width: '18%',
           slotName: 'readData.DeviceName',
-          scopedSlots: { filterDropdown: 'filterDropdown', filterIcon: 'filterIcon', customRender: 'customRender', title: 'readData.DeviceName' },
+          scopedSlots: { title: 'readData.DeviceName' },
           dataIndex: 'deviceName',
-          onFilter: (value, record) =>
-              String(record.deviceName || '')
-                  .toLowerCase()
-                  .includes(String(value || '').toLowerCase()),
-          onFilterDropdownVisibleChange: visible => {
-            if (visible) {
-              setTimeout(() => {
-                this.searchInput.focus();
-              }, 0);
-            }
-          },
         },
         {
           width: '18%',
           slotName: 'readData.tableName',
-          scopedSlots: { filterDropdown: 'filterDropdown', filterIcon: 'filterIcon', customRender: 'customRender', title: 'readData.tableName' },
+          scopedSlots: { title: 'readData.tableName' },
           dataIndex: 'name',
-          onFilter: (value, record) =>
-              String(record.name || '')
-                  .toString()
-                  .toLowerCase()
-                  .includes(value.toLowerCase()),
-          onFilterDropdownVisibleChange: visible => {
-            if (visible) {
-              setTimeout(() => {
-                this.searchInput.focus();
-              }, 0);
-            }
-          },
         },
         {
           slotName: 'readData.tableValue',
@@ -265,6 +200,7 @@ export default {
     if (nodeValue && nodeValue.type == 1 && this.selectDeviceKey) {
       this.deviceType = 1
       this.messageShowLoad = true
+      this.loadCategoryTags()
       this.getRealData(this.selectDeviceKey, this.realDataPage || 1, this.realDataPageSize)
       return
     }
@@ -305,14 +241,64 @@ export default {
     },
   },
   methods: {
-    handleSearch(selectedKeys, confirm, dataIndex) {
-      confirm();
-      this.searchText = selectedKeys[0];
-      this.searchedColumn = dataIndex;
+    parentDeviceLabel() {
+      const nodeVal = (this.selectNode && (this.selectNode.value || this.selectNode)) || {}
+      return nodeVal.Name || nodeVal.name || nodeVal.text || this.selectNode && this.selectNode.text || ''
     },
-    handleReset(clearFilters) {
-      clearFilters();
-      this.searchText = '';
+    categoryQueryValue(prefix) {
+      const raw = String(prefix || '').trim()
+      if (!raw) {
+        return ''
+      }
+      return raw.endsWith('_') ? raw : (raw + '_')
+    },
+    onSelectCategory(prefix) {
+      const next = String(prefix || '')
+      if (next === this.selectedCategory) {
+        return
+      }
+      this.selectedCategory = next
+      if (!this.selectDeviceKey) {
+        return
+      }
+      this.realDataPage = 1
+      this.tableDataSource = []
+      this.messageShowLoad = true
+      this.getRealData(this.selectDeviceKey, 1, this.realDataPageSize)
+    },
+    loadCategoryTags() {
+      const _t = this
+      const nodeVal = (_t.selectNode && (_t.selectNode.value || _t.selectNode)) || {}
+      const uuid = _t.selectDeviceKey || nodeVal.uuid || ''
+      const label = _t.parentDeviceLabel()
+      const muid = nodeVal.muid || nodeVal.Muid || nodeVal.modelUuid || nodeVal.configUid || ''
+      if (!uuid) {
+        _t.categoryTags = []
+        _t.selectedCategory = ''
+        return
+      }
+      ensureVirtualCabinetsForDevice({
+        uuid,
+        deviceUuid: uuid,
+        muid,
+        modelUuid: muid,
+        label,
+        name: label,
+        fallbackDeviceName: label,
+      }, label).then(function (result) {
+        if (_t.selectDeviceKey !== uuid) {
+          return
+        }
+        const enabled = result && result.enabled
+        _t.categoryTags = enabled ? (result.groups || []) : []
+        if (!enabled) {
+          _t.selectedCategory = ''
+        }
+      }).catch(function () {
+        if (_t.selectDeviceKey === uuid) {
+          _t.categoryTags = []
+        }
+      })
     },
     setData(){
       let _t = this
@@ -373,12 +359,17 @@ export default {
       const currentPage = page || _t.realDataPage || 1
       const currentSize = clampPageSize(pageSize || _t.realDataPageSize || REAL_DATA_DEFAULT_PAGE_SIZE)
       const nodeVal = (_t.selectNode && (_t.selectNode.value || _t.selectNode)) || {}
+      const category = _t.categoryQueryValue(_t.selectedCategory)
       const params = {
         uuid:uuid,
         page: currentPage,
         pageSize: currentSize,
         IsRemoveGW: !!nodeVal.IsRemoteGw,
         ProjectUuid: nodeVal.ProjectUUID || nodeVal.project_uuid || '',
+        muid: nodeVal.muid || nodeVal.Muid || nodeVal.modelUuid || '',
+      }
+      if (category) {
+        params.category = category
       }
       ismDebug('DW.getRealData.enter', {
         uuid,
@@ -464,12 +455,12 @@ export default {
                   const rawName = rows[i].name
                   const rawValue = rows[i].value
                   const split = splitNameByLastUnderscore(rawName)
-                  const pointName = split.pointName || formatPointDisplayName(rawName)
+                  const parentName = _t.parentDeviceLabel()
                   nextRows.push({
                     key: rows[i].ID || rows[i].id || rows[i].uuid,
                     no: rows[i].ID || rows[i].id,
-                    deviceName: rows[i].DeviceName || rows[i].deviceName || split.deviceName || '',
-                    name: pointName,
+                    deviceName: split.deviceName || parentName || '',
+                    name: rawName,
                     rawName: rawName,
                     value: formatPointDisplayValue(rawName, rawValue),
                     uuid: rows[i].uuid,
@@ -526,6 +517,8 @@ export default {
       let _t = this
       this.clear()
       this.selectNode = nodeRef
+      this.selectedCategory = ''
+      this.categoryTags = []
       const nodeValue = nodeRef && nodeRef.value ? nodeRef.value : nodeRef
       this.showModelUuid = nodeValue && nodeValue.configUid
       this.deviceType=3
@@ -546,6 +539,7 @@ export default {
           _t.realDataPage = 1
           _t.selectDeviceKey = selectData.key
           ismDebug('DW.onSelect.deviceTick', {key: selectData.key, deviceType: _t.deviceType})
+          _t.loadCategoryTags()
           _t.getRealData(selectData.key, 1, _t.realDataPageSize)
           _t.$EventBus.$off("readDataPush")
           _t.$EventBus.$off("StaticData")
@@ -607,6 +601,8 @@ export default {
           _t.showDeviceUuid=""
           _t.messageShowLoad = false
           _t.selectDeviceKey=''
+          _t.selectedCategory = ''
+          _t.categoryTags = []
           _t.deviceType=0
           // 区域未绑定组态页时给出明确提示，避免误以为页面坏了
           if (!(_t.showModelUuid)) {
@@ -696,6 +692,16 @@ export default {
   overflow-wrap: break-word;
 }
 
+.dw-category-tags {
+  padding: 8px 10px 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.dw-category-tag {
+  cursor: pointer;
+  margin: 0;
+}
 .ant-table-thead>tr>th {
   color: #909399;
   font-weight: 500;

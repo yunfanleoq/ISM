@@ -364,19 +364,30 @@ func (c *VirtualDeviceController) UpdateAllVirtualDeviceDataModel() {
 		}
 	}
 	parseRecordType := func(v string) int {
-		switch v {
-		case "定时存储":
-			return 1
-		case "即时存储":
-			return 2
-		default:
-			if n, err := strconv.Atoi(v); err == nil {
-				return n
-			}
-			return 0
-		}
+		return parseRecordTypeFromExcel(v)
 	}
 
+	parseAlarmOnValue := func(raw string) int {
+		v := strings.TrimSpace(raw)
+		if v == "0" || v == "0.0" || v == "0.00" {
+			return 0
+		}
+		if n, err := strconv.Atoi(v); err == nil && n == 0 {
+			return 0
+		}
+		return 1
+	}
+	cellByHeader := func(sheetName string, rowIndex, colIdx int) string {
+		if colIdx < 0 {
+			return ""
+		}
+		cellName, err := excelize.CoordinatesToCellName(colIdx+1, rowIndex)
+		if err != nil {
+			return ""
+		}
+		val, _ := excelfile.GetCellValue(sheetName, cellName)
+		return strings.TrimSpace(val)
+	}
 	processed := false
 	parseSkipped := 0
 	bulkItems := make([]models.VirtualDeviceDataModel, 0, 1024)
@@ -440,7 +451,7 @@ func (c *VirtualDeviceController) UpdateAllVirtualDeviceDataModel() {
 				AlarmMessage:         safeCell(row, "告警消息"),
 				AlarmClearMessage:    safeCell(row, "告警消除消息"),
 				IsRecord:             parseYesNo(firstNonEmpty(safeCell(row, "是否存储(是,否)"), safeCell(row, "是否存储"))),
-				RecordType:           parseRecordType(firstNonEmpty(safeCell(row, "存储类型(变化存储、定时存储、即时存储)"), safeCell(row, "存储类型"))),
+				RecordType:           parseRecordType(firstNonEmpty(safeCell(row, excelRecordTypeHeader), safeCell(row, excelRecordTypeHeaderLegacy), safeCell(row, "存储类型"))),
 				RecordDataCharge:     safeCell(row, "变化值"),
 				Description:          safeCell(row, "描述"),
 				ModelType:            480,
@@ -448,8 +459,10 @@ func (c *VirtualDeviceController) UpdateAllVirtualDeviceDataModel() {
 				Uuid:                 safeCell(row, "数据ID(勿修改)"),
 				Nodeid:               safeCell(row, "NodeID"),
 			}
-			if alarmOn := firstNonEmpty(safeCell(row, "报警触发值(0,1)"), safeCell(row, "报警触发值")); alarmOn == "0" {
-				setparams.AlarmOnValue = 0
+			if alarmIdx, ok := colIndex["报警触发值(0,1)"]; ok {
+				setparams.AlarmOnValue = parseAlarmOnValue(cellByHeader(sheetName, index+1, alarmIdx))
+			} else if alarmIdx, ok := colIndex["报警触发值"]; ok {
+				setparams.AlarmOnValue = parseAlarmOnValue(cellByHeader(sheetName, index+1, alarmIdx))
 			} else {
 				setparams.AlarmOnValue = 1
 			}

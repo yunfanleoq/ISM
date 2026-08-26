@@ -581,7 +581,7 @@ export default {
         }
         if(!menudata.path)
         {
-          this.$message && this.$message.warning('菜单未绑定页面，请在编辑菜单中选择目标页面')
+          this.$message && this.$message.warning(this.$t('readData.UnboundPage') || '菜单未绑定页面，请在编辑菜单中选择目标页面')
           return
         }
         let item={

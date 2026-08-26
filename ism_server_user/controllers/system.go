@@ -746,15 +746,7 @@ func (c *ISMSystem) UpdateDataModel() {
 					}
 				}
 				if len(row) > recordTypeIdx {
-					if row[recordTypeIdx] == "定时存储" {
-						setparams.RecordType = 1
-					} else if row[recordTypeIdx] == "即时存储" {
-						setparams.RecordType = 2
-					} else if row[recordTypeIdx] == "变化存储" {
-						setparams.RecordType = 0
-					} else {
-						setparams.RecordType = 0
-					}
+					setparams.RecordType = parseRecordTypeFromExcel(row[recordTypeIdx])
 				}
 				if len(row) > recordIntervalIdx {
 					setparams.RecordInterval, convErr = strconv.Atoi(row[recordIntervalIdx])
@@ -865,15 +857,7 @@ func (c *ISMSystem) UpdateDataModel() {
 				} else {
 					setparams.IsRecord = 0
 				}
-				if row[11] == "定时存储" {
-					setparams.RecordType = 1
-				} else if row[11] == "即时存储" {
-					setparams.RecordType = 2
-				} else if row[11] == "变化存储" {
-					setparams.RecordType = 0
-				} else {
-					setparams.RecordType = 0
-				}
+				setparams.RecordType = parseRecordTypeFromExcel(row[11])
 
 				setparams.RecordInterval, convErr = strconv.Atoi(row[12])
 				if convErr != nil {
@@ -1025,15 +1009,7 @@ func (c *ISMSystem) UpdateDataModel() {
 				} else {
 					setparams.IsRecord = 0
 				}
-				if row[15] == "定时存储" {
-					setparams.RecordType = 1
-				} else if row[15] == "即时存储" {
-					setparams.RecordType = 2
-				} else if row[15] == "变化存储" {
-					setparams.RecordType = 0
-				} else {
-					setparams.RecordType = 0
-				}
+				setparams.RecordType = parseRecordTypeFromExcel(row[15])
 
 				setparams.RecordInterval, convErr = strconv.Atoi(row[16])
 				if convErr != nil {
@@ -1115,15 +1091,7 @@ func (c *ISMSystem) UpdateDataModel() {
 				} else {
 					setparams.IsRecord = 0
 				}
-				if row[11] == "定时存储" {
-					setparams.RecordType = 1
-				} else if row[11] == "即时存储" {
-					setparams.RecordType = 2
-				} else if row[11] == "变化存储" {
-					setparams.RecordType = 0
-				} else {
-					setparams.RecordType = 0
-				}
+				setparams.RecordType = parseRecordTypeFromExcel(row[11])
 
 				setparams.RecordInterval, convErr = strconv.Atoi(row[12])
 				if convErr != nil {
@@ -1221,15 +1189,7 @@ func (c *ISMSystem) UpdateDataModel() {
 				} else {
 					setparams.IsRecord = 0
 				}
-				if row[11] == "定时存储" {
-					setparams.RecordType = 1
-				} else if row[11] == "即时存储" {
-					setparams.RecordType = 2
-				} else if row[11] == "变化存储" {
-					setparams.RecordType = 0
-				} else {
-					setparams.RecordType = 0
-				}
+				setparams.RecordType = parseRecordTypeFromExcel(row[11])
 
 				setparams.RecordInterval, convErr = strconv.Atoi(row[12])
 				if convErr != nil {
@@ -1323,15 +1283,7 @@ func (c *ISMSystem) UpdateDataModel() {
 				} else {
 					setparams.IsRecord = 0
 				}
-				if row[12] == "定时存储" {
-					setparams.RecordType = 1
-				} else if row[12] == "即时存储" {
-					setparams.RecordType = 2
-				} else if row[12] == "变化存储" {
-					setparams.RecordType = 0
-				} else {
-					setparams.RecordType = 0
-				}
+				setparams.RecordType = parseRecordTypeFromExcel(row[12])
 
 				setparams.RecordInterval, convErr = strconv.Atoi(row[13])
 				if convErr != nil {
@@ -1427,15 +1379,7 @@ func (c *ISMSystem) UpdateDataModel() {
 				} else {
 					setparams.IsRecord = 0
 				}
-				if row[11] == "定时存储" {
-					setparams.RecordType = 1
-				} else if row[11] == "即时存储" {
-					setparams.RecordType = 2
-				} else if row[11] == "变化存储" {
-					setparams.RecordType = 0
-				} else {
-					setparams.RecordType = 0
-				}
+				setparams.RecordType = parseRecordTypeFromExcel(row[11])
 
 				setparams.RecordInterval, convErr = strconv.Atoi(row[12])
 				if convErr != nil {
@@ -1519,15 +1463,7 @@ func (c *ISMSystem) UpdateDataModel() {
 				} else {
 					setparams.IsRecord = 0
 				}
-				if row[11] == "定时存储" {
-					setparams.RecordType = 1
-				} else if row[11] == "即时存储" {
-					setparams.RecordType = 2
-				} else if row[11] == "变化存储" {
-					setparams.RecordType = 0
-				} else {
-					setparams.RecordType = 0
-				}
+				setparams.RecordType = parseRecordTypeFromExcel(row[11])
 
 				setparams.RecordInterval, convErr = strconv.Atoi(row[12])
 				if convErr != nil {
@@ -1633,15 +1569,7 @@ func (c *ISMSystem) UpdateDataModel() {
 				} else {
 					setparams.IsRecord = 0
 				}
-				if row[12] == "定时存储" {
-					setparams.RecordType = 1
-				} else if row[12] == "即时存储" {
-					setparams.RecordType = 2
-				} else if row[12] == "变化存储" {
-					setparams.RecordType = 0
-				} else {
-					setparams.RecordType = 0
-				}
+				setparams.RecordType = parseRecordTypeFromExcel(row[12])
 
 				setparams.RecordInterval, convErr = strconv.Atoi(row[13])
 				if convErr != nil {
@@ -1829,14 +1757,7 @@ func (c *ISMSystem) UpdateAllModbusDataModel() {
 		}
 	}
 	parseRecordType := func(v string) int {
-		switch v {
-		case "定时存储":
-			return 1
-		case "即时存储":
-			return 2
-		default:
-			return 0
-		}
+		return parseRecordTypeFromExcel(v)
 	}
 
 	processed := false
@@ -1903,7 +1824,7 @@ func (c *ISMSystem) UpdateAllModbusDataModel() {
 				AlarmMessage:         safeCell(row, "告警消息"),
 				AlarmClearMessage:    safeCell(row, "告警消除消息"),
 				IsRecord:             parseYesNo(safeCell(row, "是否存储(是,否)")),
-				RecordType:           parseRecordType(safeCell(row, "存储类型(变化存储、定时存储、即时存储)")),
+				RecordType:           parseRecordType(firstNonEmpty(safeCell(row, excelRecordTypeHeader), safeCell(row, excelRecordTypeHeaderLegacy))),
 				RecordDataCharge:     safeCell(row, "变化值"),
 				FloatAccuracy:        safeCell(row, "保留小数"),
 				ModelType:            2,

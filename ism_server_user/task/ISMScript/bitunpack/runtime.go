@@ -147,6 +147,30 @@ func snapshotRules() (map[string][]Rule, SetFunc, SetFunc, LoadFunc, AlarmSyncFu
 	return snapshot, setDeviceData, settleDeviceData, loadDevice, syncAlarms
 }
 
+// splitDevicePointKey splits "device->point", using the last "->" so virtual
+// cabinet names that already contain "->" keep the real point on the right.
+func splitDevicePointKey(src string) (device, point string, ok bool) {
+	src = strings.TrimSpace(src)
+	i := strings.LastIndex(src, "->")
+	if i <= 0 || i+2 >= len(src) {
+		return "", "", false
+	}
+	device = strings.TrimSpace(src[:i])
+	point = strings.TrimSpace(src[i+2:])
+	if device == "" || point == "" {
+		return "", "", false
+	}
+	return device, point, true
+}
+
+func formatLookupAliases(pairs [][2]string) string {
+	parts := make([]string, 0, len(pairs))
+	for _, p := range pairs {
+		parts = append(parts, p[0]+"->"+p[1])
+	}
+	return strings.Join(parts, ",")
+}
+
 func sourceLookupPairs(device, point string) [][2]string {
 	device = strings.TrimSpace(device)
 	point = strings.TrimSpace(point)
@@ -206,9 +230,11 @@ func settleSnapshot(snapshot map[string][]Rule, setter SetFunc, loader LoadFunc,
 			}
 		}
 		if !ok {
+			pairs := sourceLookupPairs(device, point)
+			_, lastHit := lastSourceValues.Load(key)
 			protocol_common.ErrorThrottled("bitunpack:src:"+key,
-				"native-bitunpack: source has no value yet, skip settle %s script=%s",
-				key, rules[0].ScriptName)
+				"native-bitunpack: source has no value yet, skip settle device=%s point=%s aliases=%s lastMiss=%t script=%s",
+				device, point, formatLookupAliases(pairs), !lastHit, rules[0].ScriptName)
 			continue
 		}
 		lastSourceValues.Store(key, val)

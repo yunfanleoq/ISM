@@ -247,7 +247,7 @@ export default {
               if (isFound === false) {
                 _t.currentDisplayUUID = ""
                 _t.currentPageUUID = ""
-                _t.$message.error(_t.$t("readData.NotFindPage"))
+                _t.$message.error(_t.$t("readData.NotFindPage") + (page.pageUuid ? ` (${page.pageUuid})` : ''))
                 return
               }
               _t.CurrentPagerRealDataUuidList = uuids
@@ -3714,10 +3714,10 @@ export default {
                 _t.chargePage = false
                 if (isFound === false) {
                   _t.closePageLoading(loadingKey, loadingToken)
-                  console.error('[showPage-Main] page not found, displayUUID=', page.displayUUID)
+                  console.error('[showPage-Main] page not found, displayUUID=', page.displayUUID, 'pageUuid=', page.pageUuid)
                   _t.currentDisplayUUID = ""
                   _t.currentPageUUID = ""
-                  _t.$message.error(_t.$t("readData.NotFindPage"))
+                  _t.$message.error(_t.$t("readData.NotFindPage") + (page.pageUuid ? ` (${page.pageUuid})` : ''))
                   return
                 }
                 // 设置 currentDisplayUUID 会触发 watch，但这是原有逻辑，保留
@@ -4648,7 +4648,7 @@ export default {
                   _t.closePageLoading(loadingKey, loadingToken)
                   _t.currentDisplayUUID = ""
                   _t.currentPageUUID = ""
-                  _t.$message.error(_t.$t("readData.NotFindPage"))
+                  _t.$message.error(_t.$t("readData.NotFindPage") + (page.pageUuid ? ` (${page.pageUuid})` : ''))
                   return
                 }
                 _t.currentDisplayUUID = page.displayUUID
@@ -5312,7 +5312,7 @@ export default {
             linkInfo.Inside.pageUUID = data.PageID
             _t.showPage(linkInfo)
           } else {
-            _t.$message && _t.$message.warning('菜单未绑定页面，无法跳转')
+            _t.$message && _t.$message.warning(_t.$t('readData.UnboundPage') || '菜单未绑定页面，无法跳转')
           }
         } catch (e) {
           _t.$message && _t.$message.error('页面跳转失败：' + (e && e.message ? e.message : '运行时异常'))

@@ -2,6 +2,7 @@ package protocolCommon
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -12,6 +13,11 @@ const localWallLayout = "2006-01-02 15:04:05"
 // TDengine 对无时区字符串按 UTC 解释；此处统一写 UTC，避免北京墙钟被当成 UTC 导致显示快 8 小时。
 func FormatTDengineTimestamp(t time.Time) string {
 	return t.UTC().Format(tdengineTimeLayout)
+}
+
+// EscapeTDengineLiteral 转义单引号，避免点名/设备名拆坏 INSERT 字面量。
+func EscapeTDengineLiteral(s string) string {
+	return strings.ReplaceAll(s, "'", "''")
 }
 
 // LocalWallToTDengineUTC 将前端/业务侧本地墙钟字符串转为 TDengine 查询用的 UTC 字符串。

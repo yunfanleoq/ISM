@@ -4,6 +4,7 @@ import (
 	"ISMServer/models"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/beego/beego/v2/core/logs"
@@ -55,14 +56,41 @@ func virtualAlarmLevelText(v int) string {
 	}
 }
 
+const excelRecordTypeHeader = "存储类型(变化存储、定时存储、即时存储、变化百分比、整点存储)"
+const excelRecordTypeHeaderLegacy = "存储类型(变化存储、定时存储、即时存储)"
+
 func virtualRecordTypeText(v int) string {
 	switch v {
 	case 1:
 		return "定时存储"
 	case 2:
 		return "即时存储"
+	case 3:
+		return "变化百分比"
+	case 4:
+		return "整点存储"
 	default:
 		return "变化存储"
+	}
+}
+
+func parseRecordTypeFromExcel(v string) int {
+	switch strings.TrimSpace(v) {
+	case "定时存储":
+		return 1
+	case "即时存储":
+		return 2
+	case "变化百分比":
+		return 3
+	case "整点存储":
+		return 4
+	case "变化存储":
+		return 0
+	default:
+		if n, err := strconv.Atoi(strings.TrimSpace(v)); err == nil {
+			return n
+		}
+		return 0
 	}
 }
 
@@ -134,7 +162,7 @@ WHERE m.type = 480 AND d.deleted_at IS NULL AND m.deleted_at IS NULL
 		"告警消除消息",
 		"报警触发值(0,1)",
 		"是否存储(是,否)",
-		"存储类型(变化存储、定时存储、即时存储)",
+		"存储类型(变化存储、定时存储、即时存储、变化百分比、整点存储)",
 		"定时时间",
 		"变化值",
 		"描述",

@@ -528,15 +528,29 @@ export default {
           await workbook.xlsx.load(e.target.result)
           const sheet = workbook.worksheets[0]
           const headers = []
-          sheet.getRow(1).eachCell((cell, col) => { headers[col] = String(cell.value || '') })
+          sheet.getRow(1).eachCell({ includeEmpty: true }, (cell, col) => { headers[col] = String(cell.value || '') })
           let ok = 0
+          let updated = 0
+          const parseAlarmOn = (raw) => {
+            let v = raw
+            if (v && typeof v === 'object') {
+              v = v.result != null ? v.result : v.text
+            }
+            if (v === 0 || v === '0' || v === '0.0' || v === '0.00') return 0
+            return 1
+          }
           for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++) {
             const row = sheet.getRow(rowNumber)
             const rowObj = {}
-            row.eachCell((cell, col) => { rowObj[headers[col]] = cell.value })
+            for (let col = 1; col < headers.length; col++) {
+              const key = headers[col]
+              if (!key) continue
+              rowObj[key] = row.getCell(col).value
+            }
             const name = rowObj['数据名称'] || rowObj.name
             if (!name) continue
             const alarmOnRaw = rowObj['报警触发值(0,1)'] != null ? rowObj['报警触发值(0,1)'] : rowObj.alarmOnValue
+            const dataUuid = rowObj['数据ID(勿修改)'] || rowObj.uuid || ''
             const params = {
               muid: _t.$route.params.uid,
               modeltype: 480,
@@ -549,8 +563,20 @@ export default {
               alarmLevel: parseInt(rowObj['告警等级'] || rowObj.alarmLevel || 0),
               AlarmMessage: rowObj['告警消息'] || rowObj.AlarmMessage || '',
               AlarmClearMessage: rowObj['告警消除消息'] || rowObj.AlarmClearMessage || '',
-              alarmOnValue: (alarmOnRaw === 0 || alarmOnRaw === '0') ? 0 : 1,
+              alarmOnValue: parseAlarmOn(alarmOnRaw),
               record: 0,
+            }
+            if (dataUuid) {
+              const editRes = await VirtualDeviceModelDataEdit({
+                uuid: dataUuid,
+                muid: _t.$route.params.uid,
+                data: params,
+              })
+              if (editRes.data && editRes.data.code === 2002) {
+                ok++
+                updated++
+                continue
+              }
             }
             const res = await VirtualDeviceModelDataAdd(params)
             if (res.data && res.data.code === 2002) {
@@ -558,18 +584,21 @@ export default {
               continue
             }
             if (res.data && res.data.code === 2001) {
-              const exist = (_t.registerGroupDataSource || []).find(x => x.name === name)
+              const exist = (_t.registerGroupDataSource || []).find(x => x.uuid === dataUuid || x.name === name)
               if (exist && exist.uuid) {
                 const editRes = await VirtualDeviceModelDataEdit({
                   uuid: exist.uuid,
                   muid: _t.$route.params.uid,
                   data: params,
                 })
-                if (editRes.data && editRes.data.code === 2002) ok++
+                if (editRes.data && editRes.data.code === 2002) {
+                  ok++
+                  updated++
+                }
               }
             }
           }
-          _t.$message.success(_t.$t('dataModel.importSuccess') + ` (${ok})`)
+          _t.$message.success(_t.$t('dataModel.importSuccess') + ` (${ok}` + (updated ? `, 更新 ${updated}` : '') + `)`)
           _t.RESTFulDataList()
           onSuccess && onSuccess()
         } catch (err) {

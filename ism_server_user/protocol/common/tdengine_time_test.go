@@ -41,3 +41,9 @@ func TestLocalWallToTDengineUTC(t *testing.T) {
 		t.Fatalf("LocalWallToTDengineUTC = %q, want %q", got, want)
 	}
 }
+
+func TestEscapeTDengineLiteral(t *testing.T) {
+	if got := EscapeTDengineLiteral("a'b"); got != "a''b" {
+		t.Fatalf("got %q", got)
+	}
+}

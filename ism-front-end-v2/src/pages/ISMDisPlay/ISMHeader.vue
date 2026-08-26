@@ -909,12 +909,12 @@ export default {
     doSaveLayerData(uuid){
       if (this.editorRuntimePreview && this.editorRuntimePreview.active) {
         this.$message.warning(this.$t('displayConfig.RuntimePreviewSaveBlocked') || '运行态预览不可直接保存，请编辑对应模板后再保存')
-        return
+        return Promise.resolve()
       }
       const pageId = this.resolveSavePageId()
       if (!pageId) {
         this.$message.error((this.$t('displayModel.SaveDataFailed') || '保存失败') + ' (empty pageId)')
-        return
+        return Promise.resolve()
       }
       if (pageId !== this.selectPageUuid) {
         try {
@@ -933,7 +933,7 @@ export default {
         cellsJson = this.ISMCavasContainer.toJSON()
       } catch (e) {
         this.$message.error((this.$t('displayModel.SaveDataFailed') || '保存失败') + ' (toJSON: ' + ((e && e.message) || e) + ')')
-        return
+        return Promise.resolve()
       }
       const normalizedLayerData = normalizeISMScene({
         layer: LayerData.layer,
@@ -945,13 +945,12 @@ export default {
       }
       LayerData.components = normalizedLayerData.components
       params.LayerData = LayerData
-      this.saveLayerDataStruct(params).then(function (res){
+      const savePromise = this.saveLayerDataStruct(params).then(function (res){
         const code = res && res.data ? res.data.code : null
         if(code == 200)
         {
           let uid = _t.$route.params.uid
           _t.updateAllLayerDataStruct({pageType:_t.isMobile,uuid:uid,metaOnly:true,cb:function (){}});
-          // _t.SyncLayerData(LayerData)
           _t.isCharge=false
           _t.$message.success(_t.$t('displayModel.SaveDataSuccess'))
         }
@@ -963,7 +962,17 @@ export default {
         {
           _t.$message.error((_t.$t('displayModel.SaveDataFailed') || '保存失败') + (code != null ? ` (code=${code})` : ''))
         }
+        return res
       })
+      const resources = this.$parent && this.$parent.$refs && this.$parent.$refs.ISMResources
+      if (resources) {
+        resources._pageSaveQueue = savePromise.finally(function () {
+          if (resources._pageSaveQueue === savePromise) {
+            resources._pageSaveQueue = null
+          }
+        })
+      }
+      return savePromise
     },
     zoomOut(){
       this.selectedValueTemp = this.selectedValueTemp-25

@@ -52,6 +52,26 @@ SetDeviceData("t->y",MISSING)
 	}
 }
 
+func TestCompileNestedArrowKeepsCabinetAsDevice(t *testing.T) {
+	src := `
+v = BitGet("配电室1A1_1A3->1A1配电室->P1A1_U1总有功",1)
+SetDeviceData("配电室1A1_1A3->1A1配电室->模式",v)
+`
+	rules, ok := Compile("u", "nested", src)
+	if !ok {
+		t.Fatal("expected compile success")
+	}
+	if len(rules) != 1 {
+		t.Fatalf("rules=%d", len(rules))
+	}
+	if rules[0].SourceDevice != "配电室1A1_1A3->1A1配电室" || rules[0].SourcePoint != "P1A1_U1总有功" {
+		t.Fatalf("source=%s / %s", rules[0].SourceDevice, rules[0].SourcePoint)
+	}
+	if rules[0].TargetDevice != "配电室1A1_1A3->1A1配电室" || rules[0].TargetPoint != "模式" {
+		t.Fatalf("target=%s / %s", rules[0].TargetDevice, rules[0].TargetPoint)
+	}
+}
+
 func TestCompileMultilineAssign(t *testing.T) {
 	src := `
 ZKGDLQZT25 =

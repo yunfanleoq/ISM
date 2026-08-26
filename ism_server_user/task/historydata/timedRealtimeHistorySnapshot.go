@@ -70,8 +70,14 @@ func reloadTimedHistoryPoints() {
 		logs.Error("reload timed history points failed: %v", err)
 		return
 	}
+	timed1, timed4 := 0, 0
 	next := make([]timedHistoryPoint, 0, len(rows))
 	for _, row := range rows {
+		if row.RecordType == 4 {
+			timed4++
+		} else {
+			timed1++
+		}
 		interval := row.RecordInterval
 		if row.RecordType == 4 {
 			interval = hourlyIntervalSeconds(row.RecordDataTimely, row.RecordInterval)
@@ -95,7 +101,7 @@ func reloadTimedHistoryPoints() {
 	timedPoints = next
 	timedPointsMu.Unlock()
 	atomic.StoreInt32(&timedPointsLoaded, 1)
-	logs.Info("timed history snapshot points loaded: %d", len(next))
+	logs.Info("timed history snapshot points loaded: total=%d type1=%d type4=%d", len(next), timed1, timed4)
 }
 
 func usableRealtimeValue(val string, ok bool) (string, bool) {
@@ -265,7 +271,7 @@ func DealWithTimedRealtimeHistorySnapshot() {
 				u := now.Unix()
 				if u-lastLogUnix >= 60 {
 					lastLogUnix = u
-					logs.Warn(
+					logs.Error(
 						"timed history snapshot tick: wrote=%d fromDB=%d reusedLast=%d noRealtimeValue=%d notDue=%d points=%d",
 						wrote, fromDB, reused, noVal, notDue, len(timedPoints),
 					)

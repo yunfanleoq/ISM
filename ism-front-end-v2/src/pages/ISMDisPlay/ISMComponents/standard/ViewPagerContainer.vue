@@ -5253,7 +5253,7 @@ export default {
               linkType:"Inside",
               Inside:{}
             }
-            if(data.PageID!="") {
+            if(data && data.PageID) {
               if(data.DisPlayID!=undefined&&data.DisPlayID!="")
               {
                 linkInfo.Inside.displayUUID = data.DisPlayID
@@ -5263,6 +5263,8 @@ export default {
               }
               linkInfo.Inside.pageUUID = data.PageID
               _t.showPage(linkInfo)
+            } else {
+              _t.$message && _t.$message.warning(_t.$t('readData.UnboundPage') || '菜单未绑定页面，无法跳转')
             }
           }
         _t.$EventBus.$on("ChargePage", _t.eventHandlers.ChargePage);

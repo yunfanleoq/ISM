@@ -685,6 +685,7 @@ module.exports = {
         "SetFailed":"设置失败",
         "LoadFailed":"加载测点数据失败",
         "NotFindPage":"找不到页面！！",
+        "UnboundPage":"菜单未绑定页面",
         "SetPasswordError":"密码错误",
       },
       displayConfig:{
@@ -3891,6 +3892,7 @@ module.exports = {
         "SetFailed":"Setting failed",
         "LoadFailed":"Failed to load point data",
         "NotFindPage":"Page not found！！",
+        "UnboundPage":"Menu is not bound to a page",
         "SetPasswordError":"Password error",
       },
       displayConfig:{
@@ -7016,6 +7018,7 @@ module.exports = {
         "SetFailed":"設置失敗",
         "LoadFailed":"載入測點數據失敗",
         "NotFindPage":"找不到頁面！！",
+        "UnboundPage":"選單未綁定頁面",
         "SetPasswordError":"密碼錯誤",
       },
       displayConfig:{

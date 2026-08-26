@@ -76,10 +76,12 @@ const recordText = (value) => {
   }
 }
 const recordTypeText = (value) => {
-  switch (value) {
+  switch (Number(value)) {
     case 0: return "变化存储"
     case 1: return "定时存储"
     case 2: return "即时存储"
+    case 3: return "变化百分比"
+    case 4: return "整点存储"
     default: return "变化存储"
   }
 }
@@ -127,7 +129,7 @@ export default {
           field: "record",
           callback: recordText,
         },
-        "存储类型(变化存储、定时存储、即时存储)": {
+        "存储类型(变化存储、定时存储、即时存储、变化百分比、整点存储)": {
           field: "RecordType",
           callback: recordTypeText,
         },

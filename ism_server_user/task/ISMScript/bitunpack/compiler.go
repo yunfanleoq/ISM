@@ -83,8 +83,8 @@ func CompileWithError(scriptUUID, scriptName, content string) (rules []Rule, rej
 		}
 		if m := reSetDeviceVar.FindStringSubmatch(line); m != nil {
 			target := strings.TrimSpace(m[1])
-			parts := strings.SplitN(target, "->", 2)
-			if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			tdev, tpoint, tok := splitDevicePointKey(target)
+			if !tok {
 				return nil, line, false
 			}
 			bind, exists := vars[m[2]]
@@ -92,16 +92,16 @@ func CompileWithError(scriptUUID, scriptName, content string) (rules []Rule, rej
 				// Likely a typo in the script (e.g. DCQY22 vs DCQY2); skip this rule.
 				continue
 			}
-			srcParts := strings.SplitN(bind.SourceKey, "->", 2)
-			if len(srcParts) != 2 {
+			sdev, spoint, sok := splitDevicePointKey(bind.SourceKey)
+			if !sok {
 				return nil, line, false
 			}
 			rules = append(rules, Rule{
-				SourceDevice: srcParts[0],
-				SourcePoint:  srcParts[1],
+				SourceDevice: sdev,
+				SourcePoint:  spoint,
 				Bit:          bind.Bit,
-				TargetDevice: parts[0],
-				TargetPoint:  parts[1],
+				TargetDevice: tdev,
+				TargetPoint:  tpoint,
 				ScriptUUID:   scriptUUID,
 				ScriptName:   scriptName,
 			})

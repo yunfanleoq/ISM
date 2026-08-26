@@ -4,6 +4,7 @@
 package controllers
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -49,6 +50,29 @@ func taosdumpArgsForLog(args []string) string {
 	return strings.Join(parts, " ")
 }
 
+func runCmdTimeout(timeout time.Duration, name string, args ...string) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, name, args...)
+	out, err := cmd.CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		return out, fmt.Errorf("超时 %s（这是 TDengine 历史库备份，不是业务库备份；业务库请走数据库管理页）", timeout)
+	}
+	return out, err
+}
+
+func dockerInspectName(container string) string {
+	out, err := runCmdTimeout(8*time.Second, "docker", "inspect", "-f", "{{.State.Status}}", container)
+	status := strings.TrimSpace(string(out))
+	if err != nil {
+		if status == "" {
+			status = err.Error()
+		}
+		return fmt.Sprintf("%s (inspect失败: %s)", container, status)
+	}
+	return fmt.Sprintf("%s (status=%s)", container, status)
+}
+
 func resolveTaosdump() (bin string, viaDocker bool, container string) {
 	if p, err := exec.LookPath("taosdump"); err == nil {
 		return p, false, ""
@@ -57,10 +81,12 @@ func resolveTaosdump() (bin string, viaDocker bool, container string) {
 	if container == "" {
 		container = "tdengine"
 	}
-	if exec.Command("docker", "exec", container, "taosdump", "-V").Run() == nil {
+	out, err := runCmdTimeout(8*time.Second, "docker", "exec", container, "taosdump", "-V")
+	if err == nil {
 		return "taosdump", true, container
 	}
-	return "", false, ""
+	logs.Warn("HisDbBackUp docker taosdump -V failed container=%s: %v %s", container, err, strings.TrimSpace(string(out)))
+	return "", false, container
 }
 
 func (c *HisDbOptController) HisDbBackUp() {
@@ -81,7 +107,7 @@ func (c *HisDbOptController) HisDbBackUp() {
 		dbType, _ = historyConf.Int("HistoryRecordDbType")
 	}
 	if dbType != 2 {
-		result["msg"] = "当前历史库不是 TDengine，暂不支持此备份方式"
+		result["msg"] = "当前历史库不是 TDengine，暂不支持此备份方式。业务库（OceanBase/MariaDB）请走「数据库管理」页备份，不要用本按钮。"
 		c.Data["json"] = result
 		c.ServeJSON()
 		return
@@ -89,7 +115,11 @@ func (c *HisDbOptController) HisDbBackUp() {
 
 	taosdump, viaDocker, tdContainer := resolveTaosdump()
 	if taosdump == "" {
-		result["msg"] = "未找到 taosdump：请安装 TDengine 客户端，或确保 docker 容器 tdengine 内可用 taosdump（TD_CONTAINER 可改容器名）。"
+		hint := "未找到本机 taosdump"
+		if tdContainer != "" {
+			hint = fmt.Sprintf("%s；docker 容器 %s", hint, dockerInspectName(tdContainer))
+		}
+		result["msg"] = hint + "。请安装 TDengine 客户端，或确保容器内可用 taosdump（TD_CONTAINER 可改容器名）。"
 		c.Data["json"] = result
 		c.ServeJSON()
 		return
@@ -132,10 +162,14 @@ func (c *HisDbOptController) HisDbBackUp() {
 
 	if viaDocker {
 		containerDir := "/tmp/" + distName
-		mkdirCmd := exec.Command("docker", "exec", "-T", tdContainer, "mkdir", "-p", containerDir)
-		if mkdirErr := mkdirCmd.Run(); mkdirErr != nil {
-			logs.Error("HisDbBackUp docker mkdir failed: %v", mkdirErr)
-			result["msg"] = "docker 内创建备份目录失败: " + mkdirErr.Error()
+		mkdirOut, mkdirErr := runCmdTimeout(30*time.Second, "docker", "exec", "-T", tdContainer, "mkdir", "-p", containerDir)
+		if mkdirErr != nil {
+			detail := strings.TrimSpace(string(mkdirOut))
+			if detail == "" {
+				detail = mkdirErr.Error()
+			}
+			logs.Error("HisDbBackUp docker mkdir failed container=%s: %v %s", tdContainer, mkdirErr, detail)
+			result["msg"] = fmt.Sprintf("docker 内创建备份目录失败: 容器 %s: %s", dockerInspectName(tdContainer), detail)
 			c.Data["json"] = result
 			c.ServeJSON()
 			return
@@ -143,10 +177,12 @@ func (c *HisDbOptController) HisDbBackUp() {
 		dumpArgs := buildTaosdumpArgs(dumpHost, dumpPort, user, pass, containerDir)
 		dockerArgs := append([]string{"exec", "-T", tdContainer, taosdump}, dumpArgs...)
 		logs.Info("HisDbBackUp docker taosdump: docker exec -T %s %s %s", tdContainer, taosdump, taosdumpArgsForLog(dumpArgs))
-		cmd := exec.Command("docker", dockerArgs...)
-		out, runErr := cmd.CombinedOutput()
+		out, runErr := runCmdTimeout(15*time.Minute, "docker", dockerArgs...)
 		msg := strings.TrimSpace(string(out))
 		if runErr != nil {
+			if msg == "" {
+				msg = runErr.Error()
+			}
 			if strings.Contains(msg, "is not exist") || strings.Contains(msg, "not exist") {
 				result["msg"] = "docker taosdump 失败（输出目录不存在）: " + msg
 			} else {
@@ -162,10 +198,12 @@ func (c *HisDbOptController) HisDbBackUp() {
 	} else {
 		args := buildTaosdumpArgs(dumpHost, dumpPort, user, pass, hostOut)
 		logs.Info("HisDbBackUp taosdump: %s %s", taosdump, taosdumpArgsForLog(args))
-		cmd := exec.Command(taosdump, args...)
-		out, runErr := cmd.CombinedOutput()
+		out, runErr := runCmdTimeout(15*time.Minute, taosdump, args...)
 		msg := strings.TrimSpace(string(out))
 		if runErr != nil {
+			if msg == "" {
+				msg = runErr.Error()
+			}
 			result["msg"] = "taosdump 失败: " + msg
 			logs.Error("HisDbBackUp taosdump failed: %v", msg)
 			c.Data["json"] = result
