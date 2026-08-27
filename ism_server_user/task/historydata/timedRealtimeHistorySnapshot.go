@@ -71,6 +71,7 @@ func reloadTimedHistoryPoints() {
 		return
 	}
 	timed1, timed4 := 0, 0
+	minInterval, maxInterval := 0, 0
 	next := make([]timedHistoryPoint, 0, len(rows))
 	for _, row := range rows {
 		if row.RecordType == 4 {
@@ -83,6 +84,12 @@ func reloadTimedHistoryPoints() {
 			interval = hourlyIntervalSeconds(row.RecordDataTimely, row.RecordInterval)
 		} else if interval <= 0 {
 			interval = 1
+		}
+		if minInterval == 0 || interval < minInterval {
+			minInterval = interval
+		}
+		if interval > maxInterval {
+			maxInterval = interval
 		}
 		next = append(next, timedHistoryPoint{
 			DataUuid:         row.Uuid,
@@ -101,7 +108,7 @@ func reloadTimedHistoryPoints() {
 	timedPoints = next
 	timedPointsMu.Unlock()
 	atomic.StoreInt32(&timedPointsLoaded, 1)
-	logs.Info("timed history snapshot points loaded: total=%d type1=%d type4=%d", len(next), timed1, timed4)
+	logs.Error("timed history snapshot points loaded: total=%d type1=%d type4=%d intervalSec=[%d,%d]", len(next), timed1, timed4, minInterval, maxInterval)
 }
 
 func usableRealtimeValue(val string, ok bool) (string, bool) {
@@ -271,9 +278,21 @@ func DealWithTimedRealtimeHistorySnapshot() {
 				u := now.Unix()
 				if u-lastLogUnix >= 60 {
 					lastLogUnix = u
+					minI, maxI := 0, 0
+					timedPointsMu.RLock()
+					for _, p := range timedPoints {
+						if minI == 0 || p.RecordInterval < minI {
+							minI = p.RecordInterval
+						}
+						if p.RecordInterval > maxI {
+							maxI = p.RecordInterval
+						}
+					}
+					n := len(timedPoints)
+					timedPointsMu.RUnlock()
 					logs.Error(
-						"timed history snapshot tick: wrote=%d fromDB=%d reusedLast=%d noRealtimeValue=%d notDue=%d points=%d",
-						wrote, fromDB, reused, noVal, notDue, len(timedPoints),
+						"timed history snapshot tick: wrote=%d fromDB=%d reusedLast=%d noRealtimeValue=%d notDue=%d points=%d intervalSec=[%d,%d]",
+						wrote, fromDB, reused, noVal, notDue, n, minI, maxI,
 					)
 				}
 			}

@@ -111,6 +111,45 @@ func TestSourceLookupPairsMovesUnderscorePrefix(t *testing.T) {
 	}
 }
 
+func TestSourceLookupPairsSwapsNumericRangeSep(t *testing.T) {
+	pairs := sourceLookupPairs("机房模块5B2", "F列头_支路状态17-32")
+	found := false
+	for _, p := range pairs {
+		if p[0] == "机房模块5B2" && p[1] == "F列头_支路状态17_32" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected 17_32 alias, pairs=%v", pairs)
+	}
+}
+
+func TestSettleAllHitsUnderscoreRangePoint(t *testing.T) {
+	Clear()
+	var writes []string
+	Configure(func(deviceData string, value interface{}) int {
+		writes = append(writes, deviceData)
+		return 0
+	}, nil, func(deviceName, pointName string) (string, bool) {
+		if deviceName == "机房模块5B2" && pointName == "F列头_支路状态17_32" {
+			return "127", true
+		}
+		return "", false
+	}, nil)
+	Register([]Rule{{
+		SourceDevice: "机房模块5B2",
+		SourcePoint:  "F列头_支路状态17-32",
+		Bit:          1,
+		TargetDevice: "t",
+		TargetPoint:  "b1",
+		ScriptName:   "数据机房按位解析_12_2",
+	}})
+	SettleAll()
+	if len(writes) == 0 {
+		t.Fatal("expected settle to find 17_32 realtime value")
+	}
+}
+
 func toStr(v interface{}) string {
 	switch x := v.(type) {
 	case int8:

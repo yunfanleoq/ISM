@@ -1846,7 +1846,13 @@ export default {
         editorEl.classList.remove('editor-fullscreen')
       }
     },
+    hasSelectedNode(){
+      return !!(this.selectedNode && this.selectedNodePops && this.selectedNodePops.data)
+    },
     UpdateNode(){
+      if (!this.hasSelectedNode()) {
+        return
+      }
       const tdata = this.selectedNodePops.data
       const popsData = this.selectedNodePops
       let NodeAngle = popsData.angle
@@ -1870,6 +1876,9 @@ export default {
       })
     },
     UpdateNodeData(){
+      if (!this.hasSelectedNode()) {
+        return
+      }
       const tdata = this.selectedNodePops.data
       const popsData = this.selectedNodePops
       const Visible = tdata.detail.style.visible==1?true:false

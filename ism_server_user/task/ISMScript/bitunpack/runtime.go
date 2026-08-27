@@ -2,12 +2,16 @@ package bitunpack
 
 import (
 	protocol_common "ISMServer/protocol/common"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/beego/beego/v2/adapter/logs"
 )
+
+// 脚本里常见「17-32」，物模型测点常见「17_32」：只替换末尾数字区间的分隔符。
+var reNumericRangeSep = regexp.MustCompile(`^(.*\D)(\d+)([-_])(\d+)$`)
 
 // Rule is one BitGet(source, bit) → SetDeviceData(target, bitValue) mapping.
 type Rule struct {
@@ -171,16 +175,43 @@ func formatLookupAliases(pairs [][2]string) string {
 	return strings.Join(parts, ",")
 }
 
+func altNumericRangeSep(s string) string {
+	m := reNumericRangeSep.FindStringSubmatch(s)
+	if m == nil {
+		return ""
+	}
+	prefix, a, sep, b := m[1], m[2], m[3], m[4]
+	if sep == "-" {
+		return prefix + a + "_" + b
+	}
+	return prefix + a + "-" + b
+}
+
+func appendLookupPair(pairs [][2]string, device, point string) [][2]string {
+	if device == "" || point == "" {
+		return pairs
+	}
+	for _, p := range pairs {
+		if p[0] == device && p[1] == point {
+			return pairs
+		}
+	}
+	return append(pairs, [2]string{device, point})
+}
+
 func sourceLookupPairs(device, point string) [][2]string {
 	device = strings.TrimSpace(device)
 	point = strings.TrimSpace(point)
 	pairs := [][2]string{{device, point}}
+	if alt := altNumericRangeSep(point); alt != "" {
+		pairs = appendLookupPair(pairs, device, alt)
+	}
 	if i := strings.LastIndex(point, "_"); i > 0 {
-		pairs = append(pairs, [2]string{device + "->" + point[:i], point[i+1:]})
+		pairs = appendLookupPair(pairs, device+"->"+point[:i], point[i+1:])
 	}
 	if i := strings.LastIndex(device, "->"); i > 0 {
 		left, right := device[:i], device[i+2:]
-		pairs = append(pairs, [2]string{left, right + "_" + point})
+		pairs = appendLookupPair(pairs, left, right+"_"+point)
 	}
 	return pairs
 }

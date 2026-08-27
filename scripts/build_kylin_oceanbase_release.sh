@@ -89,6 +89,11 @@ if command -v rg >/dev/null 2>&1; then
   rg -q 'UnboundPage' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 UnboundPage"; exit 1; }
   rg -q 'homeFromModelUuid' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 homeFromModelUuid（0826 模型UUID绑首页）"; exit 1; }
   rg -q '变化百分比' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少五种存储类型"; exit 1; }
+  rg -q 'hasSelectedNode' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 hasSelectedNode（0827 属性面板空节点防护）"; exit 1; }
+fi
+if ! strings "$BIN_SRC" 2>/dev/null | grep -q 'intervalSec=\['; then
+  echo "错误: 后端二进制缺少 intervalSec（0827 快照间隔日志），禁止复用旧包"
+  exit 1
 fi
 echo "  dist: $(du -sh "$FE_SRC" | cut -f1), index.html $(stat -f '%Sm' -t '%Y-%m-%d %H:%M' "$FE_SRC/index.html" 2>/dev/null || stat -c '%y' "$FE_SRC/index.html")"
 
@@ -373,9 +378,17 @@ bash start-all.sh
 
 浏览器 **Ctrl+F5**。验证通过后可删除 \`web/dist.bak-*\` 省空间。
 
-## 本次相对 0817 含哪些修复（含 20260826）
+## 本次相对 0817 含哪些修复（含 20260827）
 
-**20260826（本包重点）**
+**20260827（本包重点）**
+
+1. **按位 17-32 / 17_32**：BitGet 源名连字符与物模型下划线互相试一次，避免源点有值仍 skip。
+2. **导航连发**：运行态菜单只发一次 MenuConfigPage，避免第二次 showPage 把第一次掐掉。
+3. **属性面板**：未选中图元时不再 UpdateNodeData 读 null.data。
+4. **点表 Excel**：导出带数据ID，导入按 ID 更新（改名也能对上）。
+5. **快照日志**：tick 带 intervalSec=[最小,最大]，便于判断 wrote=0 是否未到点。
+
+**20260826**
 
 1. **按位脚本 -1**：源键按最后一个 \`->\` 切分虚拟柜名；skip 日志带 device/point/aliases。
 2. **历史入库 TAGS**：固定 \`TAGS(1)\` + 失败按行重试；不再随机 TAG 整批失败。

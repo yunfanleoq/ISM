@@ -592,9 +592,9 @@ export default {
         }
         if(this.ClickType==1)
         {
-          // 运行态由 ISMRender 监听 MenuConfigPage；同时发 ChargePage 兼容旧页
+          // 只发 MenuConfigPage：ISMRender 会转调 ChargePage。
+          // 再发一次 ChargePage 会连续 showPage，第二次把第一次 abort，表现为不报错也不跳转。
           this.$EventBus.$emit("MenuConfigPage", item);
-          this.$EventBus.$emit("ChargePage", item);
         }
         else
         {

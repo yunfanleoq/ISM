@@ -464,6 +464,7 @@ export default {
         "告警消息": "AlarmMessage",
         "告警消除消息": "AlarmClearMessage",
         "报警触发值(0,1)": { field: "alarmOnValue", callback: v => (v === 0 || v === '0') ? '0' : '1' },
+        "数据ID(勿修改)": "uuid",
       },
     }
   },
@@ -531,12 +532,19 @@ export default {
           sheet.getRow(1).eachCell({ includeEmpty: true }, (cell, col) => { headers[col] = String(cell.value || '') })
           let ok = 0
           let updated = 0
-          const parseAlarmOn = (raw) => {
-            let v = raw
-            if (v && typeof v === 'object') {
-              v = v.result != null ? v.result : v.text
+          const cellText = (raw) => {
+            if (raw == null) return ''
+            if (typeof raw === 'object') {
+              if (raw.result != null) return String(raw.result).trim()
+              if (raw.text != null) return String(raw.text).trim()
+              if (Array.isArray(raw.richText)) return raw.richText.map(t => t.text || '').join('').trim()
+              return ''
             }
-            if (v === 0 || v === '0' || v === '0.0' || v === '0.00') return 0
+            return String(raw).trim()
+          }
+          const parseAlarmOn = (raw) => {
+            const v = cellText(raw)
+            if (v === '0' || v === '0.0' || v === '0.00') return 0
             return 1
           }
           for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++) {
@@ -547,10 +555,10 @@ export default {
               if (!key) continue
               rowObj[key] = row.getCell(col).value
             }
-            const name = rowObj['数据名称'] || rowObj.name
+            const name = cellText(rowObj['数据名称'] || rowObj.name)
             if (!name) continue
             const alarmOnRaw = rowObj['报警触发值(0,1)'] != null ? rowObj['报警触发值(0,1)'] : rowObj.alarmOnValue
-            const dataUuid = rowObj['数据ID(勿修改)'] || rowObj.uuid || ''
+            const dataUuid = cellText(rowObj['数据ID(勿修改)'] || rowObj.uuid || '')
             const params = {
               muid: _t.$route.params.uid,
               modeltype: 480,
