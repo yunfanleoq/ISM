@@ -162,7 +162,7 @@ func (c *HisDbOptController) HisDbBackUp() {
 
 	if viaDocker {
 		containerDir := "/tmp/" + distName
-		mkdirOut, mkdirErr := runCmdTimeout(30*time.Second, "docker", "exec", "-T", tdContainer, "mkdir", "-p", containerDir)
+		mkdirOut, mkdirErr := runCmdTimeout(30*time.Second, "docker", "exec", tdContainer, "mkdir", "-p", containerDir)
 		if mkdirErr != nil {
 			detail := strings.TrimSpace(string(mkdirOut))
 			if detail == "" {
@@ -175,8 +175,8 @@ func (c *HisDbOptController) HisDbBackUp() {
 			return
 		}
 		dumpArgs := buildTaosdumpArgs(dumpHost, dumpPort, user, pass, containerDir)
-		dockerArgs := append([]string{"exec", "-T", tdContainer, taosdump}, dumpArgs...)
-		logs.Info("HisDbBackUp docker taosdump: docker exec -T %s %s %s", tdContainer, taosdump, taosdumpArgsForLog(dumpArgs))
+		dockerArgs := append([]string{"exec", tdContainer, taosdump}, dumpArgs...)
+		logs.Info("HisDbBackUp docker taosdump: docker exec %s %s %s", tdContainer, taosdump, taosdumpArgsForLog(dumpArgs))
 		out, runErr := runCmdTimeout(15*time.Minute, "docker", dockerArgs...)
 		msg := strings.TrimSpace(string(out))
 		if runErr != nil {
@@ -194,7 +194,7 @@ func (c *HisDbOptController) HisDbBackUp() {
 			return
 		}
 		_ = exec.Command("docker", "cp", fmt.Sprintf("%s:%s/.", tdContainer, containerDir), hostOut).Run()
-		_ = exec.Command("docker", "exec", "-T", tdContainer, "rm", "-rf", containerDir).Run()
+		_ = exec.Command("docker", "exec", tdContainer, "rm", "-rf", containerDir).Run()
 	} else {
 		args := buildTaosdumpArgs(dumpHost, dumpPort, user, pass, hostOut)
 		logs.Info("HisDbBackUp taosdump: %s %s", taosdump, taosdumpArgsForLog(args))

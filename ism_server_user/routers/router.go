@@ -301,6 +301,7 @@ func init() {
 	beego.Router("/HisDbBackUp", &controllers.HisDbOptController{}, "*:HisDbBackUp")
 	beego.Router("/GetBackUpList", &controllers.DbOptController{}, "*:GetBackUpList")
 	beego.Router("/DbRestore", &controllers.DbOptController{}, "*:DbRestore")
+	beego.Router("/DbDeleteBackup", &controllers.DbOptController{}, "*:DbDeleteBackup")
 	beego.Router("/GetDbConfig", &controllers.DbOptController{}, "*:GetDbConfig")
 	beego.Router("/SetDbConfig", &controllers.DbOptController{}, "*:SetDbConfig")
 	beego.Router("/DbDown", &controllers.DbOptController{}, "*:DbDown")
@@ -400,6 +401,7 @@ func init() {
 	beego.Router("/UpdateAllModbusDataModel", &controllers.ISMSystem{}, "*:UpdateAllModbusDataModel")
 	beego.Router("/UpdateAllVirtualDeviceDataModel", &controllers.VirtualDeviceController{}, "*:UpdateAllVirtualDeviceDataModel")
 	beego.Router("/ExportAllVirtualDeviceDataModel", &controllers.VirtualDeviceController{}, "*:ExportAllVirtualDeviceDataModel")
+	beego.Router("/ExportAllModbusDataModel", &controllers.ISMSystem{}, "*:ExportAllModbusDataModel")
 
 	//系统脚本
 	beego.Router("/AddScript", &controllers.ISMScriptController{}, "*:AddScript")
@@ -550,6 +552,7 @@ var FilterUser = func(ctx *context.Context) {
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateAllModbusDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateAllVirtualDeviceDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/ExportAllVirtualDeviceDataModel") &&
+				!strings.Contains(ctx.Request.RequestURI, "/ExportAllModbusDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateIEC104DataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateModbusTcpPushDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/setData") &&
@@ -600,6 +603,7 @@ var FilterUser = func(ctx *context.Context) {
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateAllModbusDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateAllVirtualDeviceDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/ExportAllVirtualDeviceDataModel") &&
+				!strings.Contains(ctx.Request.RequestURI, "/ExportAllModbusDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateIEC104DataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/UpdateModbusTcpPushDataModel") &&
 				!strings.Contains(ctx.Request.RequestURI, "/setData") &&

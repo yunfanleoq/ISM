@@ -113,14 +113,38 @@ func TestSourceLookupPairsMovesUnderscorePrefix(t *testing.T) {
 
 func TestSourceLookupPairsSwapsNumericRangeSep(t *testing.T) {
 	pairs := sourceLookupPairs("机房模块5B2", "F列头_支路状态17-32")
-	found := false
+	foundFlat, foundSplit := false, false
 	for _, p := range pairs {
 		if p[0] == "机房模块5B2" && p[1] == "F列头_支路状态17_32" {
-			found = true
+			foundFlat = true
+		}
+		if p[0] == "机房模块5B2->F列头" && p[1] == "支路状态17_32" {
+			foundSplit = true
 		}
 	}
-	if !found {
-		t.Fatalf("expected 17_32 alias, pairs=%v", pairs)
+	if !foundFlat || !foundSplit {
+		t.Fatalf("expected 17_32 aliases, pairs=%v", pairs)
+	}
+}
+
+func TestApplySourceHitsUnderscoreRangePoint(t *testing.T) {
+	Clear()
+	var writes []string
+	Configure(func(deviceData string, value interface{}) int {
+		writes = append(writes, deviceData)
+		return 0
+	}, nil, nil, nil)
+	Register([]Rule{{
+		SourceDevice: "机房模块5B2",
+		SourcePoint:  "F列头_支路状态17-32",
+		Bit:          1,
+		TargetDevice: "t",
+		TargetPoint:  "b1",
+		ScriptName:   "数据机房按位解析_12_2",
+	}})
+	ApplySource("机房模块5B2", "F列头_支路状态17_32", "127")
+	if len(writes) == 0 {
+		t.Fatal("expected live 17_32 update to hit 17-32 rules")
 	}
 }
 

@@ -539,6 +539,61 @@ func (c *DbOptController) SetDbConfig() {
 
 	c.ServeJSON() //返回json格式
 }
+
+func (c *DbOptController) DbDeleteBackup() {
+	type DelStu struct {
+		DbFilePath string `json:"DbFilePath"`
+	}
+	result := map[string]interface{}{"code": errmsg.ERROR}
+	var getParams DelStu
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &getParams); err != nil {
+		result["code"] = errmsg.NOTJSON
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	if getParams.DbFilePath == "" {
+		result["msg"] = "empty path"
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	absSave, _ := filepath.Abs(SavePath)
+	absTarget, err := filepath.Abs(getParams.DbFilePath)
+	if err != nil {
+		result["msg"] = "invalid path"
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	rel, err := filepath.Rel(absSave, absTarget)
+	if err != nil || strings.HasPrefix(rel, "..") {
+		result["code"] = -9
+		result["msg"] = "path outside backup dir"
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	info, err := os.Stat(absTarget)
+	if err != nil || info.IsDir() {
+		result["msg"] = "file not found"
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	if err := os.Remove(absTarget); err != nil {
+		result["msg"] = err.Error()
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
+	WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "删除备份 "+filepath.Base(absTarget), errmsg.JournalLevelInfo, c.Ctx.Input)
+	result["code"] = errmsg.SUCCSECODE
+	c.Data["json"] = result
+	c.ServeJSON()
+}
+
 func (c *DbOptController) DbDown() {
 
 	var fileslist []string

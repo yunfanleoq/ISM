@@ -96,16 +96,34 @@ func SourceCount() int {
 }
 
 // ApplySource evaluates all rules for device->point with the given raw value.
+// Live warehouse names may differ from the script (17-32 vs 17_32, 列头_点 vs 列头->点);
+// look up rules through the same aliases settle uses.
 func ApplySource(deviceName, pointName, value string) {
-	key := deviceName + "->" + pointName
+	pairs := sourceLookupPairs(deviceName, pointName)
 	mu.RLock()
-	rules := rulesBySource[key]
+	rules := collectRulesForPairs(pairs)
 	setter := setDeviceData
 	mu.RUnlock()
 	if len(rules) == 0 || setter == nil {
 		return
 	}
 	applyRules(rules, value, setter)
+}
+
+func collectRulesForPairs(pairs [][2]string) []Rule {
+	seen := make(map[string]struct{}, len(pairs))
+	var out []Rule
+	for _, pair := range pairs {
+		key := pair[0] + "->" + pair[1]
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		if rs := rulesBySource[key]; len(rs) > 0 {
+			out = append(out, rs...)
+		}
+	}
+	return out
 }
 
 func applyRules(rules []Rule, value string, setter SetFunc) {
@@ -203,15 +221,18 @@ func sourceLookupPairs(device, point string) [][2]string {
 	device = strings.TrimSpace(device)
 	point = strings.TrimSpace(point)
 	pairs := [][2]string{{device, point}}
-	if alt := altNumericRangeSep(point); alt != "" {
-		pairs = appendLookupPair(pairs, device, alt)
-	}
 	if i := strings.LastIndex(point, "_"); i > 0 {
 		pairs = appendLookupPair(pairs, device+"->"+point[:i], point[i+1:])
 	}
 	if i := strings.LastIndex(device, "->"); i > 0 {
 		left, right := device[:i], device[i+2:]
 		pairs = appendLookupPair(pairs, left, right+"_"+point)
+	}
+	n := len(pairs)
+	for i := 0; i < n; i++ {
+		if alt := altNumericRangeSep(pairs[i][1]); alt != "" {
+			pairs = appendLookupPair(pairs, pairs[i][0], alt)
+		}
 	}
 	return pairs
 }

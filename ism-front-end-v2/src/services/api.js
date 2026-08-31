@@ -253,6 +253,7 @@ module.exports = {
   GETTABLESLIST: `${BASE_URL}GetTablesList`,
   GETBACKUPLIST: `${BASE_URL}GetBackUpList`,
   DBRESTORE: `${BASE_URL}DbRestore`,
+  DBDELETEBACKUP: `${BASE_URL}DbDeleteBackup`,
   DBDOWN: `${BASE_URL}DbDown`,
   GETDBCONFIG: `${BASE_URL}GetDbConfig`,
   SETDBCONFIG: `${BASE_URL}SetDbConfig`,
@@ -350,6 +351,7 @@ module.exports = {
   LOCALUPGATEALLMODBUSDATAMODEL:`${BASE_URL}UpdateAllModbusDataModel`,
   LOCALUPGATEALLVIRTUALDEVICEDATAMODEL:`${BASE_URL}UpdateAllVirtualDeviceDataModel`,
   EXPORTALLVIRTUALDEVICEDATAMODEL:`${BASE_URL}ExportAllVirtualDeviceDataModel`,
+  EXPORTALLMODBUSDATAMODEL:`${BASE_URL}ExportAllModbusDataModel`,
   LOCALUPGATEDATAIEC104DATA:`${BASE_URL}UpdateIEC104DataModel`,
   LOCALUPGATEDATAMODBUSTCPDATA:`${BASE_URL}UpdateModbusTcpPushDataModel`,
   //系统脚本

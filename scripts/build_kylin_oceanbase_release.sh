@@ -90,9 +90,25 @@ if command -v rg >/dev/null 2>&1; then
   rg -q 'homeFromModelUuid' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 homeFromModelUuid（0826 模型UUID绑首页）"; exit 1; }
   rg -q '变化百分比' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少五种存储类型"; exit 1; }
   rg -q 'hasSelectedNode' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 hasSelectedNode（0827 属性面板空节点防护）"; exit 1; }
+  rg -q 'homeFromModelUuid.popup' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 homeFromModelUuid.popup（0828 弹窗跳模型首页）"; exit 1; }
+  rg -q 'DbDeleteBackup' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 DbDeleteBackup（0828 备份删除）"; exit 1; }
+  rg -q 'ExportAllModbusDataModel' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 ExportAllModbusDataModel（0828 Modbus 全量导出）"; exit 1; }
 fi
-if ! strings "$BIN_SRC" 2>/dev/null | grep -q 'intervalSec=\['; then
+# 不用 grep -q：提前退出会让 strings 收到 SIGPIPE，pipefail 下误判失败
+if ! strings "$BIN_SRC" 2>/dev/null | grep -F 'intervalSec=[' >/dev/null; then
   echo "错误: 后端二进制缺少 intervalSec（0827 快照间隔日志），禁止复用旧包"
+  exit 1
+fi
+if strings "$BIN_SRC" 2>/dev/null | grep -F 'docker exec -T' >/dev/null; then
+  echo "错误: 后端仍含 docker exec -T（麒麟 Docker 不支持），禁止打包"
+  exit 1
+fi
+if ! strings "$BIN_SRC" 2>/dev/null | grep -F 'ExportAllModbusDataModel:' >/dev/null; then
+  echo "错误: 后端缺少 ExportAllModbusDataModel"
+  exit 1
+fi
+if ! strings "$BIN_SRC" 2>/dev/null | grep -F 'path outside backup dir' >/dev/null; then
+  echo "错误: 后端缺少 DbDeleteBackup 路径校验"
   exit 1
 fi
 echo "  dist: $(du -sh "$FE_SRC" | cut -f1), index.html $(stat -f '%Sm' -t '%Y-%m-%d %H:%M' "$FE_SRC/index.html" 2>/dev/null || stat -c '%y' "$FE_SRC/index.html")"
@@ -378,9 +394,19 @@ bash start-all.sh
 
 浏览器 **Ctrl+F5**。验证通过后可删除 \`web/dist.bak-*\` 省空间。
 
-## 本次相对 0817 含哪些修复（含 20260827）
+## 本次相对 0817 含哪些修复（含 20260828）
 
-**20260827（本包重点）**
+**20260828（本包重点）**
+
+1. **导航弹窗**：菜单绑组态模型 UUID 时，弹窗路径同样跳该模型首页，不再「找不到页面」。
+2. **历史库备份**：去掉 \`docker exec -T\`（麒麟 Docker 不认 compose 的 -T）。
+3. **Modbus 全量导出**：后端一次 JOIN 出 xlsx，不再浏览器 N+1 拉点导致超时崩页。
+4. **业务库还原列表**：可删除 \`data/dbbackup/\` 下备份文件（二次确认；不碰历史库备份目录）。
+5. **按位实时**：\`17-32\` / \`17_32\` 在 settle 和实时推送都互认；脚本继续写 17-32，不要批量改点表。
+
+历史报表「wrote 有但查不到」：\`wrote\` 只是入队。查 \`write history data batch failed\` / \`write TDengine history\`；按入库当天 + 具体测点 UUID 查，不要用单个 ECC 电能代表全体。
+
+**20260827**
 
 1. **按位 17-32 / 17_32**：BitGet 源名连字符与物模型下划线互相试一次，避免源点有值仍 skip。
 2. **导航连发**：运行态菜单只发一次 MenuConfigPage，避免第二次 showPage 把第一次掐掉。

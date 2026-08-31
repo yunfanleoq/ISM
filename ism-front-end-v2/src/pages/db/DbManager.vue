@@ -124,6 +124,10 @@
             <a type="link"   @click="DbRestore(record.FilePath)" style="cursor: pointer;color: #13C2C2"><a-icon type="reload" /><span style="margin-left: 2px;">{{$t('DbBack.Restore')}}</span></a>
             <a-divider type="vertical" />
             <a type="link"   @click="DbDown(record.FilePath)" style="cursor: pointer;color: #13C2C2"><a-icon type="download" /><span style="margin-left: 2px;">{{$t('DbBack.download')}}</span></a>
+            <a-divider type="vertical" />
+            <a-popconfirm :title="$t('DbBack.DeleteConfirm')" @confirm="DbDeleteBackup(record.FilePath)">
+              <a type="link" style="cursor: pointer;color: #eb2f96"><a-icon type="delete" /><span style="margin-left: 2px;">{{$t('DbBack.Delete')}}</span></a>
+            </a-popconfirm>
           </div>
         </a-table>
         </a-spin>
@@ -133,7 +137,7 @@
   </div>
 </template>
 <script>
-import {DbBackup,DbDown, GetDbConfig,SetDbConfig,DbRestore, GetBackUpList, GetTablesList} from "@/services/dbbackup";
+import {DbBackup,DbDown,DbDeleteBackup as requestDbDeleteBackup, GetDbConfig,SetDbConfig,DbRestore, GetBackUpList, GetTablesList} from "@/services/dbbackup";
 import {SQLUPLOAD} from "@/services/api";
 export default {
   i18n: require('../../i18n/language'),
@@ -421,6 +425,22 @@ export default {
       }
 
       this.messageShowLoad = false
+    },
+    DbDeleteBackup(name){
+      let _t = this
+      let params={
+        DbFilePath : name
+      }
+      requestDbDeleteBackup(params).then(function (res){
+        if(res.data && res.data.code === 0){
+          _t.$message.success(_t.$t('DbBack.DeleteSuccess'))
+          _t.GetBackUpList()
+        } else {
+          _t.$message.error(_t.$t('DbBack.DeleteFailed'))
+        }
+      }).catch(function () {
+        _t.$message.error(_t.$t('DbBack.DeleteFailed'))
+      })
     },
     DbDown(name){
       let _t = this

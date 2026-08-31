@@ -1909,6 +1909,17 @@ export const selectPopUpDisplayPageDataStruct = (ctx,page) => {
         return
     }
 
+    if (pageid && page.page && page.page.displayUUID && pageid === page.page.displayUUID) {
+        const homeId = resolveModelHomePageUuid(PCPageInfo, page.page.displayUUID)
+            || resolveModelHomePageUuid(PhonePageInfo, page.page.displayUUID)
+        if (homeId && homeId !== pageid) {
+            ismDebug('SCADA.selectPage.homeFromModelUuid.popup', {pageid, homeId, displayUUID: page.page.displayUUID})
+            page.page.pageUuid = homeId
+            selectPopUpDisplayPageDataStruct(ctx, page)
+            return
+        }
+    }
+
     for(let i=0,PCPageInfoLen=PCPageInfo.length;i<PCPageInfoLen;i++)
     {
         if(PCPageInfo[i].pageUuid==pageid)
@@ -1980,6 +1991,17 @@ export const selectPopUpDisplayPageDataStruct = (ctx,page) => {
             }
             let newbangDingDeviceSN = Array.from(new Set(bangDingDeviceSN));
             page.callback(0,bangDingData,newbangDingDeviceSN)
+            return
+        }
+    }
+
+    if (pageid && page.page && page.page.displayUUID && pageid === page.page.displayUUID) {
+        const homeId = resolveModelHomePageUuid(PCPageInfo, page.page.displayUUID)
+            || resolveModelHomePageUuid(PhonePageInfo, page.page.displayUUID)
+        if (homeId && homeId !== pageid) {
+            ismDebug('SCADA.selectPage.homeFromModelUuid.popup.late', {pageid, homeId, displayUUID: page.page.displayUUID})
+            page.page.pageUuid = homeId
+            selectPopUpDisplayPageDataStruct(ctx, page)
             return
         }
     }

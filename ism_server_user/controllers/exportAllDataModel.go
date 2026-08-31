@@ -219,3 +219,158 @@ WHERE m.type = 480 AND d.deleted_at IS NULL AND m.deleted_at IS NULL
 	c.Ctx.Output.Header("File-Name", fileName)
 	_ = c.Ctx.Output.Body(buf.Bytes())
 }
+
+type modbusExportRow struct {
+	ModelName            string `gorm:"column:model_name"`
+	RegisterGroupName    string `gorm:"column:register_group_name"`
+	Name                 string `gorm:"column:name"`
+	RegisterAddress      int    `gorm:"column:register_address"`
+	Auth                 string `gorm:"column:auth"`
+	Type                 string `gorm:"column:type"`
+	ByteOrder            string `gorm:"column:byte_order"`
+	DataUnit             string `gorm:"column:data_unit"`
+	ConversionExpression string `gorm:"column:conversion_expression"`
+	IsAlarm              int    `gorm:"column:is_alarm"`
+	AlarmLevel           int    `gorm:"column:alarm_level"`
+	AlarmMessage         string `gorm:"column:alarm_message"`
+	AlarmClearMessage    string `gorm:"column:alarm_clear_message"`
+	AlarmOnValue         int    `gorm:"column:alarm_on_value"`
+	IsRecord             int    `gorm:"column:is_record"`
+	RecordType           int    `gorm:"column:record_type"`
+	RecordInterval       int    `gorm:"column:record_interval"`
+	RecordDataCharge     string `gorm:"column:record_data_charge"`
+	FloatAccuracy        string `gorm:"column:float_accuracy"`
+	ModelType            int    `gorm:"column:model_type"`
+	RegisterGroupUuid    string `gorm:"column:register_group_uuid"`
+	Uuid                 string `gorm:"column:uuid"`
+	Muid                 string `gorm:"column:muid"`
+}
+
+// ExportAllModbusDataModel 全量导出 Modbus 点位（与「导出全量点位」模板列一致）。
+func (c *ISMSystem) ExportAllModbusDataModel() {
+	projectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
+	started := time.Now()
+
+	sql := `
+SELECT
+  m.name AS model_name,
+  g.name AS register_group_name,
+  d.name,
+  d.register_address,
+  d.auth,
+  d.type,
+  d.byte_order,
+  d.data_unit,
+  d.conversion_expression,
+  d.is_alarm,
+  d.alarm_level,
+  d.alarm_message,
+  d.alarm_clear_message,
+  COALESCE(d.alarm_on_value, 1) AS alarm_on_value,
+  d.is_record,
+  d.record_type,
+  d.record_interval,
+  d.record_data_charge,
+  d.float_accuracy,
+  d.model_type,
+  g.uuid AS register_group_uuid,
+  d.uuid,
+  d.muid
+FROM modbus_devices_data_model d
+INNER JOIN devices_model m ON m.uuid = d.muid
+INNER JOIN modbus_devices_register_group g ON g.uuid = d.register_group_uuid
+WHERE m.type = 2 AND d.deleted_at IS NULL AND m.deleted_at IS NULL AND g.deleted_at IS NULL
+`
+	args := []interface{}{}
+	if projectUuid != "" {
+		sql += " AND m.project_uuid = ?"
+		args = append(args, projectUuid)
+	}
+	sql += " ORDER BY m.name, g.name, d.register_address, d.name"
+
+	var rows []modbusExportRow
+	if err := models.Db.Raw(sql, args...).Scan(&rows).Error; err != nil {
+		logs.Error("ExportAllModbusDataModel: %v", err)
+		c.Data["json"] = map[string]interface{}{"code": -1, "msg": "查询失败: " + err.Error()}
+		c.ServeJSON()
+		return
+	}
+
+	xlsx := excelize.NewFile()
+	sheet := "Sheet1"
+	headers := []string{
+		"模型名称",
+		"寄存器组名称",
+		"数据名称",
+		"寄存器地址",
+		"权限(ReadOnly,ReadWrite)",
+		"类型",
+		"字节序",
+		"单位",
+		"转换关系",
+		"是否告警(是,否)",
+		"告警等级(提示、次要、重要、紧急、致命)",
+		"告警消息",
+		"告警消除消息",
+		"报警触发值(0,1)",
+		"是否存储(是,否)",
+		excelRecordTypeHeader,
+		"定时时间",
+		"变化值",
+		"保留小数",
+		"模型类型(勿修改)",
+		"组ID(勿修改)",
+		"数据ID(勿修改)",
+		"模型ID(勿修改)",
+	}
+	for i, h := range headers {
+		cell, _ := excelize.CoordinatesToCellName(i+1, 1)
+		_ = xlsx.SetCellValue(sheet, cell, h)
+	}
+	for i, row := range rows {
+		r := i + 2
+		vals := []interface{}{
+			row.ModelName,
+			row.RegisterGroupName,
+			row.Name,
+			row.RegisterAddress,
+			row.Auth,
+			row.Type,
+			row.ByteOrder,
+			row.DataUnit,
+			row.ConversionExpression,
+			virtualYesNo(row.IsAlarm),
+			virtualAlarmLevelText(row.AlarmLevel),
+			row.AlarmMessage,
+			row.AlarmClearMessage,
+			virtualAlarmOnValueText(row.AlarmOnValue),
+			virtualYesNo(row.IsRecord),
+			virtualRecordTypeText(row.RecordType),
+			row.RecordInterval,
+			row.RecordDataCharge,
+			row.FloatAccuracy,
+			row.ModelType,
+			row.RegisterGroupUuid,
+			row.Uuid,
+			row.Muid,
+		}
+		for cidx, v := range vals {
+			cell, _ := excelize.CoordinatesToCellName(cidx+1, r)
+			_ = xlsx.SetCellValue(sheet, cell, v)
+		}
+	}
+
+	buf, err := xlsx.WriteToBuffer()
+	if err != nil {
+		c.Data["json"] = map[string]interface{}{"code": -2, "msg": "生成 Excel 失败"}
+		c.ServeJSON()
+		return
+	}
+	logs.Info("ExportAllModbusDataModel rows=%d cost=%s", len(rows), time.Since(started))
+	stamp := time.Now().Format("20060102150405")
+	fileName := fmt.Sprintf("Modbus全量点位_%s.xlsx", stamp)
+	c.Ctx.Output.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Ctx.Output.Header("Content-Disposition", "attachment; filename="+strconv.Quote(fileName))
+	c.Ctx.Output.Header("File-Name", fileName)
+	_ = c.Ctx.Output.Body(buf.Bytes())
+}
