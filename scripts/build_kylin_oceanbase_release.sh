@@ -93,6 +93,7 @@ if command -v rg >/dev/null 2>&1; then
   rg -q 'homeFromModelUuid.popup' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 homeFromModelUuid.popup（0828 弹窗跳模型首页）"; exit 1; }
   rg -q 'DbDeleteBackup' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 DbDeleteBackup（0828 备份删除）"; exit 1; }
   rg -q 'ExportAllModbusDataModel' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 ExportAllModbusDataModel（0828 Modbus 全量导出）"; exit 1; }
+  rg -q 'customImportRequest' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 customImportRequest（0901 寄存器组导入超时）"; exit 1; }
 fi
 # 不用 grep -q：提前退出会让 strings 收到 SIGPIPE，pipefail 下误判失败
 if ! strings "$BIN_SRC" 2>/dev/null | grep -F 'intervalSec=[' >/dev/null; then
@@ -109,6 +110,10 @@ if ! strings "$BIN_SRC" 2>/dev/null | grep -F 'ExportAllModbusDataModel:' >/dev/
 fi
 if ! strings "$BIN_SRC" 2>/dev/null | grep -F 'path outside backup dir' >/dev/null; then
   echo "错误: 后端缺少 DbDeleteBackup 路径校验"
+  exit 1
+fi
+if ! strings "$BIN_SRC" 2>/dev/null | grep -F 'UpdateDataModel modbus:' >/dev/null; then
+  echo "错误: 后端缺少寄存器组按表头导入（0901 改名 upsert）"
   exit 1
 fi
 echo "  dist: $(du -sh "$FE_SRC" | cut -f1), index.html $(stat -f '%Sm' -t '%Y-%m-%d %H:%M' "$FE_SRC/index.html" 2>/dev/null || stat -c '%y' "$FE_SRC/index.html")"
@@ -394,9 +399,14 @@ bash start-all.sh
 
 浏览器 **Ctrl+F5**。验证通过后可删除 \`web/dist.bak-*\` 省空间。
 
-## 本次相对 0817 含哪些修复（含 20260828）
+## 本次相对 0817 含哪些修复（含 20260901 点表改名）
 
-**20260828（本包重点）**
+**20260901（点表导入导出 / 改名称）**
+
+1. **改点位名称**：Modbus「导出全量点位」→ 只改「数据名称」→「导入全量点位」。不要改「数据ID/组ID/模型ID」。按 ID 更新，并同步实时库点名。
+2. **寄存器组页导入**：按表头解析（不再按下标猜列），改名不会插出重复点；导入超时 2 小时。
+
+**20260828**
 
 1. **导航弹窗**：菜单绑组态模型 UUID 时，弹窗路径同样跳该模型首页，不再「找不到页面」。
 2. **历史库备份**：去掉 \`docker exec -T\`（麒麟 Docker 不认 compose 的 -T）。

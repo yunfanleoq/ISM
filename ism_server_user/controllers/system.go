@@ -678,115 +678,42 @@ func (c *ISMSystem) UpdateDataModel() {
 			//SNMP设备
 			if DataModelType == 1 {
 
-			} else if DataModelType == 2 { //Modbus设备
-				var setparams models.ModbusDevicesDataModel
-				setparams.Name = row[0]
-				setparams.RegisterAddress, convErr = strconv.Atoi(row[1])
-				if convErr != nil {
-					continue
+			} else if DataModelType == 2 { // Modbus：按表头解析整表，按数据ID/地址 upsert，改名不会新增重复点
+				colIndex := excelColIndex(rows[0])
+				if !excelLooksLikeModbusPointSheet(colIndex) {
+					reponse_result.Code = -6
+					c.Data["json"] = reponse_result
+					c.ServeJSON()
+					return
 				}
-				setparams.Auth = row[2]
-				setparams.Type = row[3]
-				setparams.ByteOrder = row[4]
-				setparams.DataUnit = row[5]
-				setparams.ConversionExpression = row[6]
-
-				if row[7] == "是" {
-					setparams.IsAlarm = 1
-				} else if row[7] == "否" {
-					setparams.IsAlarm = 0
-				} else {
-					setparams.IsAlarm = 0
-				}
-
-				if row[8] == "提示" {
-					setparams.AlarmLevel = 0
-				} else if row[8] == "次要" {
-					setparams.AlarmLevel = 1
-				} else if row[8] == "重要" {
-					setparams.AlarmLevel = 2
-				} else if row[8] == "紧急" {
-					setparams.AlarmLevel = 3
-				} else if row[8] == "致命" {
-					setparams.AlarmLevel = 4
-				} else {
-					setparams.AlarmLevel = 0
-				}
-
-				setparams.AlarmMessage = row[9]
-				setparams.AlarmClearMessage = row[10]
-
-				// 新导出模板在「告警消除消息」后多了「报警触发值(0,1)」，列索引相对旧模板整体后移 1
-				colOffset := 0
-				if len(row) > 11 && (row[11] == "0" || row[11] == "1") {
-					colOffset = 1
-					if row[11] == "0" {
-						setparams.AlarmOnValue = 0
-					} else {
-						setparams.AlarmOnValue = 1
-					}
-				} else {
-					setparams.AlarmOnValue = 1
-				}
-
-				recordIdx := 11 + colOffset
-				recordTypeIdx := 12 + colOffset
-				recordIntervalIdx := 13 + colOffset
-				recordChargeIdx := 14 + colOffset
-				floatAccIdx := 15 + colOffset
-				uuidIdx := 17 + colOffset
-
-				if len(row) > recordIdx {
-					if row[recordIdx] == "是" {
-						setparams.IsRecord = 1
-					} else if row[recordIdx] == "否" {
-						setparams.IsRecord = 0
-					} else {
-						setparams.IsRecord = 0
-					}
-				}
-				if len(row) > recordTypeIdx {
-					setparams.RecordType = parseRecordTypeFromExcel(row[recordTypeIdx])
-				}
-				if len(row) > recordIntervalIdx {
-					setparams.RecordInterval, convErr = strconv.Atoi(row[recordIntervalIdx])
-					if convErr != nil {
-						setparams.RecordInterval = 60
-					}
-				} else {
-					setparams.RecordInterval = 60
-				}
-				if len(row) > recordChargeIdx {
-					setparams.RecordDataCharge = row[recordChargeIdx]
-				}
-				if len(row) > floatAccIdx {
-					setparams.FloatAccuracy = row[floatAccIdx]
-				}
-				setparams.ModelType = 2
-				if len(row) > uuidIdx {
-					setparams.Uuid = row[uuidIdx]
-				} else {
-					setparams.Uuid = ""
-				}
-				setparams.Muid = suuid
 				registerGroupUuid := c.GetString("registerGroupUuid")
-				if registerGroupUuid != "" {
-					setparams.RegisterGroupUuid = registerGroupUuid
-				}
-				if setparams.Uuid != "" {
-					var existRow models.ModbusDevicesDataModel
-					existErr := models.Db.Model(&models.ModbusDevicesDataModel{}).Where("uuid = ? and muid=?", setparams.Uuid, setparams.Muid).First(&existRow).Error
-					if existErr == gorm.ErrRecordNotFound {
-						if setparams.RegisterGroupUuid == "" {
-							continue
-						}
-						models.ModbusRegisterAddressAdd(setparams)
-					} else if existErr == nil {
-						models.ModbusRegisterAddressUpdate(setparams)
+				bulkItems := make([]models.ModbusDevicesDataModel, 0, len(rows))
+				for i, r := range rows {
+					if i == 0 {
+						continue
 					}
-				} else if setparams.Muid != "" && setparams.RegisterGroupUuid != "" {
-					models.ModbusRegisterAddressAdd(setparams)
+					item, ok := parseModbusPointRow(r, colIndex)
+					if !ok {
+						continue
+					}
+					if item.Muid == "" {
+						item.Muid = suuid
+					}
+					if item.RegisterGroupUuid == "" {
+						item.RegisterGroupUuid = registerGroupUuid
+					}
+					if item.Muid == "" || item.RegisterGroupUuid == "" {
+						continue
+					}
+					bulkItems = append(bulkItems, item)
 				}
+				bulk := models.ModbusBulkUpsertRegisterAddresses(bulkItems)
+				logs.Info("UpdateDataModel modbus: rows=%d added=%d updated=%d skipped=%d",
+					len(bulkItems), bulk.Added, bulk.Updated, bulk.Skipped)
+				reponse_result.Code = 0
+				c.Data["json"] = reponse_result
+				c.ServeJSON()
+				return
 			} else if DataModelType == 3 { //OPCUA设备
 				var setparams models.OpcuaDevicesDataModel
 
@@ -1728,38 +1655,6 @@ func (c *ISMSystem) UpdateAllModbusDataModel() {
 		return ""
 	}
 
-	colIndex := map[string]int{}
-	safeCell := func(row []string, key string) string {
-		idx, ok := colIndex[key]
-		if !ok || idx < 0 || idx >= len(row) {
-			return ""
-		}
-		return strings.TrimSpace(row[idx])
-	}
-	parseYesNo := func(v string) int {
-		if v == "是" {
-			return 1
-		}
-		return 0
-	}
-	parseAlarmLevel := func(v string) int {
-		switch v {
-		case "次要":
-			return 1
-		case "重要":
-			return 2
-		case "紧急":
-			return 3
-		case "致命":
-			return 4
-		default:
-			return 0
-		}
-	}
-	parseRecordType := func(v string) int {
-		return parseRecordTypeFromExcel(v)
-	}
-
 	processed := false
 	parseSkipped := 0
 	bulkItems := make([]models.ModbusDevicesDataModel, 0, 4096)
@@ -1769,85 +1664,40 @@ func (c *ISMSystem) UpdateAllModbusDataModel() {
 		if err != nil || len(rows) == 0 {
 			continue
 		}
-		header := rows[0]
-		colIndex = map[string]int{}
-		for k, v := range header {
-			colIndex[strings.TrimSpace(v)] = k
+		colIndex := excelColIndex(rows[0])
+		if !excelLooksLikeModbusPointSheet(colIndex) {
+			continue
 		}
 		_, hasModelId := colIndex["模型ID(勿修改)"]
 		_, hasModelName := colIndex["模型名称"]
 		_, hasGroupId := colIndex["组ID(勿修改)"]
 		_, hasGroupName := colIndex["寄存器组名称"]
-		_, hasDataName := colIndex["数据名称"]
-		if !hasDataName || (!hasModelId && !hasModelName) || (!hasGroupId && !hasGroupName) {
+		if (!hasModelId && !hasModelName) || (!hasGroupId && !hasGroupName) {
 			continue
 		}
 		processed = true
-
 		for index, row := range rows {
 			if index == 0 {
 				continue
 			}
-			name := safeCell(row, "数据名称")
-			if name == "" {
+			item, ok := parseModbusPointRow(row, colIndex)
+			if !ok {
 				parseSkipped++
 				continue
 			}
-			addrStr := safeCell(row, "寄存器地址")
-			registerAddress, convErr := strconv.Atoi(addrStr)
-			if convErr != nil {
-				parseSkipped++
-				continue
-			}
-
-			muid := resolveMuid(safeCell(row, "模型ID(勿修改)"), safeCell(row, "模型名称"))
+			muid := resolveMuid(item.Muid, excelCell(row, colIndex, "模型名称"))
 			if muid == "" {
 				parseSkipped++
 				continue
 			}
-			groupUuid := resolveGroupUuid(safeCell(row, "组ID(勿修改)"), muid, safeCell(row, "寄存器组名称"))
+			groupUuid := resolveGroupUuid(item.RegisterGroupUuid, muid, excelCell(row, colIndex, "寄存器组名称"))
 			if groupUuid == "" {
 				parseSkipped++
 				continue
 			}
-
-			setparams := models.ModbusDevicesDataModel{
-				Name:                 name,
-				RegisterAddress:      registerAddress,
-				Auth:                 safeCell(row, "权限(ReadOnly,ReadWrite)"),
-				Type:                 safeCell(row, "类型"),
-				ByteOrder:            safeCell(row, "字节序"),
-				DataUnit:             safeCell(row, "单位"),
-				ConversionExpression: safeCell(row, "转换关系"),
-				IsAlarm:              parseYesNo(safeCell(row, "是否告警(是,否)")),
-				AlarmLevel:           parseAlarmLevel(safeCell(row, "告警等级(提示、次要、重要、紧急、致命)")),
-				AlarmMessage:         safeCell(row, "告警消息"),
-				AlarmClearMessage:    safeCell(row, "告警消除消息"),
-				IsRecord:             parseYesNo(safeCell(row, "是否存储(是,否)")),
-				RecordType:           parseRecordType(firstNonEmpty(safeCell(row, excelRecordTypeHeader), safeCell(row, excelRecordTypeHeaderLegacy))),
-				RecordDataCharge:     safeCell(row, "变化值"),
-				FloatAccuracy:        safeCell(row, "保留小数"),
-				ModelType:            2,
-				Muid:                 muid,
-				RegisterGroupUuid:    groupUuid,
-				Uuid:                 safeCell(row, "数据ID(勿修改)"),
-			}
-			if alarmOn := safeCell(row, "报警触发值(0,1)"); alarmOn == "0" {
-				setparams.AlarmOnValue = 0
-			} else {
-				setparams.AlarmOnValue = 1
-			}
-			if interval, err := strconv.Atoi(safeCell(row, "定时时间")); err == nil {
-				setparams.RecordInterval = interval
-			} else {
-				setparams.RecordInterval = 60
-			}
-			if modelTypeStr := safeCell(row, "模型类型(勿修改)"); modelTypeStr != "" {
-				if mt, err := strconv.Atoi(modelTypeStr); err == nil {
-					setparams.ModelType = mt
-				}
-			}
-			bulkItems = append(bulkItems, setparams)
+			item.Muid = muid
+			item.RegisterGroupUuid = groupUuid
+			bulkItems = append(bulkItems, item)
 		}
 		break
 	}

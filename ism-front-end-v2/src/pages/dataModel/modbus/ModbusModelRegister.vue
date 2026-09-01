@@ -10,10 +10,11 @@
         <a-divider type="vertical" />
         <a-upload
             name="file"
+            accept=".xlsx"
             :multiple="false"
-            :action=localUpgradeUrl
-            :data="importUploadData"
+            :customRequest="customImportRequest"
             :showUploadList="false"
+            :disabled="messageShowLoad"
             @change="localUpgradeCharge"
         >
           <a-button type="default"> <a-icon type="import" />
@@ -555,7 +556,11 @@ import {
 import {LOCALUPGATEDATAMODEL} from "@/services/api";
 import {formatDate} from "@/utils/common";
 import { exportExcelWithStyle } from "@/services/excelExport.js"
+import { AUTH_TYPE, getAuthorization } from "@/utils/request";
+import axios from 'axios'
+
 const dataSource= []
+const IMPORT_TIMEOUT_MS = 2 * 60 * 60 * 1000
 
 export default {
   name: 'ModbusModelRegister',
@@ -812,14 +817,32 @@ export default {
   mounted() {
 
   },
-  computed: {
-    importUploadData() {
-      return {
-        registerGroupUuid: this.registerUUID || ''
-      }
-    },
-  },
   methods: {
+    customImportRequest({ file, onSuccess, onError }) {
+      const formData = new FormData()
+      formData.append('file', file)
+      const groupUuid = this.registerUUID || ''
+      if (groupUuid) {
+        formData.append('registerGroupUuid', groupUuid)
+      }
+      const headers = {}
+      const token = getAuthorization(AUTH_TYPE.BEARER)
+      const projectUuid = getAuthorization(AUTH_TYPE.AUTH1)
+      if (token) {
+        headers.Authorization = token
+      }
+      if (projectUuid) {
+        headers.ProjectUuid = projectUuid
+      }
+      axios.post(this.localUpgradeUrl, formData, {
+        headers,
+        timeout: IMPORT_TIMEOUT_MS,
+      }).then((res) => {
+        onSuccess(res.data, file)
+      }).catch((err) => {
+        onError(err)
+      })
+    },
     async handleExport() {
       const data = this.dataSource.map(item => {
         const row = {};
@@ -866,15 +889,18 @@ export default {
       this.searchText = '';
     },
     localUpgradeCharge(info){
-      this.dataSource=[]
-      this.messageShowLoad = true
+      if (info.file.status === 'uploading') {
+        this.messageShowLoad = true
+        return
+      }
+      this.messageShowLoad = false
       if (info.file.status === 'done') {
         let result = info.file.response
         if(result.Code==0) {
           this.$message.success(`${info.file.name} `+this.$t("dataModel.importSuccess"));
           this.registerAddressList(this.registerUUID)
         }
-        else if(result.Code==-2)
+        else if(result.Code==-2 || result.Code==-6)
         {
           this.$message.error(`${info.file.name} `+this.$t("dataModel.FormatError"));
         }
@@ -882,12 +908,11 @@ export default {
         {
           this.$message.error(`${info.file.name} `+this.$t("SystemUpgrade.UpgradeFileSaveError"));
         }
+        return
       }
-      else if (info.file.status === 'uploading') {
-        //this.$message.success(`${info.file.name} `+this.$t("SystemUpgrade.BeginUpgradeUploading"));
+      if (info.file.status === 'error') {
+        this.$message.error(`${info.file.name} `+this.$t("dataModel.importAllFailed"));
       }
-
-      this.messageShowLoad = false
     },
     onCellChange(rc, e) {
       let params = {

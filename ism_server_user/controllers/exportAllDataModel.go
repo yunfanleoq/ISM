@@ -101,6 +101,111 @@ func virtualAlarmOnValueText(v int) string {
 	return "1"
 }
 
+func excelColIndex(header []string) map[string]int {
+	idx := map[string]int{}
+	for k, v := range header {
+		idx[strings.TrimSpace(v)] = k
+	}
+	return idx
+}
+
+func excelCell(row []string, colIndex map[string]int, key string) string {
+	i, ok := colIndex[key]
+	if !ok || i < 0 || i >= len(row) {
+		return ""
+	}
+	return strings.TrimSpace(row[i])
+}
+
+func parseYesNoExcel(v string) int {
+	if v == "是" {
+		return 1
+	}
+	return 0
+}
+
+func parseAlarmLevelExcel(v string) int {
+	switch v {
+	case "次要":
+		return 1
+	case "重要":
+		return 2
+	case "紧急":
+		return 3
+	case "致命":
+		return 4
+	default:
+		return 0
+	}
+}
+
+func parseAlarmOnValueExcel(v string) int {
+	if v == "0" {
+		return 0
+	}
+	return 1
+}
+
+func excelLooksLikeModbusPointSheet(colIndex map[string]int) bool {
+	_, hasName := colIndex["数据名称"]
+	_, hasAddr := colIndex["寄存器地址"]
+	if !hasName || !hasAddr {
+		return false
+	}
+	_, hasModelId := colIndex["模型ID(勿修改)"]
+	_, hasModelName := colIndex["模型名称"]
+	_, hasGroupId := colIndex["组ID(勿修改)"]
+	_, hasGroupName := colIndex["寄存器组名称"]
+	_, hasModelType := colIndex["模型类型(勿修改)"]
+	_, hasDataId := colIndex["数据ID(勿修改)"]
+	// 全量模板：模型+组；寄存器组页模板：模型类型+数据ID
+	return hasModelId || hasModelName || hasGroupId || hasGroupName || (hasModelType && hasDataId)
+}
+
+func parseModbusPointRow(row []string, colIndex map[string]int) (models.ModbusDevicesDataModel, bool) {
+	name := excelCell(row, colIndex, "数据名称")
+	if name == "" {
+		return models.ModbusDevicesDataModel{}, false
+	}
+	addr, err := strconv.Atoi(excelCell(row, colIndex, "寄存器地址"))
+	if err != nil {
+		return models.ModbusDevicesDataModel{}, false
+	}
+	item := models.ModbusDevicesDataModel{
+		Name:                 name,
+		RegisterAddress:      addr,
+		Auth:                 excelCell(row, colIndex, "权限(ReadOnly,ReadWrite)"),
+		Type:                 excelCell(row, colIndex, "类型"),
+		ByteOrder:            excelCell(row, colIndex, "字节序"),
+		DataUnit:             excelCell(row, colIndex, "单位"),
+		ConversionExpression: excelCell(row, colIndex, "转换关系"),
+		IsAlarm:              parseYesNoExcel(excelCell(row, colIndex, "是否告警(是,否)")),
+		AlarmLevel:           parseAlarmLevelExcel(excelCell(row, colIndex, "告警等级(提示、次要、重要、紧急、致命)")),
+		AlarmMessage:         excelCell(row, colIndex, "告警消息"),
+		AlarmClearMessage:    excelCell(row, colIndex, "告警消除消息"),
+		AlarmOnValue:         parseAlarmOnValueExcel(excelCell(row, colIndex, "报警触发值(0,1)")),
+		IsRecord:             parseYesNoExcel(excelCell(row, colIndex, "是否存储(是,否)")),
+		RecordType:           parseRecordTypeFromExcel(firstNonEmpty(excelCell(row, colIndex, excelRecordTypeHeader), excelCell(row, colIndex, excelRecordTypeHeaderLegacy))),
+		RecordDataCharge:     excelCell(row, colIndex, "变化值"),
+		FloatAccuracy:        excelCell(row, colIndex, "保留小数"),
+		ModelType:            2,
+		Uuid:                 excelCell(row, colIndex, "数据ID(勿修改)"),
+		Muid:                 excelCell(row, colIndex, "模型ID(勿修改)"),
+		RegisterGroupUuid:    excelCell(row, colIndex, "组ID(勿修改)"),
+	}
+	if interval, err := strconv.Atoi(excelCell(row, colIndex, "定时时间")); err == nil {
+		item.RecordInterval = interval
+	} else {
+		item.RecordInterval = 60
+	}
+	if mt := excelCell(row, colIndex, "模型类型(勿修改)"); mt != "" {
+		if n, err := strconv.Atoi(mt); err == nil {
+			item.ModelType = n
+		}
+	}
+	return item, true
+}
+
 // ExportAllVirtualDeviceDataModel 全量导出虚拟设备点位（含「报警触发值(0,1)」）。
 func (c *VirtualDeviceController) ExportAllVirtualDeviceDataModel() {
 	projectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
