@@ -185,6 +185,7 @@ import {snapdom} from "@/utils/snapdom.mjs";
 import LockScreen from "@/components/lockScreen/LockScreen";
 import Hammer from 'hammerjs';
 import {ismDebug} from "@/utils/ismDebug";
+import {isPopUpEnabled} from "@/pages/ISMDisPlay/utils/pageLink";
 // 注意：navTreeIndex / graphCellSanitizer 等已被主 chunk（store→navContextBinding→…）静态引用，
 // 不可在此再静态 import —— 会触发 webpack4 scope-hoisting「unused reexport」bug，
 // 令本 chunk 内 Vue SFC（含 ViewRealTable/ViewSvgText）及主 chunk 命名导出变成 undefined
@@ -3522,6 +3523,9 @@ export default {
     async showPage(linkInfo) {
       const _debugTag = '[showPage]'
       console.log(_debugTag, '===== ENTRY =====', linkInfo && linkInfo.linkType, linkInfo && linkInfo.Inside && linkInfo.Inside.pageUUID)
+      if (linkInfo && typeof linkInfo === 'object') {
+        linkInfo.isPopUp = isPopUpEnabled(linkInfo.isPopUp)
+      }
       //  this.PopUpDialog = false
       try {
         // 层级模板：目标是已删除的旧 page_id 时按导航树索引兜底转换为「模板页 + navContext」
@@ -3556,7 +3560,7 @@ export default {
           })
           return
         }
-        if(typeof linkInfo.isPopUp!='undefined'&& linkInfo.isPopUp==true)
+        if(isPopUpEnabled(linkInfo && linkInfo.isPopUp))
         {
           let _t = this
           const requestToken = ++this.popUpPageRequestToken
@@ -3567,6 +3571,7 @@ export default {
                 this.ISMPopUpRunningContainer &&
                 this.currentPopUpDisplayUUID === linkInfo.Inside.displayUUID &&
                 this.currentPopUpPageUUID === linkInfo.Inside.pageUUID) {
+              this.cancelPendingPageLoading()
               return
             }
             // 先标记目标页，防止异步加载期间重复触发 GoPage
@@ -3599,6 +3604,16 @@ export default {
                 }
                 if(res==0)
                 {
+                  const popupPageId = _t.PopUpConfigData && (_t.PopUpConfigData.PageId || _t.PopUpConfigData.pageUuid)
+                  const mainPageId = _t.currentPageUUID || (_t.configData && _t.configData.PageId)
+                  if (popupPageId && mainPageId && String(popupPageId) === String(mainPageId)) {
+                    _t.currentPopUpDisplayUUID = ""
+                    _t.currentPopUpPageUUID = ""
+                    _t.chargePagePopUp = false
+                    _t.closePageLoading(loadingKey, loadingToken)
+                    _t.$message && _t.$message.warning('弹窗目标与当前页相同，请绑定具体子页')
+                    return
+                  }
                   console.log('[showPage-PopUp] page loaded, opening dialog')
                   _t.chargePagePopUp = false
                   _t.PopUpDialog = true
@@ -4204,7 +4219,7 @@ export default {
           return
         }
         // 非弹窗切换时，若主页面正在加载中则直接忽略，防止高频点击叠加请求
-        if(_t.chargePage && !(data.IsPopUp)) {
+        if(_t.chargePage && !isPopUpEnabled(data && data.IsPopUp)) {
           _t.cancelPendingPageLoading()
           console.warn("[GoPage] BLOCKED by chargePage guard, loading cancelled", "chargePage=", _t.chargePage, "IsPopUp=", data.IsPopUp)
           return
@@ -4238,7 +4253,7 @@ export default {
         if(JumpWindowEnable) {
           let wsData = data
           let linkInfo = {
-            isPopUp: wsData.IsPopUp,
+            isPopUp: isPopUpEnabled(wsData.IsPopUp),
             autoClose: wsData.AutoClose,
             linkType: typeof wsData.linkType != "undefined" ? wsData.linkType : "Inside",
             Inside: {
@@ -5297,7 +5312,7 @@ export default {
       _t.eventHandlers.ChargePage = (data) => {
         try {
           let linkInfo = {
-            isPopUp:data.IsPopUp,
+            isPopUp: isPopUpEnabled(data && data.IsPopUp),
             linkType:"Inside",
             Inside:{}
           }

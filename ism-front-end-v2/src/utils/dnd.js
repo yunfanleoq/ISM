@@ -11,10 +11,11 @@ export function initDnd(graph, container) {
     return {
 
         startDrag: (component, e) => {
-            component.identifier = uuid.v1()
-            if((typeof component.animate!="undefined")&&(typeof component.animate.move=="undefined"))
+            const detail = JSON.parse(JSON.stringify(component || {}))
+            detail.identifier = uuid.v1()
+            if((typeof detail.animate!="undefined")&&(typeof detail.animate.move=="undefined"))
             {
-                component.animate.move = {
+                detail.animate.move = {
                     x:{
                         deviceSN:"",
                         selectVideoType:0,
@@ -33,22 +34,25 @@ export function initDnd(graph, container) {
                     },
                 }
             }
-            component.name = component.type
-            component.style.visible = 1
-            component.style.borderWidth = component.style.borderWidth
-                ? component.style.borderWidth
+            detail.name = detail.type
+            if (!detail.style) {
+                detail.style = {}
+            }
+            detail.style.visible = 1
+            detail.style.borderWidth = detail.style.borderWidth
+                ? detail.style.borderWidth
                 : 0
-            component.style.BorderEdges = component.style.BorderEdges
-                ? component.style.BorderEdges
+            detail.style.BorderEdges = detail.style.BorderEdges
+                ? detail.style.BorderEdges
                 : 0
-            component.style.opacity = component.style.opacity
-                ? component.style.opacity
+            detail.style.opacity = detail.style.opacity
+                ? detail.style.opacity
                 : 1
-            component.style.borderStyle = component.style.borderStyle
-                ? component.style.borderStyle
+            detail.style.borderStyle = detail.style.borderStyle
+                ? detail.style.borderStyle
                 : "solid"
-            component.style.borderColor = component.style.borderColor
-                ? component.style.borderColor
+            detail.style.borderColor = detail.style.borderColor
+                ? detail.style.borderColor
                 : "#ccccff"
             const ports = {
                 groups: {
@@ -129,10 +133,10 @@ export function initDnd(graph, container) {
                 ],
             }
             const node = graph.createNode({
-                shape:component.type,
-                width: component.style.position.w,
-                height: component.style.position.h,
-                zIndex: parseInt(component.style.zIndex),
+                shape:detail.type,
+                width: detail.style.position.w,
+                height: detail.style.position.h,
+                zIndex: parseInt(detail.style.zIndex),
                 attrs: {
                     body: { fill: '#1890ff', opacity: 1 }, // 初始透明度为1
                 },
@@ -142,7 +146,7 @@ export function initDnd(graph, container) {
                     editMode: true,
                     showDeviceUuid:"",
                     IsToolBox:false,
-                    detail:component
+                    detail:detail
                 },
                 ports: { ...ports },
             })

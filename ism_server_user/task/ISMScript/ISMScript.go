@@ -70,6 +70,10 @@ func ScriptCloseChan() {
 		close(GScriptChan)
 	}
 }
+
+func UnregisterScriptNow(scriptUUID string) {
+	bitunpack.UnregisterScript(scriptUUID)
+}
 func getAllScript() (int, []models.ISMScript) {
 	var GetScrpt []models.ISMScript
 	err := models.Db.Model(&models.ISMScript{}).Where("ID >= 0 and script_type=0 and is_disable=0").Find(&GetScrpt).Error

@@ -36,6 +36,14 @@ import ISMGroupNode from "@/pages/ISMDisPlay/ISMGroupNode.vue";
 import {uuid} from "vue-uuid";
 import {ClickUnSelectedComponent} from "@/store/ISM/mutations";
 import ISMChildAutoMixin from '@/mixins/ISMChildAutoMixin'
+import {
+  alignSelectedNodes,
+  arrangeSelectedNodes,
+  createGroupFromCells,
+  flipSelectedNodes,
+  rotateSelectedNodes,
+  withGraphBatch,
+} from "@/pages/ISMDisPlay/utils/canvasGeometry"
 Vue.use(Contextmenu);
 export default {
   mixins: [ISMChildAutoMixin],
@@ -258,15 +266,16 @@ export default {
         const cells = this.ISMCavasContainer.paste({ offset: 32,useLocalStorage: true })
         cells.forEach(cell => {
           let cellData = cell.prop().data || {}
-          cellData.detail.identifier = uuid.v1()
-          cellData.detail.name = cellData.detail.name+"_copy"
+          const detail = JSON.parse(JSON.stringify(cellData.detail || {}))
+          detail.identifier = uuid.v1()
+          detail.name = (detail.name || '') + "_copy"
           cell.setData({
             locked:false,
             editMode: true,
             showDeviceUuid:"",
             IsToolBox:false,
             UpdateNodeFlag: new Date().getTime(),
-            detail: cellData.detail
+            detail: detail
           }, {overwrite: true})
         })
         this.ISMCavasContainer.cleanSelection()
@@ -335,293 +344,42 @@ export default {
       NodeInfo.setData(NodeInfoData, {overwrite: true})
     },
     CreateGroup(){
-      let _t = this
-      const selectedCells = _t.ISMCavasContainer.getSelectedCells();
-      for(let i=0;i<selectedCells.length;i++)
-      {
-        let NodeInfo = selectedCells[i]
-        const Parent  = NodeInfo.getParent()
-        if(Parent)
-        {
-          _t.$message.info('不能将节点添加到组中')
-          return
-        }
-      }
-      const bboxes = selectedCells.map(cell => cell.getBBox())
-      const left = Math.min(...bboxes.map(b => b.x))
-      const top = Math.min(...bboxes.map(b => b.y))
-      const right = Math.max(...bboxes.map(b => b.x + b.width))
-      const bottom = Math.max(...bboxes.map(b => b.y + b.height))
-
-      const parent = _t.ISMCavasContainer.addNode({
-        shape: 'view-ism-group-node',
-        x: left,
-        y: top,
-        width: right-left,
-        height: bottom-top,
-        zIndex: -1000,
-        data: {
-          locked:false,
-          UpdateNodeFlag:true,
-          editMode: true,
-          showDeviceUuid:"",
-          IsToolBox:false,
-          detail:{
-            identifier :uuid.v1(),
-            name:"节点组",
-            "type": "image",
-            isCanvas:true,
-            "action": [],
-            "dataBind":[],
-            "active": [
-              {
-                id:"Forward",
-                name:"component.ViewCanvasMoveLineArrow.Forward",
-                result:"",
-                isExpression:true,
-                condition:{
-                  deviceSN:"",
-                  selectVideoType:0,
-                  isBandDevice:false,
-                  bandType:1,
-                  dataID: "",
-                  dataName: "",
-                  operator:"",
-                  OperatorValue:"",
-                  OperatorMaxValue:"",
-                },
-              },
-              {
-                id:"Reverse",
-                name:"component.ViewCanvasMoveLineArrow.Reverse",
-                result:"",
-                isExpression:true,
-                condition:{
-                  deviceSN:"",
-                  selectVideoType:0,
-                  isBandDevice:false,
-                  bandType:1,
-                  dataID: "",
-                  dataName: "",
-                  operator:"",
-                  OperatorValue:"",
-                  OperatorMaxValue:"",
-                },
-              },
-            ],
-            "animate": {
-              "selected": [],
-              "condition":{
-                deviceSN:"",
-                selectVideoType:0,
-                isBandDevice:false,
-                bandType:1,
-                dataID: "",
-                dataName: "",
-                operator:"",
-                OperatorValue:"",
-                OperatorMaxValue:"",
-              },
-              "isExpression": false,
-              "animateList": [
-
-              ],
-              "animateElement": [
-                {
-                  id: "blink",
-                  elementList:[
-                    {
-                      "name":"component.public.animateSpeed",
-                      "type":7,
-                      "value":1,
-                      "min":0.1,
-                      "key":"blinkSpeed",
-                    },
-                  ]
-                },
-                {
-                  id: "millcolorGrad",
-                  elementList:[
-                    {
-                      "name": "component.public.startColor",
-                      "type": 2,
-                      "value": "#74f808",
-                      "key": "startColor",
-                    },
-                    {
-                      "name": "component.public.stopColor",
-                      "type": 2,
-                      "value": "#f30b0b",
-                      "key": "stopColor",
-                    },
-                    {
-                      "name":"component.public.animateSpeed",
-                      "type":7,
-                      "value":1,
-                      "min":0.1,
-                      "key":"animateSpeed",
-                    },
-                  ]
-                },
-                {
-                  id: "animateSpin",
-                  elementList:[
-                    {
-                      "name":"component.public.animateSpinSpeed",
-                      "type":7,
-                      "value":1,
-                      "min":0.1,
-                      "key":"spinSpeed",
-                    },
-                    {
-                      name:"configComponent.bigScreen.border.border89Direction",
-                      type:6,
-                      value:0,
-                      enumList:[
-                        {
-                          value:0,
-                          option:"configComponent.bigScreen.border.border89DirectionForward"
-                        },
-                        {
-                          value:1,
-                          option:"configComponent.bigScreen.border.border89DirectionNegative"
-                        }
-                      ],
-                      min:1,
-                      key:"spinDirection",
-                    }
-                  ]
-                },
-              ],
-            },
-            "style": {
-              "position": {
-                "x": 0,
-                "y": 0,
-                "w": right-left,
-                "h": bottom-top
-              },
-              "points": [],
-              "visible":1,
-              "zIndex": -1000,
-              "transform": 0,
-              "backColor": "",
-              foreColor:"",
-              borderWidth:2,
-              BorderEdges:0,
-              opacity:1,
-              borderStyle:"solid",
-              borderColor:"#13c2c2",
-              "diy":[
-
-              ]
-            }
-          }
-        },
-      })
-      for(let i=0;i<selectedCells.length;i++)
-      {
-        let NodeInfo = selectedCells[i]
-        parent.addChild(NodeInfo)
-      }
+      createGroupFromCells(this.ISMCavasContainer, this.ISMCavasContainer.getSelectedCells())
     },
     splitGroup() {
       let _t = this
       const selected = _t.ISMCavasContainer.getSelectedCells();
-      for(let i=0;i<selected.length;i++)
-      {
-        let NodeInfo = selected[i]
-        if(NodeInfo.prop().shape=="view-ism-group-node")
+      withGraphBatch(_t.ISMCavasContainer, 'ungroup', () => {
+        for(let i=0;i<selected.length;i++)
         {
-          NodeInfo.setChildren(null)
-          _t.ISMCavasContainer.removeNode(NodeInfo)
-        }
-        else
-        {
-          const parent = NodeInfo.getParent();
-          if(parent) {
-            parent.setChildren(null)
-            _t.ISMCavasContainer.removeNode(parent)
+          let NodeInfo = selected[i]
+          if(NodeInfo.prop().shape=="view-ism-group-node")
+          {
+            NodeInfo.setChildren(null)
+            _t.ISMCavasContainer.removeNode(NodeInfo)
+          }
+          else
+          {
+            const parent = NodeInfo.getParent();
+            if(parent) {
+              parent.setChildren(null)
+              _t.ISMCavasContainer.removeNode(parent)
+            }
           }
         }
-      }
+      })
     },
     alignNodesLeft(){
-      const selectedNodes = this.ISMCavasContainer.getSelectedCells()
-          .filter(cell => cell.isNode())
-          .sort((a, b) => a.getBBox().x - b.getBBox().x);
-
-      if (selectedNodes.length < 2) return;
-
-      const baseX = selectedNodes[0].getBBox().x; // 获取最左侧节点的X坐标
-
-      // 从第二个节点开始对齐（跳过基准节点）
-      selectedNodes.slice(1).forEach(node => {
-        node.setPosition(
-            baseX,  // 统一X坐标
-            node.getPosition().y // 保持原有Y坐标
-        );
-      });
+      alignSelectedNodes(this.ISMCavasContainer, 'l')
     },
     alignNodesRight(){
-      // 获取选中节点并按X坐标降序排序
-      const selectedNodes = this.ISMCavasContainer.getSelectedCells()
-          .filter(cell => cell.isNode())
-          .sort((a, b) => b.getBBox().x - a.getBBox().x);
-
-      if (selectedNodes.length < 2) return;
-
-      const baseX = selectedNodes[0].getBBox().x; // 获取最右侧节点的X坐标
-
-      // 从第二个节点开始对齐（跳过基准节点）
-      selectedNodes.slice(1).forEach(node => {
-        node.setPosition(
-            baseX,  // 统一X坐标
-            node.getPosition().y // 保持原有Y坐标
-        );
-      });
+      alignSelectedNodes(this.ISMCavasContainer, 'r')
     },
     alignNodesTop(){
-      // 获取选中节点并按Y坐标升序排序
-      const selectedNodes = this.ISMCavasContainer.getSelectedCells()
-          .filter(cell => cell.isNode())
-          .sort((a, b) => a.getBBox().y - b.getBBox().y);
-
-      if (selectedNodes.length < 2) return;
-
-      const baseY = selectedNodes[0].getBBox().y; // 获取最上方节点的Y坐标
-
-      // 从第二个节点开始对齐（跳过基准节点）
-      selectedNodes.slice(1).forEach(node => {
-        node.setPosition(
-            node.getPosition().x, // 保持原有X坐标
-            baseY  // 统一Y坐标
-        );
-      });
+      alignSelectedNodes(this.ISMCavasContainer, 't')
     },
     alignNodesBottom(){
-      // 获取选中节点并按底部坐标降序排序（Y坐标+高度）
-      const selectedNodes = this.ISMCavasContainer.getSelectedCells()
-          .filter(cell => cell.isNode())
-          .sort((a, b) => {
-            const bboxA = a.getBBox();
-            const bboxB = b.getBBox();
-            return (bboxB.y + bboxB.height) - (bboxA.y + bboxA.height);  // 按底部位置排序:ml-citation{ref="8" data="citationList"}
-          });
-
-      if (selectedNodes.length < 2) return;
-
-      // 获取基准节点（最下方的节点）
-      const baseNode = selectedNodes[0];
-      const baseBBox = baseNode.getBBox();
-      const baseBottom = baseBBox.y + baseBBox.height;  // 底部Y坐标:ml-citation{ref="1,8" data="citationList"}
-
-      // 对齐其他节点（跳过基准节点）
-      selectedNodes.slice(1).forEach(node => {
-        const bbox = node.getBBox();
-        const newY = baseBottom - bbox.height;  // 计算新位置:ml-citation{ref="8" data="citationList"}
-        node.setPosition(bbox.x, newY);  // 保持X坐标不变，更新Y位置:ml-citation{ref="1" data="citationList"}
-      });
+      alignSelectedNodes(this.ISMCavasContainer, 'b')
     },
     setCommentsAlign(Align){
       switch(Align) {
@@ -652,66 +410,10 @@ export default {
       }
     },
     arrangeNodesVertically(){
-      const selectedNodes = this.ISMCavasContainer.getSelectedCells()
-          .filter(cell => cell.isNode())
-          .sort((a, b) => a.getBBox().y - b.getBBox().y);
-
-      if (selectedNodes.length < 2) return;
-
-      const baseNode = selectedNodes[0]; // 保持Y最小的基准节点
-      const maxY = selectedNodes[selectedNodes.length-1].getBBox().y;
-      const minY = baseNode.getBBox().y;
-      const deltaY = maxY - minY;
-
-      // 计算总高度（排除基准节点）
-      const totalHeight = selectedNodes.slice(1).reduce((sum, node) => {
-        return sum + node.getSize().height;
-      }, 0);
-
-      // 计算间距 = (极差 - 总高度) / (节点数-1)
-      const spacing = (deltaY - totalHeight) / (selectedNodes.length - 1);
-      let currentY = minY + baseNode.getSize().height + spacing;
-
-      // 从第二个节点开始定位（跳过基准节点）
-      selectedNodes.slice(1).forEach(node => {
-        const pos = node.getPosition()
-        node.setPosition(
-            pos.x, // X坐标对齐
-            currentY
-        );
-        currentY += node.getSize().height + spacing;
-      });
+      arrangeSelectedNodes(this.ISMCavasContainer, 'Vertical')
     },
     arrangeNodesHorizontally(){
-      // 获取选中节点并按X坐标升序排序
-      const selectedNodes = this.ISMCavasContainer.getSelectedCells()
-          .filter(cell => cell.isNode())
-          .sort((a, b) => a.getBBox().x - b.getBBox().x);
-
-      if (selectedNodes.length < 2) return;
-
-      const baseNode = selectedNodes[0]; // 保持X最小的基准节点
-      const maxX = selectedNodes[selectedNodes.length-1].getBBox().x;
-      const minX = baseNode.getBBox().x;
-      const deltaX = maxX - minX;
-
-      // 计算总宽度（排除基准节点）
-      const totalWidth = selectedNodes.slice(1).reduce((sum, node) => {
-        return sum + node.getSize().width;
-      }, 0);
-
-      // 计算间距 = (极差 - 总宽度) / (节点数-1)
-      const spacing = (deltaX - totalWidth) / (selectedNodes.length - 1);
-      let currentX = minX + baseNode.getSize().width + spacing;
-
-      // 从第二个节点开始定位（跳过基准节点）
-      selectedNodes.slice(1).forEach(node => {
-        node.setPosition(
-            currentX,
-            baseNode.getPosition().y // Y坐标对齐
-        );
-        currentX += node.getSize().width + spacing;
-      });
+      arrangeSelectedNodes(this.ISMCavasContainer, 'Horizontal')
     },
     onContextLayerMenu(event) {
       let _t = this
@@ -852,83 +554,25 @@ export default {
               {
                 label: _t.$t('displayConfig.Canvas.menu.Revolve'),
                 onClick: () => {
-                  const selectedCells = _t.ISMCavasContainer.getSelectedCells();
-                  for(let i=0;i<selectedCells.length;i++)
-                  {
-                    let NodeInfo = selectedCells[i]
-                    let NodeAngle = NodeInfo.prop().angle
-                    NodeAngle = parseInt(NodeAngle)+90
-                    if(NodeAngle>=360)
-                    {
-                      NodeAngle=0
-                    }
-                    NodeInfo.rotate(parseInt(NodeAngle),{ absolute: true });
-                  }
+                  rotateSelectedNodes(_t.ISMCavasContainer, 90)
                 }
               },
               {
                 label: _t.$t('displayConfig.Canvas.menu.Reverse'),
                 onClick: () => {
-                  const selectedCells = _t.ISMCavasContainer.getSelectedCells();
-                  for(let i=0;i<selectedCells.length;i++)
-                  {
-                    let NodeInfo = selectedCells[i]
-                    let NodeAngle = NodeInfo.prop().angle
-                    NodeAngle = parseInt(NodeAngle)-90
-                    if(NodeAngle<=-360)
-                    {
-                      NodeAngle=0
-                    }
-                    NodeInfo.rotate(parseInt(NodeAngle),{ absolute: true });
-                  }
+                  rotateSelectedNodes(_t.ISMCavasContainer, -90)
                 }
               },
               {
                 label: _t.$t('displayConfig.Canvas.menu.FlipVertical'),
                 onClick: () => {
-                  const selectedCells = _t.ISMCavasContainer.getSelectedCells();
-                  for(let i=0;i<selectedCells.length;i++)
-                  {
-                    let NodeInfo = selectedCells[i]
-                    const tdata = NodeInfo.getData()
-                    if(tdata.detail.style.transform==-1099)
-                    {
-                      tdata.detail.style.transform=0
-                    }
-                    else
-                    {
-                      tdata.detail.style.transform = -1099
-                    }
-                    this.UpdateNodeDataFlag=!this.UpdateNodeDataFlag
-                    this.selectedNode.setData({
-                      UpdateNodeFlag:this.UpdateNodeDataFlag,
-                      detail:tdata.detail
-                    },{ overwrite: true })
-                  }
+                  flipSelectedNodes(_t.ISMCavasContainer, 'x')
                 }
               },
               {
                 label: _t.$t('displayConfig.Canvas.menu.FlipHorizontally'),
                 onClick: () => {
-                  const selectedCells = _t.ISMCavasContainer.getSelectedCells();
-                  for(let i=0;i<selectedCells.length;i++)
-                  {
-                    let NodeInfo = selectedCells[i]
-                    const tdata = NodeInfo.getData()
-                    if(tdata.detail.style.transform==-1098)
-                    {
-                      tdata.detail.style.transform=0
-                    }
-                    else
-                    {
-                      tdata.detail.style.transform = -1098
-                    }
-                    this.UpdateNodeDataFlag=!this.UpdateNodeDataFlag
-                    this.selectedNode.setData({
-                      UpdateNodeFlag:this.UpdateNodeDataFlag,
-                      detail:tdata.detail
-                    },{ overwrite: true })
-                  }
+                  flipSelectedNodes(_t.ISMCavasContainer, 'y')
                 }
               }
             ]

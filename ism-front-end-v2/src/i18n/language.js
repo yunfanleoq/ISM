@@ -1077,7 +1077,11 @@ module.exports = {
           ElectronicDeviceWidth:"器件宽度",
           ElectronicDeviceFill:"器件填充颜色",
           ElectronicClose:"闭合",
-          ConnectColor:"接触点颜色"
+          ConnectColor:"接触点颜色",
+          HandcartPosition:"手车工作位",
+          BreakerStatus:"断路器状态",
+          CloseColor:"合闸颜色",
+          BreakerSwitch:"电力开关"
         },
         public:{
           "ParamsConfigError":"组件参数配置错误",
@@ -2705,6 +2709,9 @@ module.exports = {
         "ExecScript":"执行",
         "DisableScript":"禁止",
         "EnableScript":"启用",
+        "ScriptStatus":"运行状态",
+        "ScriptEnabled":"已启用",
+        "ScriptDisabled":"已禁止",
         "ScriptName":"脚本名称",
         "ScriptDes":"脚本描述",
         "ScriptAddSuccess":"脚本添加成功",
@@ -4287,7 +4294,11 @@ module.exports = {
           ElectronicDeviceWidth:"Device width",
           ElectronicDeviceFill:"Device fill color",
           ElectronicClose:"Close",
-          ConnectColor:"Touch point color"
+          ConnectColor:"Touch point color",
+          HandcartPosition:"Handcart position",
+          BreakerStatus:"Breaker status",
+          CloseColor:"Closed color",
+          BreakerSwitch:"Power switch"
         },
         public:{
           "ParamsConfigError":"Component parameter configuration error",
@@ -5832,6 +5843,9 @@ module.exports = {
         "ExecScript":"Exec",
         "DisableScript":"Disable",
         "EnableScript":"Enable",
+        "ScriptStatus":"Status",
+        "ScriptEnabled":"Enabled",
+        "ScriptDisabled":"Disabled",
         "ScriptName":"Script Name",
         "ScriptDes":"Script Description",
         "ScriptAddSuccess":"Script added successfully",
@@ -7416,7 +7430,11 @@ module.exports = {
           ElectronicDeviceWidth:"器件寬度",
           ElectronicDeviceFill:"器件填充顏色",
           ElectronicClose:"閉合",
-          ConnectColor:"接觸點顏色"
+          ConnectColor:"接觸點顏色",
+          HandcartPosition:"手車工作位",
+          BreakerStatus:"斷路器狀態",
+          CloseColor:"合閘顏色",
+          BreakerSwitch:"電力開關"
         },
         public:{
           "ParamsConfigError":"組件參數配寘錯誤",
@@ -8960,6 +8978,9 @@ module.exports = {
         "ExecScript":"執行",
         "DisableScript":"禁止",
         "EnableScript":"啓用",
+        "ScriptStatus":"運行狀態",
+        "ScriptEnabled":"已啓用",
+        "ScriptDisabled":"已禁止",
         "ScriptName":"腳本名稱",
         "ScriptDes":"腳本描述",
         "ScriptAddSuccess":"腳本添加成功",

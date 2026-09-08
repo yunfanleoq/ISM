@@ -77,6 +77,28 @@ func Register(rules []Rule) {
 	}
 }
 
+// UnregisterScript drops all BitUnpack rules for one script UUID immediately.
+func UnregisterScript(scriptUUID string) {
+	if scriptUUID == "" {
+		return
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	for key, rs := range rulesBySource {
+		kept := rs[:0]
+		for _, r := range rs {
+			if r.ScriptUUID != scriptUUID {
+				kept = append(kept, r)
+			}
+		}
+		if len(kept) == 0 {
+			delete(rulesBySource, key)
+		} else {
+			rulesBySource[key] = kept
+		}
+	}
+}
+
 // RuleCount returns total registered rules.
 func RuleCount() int {
 	mu.RLock()
@@ -298,25 +320,22 @@ func settleSnapshot(snapshot map[string][]Rule, setter SetFunc, loader LoadFunc,
 }
 
 // SettleAll runs every registered source once using current cache/DB values (with Info log).
+// Cold start / reload must not raise alarms: only write values. Later value changes go through ApplySource.
 func SettleAll() {
-	snapshot, setFn, settleFn, loader, alarmSync := snapshotRules()
-	// Prefer alarm-enabled setter so restored bits actually push alarms.
-	setter := setFn
+	snapshot, setFn, settleFn, loader, _ := snapshotRules()
+	setter := settleFn
 	if setter == nil {
-		setter = settleFn
+		setter = setFn
 	}
 	settleSnapshot(snapshot, setter, loader, true)
-	if alarmSync != nil {
-		alarmSync()
-	}
 }
 
-// SettleAllQuiet is the 1s tick path: same settle, no completion Info (source-miss still throttled Warn/Error).
+// SettleAllQuiet is the 1s tick path: skip-alarm settle, no completion Info.
 func SettleAllQuiet() {
 	snapshot, setFn, settleFn, loader, _ := snapshotRules()
-	setter := setFn
+	setter := settleFn
 	if setter == nil {
-		setter = settleFn
+		setter = setFn
 	}
 	settleSnapshot(snapshot, setter, loader, false)
 }

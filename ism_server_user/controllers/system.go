@@ -1999,6 +1999,11 @@ func (c *ISMSystem) GetCustomPel() {
 			var SingleCustomPel CustomPel
 			SingleCustomPel.DirName = dir.Name()
 			SingleCustomPel.FilePath = readDirFile(systemPelPath + dir.Name())
+			for i, p := range SingleCustomPel.FilePath {
+				if p != "" && !strings.HasPrefix(p, "/") {
+					SingleCustomPel.FilePath[i] = "/" + p
+				}
+			}
 			GetCustomPelList = append(GetCustomPelList, SingleCustomPel)
 		}
 	}

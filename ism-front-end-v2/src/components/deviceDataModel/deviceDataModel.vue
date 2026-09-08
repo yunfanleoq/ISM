@@ -304,9 +304,21 @@ export default {
         }
       }
     },
+    appendRealDataRows(rows){
+      if (!rows || !rows.length) return
+      for (let i = 0; i < rows.length; i++) {
+        this.dataSource.push({
+          id: this.dataSource.length.toString(),
+          name: rows[i].name,
+          uuid: rows[i].mduid || rows[i].uuid,
+          unit: rows[i].unit,
+        })
+      }
+    },
     getRealData(uuid){
       let _t = this
-      const params = {
+      const pageSize = 200
+      const base = {
         uuid:uuid,
         IsRemoveGW:this.selectNodeInfo.IsRemoteGw,
         ProjectUuid:this.selectNodeInfo.ProjectUUID,
@@ -314,22 +326,31 @@ export default {
       this.dataSource = []
       this.messageShowLoad = true
       this.getReadDataResponse = false
-      getRealData(params).then(function (res){
-        _t.getReadDataResponse = true
-        _t.messageShowLoad = false
+      const fetchPage = function(page){
+        return getRealData(Object.assign({}, base, { page: page, pageSize: pageSize }))
+      }
+      fetchPage(1).then(function (res){
         if(res.data.code==0)
         {
-          for(let i=0;i<res.data.realData.length;i++)
-          {
-              let temp={}
-              temp.id = i.toString()
-              temp.name = res.data.realData[i].name
-              temp.uuid = res.data.realData[i].mduid
-              temp.unit = res.data.realData[i].unit
-              _t.dataSource.push(temp)
-              temp={}
+          _t.appendRealDataRows(res.data.realData)
+          const total = Number(res.data.total) || _t.dataSource.length
+          const pages = Math.max(1, Math.ceil(total / pageSize))
+          let chain = Promise.resolve()
+          for (let p = 2; p <= pages; p++) {
+            chain = chain.then(function(){
+              return fetchPage(p).then(function(next){
+                if(next.data.code==0)
+                {
+                  _t.appendRealDataRows(next.data.realData)
+                }
+              })
+            })
           }
+          return chain
         }
+      }).finally(function(){
+        _t.getReadDataResponse = true
+        _t.messageShowLoad = false
       })
     },
     GetSystemData(uuid){

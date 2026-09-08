@@ -66,6 +66,9 @@ func ensureCriticalSchema() {
 		{&DeviceRealData{}, "alarm_on_value", "device_real_data.alarm_on_value"},
 		{&ModbusDevicesDataModel{}, "alarm_on_value", "modbus_devices_data_model.alarm_on_value"},
 		{&VirtualDeviceDataModel{}, "alarm_on_value", "virtual_device_data_model.alarm_on_value"},
+		{&DeviceRealData{}, "alarm_confirm_delay_sec", "device_real_data.alarm_confirm_delay_sec"},
+		{&ModbusDevicesDataModel{}, "alarm_confirm_delay_sec", "modbus_devices_data_model.alarm_confirm_delay_sec"},
+		{&VirtualDeviceDataModel{}, "alarm_confirm_delay_sec", "virtual_device_data_model.alarm_confirm_delay_sec"},
 	} {
 		if Db.Migrator().HasColumn(item.model, item.col) {
 			continue

@@ -405,10 +405,41 @@ func SendAlarmNotice(alarm protocol_common.PushAlarm) int {
 	return 0
 }
 
+func commitRenderedAlarm(alarm protocol_common.PushAlarm) {
+	var updateAlarm models.DevicesAlarmList
+	updateAlarm.AlarmName = alarm.DataName
+	updateAlarm.DeviceUuid = alarm.DeviceUuid
+	updateAlarm.ProjectUuid = alarm.ProjectUuid
+	updateAlarm.DeviceName = alarm.DeviceName
+	updateAlarm.DataUuid = alarm.DataUuid
+	updateAlarm.ModelDataUuid = alarm.ModelDataUuid
+	updateAlarm.HappenTime = alarm.HappenTime
+	updateAlarm.AlarmLevel = alarm.AlarmLevel
+	updateAlarm.KeepTime = 0
+	updateAlarm.AlarmMessage = alarm.AlarmMessage
+	updateAlarm.AlarmClearMessage = alarm.AlarmClearMessage
+	ClearTime, _ := time.Parse("2006-01-02 15:04:05", "2006-01-02 15:04:05")
+	updateAlarm.ClearTime = ClearTime
+	models.Db.Model(&models.DevicesAlarmList{}).Create(&updateAlarm)
+	alarm.ID = updateAlarm.ID
+	alarm.Cmd = "RealAlarm"
+	protocol_common.PushGAlarmQueue.QueuePush(alarm)
+	if updateAlarm.DataUuid == deviceStatusDataUUID {
+		models.Db.Model(&models.MonitorList{}).Where("uuid = ?", alarm.DeviceUuid).Update("status", 0)
+	}
+	if !alarm.SuppressNotice {
+		go SendAlarmNotice(alarm)
+	}
+	DeviceAlarmTemp[alarmConfirmKey(alarm)] = alarm
+}
+
 func DealWithAlarm() {
 	InitializeStartupAlarmGuard()
 	for {
 		protocol_common.ExpireStartupAlarmWindows(time.Now())
+		for _, pending := range takeExpiredPendingAlarms(time.Now()) {
+			commitRenderedAlarm(pending)
+		}
 		data, code := protocol_common.GAlarmQueue.QueuePull()
 		if data == nil {
 			time.Sleep(time.Millisecond * 1000)
@@ -477,6 +508,14 @@ func DealWithAlarm() {
 			}
 			alarm.AlarmClearMessage = updateAlarm.AlarmClearMessage
 			alarm.AlarmMessage = updateAlarm.AlarmMessage
+
+			alreadyActive := isExist && alarmTemp.Value == "1"
+			if alarm.Value == "1" && shouldDebounceAlarmRaise(alarm, alreadyActive) {
+				continue
+			}
+			if alarm.Value != "1" {
+				cancelPendingAlarmConfirm(key)
+			}
 
 			if !isExist {
 				if alarm.Value == "1" {

@@ -46,7 +46,7 @@ func TestRunRulesUsesLoader(t *testing.T) {
 	}
 }
 
-func TestSettleAllPrefersAlarmSetter(t *testing.T) {
+func TestSettleAllPrefersSkipAlarmSetter(t *testing.T) {
 	Clear()
 	var alarmWrites, skipWrites int
 	Configure(func(deviceData string, value interface{}) int {
@@ -60,8 +60,8 @@ func TestSettleAllPrefersAlarmSetter(t *testing.T) {
 	}, nil)
 	Register([]Rule{{SourceDevice: "d", SourcePoint: "p", Bit: 1, TargetDevice: "t", TargetPoint: "b1"}})
 	SettleAll()
-	if alarmWrites == 0 {
-		t.Fatalf("SettleAll should use alarm-enabled setter, alarmWrites=%d skipWrites=%d", alarmWrites, skipWrites)
+	if skipWrites == 0 {
+		t.Fatalf("SettleAll should use skip-alarm setter, alarmWrites=%d skipWrites=%d", alarmWrites, skipWrites)
 	}
 }
 

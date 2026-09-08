@@ -284,6 +284,13 @@
                   </a-select>
                 </a-form-item>
               </a-col>
+              <a-col :span="12">
+                <a-form-item label="告警确认延迟">
+                  <a-checkbox v-decorator="['alarmConfirmDelayEnable', { valuePropName: 'checked', initialValue: false }]">启用</a-checkbox>
+                  <a-input-number v-decorator="['alarmConfirmDelaySec', { initialValue: 5 }]" :min="1" :max="3600" style="width: 90px; margin-left: 8px;" />
+                  秒
+                </a-form-item>
+              </a-col>
             </div>
             <!--存储            -->
             <div v-else>
@@ -654,6 +661,8 @@ export default {
                 AlarmMessage :item.AlarmMessage,
                 AlarmClearMessage : item.AlarmClearMessage,
                 alarmOnValue: (item.alarmOnValue === 0 || item.alarmOnValue === '0') ? '0' : '1',
+                alarmConfirmDelayEnable: (parseInt(item.alarmConfirmDelaySec, 10) || 0) > 0,
+                alarmConfirmDelaySec: (parseInt(item.alarmConfirmDelaySec, 10) || 0) > 0 ? parseInt(item.alarmConfirmDelaySec, 10) : 5,
               })
         }
         else  if (item.record==1)
@@ -703,6 +712,7 @@ export default {
             params.data.AlarmMessage= this.RegisterForm.getFieldValue('AlarmMessage')
             params.data.AlarmClearMessage=this.RegisterForm.getFieldValue('AlarmClearMessage')
             params.data.alarmOnValue= parseInt(this.RegisterForm.getFieldValue('alarmOnValue') || '1')
+            params.data.alarmConfirmDelaySec= this.RegisterForm.getFieldValue('alarmConfirmDelayEnable') ? (parseInt(this.RegisterForm.getFieldValue('alarmConfirmDelaySec') || '0') || 0) : 0
           }
           if (params.data.record==1)
           {
@@ -729,6 +739,7 @@ export default {
                 target.AlarmMessage = _t.RegisterForm.getFieldValue('AlarmMessage')
                 target.AlarmClearMessage = _t.RegisterForm.getFieldValue('AlarmClearMessage')
                 target.alarmOnValue = parseInt(_t.RegisterForm.getFieldValue('alarmOnValue') || '1')
+                target.alarmConfirmDelaySec = _t.RegisterForm.getFieldValue('alarmConfirmDelayEnable') ? (parseInt(_t.RegisterForm.getFieldValue('alarmConfirmDelaySec') || '0') || 0) : 0
                 target.record=parseInt(_t.RegisterForm.getFieldValue('dataRecord'))
                 target.RecordType=parseInt(_t.RegisterForm.getFieldValue('dataRecordType'))
                 target.recordInterval=parseInt(_t.RegisterForm.getFieldValue('dataRecordTime'))
@@ -787,6 +798,7 @@ export default {
             AlarmMessage:this.RegisterForm.getFieldValue('AlarmMessage'),
             AlarmClearMessage:this.RegisterForm.getFieldValue('AlarmClearMessage'),
             alarmOnValue: parseInt(this.RegisterForm.getFieldValue('alarmOnValue') || '1'),
+            alarmConfirmDelaySec: this.RegisterForm.getFieldValue('alarmConfirmDelayEnable') ? (parseInt(this.RegisterForm.getFieldValue('alarmConfirmDelaySec') || '0') || 0) : 0,
             record:parseInt(this.RegisterForm.getFieldValue('dataRecord')),
             RecordType:this.RegisterForm.getFieldValue('dataRecordType')?parseInt(this.RegisterForm.getFieldValue('dataRecordType')):0,
             recordInterval:this.RegisterForm.getFieldValue('dataRecordTime')?parseInt(this.RegisterForm.getFieldValue('dataRecordTime')):0,

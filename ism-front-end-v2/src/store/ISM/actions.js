@@ -1891,9 +1891,7 @@ export const selectPopUpDisplayPageDataStruct = (ctx,page) => {
     let bangDingDeviceSN=[]
     if(!pageid)
     {
-        getLayerDataStruct(ctx,{uuid:page.page.displayUUID,isPopUp:true,metaOnly:true,cb:function (errno, project_uuid, uuids, devices){
-                page.callback(errno == 0 ? 0 : -1,uuids,devices)
-        }});
+        page.callback(-1, bangDingData, bangDingDeviceSN)
         return
     }
     if(!isDisplayPagesLoaded(ctx, page.page.displayUUID))
@@ -1939,6 +1937,9 @@ export const selectPopUpDisplayPageDataStruct = (ctx,page) => {
                     PCPageInfo[pageIndex]._lazyLoaded = true
                     PCPageInfo[pageIndex].pageLayerData = cfg
                     selectPopUpDisplayPageDataStruct(ctx, page)
+                }).catch(function () {
+                    ctx.state.pageLayerLoading = false
+                    page.callback(-1, bangDingData, bangDingDeviceSN)
                 })
                 return
             }

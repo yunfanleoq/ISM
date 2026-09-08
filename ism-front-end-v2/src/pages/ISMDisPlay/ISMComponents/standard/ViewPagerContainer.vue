@@ -177,6 +177,7 @@ import ISMGroupNode from "@/pages/ISMDisPlay/ISMGroupNode.vue";
 import {Graph} from "@antv/x6";
 import {getDisplayModelLayerData,getDisplayModelPagerLayerData,getLayerDataStructByToken} from "@/services/displayModel";
 import {Selection} from "@antv/x6";
+import {isPopUpEnabled} from "@/pages/ISMDisPlay/utils/pageLink";
 res_components["AKeepAlive"] = AKeepAlive
 res_components["SimpleKeyboard"] = SimpleKeyboard
 export default {
@@ -4079,7 +4080,10 @@ export default {
       },
       async showPage(linkInfo) {
         //  this.PopUpDialog = false
-        if(typeof linkInfo.isPopUp!='undefined'&& linkInfo.isPopUp==true)
+        if (linkInfo && typeof linkInfo === 'object') {
+          linkInfo.isPopUp = isPopUpEnabled(linkInfo.isPopUp)
+        }
+        if(isPopUpEnabled(linkInfo && linkInfo.isPopUp))
         {
           let _t = this
           this.IsAutoClose = linkInfo.autoClose
@@ -4109,6 +4113,16 @@ export default {
                 if (_t._isDestroyed) { _t.closePageLoading(loadingKey, loadingToken); return }
                 if(res==0)
                 {
+                  const popupPageId = pagerData && (pagerData.PageId || pagerData.pageUuid)
+                  const mainPageId = _t.currentPageUUID
+                  if (popupPageId && mainPageId && String(popupPageId) === String(mainPageId)) {
+                    _t.currentPopUpDisplayUUID = ""
+                    _t.currentPopUpPageUUID = ""
+                    _t.chargePagePopUp = false
+                    _t.closePageLoading(loadingKey, loadingToken)
+                    _t.$message && _t.$message.warning('弹窗目标与当前页相同，请绑定具体子页')
+                    return
+                  }
                   _t.CurrentPagerPopRealDataUuidList = uuids
                   _t.CurrentPagerPopRealDeviceUuidList=devices
                   _t.PopUpContainerConfigData = pagerData

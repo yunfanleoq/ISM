@@ -81,6 +81,7 @@ type DeviceRealData struct {
 	DataUnit             string `gorm:"type:varchar(250);" json:"unit" validate:"required" label:"数据单位"`
 	IsAlarm              int    `gorm:"index;type:int;" json:"alarm" validate:"required" label:"是否是告警"`
 	AlarmOnValue         int    `gorm:"type:int;default:1" json:"alarmOnValue" label:"告警触发值(0或1)"`
+	AlarmConfirmDelaySec int    `gorm:"type:int;default:0" json:"alarmConfirmDelaySec" label:"告警确认防抖秒数,0关闭"`
 	AlarmLevel           int    `gorm:"index;type:int;" json:"alarmLevel" validate:"required" label:"告警等级 0:提示,1:次要,2:重要,3:严重,4:致命"`
 	AlarmMessage         string `gorm:"type:text;" json:"AlarmMessage" validate:"required" label:"告警显示信息"`
 	AlarmClearMessage    string `gorm:"type:text;" json:"AlarmClearMessage" validate:"required" label:"消除显示信息"`

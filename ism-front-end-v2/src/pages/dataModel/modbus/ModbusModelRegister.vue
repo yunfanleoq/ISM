@@ -325,6 +325,13 @@
                   </a-select>
                 </a-form-item>
               </a-col>
+              <a-col :span="12">
+                <a-form-item label="告警确认延迟">
+                  <a-checkbox v-decorator="['alarmConfirmDelayEnable', { valuePropName: 'checked', initialValue: false }]">启用</a-checkbox>
+                  <a-input-number v-decorator="['alarmConfirmDelaySec', { initialValue: 5 }]" :min="1" :max="3600" style="width: 90px; margin-left: 8px;" />
+                  秒
+                </a-form-item>
+              </a-col>
             </div>
 
 
@@ -1061,6 +1068,8 @@ export default {
                     dataAlarm:item.alarm.toString(),
                     AlarmLevel:item.alarmLevel.toString(),
                     alarmOnValue:(item.alarmOnValue === 0 || item.alarmOnValue === '0') ? '0' : '1',
+                    alarmConfirmDelayEnable: (parseInt(item.alarmConfirmDelaySec, 10) || 0) > 0,
+                    alarmConfirmDelaySec: (parseInt(item.alarmConfirmDelaySec, 10) || 0) > 0 ? parseInt(item.alarmConfirmDelaySec, 10) : 5,
                     dataRecord:item.record.toString(),
                     AlarmMessage :item.AlarmMessage,
                     AlarmClearMessage : item.AlarmClearMessage,
@@ -1106,6 +1115,7 @@ export default {
               conversionExpression:this.EditForm.getFieldValue('ConversionExpression'),
               alarm:parseInt(this.EditForm.getFieldValue('dataAlarm')),
               alarmOnValue:parseInt(this.EditForm.getFieldValue('alarmOnValue') || '1'),
+              alarmConfirmDelaySec: this.EditForm.getFieldValue('alarmConfirmDelayEnable') ? (parseInt(this.EditForm.getFieldValue('alarmConfirmDelaySec') || '0') || 0) : 0,
               alarmLevel:parseInt(this.EditForm.getFieldValue('AlarmLevel')),
               AlarmMessage:this.EditForm.getFieldValue('AlarmMessage'),
               AlarmClearMessage:this.EditForm.getFieldValue('AlarmClearMessage'),
@@ -1170,6 +1180,7 @@ export default {
               conversionExpression:this.EditForm.getFieldValue('ConversionExpression'),
               alarm:parseInt(this.EditForm.getFieldValue('dataAlarm')),
               alarmOnValue:parseInt(this.EditForm.getFieldValue('alarmOnValue') || '1'),
+              alarmConfirmDelaySec: this.EditForm.getFieldValue('alarmConfirmDelayEnable') ? (parseInt(this.EditForm.getFieldValue('alarmConfirmDelaySec') || '0') || 0) : 0,
               alarmLevel:parseInt(this.EditForm.getFieldValue('AlarmLevel')),
               AlarmMessage:this.EditForm.getFieldValue('AlarmMessage'),
               AlarmClearMessage:this.EditForm.getFieldValue('AlarmClearMessage'),

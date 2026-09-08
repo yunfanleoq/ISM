@@ -38,6 +38,7 @@
 <script>
 
 import ISMChildAutoMixin from '@/mixins/ISMChildAutoMixin'
+import { resolveDisplayAssetUrl } from '@/pages/ISMDisPlay/utils/displayAssetUrl'
 export default {
   mixins: [ISMChildAutoMixin],
     name: 'ism-view-png-image',
@@ -50,7 +51,7 @@ export default {
             if (this.detail.style.imageURL == undefined || this.detail.style.imageURL == '') {
                 return '';
             } else {
-                return this.detail.style.imageURL;
+                return resolveDisplayAssetUrl(this.detail.style.imageURL);
             }
         },
       animatedStyle(){

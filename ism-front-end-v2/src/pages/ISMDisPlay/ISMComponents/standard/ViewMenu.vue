@@ -171,6 +171,7 @@ import {displayModelList, getDisplayModelLayerData} from "@/services/displayMode
 import Contextmenu from "vue-contextmenujs"
 import Vue from 'vue'
 import ISMChildAutoMixin from '@/mixins/ISMChildAutoMixin'
+import {isPopUpEnabled, resolveMenuPagePath} from "@/pages/ISMDisPlay/utils/pageLink";
 Vue.use(Contextmenu);
 export default {
   mixins: [ISMChildAutoMixin],
@@ -497,13 +498,22 @@ export default {
         {
           return
         }
+        const pages = this.generateTargetPage(this.displayUUID) || []
+        const path = resolveMenuPagePath(this.SelectPage, this.displayUUID, pages)
+        const isPop = isPopUpEnabled(this.IsPopUp)
+        if (isPop && path && this.displayUUID && path === this.displayUUID) {
+          this.$message && this.$message.warning('弹窗请绑定具体子页，不要绑定首页/模型本身，否则会套娃')
+          return
+        }
+        this.SelectPage = path
+        this.IsPopUp = isPop
         if(this.DoType==1)
         {
           let keyIndex = Date.now()
 
           if(this.SelectType==1)
           {
-            this.detail.style.MenuConfig.push({ key: keyIndex,IsPopUp:this.IsPopUp,DisPlayID:this.displayUUID, path:this.SelectPage,title: this.MenuName });
+            this.detail.style.MenuConfig.push({ key: keyIndex,IsPopUp:isPop,DisPlayID:this.displayUUID, path:path,title: this.MenuName });
           }
           else if(this.SelectType==2)
           {
@@ -515,9 +525,9 @@ export default {
           const menuData = this.findMenuByKey (this.detail.style.MenuConfig,this.SelectKey?.value)
           if (menuData) {
             menuData.title = this.MenuName;
-            menuData.IsPopUp = this.IsPopUp;
+            menuData.IsPopUp = isPop;
             menuData.DisPlayID = this.displayUUID;
-            menuData.path = this.SelectPage;
+            menuData.path = path;
           }
         }
         this.PopUpDialog=false
@@ -540,7 +550,7 @@ export default {
         if (!menuData.children) {
           menuData.children=[]
         }
-        menuData.children.push({ key: keyIndex,IsPopUp:this.IsPopUp,DisPlayID:this.displayUUID, path:this.SelectPage, title: name })
+        menuData.children.push({ key: keyIndex,IsPopUp:isPopUpEnabled(this.IsPopUp),DisPlayID:this.displayUUID, path:this.SelectPage, title: name })
         this.$forceUpdate()
         this.updateMenuScrollState()
       },
@@ -586,7 +596,7 @@ export default {
         }
         let item={
           DisPlayID:menudata.DisPlayID,
-          IsPopUp:menudata.IsPopUp,
+          IsPopUp:isPopUpEnabled(menudata.IsPopUp),
           MenuName:menudata.title,
           PageID:menudata.path,
         }
@@ -651,6 +661,7 @@ export default {
                 pageInfo.value = pageLayer[i].PageId
                 pageInfo.pageType = pageLayer[i].PageType
                 pageInfo.pageModelUuid = pageLayer[i].modelId
+                pageInfo.IsHome = pageLayer[i].IsHome
                 displayArray.push(pageInfo)
               }
               _t.displayPageList.set(uuid,displayArray)

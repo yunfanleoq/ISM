@@ -14,6 +14,10 @@
           <span v-if="text==0">{{ $t('ISMScripts.ScriptAuto') }}</span>
           <span v-else-if="text==1">{{ $t('ISMScripts.ScriptHandle') }}</span>
         </div>
+        <div slot="ScriptStatus" slot-scope="text" >
+          <span v-if="text==1" style="color:#d81e06">{{ $t('ISMScripts.ScriptDisabled') }}</span>
+          <span v-else style="color:#1296db">{{ $t('ISMScripts.ScriptEnabled') }}</span>
+        </div>
         <div slot="action" slot-scope="text, record">
           <a @click="doSysScript(record.ScriptUuid)" style="color: #e89924"><icon-font type="icon-gongjulan-zhihang" />{{$t('ISMScripts.ExecScript')}}</a> |
           <a v-if="record.IsDisable==0" @click="DoDisableSysScript(record.ScriptUuid,record.IsDisable)" style="color: #d81e06"><icon-font type="icon-jinzhitishi" />
@@ -171,6 +175,12 @@ export default {
           width: '10%',
           scopedSlots: { customRender: 'ScriptType', title: 'ISMScripts.ScriptType' },
           dataIndex: 'ScriptType',
+        },
+        {
+          slotName: 'ISMScripts.ScriptStatus',
+          width: '10%',
+          scopedSlots: { customRender: 'ScriptStatus', title: 'ISMScripts.ScriptStatus' },
+          dataIndex: 'IsDisable',
         },
         {
           slotName: 'ISMScripts.ScriptDes',
