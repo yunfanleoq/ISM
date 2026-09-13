@@ -250,6 +250,10 @@ module.exports = {
 
   DBBACKUP: `${BASE_URL}DbBackUp`,
   HISDBBACKUP: `${BASE_URL}HisDbBackUp`,
+  GETHISBACKUPLIST: `${BASE_URL}GetHisBackUpList`,
+  HISDBRESTORE: `${BASE_URL}HisDbRestore`,
+  HISDBDELETEBACKUP: `${BASE_URL}HisDbDeleteBackup`,
+  HISDBBACKUPUPLOAD: `${BASE_URL}HisDbBackupUpload`,
   GETTABLESLIST: `${BASE_URL}GetTablesList`,
   GETBACKUPLIST: `${BASE_URL}GetBackUpList`,
   DBRESTORE: `${BASE_URL}DbRestore`,

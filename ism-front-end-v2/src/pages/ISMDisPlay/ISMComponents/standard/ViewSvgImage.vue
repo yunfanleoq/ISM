@@ -16,7 +16,7 @@
                             }">
   <svg xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"   x="0px" y="0px"   xml:space="preserve" :style="{'overflow': 'visible','width':detail.style.position.w,'height':detail.style.position.h,}">
     <g class="svg-el" :class="{'animated':true,[`${detail.style.animate}`]: true}" :style="{'opacity':fillOpacity,'stroke-opacity':strokeOpacity,'stroke':strokeColor,'stroke-width':strokeWidth,'stroke-linecap':'round','stroke-linejoin':'round','fill':fill}">
-      <image preserveAspectRatio="none meet" :class="{'spin-element':isStart&&animateType.includes('animateSpin')&&!IsToolBox&&spinDirection==0,'spin-element-reverse':isStart&&animateType.includes('animateSpin')&&!IsToolBox&&spinDirection==1}"  :width="detail.style.position.w" :height="detail.style.position.h" :href="imageURL"></image>
+      <image preserveAspectRatio="none meet" :class="{'spin-element':isStart&&animateType.includes('animateSpin')&&!IsToolBox&&spinDirection==0,'spin-element-reverse':isStart&&animateType.includes('animateSpin')&&!IsToolBox&&spinDirection==1}"  :width="detail.style.position.w" :height="detail.style.position.h" :href="resolvedImageURL"></image>
 <!--      闪烁-->
         <animate v-if="isStart&&animateType.includes('blink')&&!IsToolBox" attributeName="opacity"
                  values="0.1;1;0.1" :dur="blinkSpeed+'s'"
@@ -37,6 +37,7 @@
 import {mapState} from "vuex";
 import store from "@/store";
 import ISMChildAutoMixin from '@/mixins/ISMChildAutoMixin'
+import { pickDisplayImageUrl } from '@/pages/ISMDisPlay/utils/displayAssetUrl'
 
 export default {
   mixins: [ISMChildAutoMixin],
@@ -54,7 +55,7 @@ export default {
         strokeWidth:0.3,
         fillOpacity:1,
         strokeOpacity:1,
-        animateType:"blink",
+        animateType:[],
         startColor:"#74f808",
         stopColor:"#74f808",
         animateSpeed:0.5,
@@ -223,6 +224,12 @@ export default {
         return this.detail.style.position.h;
       }
       return this.detail.style.lineHeight;
+    },
+    resolvedImageURL: function() {
+      if (!this.detail || !this.detail.style) {
+        return this.imageURL || ''
+      }
+      return pickDisplayImageUrl(this.detail.style) || this.imageURL || ''
     }
   },
     methods: {
@@ -233,35 +240,39 @@ export default {
         }
         let i=0
         this.fillOpacity = option.style.opacity
-        for( i=0;i<option.style.diy.length;i++)
+        const diy = (option.style && option.style.diy) || []
+        for( i=0;i<diy.length;i++)
         {
-          if(option.style.diy[i].key=="strokeWidth")
+          if(diy[i].key=="strokeWidth")
           {
-            this.strokeWidth=option.style.diy[i].value
+            this.strokeWidth=diy[i].value
           }
-          else if(option.style.diy[i].key=="strokeFill")
+          else if(diy[i].key=="strokeFill")
           {
-            this.fill=option.style.diy[i].value
+            this.fill=diy[i].value
           }
-          else if(option.style.diy[i].key=="strokeColor")
+          else if(diy[i].key=="strokeColor")
           {
-            this.strokeColor=option.style.diy[i].value
+            this.strokeColor=diy[i].value
           }
-          else if(option.style.diy[i].key=="fillOpacity")
+          else if(diy[i].key=="fillOpacity")
           {
-            this.fillOpacity=option.style.diy[i].value
+            this.fillOpacity=diy[i].value
           }
-          else if(option.style.diy[i].key=="strokeOpacity")
+          else if(diy[i].key=="strokeOpacity")
           {
-            this.strokeOpacity=option.style.diy[i].value
+            this.strokeOpacity=diy[i].value
           }
-          else if(option.style.diy[i].key=="imageURL")
+          else if(diy[i].key=="imageURL")
           {
-            this.imageURL=option.style.diy[i].value
+            this.imageURL=diy[i].value
+            if (option.style && !option.style.imageURL) {
+              option.style.imageURL = diy[i].value
+            }
           }
         }
         i=0
-        this.animateType = option.animate.selected
+        this.animateType = (option.animate && option.animate.selected) || []
         if(option.animate.isExpression)
         {
           this.isStart = false

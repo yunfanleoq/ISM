@@ -197,15 +197,25 @@ export function alignSelectedNodes(graph, type) {
       const sorted = nodes.slice().sort((a, b) => a.getBBox().x - b.getBBox().x)
       const baseX = sorted[0].getBBox().x
       sorted.slice(1).forEach((node) => {
-        node.setPosition(baseX, node.getPosition().y)
+        const pos = node.getPosition()
+        const dx = baseX - node.getBBox().x
+        node.setPosition(pos.x + dx, pos.y)
       })
       return
     }
     if (type === 'r') {
-      const sorted = nodes.slice().sort((a, b) => b.getBBox().x - a.getBBox().x)
-      const baseX = sorted[0].getBBox().x
+      const sorted = nodes.slice().sort((a, b) => {
+        const ba = a.getBBox()
+        const bb = b.getBBox()
+        return (bb.x + bb.width) - (ba.x + ba.width)
+      })
+      const base = sorted[0].getBBox()
+      const baseRight = base.x + base.width
       sorted.slice(1).forEach((node) => {
-        node.setPosition(baseX, node.getPosition().y)
+        const pos = node.getPosition()
+        const bbox = node.getBBox()
+        const dx = baseRight - (bbox.x + bbox.width)
+        node.setPosition(pos.x + dx, pos.y)
       })
       return
     }
@@ -213,7 +223,9 @@ export function alignSelectedNodes(graph, type) {
       const sorted = nodes.slice().sort((a, b) => a.getBBox().y - b.getBBox().y)
       const baseY = sorted[0].getBBox().y
       sorted.slice(1).forEach((node) => {
-        node.setPosition(node.getPosition().x, baseY)
+        const pos = node.getPosition()
+        const dy = baseY - node.getBBox().y
+        node.setPosition(pos.x, pos.y + dy)
       })
       return
     }
@@ -226,8 +238,10 @@ export function alignSelectedNodes(graph, type) {
       const base = sorted[0].getBBox()
       const baseBottom = base.y + base.height
       sorted.slice(1).forEach((node) => {
+        const pos = node.getPosition()
         const bbox = node.getBBox()
-        node.setPosition(bbox.x, baseBottom - bbox.height)
+        const dy = baseBottom - (bbox.y + bbox.height)
+        node.setPosition(pos.x, pos.y + dy)
       })
     }
   })

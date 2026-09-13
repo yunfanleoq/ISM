@@ -38,7 +38,7 @@
 <script>
 
 import ISMChildAutoMixin from '@/mixins/ISMChildAutoMixin'
-import { resolveDisplayAssetUrl } from '@/pages/ISMDisPlay/utils/displayAssetUrl'
+import { pickDisplayImageUrl } from '@/pages/ISMDisPlay/utils/displayAssetUrl'
 export default {
   mixins: [ISMChildAutoMixin],
     name: 'ism-view-png-image',
@@ -48,11 +48,10 @@ export default {
     },
     computed: {
         imageURL: function () {
-            if (this.detail.style.imageURL == undefined || this.detail.style.imageURL == '') {
+            if (!this.detail || !this.detail.style) {
                 return '';
-            } else {
-                return resolveDisplayAssetUrl(this.detail.style.imageURL);
             }
+            return pickDisplayImageUrl(this.detail.style);
         },
       animatedStyle(){
         return {
@@ -75,7 +74,7 @@ export default {
           strokeWidth:0.3,
           fillOpacity:1,
           strokeOpacity:1,
-          animateType:"blink",
+          animateType:[],
           startColor:"#74f808",
           stopColor:"#74f808",
           animateSpeed:0.5,
@@ -102,35 +101,38 @@ export default {
         return
       }
       let i=0
-      for( i=0;i<option.style.diy.length;i++)
+      const diy = (option.style && option.style.diy) || []
+      for( i=0;i<diy.length;i++)
       {
-        if(option.style.diy[i].key=="strokeWidth")
+        if(diy[i].key=="strokeWidth")
         {
-          this.strokeWidth=option.style.diy[i].value
+          this.strokeWidth=diy[i].value
         }
-        else if(option.style.diy[i].key=="strokeFill")
+        else if(diy[i].key=="strokeFill")
         {
-          this.fill=option.style.diy[i].value
+          this.fill=diy[i].value
         }
-        else if(option.style.diy[i].key=="strokeColor")
+        else if(diy[i].key=="strokeColor")
         {
-          this.strokeColor=option.style.diy[i].value
+          this.strokeColor=diy[i].value
         }
-        else if(option.style.diy[i].key=="fillOpacity")
+        else if(diy[i].key=="fillOpacity")
         {
-          this.fillOpacity=option.style.diy[i].value
+          this.fillOpacity=diy[i].value
         }
-        else if(option.style.diy[i].key=="strokeOpacity")
+        else if(diy[i].key=="strokeOpacity")
         {
-          this.strokeOpacity=option.style.diy[i].value
+          this.strokeOpacity=diy[i].value
         }
-        else if(option.style.diy[i].key=="imageURL")
+        else if(diy[i].key=="imageURL")
         {
-          this.imageURL=option.style.diy[i].value
+          if (option.style && !option.style.imageURL) {
+            option.style.imageURL = diy[i].value
+          }
         }
       }
       i=0
-      this.animateType = option.animate.selected
+      this.animateType = (option.animate && option.animate.selected) || []
       if(option.animate.isExpression)
       {
         this.isStart = false

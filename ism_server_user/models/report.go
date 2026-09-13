@@ -1086,17 +1086,14 @@ func GetDataTsHistoryList(projectuuid string, params map[string]interface{}, dbC
 
 		if (len(deviceList) != 0) && (len(dataList) != 0) {
 
-			querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where project_uuid ='%s' and  device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", projectuuid, deviceListStr, dataListStr, queryStartTime, queryEndTime)
+			querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where project_uuid ='%s' and  device_uuid in %s AND (model_data_uuid in %s OR data_uuid in %s) and record_time>='%s' and record_time<='%s' order by record_time asc", projectuuid, deviceListStr, dataListStr, dataListStr, queryStartTime, queryEndTime)
 			queryRows, err = dbClient.Query(querySql)
-			// err = Db.Model(&DevicesHistoryDataList{}).Where("device_uuid in ? AND model_data_uuid in ? AND record_time>=? AND record_time<=? ", deviceList, dataList, queryStartTime, queryEndTime).Select("*").Limit(1000000).Find(&getDataHistorys).Error
 		} else if len(deviceList) != 0 {
 			querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where project_uuid ='%s' and   device_uuid in %s AND record_time>='%s' and record_time<='%s' order by record_time asc", projectuuid, deviceListStr, queryStartTime, queryEndTime)
 			queryRows, err = dbClient.Query(querySql)
-			// err = Db.Model(&DevicesHistoryDataList{}).Where("device_uuid in ? AND  record_time>=? AND record_time<=?", deviceList, queryStartTime, queryEndTime).Select("*").Limit(1000000).Find(&getDataHistorys).Error
 		} else if len(dataList) != 0 {
-			querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where project_uuid ='%s' and   model_data_uuid in %s AND record_time>='%s' and record_time<='%s' order by record_time asc", projectuuid, dataListStr, queryStartTime, queryEndTime)
+			querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where project_uuid ='%s' and   (model_data_uuid in %s OR data_uuid in %s) AND record_time>='%s' and record_time<='%s' order by record_time asc", projectuuid, dataListStr, dataListStr, queryStartTime, queryEndTime)
 			queryRows, err = dbClient.Query(querySql)
-			// err = Db.Model(&DevicesHistoryDataList{}).Where("model_data_uuid in ? AND record_time>=? AND record_time<=?", dataList, queryStartTime, queryEndTime).Select("*").Limit(1000000).Find(&getDataHistorys).Error
 		}
 	}
 	if err != nil {

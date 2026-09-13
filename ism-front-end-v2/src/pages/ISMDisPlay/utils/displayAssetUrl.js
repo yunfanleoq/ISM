@@ -25,3 +25,32 @@ export function resolveDisplayAssetUrl(raw) {
   }
   return path
 }
+
+export function pickDisplayImageUrl(style) {
+  if (!style) {
+    return ''
+  }
+  if (style.imageURL) {
+    return resolveDisplayAssetUrl(style.imageURL)
+  }
+  const diy = style.diy || []
+  for (let i = 0; i < diy.length; i++) {
+    if (diy[i] && diy[i].key === 'imageURL' && diy[i].value) {
+      return resolveDisplayAssetUrl(diy[i].value)
+    }
+  }
+  return ''
+}
+
+export function syncStyleImageUrl(style, url) {
+  if (!style) {
+    return
+  }
+  style.imageURL = url || ''
+  const diy = style.diy || []
+  for (let i = 0; i < diy.length; i++) {
+    if (diy[i] && diy[i].key === 'imageURL') {
+      diy[i].value = url || ''
+    }
+  }
+}

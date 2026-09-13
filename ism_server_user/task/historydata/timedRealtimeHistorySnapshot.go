@@ -247,8 +247,9 @@ func snapshotDueTimedPoints(now time.Time) (wrote, fromDB, reusedLast, skippedNo
 			}
 		}
 		if !ok {
+			val = "0"
+			src = "empty"
 			skippedNoValue++
-			continue
 		}
 		writeTimedSnapshot(item.p, val, item.interval, item.cycleTime, item.cycleUnix, item.key)
 		wrote++

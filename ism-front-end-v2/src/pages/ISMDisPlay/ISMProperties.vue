@@ -248,13 +248,13 @@
                   <div v-if="diyData.type==5">
                     <vue-hover-mask>
                       <!-- 默认插槽 -->
-                      <img v-if="configObject.style.diy[diyIndex].value!=''"  style="width: 200px;height:200px;cursor: pointer" :src="configObject.style.diy[diyIndex].value" />
+                      <img v-if="configObject.style.diy[diyIndex].value!=''"  style="width: 200px;height:200px;cursor: pointer" :src="resolveDiyImage(configObject.style.diy[diyIndex].value)" />
                       <div v-else :style="{width: '200px',height:'200px',cursor: 'pointer','background-color':'#F2F2F2'}"></div>
                       <!-- action插槽 -->
                       <template v-slot:action>
                         <span style="font-size: 14px" @click="showSystemImageModel(1,diyIndex)">{{$t('component.systemImageModel.selectImage')}}</span>
                         <a-divider type="vertical" />
-                        <span  style="font-size: 14px" @click="configObject.style.diy[diyIndex].value=''">{{$t('component.systemImageModel.delImage')}}</span>
+                        <span  style="font-size: 14px" @click="clearDiyImage(diyIndex)">{{$t('component.systemImageModel.delImage')}}</span>
                       </template>
                     </vue-hover-mask>
                   </div>
@@ -1261,7 +1261,7 @@
                         <div v-if="diyData.type==5">
                           <vue-hover-mask>
                             <!-- 默认插槽 -->
-                            <img v-if="configObject.animate.animateElement[index].elementList[diyIndex].value!=''"  style="width: 200px;height:200px;cursor: pointer" :src="configObject.animate.animateElement[index].elementList[diyIndex].value" />
+                            <img v-if="configObject.animate.animateElement[index].elementList[diyIndex].value!=''"  style="width: 200px;height:200px;cursor: pointer" :src="resolveDiyImage(configObject.animate.animateElement[index].elementList[diyIndex].value)" />
                             <div v-else :style="{width: '200px',height:'200px',cursor: 'pointer','background-color':'#F2F2F2'}"></div>
                             <!-- action插槽 -->
                             <template v-slot:action>
@@ -1539,6 +1539,7 @@ import codeEditor from '@/components/CodeEditor/index'
 import {setGroupList} from "@/store/ISM/actions";
 import { cloneDeep } from 'lodash-es'
 import {GetSQLReportTempletes} from "@/services/SqlReportTemplete";
+import { resolveDisplayAssetUrl } from '@/pages/ISMDisPlay/utils/displayAssetUrl'
 export default {
   name: 'ISMProperties',
   i18n: require('../../i18n/language'),
@@ -2767,10 +2768,26 @@ export default {
       else if(this.selectImageType==1)
       {
         this.configObject.style.diy[this.selectBandDiyDataIndex].value=url
+        if (this.configObject.style.diy[this.selectBandDiyDataIndex].key === 'imageURL') {
+          this.$set(this.configObject.style, 'imageURL', url)
+        }
       }
       else if(this.selectImageType==2)
       {
         this.configObject.active[0].condition.StatusList[this.selectBandDiyDataIndex].Image=url
+      }
+      this.UpdateNodeData()
+    },
+    resolveDiyImage(url){
+      return resolveDisplayAssetUrl(url) || url
+    },
+    clearDiyImage(diyIndex){
+      if (!this.configObject || !this.configObject.style || !this.configObject.style.diy) {
+        return
+      }
+      this.configObject.style.diy[diyIndex].value = ''
+      if (this.configObject.style.diy[diyIndex].key === 'imageURL') {
+        this.$set(this.configObject.style, 'imageURL', '')
       }
       this.UpdateNodeData()
     },

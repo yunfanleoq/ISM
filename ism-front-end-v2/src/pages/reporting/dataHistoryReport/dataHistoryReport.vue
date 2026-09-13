@@ -100,6 +100,7 @@
       </a-form>
     </div>
 
+    <div v-if="historyCoverageText" style="margin: 8px 0 12px; color: #555;">{{ historyCoverageText }}</div>
     <a-spin style="padding: 1px;"  :spinning="messageShowLoad" tip="Loading...">
       <a-table :pagination="pagination" :columns="columns" :data-source="dataSource" rowKey="ID">
       <template v-for="(item, index) in columns" :slot="item.slotName">
@@ -195,6 +196,7 @@ export default {
       AlarmDataTree:[],
       form: this.$form.createForm(this),
       messageShowLoad:false,
+      historyCoverageText: '',
       advanced: true,
       refIconLoading: false,
       columns: [
@@ -413,6 +415,7 @@ export default {
 
 
       _t.dataSource = []
+      _t.historyCoverageText = ''
       const params = {
         deviceList:this.SelectDevice,
         dataList:this.SelectAlarmData,
@@ -428,7 +431,18 @@ export default {
       GetDataHistoryList(params).then(function (res){
         if(res.data.code==0)
         {
-          _t.dataSource =res.data.list
+          _t.dataSource =res.data.list || []
+          const rows = _t.dataSource || []
+          const uniq = {}
+          rows.forEach(function (r) {
+            const id = (r && (r.DataUuid || r.ModelDataUuid)) || ((r && r.DeviceName || '') + '/' + (r && r.DataName || ''))
+            if (id) uniq[id] = true
+          })
+          const hit = Object.keys(uniq).length
+          const selected = (_t.SelectAlarmData || []).length
+          _t.historyCoverageText = selected
+            ? ('本次命中 ' + hit + ' 个不同测点 / 已选 ' + selected + ' 个测点，共 ' + rows.length + ' 条')
+            : ('本次命中 ' + hit + ' 个不同测点，共 ' + rows.length + ' 条')
         }
         _t.messageShowLoad=false
       })

@@ -876,6 +876,11 @@ export default {
           this.$store.state.ISMDisPlayEditorTool.selectPageUuid = pageId
         } catch (e) { /* ignore */ }
       }
+      const emptyLinkNames = this.collectEmptyInsidePageLinks()
+      if (emptyLinkNames.length) {
+        this.$message.error('请选择跳转目标页面后再保存：' + emptyLinkNames.slice(0, 5).join('、'))
+        return Promise.resolve()
+      }
       let _t = this
       let params = {
         uuid:uuid,
@@ -1026,7 +1031,57 @@ export default {
         event.preventDefault()
       }
     },
-    onSelectImage(){},
+    collectEmptyInsidePageLinks() {
+      const names = []
+      let cells = []
+      try {
+        const json = this.ISMCavasContainer && this.ISMCavasContainer.toJSON && this.ISMCavasContainer.toJSON()
+        cells = (json && json.cells) || []
+      } catch (e) {
+        return names
+      }
+      cells.forEach((cell) => {
+        const detail = cell && cell.data && cell.data.detail
+        const actions = (detail && detail.action) || []
+        actions.forEach((action) => {
+          if (action && action.action === 'link' && action.link && action.link.linkType === 'Inside') {
+            const pageUUID = action.link.Inside && action.link.Inside.pageUUID
+            if (!pageUUID) {
+              names.push((detail && detail.name) || cell.id || '未命名控件')
+            }
+          }
+        })
+      })
+      return names
+    },
+    onSelectImage(url){
+      if (!url) return
+      const graph = this.ISMCavasContainer
+      const selected = graph && graph.getSelectedCells ? graph.getSelectedCells() : []
+      const node = selected.find((cell) => cell && cell.isNode && cell.isNode())
+      if (!node || typeof node.getData !== 'function') {
+        this.$message && this.$message.warning('请先选中要换图的控件')
+        return
+      }
+      const data = node.getData() || {}
+      if (!data.detail || !data.detail.style) return
+      const next = Object.assign({}, data)
+      next.detail = Object.assign({}, data.detail)
+      next.detail.style = Object.assign({}, data.detail.style, { imageURL: url })
+      const diy = ((next.detail.style.diy) || []).map((item) => Object.assign({}, item))
+      let found = false
+      diy.forEach((item, index) => {
+        if (item && item.key === 'imageURL') {
+          diy[index] = Object.assign({}, item, { value: url })
+          found = true
+        }
+      })
+      next.detail.style.diy = diy
+      node.setData(next, { overwrite: true })
+      if (!found) {
+        this.$message && this.$message.info('已写入图片地址')
+      }
+    },
     HeaderAlignNodesLeft(){
       alignSelectedNodes(this.ISMCavasContainer, 'l')
     },

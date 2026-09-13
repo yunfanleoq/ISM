@@ -1081,7 +1081,7 @@ module.exports = {
           HandcartPosition:"手车工作位",
           BreakerStatus:"断路器状态",
           CloseColor:"合闸颜色",
-          BreakerSwitch:"电力开关"
+          BreakerSwitch:"隔离开关"
         },
         public:{
           "ParamsConfigError":"组件参数配置错误",
@@ -4298,7 +4298,7 @@ module.exports = {
           HandcartPosition:"Handcart position",
           BreakerStatus:"Breaker status",
           CloseColor:"Closed color",
-          BreakerSwitch:"Power switch"
+          BreakerSwitch:"Isolator switch"
         },
         public:{
           "ParamsConfigError":"Component parameter configuration error",
@@ -7434,7 +7434,7 @@ module.exports = {
           HandcartPosition:"手車工作位",
           BreakerStatus:"斷路器狀態",
           CloseColor:"合閘顏色",
-          BreakerSwitch:"電力開關"
+          BreakerSwitch:"隔離開關"
         },
         public:{
           "ParamsConfigError":"組件參數配寘錯誤",

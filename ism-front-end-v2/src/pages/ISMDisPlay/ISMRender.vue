@@ -3567,11 +3567,17 @@ export default {
           this.popUpRenderToken += 1
           this.IsAutoClose = linkInfo.autoClose
           if (linkInfo.linkType == "Inside") {
+            if (!linkInfo.Inside.pageUUID) {
+              this.cancelPendingPageLoading()
+              this.$message && this.$message.warning(this.$t('readData.UnboundPage') || '未绑定目标页面，无法跳转')
+              return
+            }
             if (this.PopUpDialog &&
                 this.ISMPopUpRunningContainer &&
                 this.currentPopUpDisplayUUID === linkInfo.Inside.displayUUID &&
                 this.currentPopUpPageUUID === linkInfo.Inside.pageUUID) {
               this.cancelPendingPageLoading()
+              this.$message && this.$message.warning('已在目标页面')
               return
             }
             // 先标记目标页，防止异步加载期间重复触发 GoPage
@@ -3678,14 +3684,24 @@ export default {
         }
         else {
           if (linkInfo.linkType == "Inside") {
+            if (!linkInfo.Inside.pageUUID) {
+              this.cancelPendingPageLoading()
+              this.$message && this.$message.warning(this.$t('readData.UnboundPage') || '未绑定目标页面，无法跳转')
+              return
+            }
             // 已在当前页则跳过，防止 GoPage 高频推送导致反复销毁重建。
             // 例外：层级模板同页换上下文（navContext）必须重新解析绑点。
             const samePage = this.currentDisplayUUID === linkInfo.Inside.displayUUID &&
                 this.currentPageUUID === linkInfo.Inside.pageUUID
             const navCtx = linkInfo.navContext || null
             if (samePage && !navCtx) {
+              if (this.chargePage) {
+                console.log('[showPage] skip in-flight same target, keep first request', linkInfo.Inside)
+                return
+              }
               this.cancelPendingPageLoading()
               console.log('[showPage] skip: already on target page', linkInfo.Inside)
+              this.$message && this.$message.warning('已在目标页面')
               return
             }
             if (samePage && navCtx) {
@@ -3701,6 +3717,11 @@ export default {
             const loadingToken = await this.consumePendingPageLoading()
             if (requestToken !== _t.mainPageRequestToken || _t._isDestroyed) {
               _t.closePageLoading(loadingKey, loadingToken)
+              if (!_t._isDestroyed &&
+                  _t.currentDisplayUUID === linkInfo.Inside.displayUUID &&
+                  _t.currentPageUUID === linkInfo.Inside.pageUUID) {
+                _t.$message && _t.$message.warning('页面切换未完成，请再点一次')
+              }
               return
             }
             // 静默切换：不再提前销毁旧 Graph(否则画布会先变空白再重建 → 闪烁)。
@@ -3723,6 +3744,11 @@ export default {
                 if (requestToken !== _t.mainPageRequestToken || _t._isDestroyed) {
                   _t.closePageLoading(loadingKey, loadingToken)
                   console.warn("[showPage] callback ABORTED: token mismatch or destroyed", "req=", requestToken, "cur=", _t.mainPageRequestToken, "destroyed=", _t._isDestroyed)
+                  if (!_t._isDestroyed &&
+                      _t.currentDisplayUUID === page.displayUUID &&
+                      _t.currentPageUUID === page.pageUuid) {
+                    _t.$message && _t.$message.warning('页面切换未完成，请再点一次')
+                  }
                   return
                 }
                 console.log('[showPage-Main] callback fired, isFound=', isFound, 'uuids=', uuids?.length, 'devices=', devices?.length)
@@ -3762,6 +3788,7 @@ export default {
         this.chargePagePopUp = false
         this.forceClosePageLoading(loadingKey)
         console.error(e)
+        this.$message && this.$message.error('页面跳转失败：' + (e && e.message ? e.message : '运行时异常'))
       }finally {
         console.log("[showPage] finally - nothing to clean here")
       }

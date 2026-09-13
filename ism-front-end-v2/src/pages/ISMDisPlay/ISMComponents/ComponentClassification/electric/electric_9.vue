@@ -2,13 +2,27 @@
 
   <svg  xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none"   x="0px" y="0px" viewBox="0 0 32 32"   :style="{'overflow': 'visible','width':detail.style.position.w,'height':detail.style.position.h,}">
 
-    <g class="svg-el" :style="{'opacity':fillOpacity,'stroke-opacity':strokeOpacity,'stroke':strokeColor,'stroke-width':strokeWidth,'stroke-linecap':'round','stroke-linejoin':'round','fill':fill}">
-      <rect x="1" y="10" width="6" height="12" :stroke="strokeColor" :fill="handcartIn ? closeColor : 'transparent'" :stroke-width="strokeWidth"/>
-      <circle cy="16" cx="10" :r="ConnectDiameter" :stroke="strokeColor" :fill="fill" :stroke-width="strokeWidth"/>
-      <circle cy="16" cx="30" :r="ConnectDiameter" :stroke="strokeColor" :fill="fill" :stroke-width="strokeWidth"/>
-      <line :stroke="strokeColor" :stroke-width="strokeWidth" y1="16" x1="7" y2="16" x2="10"/>
-      <line v-if="!isClose" :stroke="strokeColor" :stroke-width="strokeWidth" y1="16" x1="10" y2="6" x2="28"/>
-      <line v-else :stroke="closeColor" :stroke-width="strokeWidth" y1="16" x1="10" y2="16" x2="30"/>
+    <g class="svg-el" :style="{'opacity':fillOpacity,'stroke-opacity':strokeOpacity,'stroke':strokeColor,'stroke-width':strokeWidth,'stroke-linecap':'round','stroke-linejoin':'round','fill':'none'}">
+      <!-- 竖隔离：上母线 + 双箭头触头 + 刀闸 + 下手车触头 + 下母线 -->
+      <line :stroke="strokeColor" :stroke-width="strokeWidth" x1="16" y1="1" x2="16" :y2="handcartIn ? 7 : 5"/>
+      <polyline :stroke="strokeColor" :stroke-width="strokeWidth" fill="none" :points="handcartIn ? '10,12 16,7 22,12' : '10,10 16,5 22,10'"/>
+      <polyline :stroke="strokeColor" :stroke-width="strokeWidth" fill="none" :points="handcartIn ? '10,15 16,10 22,15' : '10,13 16,8 22,13'"/>
+      <line v-if="isClose"
+            :stroke="closeColor"
+            :stroke-width="strokeWidth"
+            x1="16" :y1="handcartIn ? 10 : 8" x2="16" :y2="handcartIn ? 22 : 24"/>
+      <line v-else
+            :stroke="strokeColor"
+            :stroke-width="strokeWidth"
+            x1="16" :y1="handcartIn ? 10 : 8" :x2="handcartIn ? 24 : 26" :y2="handcartIn ? 18 : 16"/>
+      <polyline :stroke="isClose ? closeColor : strokeColor" :stroke-width="strokeWidth" fill="none" :points="handcartIn ? '10,17 16,22 22,17' : '10,19 16,24 22,19'"/>
+      <polyline :stroke="isClose ? closeColor : strokeColor" :stroke-width="strokeWidth" fill="none" :points="handcartIn ? '10,20 16,25 22,20' : '10,22 16,27 22,22'"/>
+      <line :stroke="strokeColor" :stroke-width="strokeWidth" x1="16" :y1="handcartIn ? 25 : 27" x2="16" y2="31"/>
+      <rect v-if="handcartIn"
+            x="9" y="6" width="14" height="20"
+            :stroke="closeColor"
+            fill="transparent"
+            :stroke-width="strokeWidth"/>
       <animate v-if="isStart&&animateType.includes('blink')&&!IsToolBox" attributeName="opacity"
                values="0.1;1;0.1" :dur="blinkSpeed+'s'"
                repeatCount="indefinite"/>

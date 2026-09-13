@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	"ISMServer/utils/hisdbbackup"
+
 	"github.com/beego/beego/v2/core/config"
 	"github.com/beego/beego/v2/core/logs"
 	beego "github.com/beego/beego/v2/server/web"
@@ -211,7 +213,7 @@ func (c *HisDbOptController) HisDbBackUp() {
 		pass = "taosdata"
 	}
 
-	stamp := time.Now().Format("2006-08-02_15-04-05")
+	stamp := hisdbbackup.BackupStamp(time.Now())
 	distName := "ISM_TDengine_Backup_" + stamp
 	hostOut := filepath.Join("data", "hisdbbackup", distName)
 	if mkErr := os.MkdirAll(hostOut, 0755); mkErr != nil {

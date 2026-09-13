@@ -2,7 +2,7 @@
   <div class="page-header-index-wide">
 
       <a-card :bordered="false" :bodyStyle="{ padding: '16px', height: '100%' }" :style="{ height: '100%' }">
-      <a-tabs default-active-key="3">
+      <a-tabs v-model="hisActiveTab" @change="onHisTabChange">
         <a-tab-pane key="1" :tab="$t('DbBack.DbConfig')">
           <a-spin :tip="$t('DbBack.Loading')" :spinning="messageShowLoad">
             <a-form :label-col="{ span: 5 }" :wrapper-col="{ span: 12 }">
@@ -164,14 +164,16 @@
               </a-form-item>
             </a-form>
             <a-alert
-              v-if="DbType==2"
               type="info"
               show-icon
               style="margin: 16px 0 12px"
-              message="这是 TDengine 历史库备份（不是业务库 MariaDB/OceanBase）。优先本机 taosdump；没有则 docker exec tdengine（可用 TD_CONTAINER 改容器名）。超时约 15 分钟。备份目录 data/hisdbbackup/。业务库请走「数据库管理」页。"
+              :message="hisBackupHint"
             />
-            <a-button v-if="DbType==2" type="default" :loading="hisBackingUp" @click="HisDbBackUp">
-              备份 TDengine 历史库
+            <a-button type="default" :loading="hisBackingUp" @click="HisDbBackUp">
+              备份历史库
+            </a-button>
+            <a-button type="default" style="margin-left: 8px" @click="openHisRestore">
+              还原历史库
             </a-button>
           </a-spin>
         </a-tab-pane>
@@ -213,6 +215,9 @@
             </a-form>
           </a-spin>
         </a-tab-pane>
+        <a-tab-pane key="4" tab="备份目录" forceRender>
+          <HisRestorePanel ref="hisRestorePanel" />
+        </a-tab-pane>
       </a-tabs>
     </a-card>
   </div>
@@ -220,12 +225,14 @@
 <script>
 import {GetSystemHistoryConfig, SaveSystemHistoryConfig} from "../../services/system";
 import {HisDbBackup} from "@/services/dbbackup";
+import HisRestorePanel from "./HisRestorePanel";
 export default {
   i18n: require('../../i18n/language'),
   data () {
     return {
       messageShowLoad:false,
       hisBackingUp:false,
+      hisActiveTab:'1',
       DbType:"1",
       OnceWriteHistoryCounts:100,
       PartitionType:1,
@@ -259,7 +266,16 @@ export default {
       }
     }
   },
-  components: {},
+  components: {HisRestorePanel},
+  computed: {
+    hisBackupHint () {
+      const dir = 'ism_server_user/data/hisdbbackup/'
+      if (String(this.DbType) === '2') {
+        return '这是 TDengine 历史库备份（不是业务库）。优先本机 taosdump；没有则 docker exec tdengine。备份目录：' + dir + '。点「还原历史库」或「备份目录」页签可查看目录并还原。业务库请走「数据库管理」页。'
+      }
+      return '备份目录：' + dir + '。点「还原历史库」或「备份目录」页签可查看已有备份并还原。本页备份/还原针对 TDengine；当前是「内置」时点备份会提示不支持。内置历史在业务库，请走「数据库管理」。'
+    }
+  },
   mounted () {
     this.GetDbConfig()
   },
@@ -301,6 +317,7 @@ export default {
         _t.pg.PGDbName = res.data.result.PGDbName
         _t.pg.PGUser = res.data.result.PGUser
         _t.pg.PGPassWord = res.data.result.PGPassWord
+        _t.$nextTick(function () { _t.refreshHisBackupList() })
       }).catch(function (error) {
         _t.messageShowLoad = false
       })
@@ -359,6 +376,7 @@ export default {
       HisDbBackup({}).then(function (res){
         if(res.data && res.data.code==0) {
           _t.$message.success((res.data.msg || '备份成功') + (res.data.path ? ('：' + res.data.path) : ''))
+          _t.$nextTick(function () { _t.refreshHisBackupList() })
         } else {
           _t.$message.error((res.data && res.data.msg) || '历史库备份失败')
         }
@@ -367,6 +385,22 @@ export default {
       }).finally(function (){
         _t.hisBackingUp = false
       })
+    },
+    onHisTabChange(key){
+      this.hisActiveTab = key
+      if(key==='4') {
+        this.refreshHisBackupList()
+      }
+    },
+    openHisRestore(){
+      this.hisActiveTab = '4'
+      this.$nextTick(() => this.refreshHisBackupList())
+    },
+    refreshHisBackupList(){
+      const panel = this.$refs.hisRestorePanel
+      if (panel && panel.loadList) {
+        panel.loadList()
+      }
     },
   },
   watch: {

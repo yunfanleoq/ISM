@@ -11,6 +11,7 @@
 /data/cert
 /.idea
 /data/dbbackup
+/data/hisdbbackup
 /data/db/*
 !/data/db/ism.db
 /vendor/gorm.io/gorm/LICENSE
