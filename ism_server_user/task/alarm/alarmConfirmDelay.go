@@ -20,10 +20,10 @@ type delayCacheEntry struct {
 }
 
 var (
-	pendingConfirmMu   sync.Mutex
+	pendingConfirmMu    sync.Mutex
 	pendingAlarmConfirm = map[string]pendingConfirm{}
-	delayCacheMu       sync.Mutex
-	alarmDelayCache    = map[string]delayCacheEntry{}
+	delayCacheMu        sync.Mutex
+	alarmDelayCache     = map[string]delayCacheEntry{}
 )
 
 func alarmConfirmKey(alarm protocol_common.PushAlarm) string {
@@ -103,6 +103,7 @@ func takeExpiredPendingAlarms(now time.Time) []protocol_common.PushAlarm {
 	out := make([]protocol_common.PushAlarm, 0)
 	for key, item := range pendingAlarmConfirm {
 		if !now.Before(item.due) {
+			item.alarm.HappenTime = now
 			out = append(out, item.alarm)
 			delete(pendingAlarmConfirm, key)
 		}
@@ -111,7 +112,10 @@ func takeExpiredPendingAlarms(now time.Time) []protocol_common.PushAlarm {
 }
 
 func shouldDebounceAlarmRaise(alarm protocol_common.PushAlarm, alreadyActive bool) bool {
-	if alreadyActive || alarm.Value != "1" || alarm.DataUuid == deviceStatusDataUUID {
+	if alreadyActive || alarm.DataUuid == deviceStatusDataUUID {
+		return false
+	}
+	if !protocol_common.IsAlarmValueActive(alarm.Value, alarm.AlarmOnValue) {
 		return false
 	}
 	delay := lookupAlarmConfirmDelaySec(alarm.DataUuid)

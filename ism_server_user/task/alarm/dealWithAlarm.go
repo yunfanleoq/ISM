@@ -454,12 +454,13 @@ func DealWithAlarm() {
 			key := build.String()
 			alarmTemp, isExist := DeviceAlarmTemp[key]
 
-			if protocol_common.ObserveStartupAlarm(alarm, alarm.Value == "1") {
+			isRaising := protocol_common.IsAlarmValueActive(alarm.Value, alarm.AlarmOnValue)
+			if protocol_common.ObserveStartupAlarm(alarm, isRaising) {
 				// Silent baseline only: no DB create / notice during startup window.
 				DeviceAlarmTemp[key] = alarm
 				if alarm.DataUuid == "sys.suid.device.status" {
 					status := 1
-					if alarm.Value == "1" {
+					if isRaising {
 						status = 0
 					}
 					models.Db.Model(&models.MonitorList{}).Where("uuid = ?", alarm.DeviceUuid).Update("status", status)
@@ -509,16 +510,16 @@ func DealWithAlarm() {
 			alarm.AlarmClearMessage = updateAlarm.AlarmClearMessage
 			alarm.AlarmMessage = updateAlarm.AlarmMessage
 
-			alreadyActive := isExist && alarmTemp.Value == "1"
-			if alarm.Value == "1" && shouldDebounceAlarmRaise(alarm, alreadyActive) {
+			alreadyActive := isExist && protocol_common.IsAlarmValueActive(alarmTemp.Value, alarmTemp.AlarmOnValue)
+			if isRaising && shouldDebounceAlarmRaise(alarm, alreadyActive) {
 				continue
 			}
-			if alarm.Value != "1" {
+			if !isRaising {
 				cancelPendingAlarmConfirm(key)
 			}
 
 			if !isExist {
-				if alarm.Value == "1" {
+				if isRaising {
 					ClearTime, _ := time.Parse("2006-01-02 15:04:05", "2006-01-02 15:04:05")
 					updateAlarm.ClearTime = ClearTime
 					models.Db.Model(&models.DevicesAlarmList{}).Create(&updateAlarm)
@@ -543,7 +544,7 @@ func DealWithAlarm() {
 			} else {
 				if alarmTemp.Value != alarm.Value {
 					var status int = 0
-					if alarm.Value == "1" {
+					if isRaising {
 						ClearTime, _ := time.Parse("2006-01-02 15:04:05", "2006-01-02 15:04:05")
 						updateAlarm.ClearTime = ClearTime
 						models.Db.Model(&models.DevicesAlarmList{}).Create(&updateAlarm)

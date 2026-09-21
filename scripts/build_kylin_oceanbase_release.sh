@@ -94,10 +94,28 @@ if command -v rg >/dev/null 2>&1; then
   rg -q 'DbDeleteBackup' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 DbDeleteBackup（0828 备份删除）"; exit 1; }
   rg -q 'ExportAllModbusDataModel' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 ExportAllModbusDataModel（0828 Modbus 全量导出）"; exit 1; }
   rg -q 'customImportRequest' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 customImportRequest（0901 寄存器组导入超时）"; exit 1; }
+  rg -q 'parseNoPoints' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 parseNoPoints（0921 SNMP MIB 无点位提示）"; exit 1; }
+  rg -q 'HisDbRestore' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 HisDbRestore（0910 历史库还原入口）"; exit 1; }
+  rg -q 'image-bound-hotspot' "$FE_SRC/static/js/"*.js "$FE_SRC/static/css/"*.css 2>/dev/null \
+    || rg -q 'image-bound-hotspot' "$FE_SRC/static/js/"*.js \
+    || { echo "错误: dist 缺少 image-bound-hotspot（0921 图片热区）"; exit 1; }
+  rg -q '悬停/点击测点' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少图片绑点入口（0921）"; exit 1; }
 fi
 # 不用 grep -q：提前退出会让 strings 收到 SIGPIPE，pipefail 下误判失败
 if ! strings "$BIN_SRC" 2>/dev/null | grep -F 'intervalSec=[' >/dev/null; then
   echo "错误: 后端二进制缺少 intervalSec（0827 快照间隔日志），禁止复用旧包"
+  exit 1
+fi
+if ! strings "$BIN_SRC" 2>/dev/null | grep -F 'ParseMib empty nodes' >/dev/null; then
+  echo "错误: 后端缺少 ParseMib empty nodes（0921 SNMP MIB 导入），禁止复用旧包"
+  exit 1
+fi
+if ! strings "$BIN_SRC" 2>/dev/null | grep -F 'HisDbRestore DROP failed' >/dev/null; then
+  echo "错误: 后端缺少 HisDbRestore（0910 历史库还原），禁止复用旧包"
+  exit 1
+fi
+if ! strings "$BIN_SRC" 2>/dev/null | grep -F 'iec104_devices_data_model.alarm_confirm_delay_sec' >/dev/null; then
+  echo "错误: 后端缺少 0921 告警确认延迟补列，禁止复用旧包"
   exit 1
 fi
 if strings "$BIN_SRC" 2>/dev/null | grep -F 'docker exec -T' >/dev/null; then
@@ -399,7 +417,25 @@ bash start-all.sh
 
 浏览器 **Ctrl+F5**。验证通过后可删除 \`web/dist.bak-*\` 省空间。
 
-## 本次相对 0817 含哪些修复（含 20260901 点表改名）
+## 本次相对 0817 含哪些修复（含 20260921 晚间现场项 / SNMP / 20260910）
+
+**20260921 晚间（庞云泽备注两项）**
+
+1. **告警确认延迟**：到期才落告警，发生时间用确认时刻；延迟窗口内恢复则取消。各协议点表可配启用+秒数，并写回实时库。
+2. **图片热区**：png/svg 可绑多个测点；运行态悬停出表、点击钉住。
+
+**20260921（SNMP MIB 导入）**
+
+1. **导入 MIB**：用真实文件名加载，解析失败不再写成成功。
+2. **无点位**：Access=Unknown 时按 Decl/Kind 回退筛选可采集 OID；仍为空则明确提示依赖不全或改用 OID 模板。
+3. **空保存**：没有可保存点位时前端拦截，后端不再空切片下标崩溃。
+
+**20260910**
+
+1. **历史无值也落盘**，并按双 UUID 查询。
+2. **组态跳转失败必提示**。
+3. **备份/还原入口**不再仅 TDengine 才显示；历史库还原走页面上传/列表。
+4. **备份目录日期**改用真实月份。
 
 **20260901（点表导入导出 / 改名称）**
 

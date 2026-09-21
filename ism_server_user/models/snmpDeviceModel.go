@@ -48,6 +48,7 @@ type SnmpDevicesDataModel struct {
 	DataUnit             string `gorm:"type:varchar(250);" json:"unit" validate:"required" label:"数据单位"`
 	ConversionExpression string `gorm:"type:varchar(250);" json:"conversionExpression" validate:"required" label:"转换表达式"`
 	IsAlarm              int    `gorm:"index;type:int;" json:"alarm" validate:"required" label:"是否是告警"`
+	AlarmConfirmDelaySec int    `gorm:"type:int;default:0" json:"alarmConfirmDelaySec" label:"告警确认防抖秒数,0关闭"`
 	AlarmLevel           int    `gorm:"index;type:int;" json:"alarmLevel" validate:"required" label:"告警等级 0:提示,1:次要,2:重要,3:严重,4:致命"`
 	AlarmMessage         string `gorm:"type:text;" json:"AlarmMessage" validate:"required" label:"告警显示信息"`
 	AlarmClearMessage    string `gorm:"type:text;" json:"AlarmClearMessage" validate:"required" label:"消除显示信息"`
@@ -64,10 +65,10 @@ type SnmpDevicesDataModel struct {
 type DeviceRealData struct {
 	gorm.Model
 
-	Name                 string `gorm:"index;type:varchar(250);not null"  json:"name" validate:"required,min=4,max=250" label:"OID名称"`
-	DeviceName           string `gorm:"index;type:varchar(250);not null"  json:"DeviceName" validate:"required,min=4,max=250" label:"设备名称"`
-	Oid                  string `gorm:"index;type:varchar(250);" json:"oid" validate:"required,min=2,max=250" label:"OID"`
-	Uuid                 string `gorm:"index:idx_drd_uuid,priority:1;type:varchar(250);not null" json:"uuid" validate:"required,min=2,max=250" label:"数据标识"`
+	Name       string `gorm:"index;type:varchar(250);not null"  json:"name" validate:"required,min=4,max=250" label:"OID名称"`
+	DeviceName string `gorm:"index;type:varchar(250);not null"  json:"DeviceName" validate:"required,min=4,max=250" label:"设备名称"`
+	Oid        string `gorm:"index;type:varchar(250);" json:"oid" validate:"required,min=2,max=250" label:"OID"`
+	Uuid       string `gorm:"index:idx_drd_uuid,priority:1;type:varchar(250);not null" json:"uuid" validate:"required,min=2,max=250" label:"数据标识"`
 	// 复合索引 idx_drd_project_deleted(project_uuid, deleted_at) 仅由 ensureDeviceRealDataQueryIndexes 创建，
 	// 此处勿用同名单列 index，否则 AutoMigrate 会占名导致复合索引被跳过。
 	ProjectUuid          string `gorm:"index;type:varchar(250);not null" json:"project_uuid" validate:"required" label:"项目的UUID"`
@@ -297,6 +298,7 @@ func SnmpModelMibSave(mibs []SnmpDevicesDataModel) int {
 			tempDeviceRealData.RecordType = mibs[key].RecordType
 
 			tempDeviceRealData.IsAlarm = mibs[key].IsAlarm
+			tempDeviceRealData.AlarmConfirmDelaySec = mibs[key].AlarmConfirmDelaySec
 			tempDeviceRealData.AlarmLevel = mibs[key].AlarmLevel
 			tempDeviceRealData.AlarmMessage = mibs[key].AlarmMessage
 			tempDeviceRealData.AlarmClearMessage = mibs[key].AlarmClearMessage
@@ -588,7 +590,7 @@ func SnmpModelMibsDel(muid string, uuid []string) int {
 // 更新
 func ModelDataEdit(muid string, uuid string, editData SnmpDevicesDataModel) int {
 
-	err := Db.Model(&SnmpDevicesDataModel{}).Select("oid_type", "oid", "data_unit", "conversion_expression", "name", "auth", "is_alarm", "record_type", "record_data_charge", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message").Where("muid = ? AND uuid = ?", muid, uuid).Updates(editData).Error
+	err := Db.Model(&SnmpDevicesDataModel{}).Select("oid_type", "oid", "data_unit", "conversion_expression", "name", "auth", "is_alarm", "alarm_confirm_delay_sec", "record_type", "record_data_charge", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message").Where("muid = ? AND uuid = ?", muid, uuid).Updates(editData).Error
 	if err != nil {
 		return errmsg.ERROR
 	}
@@ -615,6 +617,7 @@ func ModelDataEdit(muid string, uuid string, editData SnmpDevicesDataModel) int 
 	updateDeviceRealData.Name = editData.Name
 
 	updateDeviceRealData.IsAlarm = editData.IsAlarm
+	updateDeviceRealData.AlarmConfirmDelaySec = editData.AlarmConfirmDelaySec
 	updateDeviceRealData.IsRecord = editData.IsRecord
 	updateDeviceRealData.RecordType = editData.RecordType
 	updateDeviceRealData.RecordDataCharge = editData.RecordDataCharge
@@ -623,7 +626,7 @@ func ModelDataEdit(muid string, uuid string, editData SnmpDevicesDataModel) int 
 	updateDeviceRealData.AlarmClearMessage = editData.AlarmClearMessage
 	updateDeviceRealData.AlarmMessage = editData.AlarmMessage
 
-	err1 := Db.Model(&DeviceRealData{}).Select("oid_type", "oid", "data_unit", "conversion_expression", "name", "auth", "is_alarm", "record_type", "record_data_charge", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message").Where("muid = ? AND model_data_uuid = ?", muid, uuid).Updates(updateDeviceRealData).Error
+	err1 := Db.Model(&DeviceRealData{}).Select("oid_type", "oid", "data_unit", "conversion_expression", "name", "auth", "is_alarm", "alarm_confirm_delay_sec", "record_type", "record_data_charge", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message").Where("muid = ? AND model_data_uuid = ?", muid, uuid).Updates(updateDeviceRealData).Error
 	if err1 != nil {
 		return errmsg.ERROR
 	}

@@ -369,6 +369,21 @@
               </div>
             </template>
 
+            <div v-if="isImageHotspotComponent">
+              <a-form-item label="悬停/点击测点">
+                <div v-for="(bind, bindIndex) in imageDataBind" :key="'img-bind-'+bindIndex" style="margin-bottom:6px;display:flex;align-items:center;">
+                  <a-input :value="bindDisplayName(bind)" readOnly size="small">
+                    <a-tooltip slot="addonAfter" title="选择测点">
+                      <icon-font @click="ShowDeviceDataModel(bindIndex,'data')" type="icon-xuanzeshuju" />
+                    </a-tooltip>
+                  </a-input>
+                  <a-icon type="delete" @click="removeImageDataBind(bindIndex)" style="margin-left:6px;cursor:pointer;color:#eb2f96"/>
+                </div>
+                <a-button size="small" icon="plus" @click="addImageDataBind">添加测点</a-button>
+                <div style="color:#888;font-size:12px;margin-top:4px;">运行态点击或悬停图片，弹出已绑定测点实时值</div>
+              </a-form-item>
+            </div>
+
           </a-form>
         </a-tab-pane>
         <a-tab-pane key="3" :tab="$t('displayConfig.Properties.TabHeaterBehavior')" v-if="typeof(configObject.action)!='undefined'" style="padding:5px;">
@@ -1821,6 +1836,16 @@ export default {
             [{ label: '向上', value: 'up' }, { label: '向下', value: 'down' }] : [{ label: '向右', value: 'right' }, { label: '向左', value: 'left' }];
       }
       return items;
+    },
+    isImageHotspotComponent () {
+      const type = this.configObject && this.configObject.type
+      return type === 'ism-view-png-image' || type === 'image' || type === 'view-svg-image'
+    },
+    imageDataBind () {
+      if (!this.configObject || !Array.isArray(this.configObject.dataBind)) {
+        return []
+      }
+      return this.configObject.dataBind
     }
   },
   created(){
@@ -2423,6 +2448,18 @@ export default {
     onSelectData(selectData) {
 
       if(this.BandType=="data") {
+        if (!Array.isArray(this.configObject.dataBind)) {
+          this.$set(this.configObject, 'dataBind', [])
+        }
+        if (!this.configObject.dataBind[this.selectBandDataIndex]) {
+          this.$set(this.configObject.dataBind, this.selectBandDataIndex, {
+            DeviceName: '',
+            isBandDevice: false,
+            deviceSN: '',
+            dataName: '',
+            dataID: ''
+          })
+        }
         this.configObject.dataBind[this.selectBandDataIndex].DeviceName=selectData.DeviceName
         this.configObject.dataBind[this.selectBandDataIndex].isBandDevice = selectData.IsDevice
         this.configObject.dataBind[this.selectBandDataIndex].deviceSN = selectData.DeviceSN
@@ -2466,6 +2503,30 @@ export default {
         this.configObject.action[this.actionIndex].setValue[this.selectBandDataIndex].dataName = selectData.name
         this.configObject.action[this.actionIndex].setValue[this.selectBandDataIndex].dataID = selectData.uuid
       }
+      this.UpdateNodeData()
+    },
+    bindDisplayName(bind) {
+      if (!bind) return ''
+      if (bind.DeviceName && bind.dataName) return bind.DeviceName + ' / ' + bind.dataName
+      return bind.dataName || bind.DeviceName || ''
+    },
+    addImageDataBind() {
+      if (!this.configObject) return
+      if (!Array.isArray(this.configObject.dataBind)) {
+        this.$set(this.configObject, 'dataBind', [])
+      }
+      this.configObject.dataBind.push({
+        DeviceName: '',
+        isBandDevice: false,
+        deviceSN: '',
+        dataName: '',
+        dataID: ''
+      })
+      this.ShowDeviceDataModel(this.configObject.dataBind.length - 1, 'data')
+    },
+    removeImageDataBind(index) {
+      if (!this.configObject || !Array.isArray(this.configObject.dataBind)) return
+      this.configObject.dataBind.splice(index, 1)
       this.UpdateNodeData()
     },
     ShowDeviceDataModel(index,type){

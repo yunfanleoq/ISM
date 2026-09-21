@@ -466,6 +466,14 @@
                   </a-input>
                 </a-form-item>
               </a-col>
+              <a-col :span="12">
+                <a-form-item label="告警确认延迟">
+                  <a-checkbox v-decorator="['alarmConfirmDelayEnable', { valuePropName: 'checked', initialValue: false }]">启用</a-checkbox>
+                  <a-input-number v-decorator="['alarmConfirmDelaySec', { initialValue: 5 }]" :min="1" :max="3600" style="width: 90px; margin-left: 8px;" />
+                  秒
+                </a-form-item>
+              </a-col>
+
             </div>
             <div v-else>
               <a-col :span="12" >
@@ -866,6 +874,8 @@ export default {
                 dataRecord:(typeof item.record!="undefined")?item.record.toString():"0",
                 AlarmMessage :(typeof item.AlarmMessage!="undefined")?item.AlarmMessage:"",
                 AlarmClearMessage : (typeof item.AlarmClearMessage!="undefined")?item.AlarmClearMessage:"",
+                alarmConfirmDelayEnable: (parseInt(item.alarmConfirmDelaySec, 10) || 0) > 0,
+                alarmConfirmDelaySec: (parseInt(item.alarmConfirmDelaySec, 10) || 0) > 0 ? parseInt(item.alarmConfirmDelaySec, 10) : 5,
               })
         }
         else  if (item.record==1)
@@ -910,6 +920,7 @@ export default {
               alarmLevel:parseInt(this.EditForm.getFieldValue('AlarmLevel')),
               AlarmMessage:this.EditForm.getFieldValue('AlarmMessage'),
               AlarmClearMessage:this.EditForm.getFieldValue('AlarmClearMessage'),
+              alarmConfirmDelaySec: this.EditForm.getFieldValue('alarmConfirmDelayEnable') ? (parseInt(this.EditForm.getFieldValue('alarmConfirmDelaySec') || '0') || 0) : 0,
               conversionExpression:this.EditForm.getFieldValue('ConversionExpression'),
               record:this.EditForm.getFieldValue('dataRecord')?parseInt(this.EditForm.getFieldValue('dataRecord')):0,
               RecordType:this.EditForm.getFieldValue('dataRecordType')?parseInt(this.EditForm.getFieldValue('dataRecordType')):0,
@@ -934,6 +945,7 @@ export default {
                     target.alarmLevel=parseInt(_t.EditForm.getFieldValue('AlarmLevel'))
                     target.AlarmMessage = _t.EditForm.getFieldValue('AlarmMessage')
                     target.AlarmClearMessage = _t.EditForm.getFieldValue('AlarmClearMessage')
+                target.alarmConfirmDelaySec = _t.EditForm.getFieldValue('alarmConfirmDelayEnable') ? (parseInt(_t.EditForm.getFieldValue('alarmConfirmDelaySec') || '0') || 0) : 0
                     target.record=parseInt(_t.EditForm.getFieldValue('dataRecord'))
                     target.recordInterval=parseInt(_t.EditForm.getFieldValue('dataRecordTime'))
                     target.RecordType=parseInt(_t.EditForm.getFieldValue('dataRecordType'))
@@ -1008,6 +1020,7 @@ export default {
         temp.AlarmClearMessage = (typeof this.dataSource[i].AlarmClearMessage!="undefined")?this.dataSource[i].AlarmClearMessage:""
         temp.AlarmMessage =  (typeof this.dataSource[i].AlarmMessage!="undefined")?this.dataSource[i].AlarmMessage:""
         temp.alarm=(typeof this.dataSource[i].alarm!="undefined")?parseInt(this.dataSource[i].alarm):0
+        temp.alarmConfirmDelaySec=(typeof this.dataSource[i].alarmConfirmDelaySec!="undefined")?parseInt(this.dataSource[i].alarmConfirmDelaySec)||0:0
 
         temp.record=(typeof this.dataSource[i].record!="undefined")?parseInt(this.dataSource[i].record):0
         temp.recordInterval=(typeof this.dataSource[i].recordInterval!="undefined")?parseInt(this.dataSource[i].recordInterval):0

@@ -36,6 +36,7 @@ type IEC104DevicesDataModel struct {
 	DataUnit                   string `gorm:"type:varchar(250);" json:"unit" validate:"required" label:"数据单位"`
 	ConversionExpression       string `gorm:"type:varchar(250);" json:"conversionExpression" validate:"required" label:"转换表达式"`
 	IsAlarm                    int    `gorm:"type:int;" json:"alarm" validate:"required" label:"是否是告警"`
+	AlarmConfirmDelaySec       int    `gorm:"type:int;default:0" json:"alarmConfirmDelaySec" label:"告警确认防抖秒数,0关闭"`
 	AlarmLevel                 int    `gorm:"type:int;" json:"alarmLevel" validate:"required" label:"告警等级 0:提示,1:次要,2:重要,3:严重,4:致命"`
 	AlarmMessage               string `gorm:"type:text;" json:"AlarmMessage" validate:"required" label:"告警显示信息"`
 	AlarmClearMessage          string `gorm:"type:text;" json:"AlarmClearMessage" validate:"required" label:"消除显示信息"`
@@ -115,6 +116,7 @@ func IEC104NodeAdd(data IEC104DevicesDataModel) int {
 			}
 			writeDeviceRealData[k].DataUnit = data.DataUnit
 			writeDeviceRealData[k].IsAlarm = data.IsAlarm
+			writeDeviceRealData[k].AlarmConfirmDelaySec = data.AlarmConfirmDelaySec
 			writeDeviceRealData[k].AlarmLevel = data.AlarmLevel
 			writeDeviceRealData[k].AlarmMessage = data.AlarmMessage
 			writeDeviceRealData[k].AlarmClearMessage = data.AlarmClearMessage
@@ -166,7 +168,7 @@ func IEC104NodeEdit(muid, uuid string, data IEC104DevicesDataModel) int {
 		return errmsg.SNMP_MODEL_EXIST
 	}
 
-	result := Db.Model(&IEC104DevicesDataModel{}).Select("description", "type", "data_point", "data_category", "data_category_yao_kong_type", "data_category_yao_tiao_type", "data_category_yao_tiao_gui_yi_ed", "data_identification", "data_unit", "conversion_expression", "name", "auth", "is_alarm", "record_data_charge", "record_type", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message").Where("uuid = ?", uuid).Updates(data)
+	result := Db.Model(&IEC104DevicesDataModel{}).Select("description", "type", "data_point", "data_category", "data_category_yao_kong_type", "data_category_yao_tiao_type", "data_category_yao_tiao_gui_yi_ed", "data_identification", "data_unit", "conversion_expression", "name", "auth", "is_alarm", "alarm_confirm_delay_sec", "record_data_charge", "record_type", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message").Where("uuid = ?", uuid).Updates(data)
 	if result.Error != nil {
 		return errmsg.SNMP_MODEL_ADD_FAILED
 	}
@@ -195,6 +197,7 @@ func IEC104NodeEdit(muid, uuid string, data IEC104DevicesDataModel) int {
 	}
 
 	updateRealData.IsAlarm = data.IsAlarm
+	updateRealData.AlarmConfirmDelaySec = data.AlarmConfirmDelaySec
 	updateRealData.IsRecord = data.IsRecord
 	updateRealData.RecordType = data.RecordType
 	updateRealData.RecordDataCharge = data.RecordDataCharge
@@ -202,7 +205,7 @@ func IEC104NodeEdit(muid, uuid string, data IEC104DevicesDataModel) int {
 	updateRealData.AlarmLevel = data.AlarmLevel
 	updateRealData.AlarmClearMessage = data.AlarmClearMessage
 	updateRealData.AlarmMessage = data.AlarmMessage
-	err := Db.Model(&DeviceRealData{}).Select("data_unit", "conversion_expression", "name", "auth", "is_alarm", "record_type", "record_data_charge", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message").Where("model_data_uuid = ?", uuid).Updates(updateRealData).Error
+	err := Db.Model(&DeviceRealData{}).Select("data_unit", "conversion_expression", "name", "auth", "is_alarm", "alarm_confirm_delay_sec", "record_type", "record_data_charge", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message").Where("model_data_uuid = ?", uuid).Updates(updateRealData).Error
 	if err != nil {
 		return errmsg.ERROR
 	}

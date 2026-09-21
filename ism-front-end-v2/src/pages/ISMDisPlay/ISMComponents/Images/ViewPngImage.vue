@@ -1,5 +1,10 @@
 <template>
-  <div v-show="detail.style.visible==1 ||isStart? true:false" :style="animatedStyle">
+  <div v-show="detail.style.visible==1 ||isStart? true:false" :style="animatedStyle"
+       :class="{'image-bound-hotspot': canShowBoundPoints}"
+       @mouseenter="onBoundPointsEnter"
+       @mousemove="onBoundPointsMove"
+       @mouseleave="onBoundPointsLeave"
+       @click="onBoundPointsClick">
     <div :class="{
           'animated':true,[`${detail.style.animate}`]: true
         }"
@@ -31,6 +36,7 @@
   </g>
 </svg>
     </div>
+    <bound-points-popup ref="boundPointsPopup"></bound-points-popup>
   </div>
 
 </template>
@@ -38,9 +44,10 @@
 <script>
 
 import ISMChildAutoMixin from '@/mixins/ISMChildAutoMixin'
+import imageBoundPointsMixin from '@/pages/ISMDisPlay/mixins/imageBoundPointsMixin'
 import { pickDisplayImageUrl } from '@/pages/ISMDisPlay/utils/displayAssetUrl'
 export default {
-  mixins: [ISMChildAutoMixin],
+  mixins: [ISMChildAutoMixin, imageBoundPointsMixin],
     name: 'ism-view-png-image',
     inject: ['getNode'],
     props: {
@@ -260,6 +267,9 @@ export default {
 .svg-el {
   /*transform: rotate(45deg);*/
   transform-origin: center center;
+}
+.image-bound-hotspot {
+  cursor: pointer;
 }
 .view-image {
     height: 100%;

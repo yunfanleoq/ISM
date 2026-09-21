@@ -55,7 +55,7 @@ func (w Writer) Printf(format string, args ...interface{}) {
 // ensureCriticalSchema 大包 AutoMigrate 可能在 display_model_layer 处中断，
 // 关键点表/模型表必须独立补齐（SQLite 与 OceanBase 均走 Migrator，缺列才加）。
 func ensureCriticalSchema() {
-	if e := Db.AutoMigrate(&DeviceRealData{}, &ModbusDevicesDataModel{}, &VirtualDeviceDataModel{}); e != nil {
+	if e := Db.AutoMigrate(&DeviceRealData{}, &ModbusDevicesDataModel{}, &VirtualDeviceDataModel{}, &IEC104DevicesDataModel{}, &IEC61850DevicesDataModel{}, &MqttDevicesDataModel{}, &OpcuaDevicesDataModel{}, &SnmpDevicesDataModel{}, &SimS7DataModel{}, &Dlt645DevicesDataModel{}, &CJT188DevicesDataModel{}, &BacnetDevicesDataModel{}, &HJ212DevicesDataModel{}, &RESTFulDataModel{}); e != nil {
 		gormlog.Info("关键表独立迁移失败: %v", e)
 	}
 	for _, item := range []struct {
@@ -69,6 +69,17 @@ func ensureCriticalSchema() {
 		{&DeviceRealData{}, "alarm_confirm_delay_sec", "device_real_data.alarm_confirm_delay_sec"},
 		{&ModbusDevicesDataModel{}, "alarm_confirm_delay_sec", "modbus_devices_data_model.alarm_confirm_delay_sec"},
 		{&VirtualDeviceDataModel{}, "alarm_confirm_delay_sec", "virtual_device_data_model.alarm_confirm_delay_sec"},
+		{&IEC104DevicesDataModel{}, "alarm_confirm_delay_sec", "iec104_devices_data_model.alarm_confirm_delay_sec"},
+		{&IEC61850DevicesDataModel{}, "alarm_confirm_delay_sec", "iec61850_devices_data_model.alarm_confirm_delay_sec"},
+		{&MqttDevicesDataModel{}, "alarm_confirm_delay_sec", "mqtt_devices_data_model.alarm_confirm_delay_sec"},
+		{&OpcuaDevicesDataModel{}, "alarm_confirm_delay_sec", "opcua_devices_data_model.alarm_confirm_delay_sec"},
+		{&SnmpDevicesDataModel{}, "alarm_confirm_delay_sec", "snmp_devices_data_model.alarm_confirm_delay_sec"},
+		{&SimS7DataModel{}, "alarm_confirm_delay_sec", "sim_s7_data_model.alarm_confirm_delay_sec"},
+		{&Dlt645DevicesDataModel{}, "alarm_confirm_delay_sec", "dlt645_devices_data_model.alarm_confirm_delay_sec"},
+		{&CJT188DevicesDataModel{}, "alarm_confirm_delay_sec", "cjt188_devices_data_model.alarm_confirm_delay_sec"},
+		{&BacnetDevicesDataModel{}, "alarm_confirm_delay_sec", "bacnet_devices_data_model.alarm_confirm_delay_sec"},
+		{&HJ212DevicesDataModel{}, "alarm_confirm_delay_sec", "hj212_devices_data_model.alarm_confirm_delay_sec"},
+		{&RESTFulDataModel{}, "alarm_confirm_delay_sec", "rest_ful_data_model.alarm_confirm_delay_sec"},
 	} {
 		if Db.Migrator().HasColumn(item.model, item.col) {
 			continue

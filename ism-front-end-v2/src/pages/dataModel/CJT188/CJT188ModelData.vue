@@ -189,6 +189,14 @@
                   </a-input>
                 </a-form-item>
               </a-col>
+              <a-col :span="12">
+                <a-form-item label="告警确认延迟">
+                  <a-checkbox v-decorator="['alarmConfirmDelayEnable', { valuePropName: 'checked', initialValue: false }]">启用</a-checkbox>
+                  <a-input-number v-decorator="['alarmConfirmDelaySec', { initialValue: 5 }]" :min="1" :max="3600" style="width: 90px; margin-left: 8px;" />
+                  秒
+                </a-form-item>
+              </a-col>
+
             </div>
 
 
@@ -666,6 +674,8 @@ export default {
                     dataRecord:item.record.toString(),
                     AlarmMessage :item.AlarmMessage,
                     AlarmClearMessage : item.AlarmClearMessage,
+                alarmConfirmDelayEnable: (parseInt(item.alarmConfirmDelaySec, 10) || 0) > 0,
+                alarmConfirmDelaySec: (parseInt(item.alarmConfirmDelaySec, 10) || 0) > 0 ? parseInt(item.alarmConfirmDelaySec, 10) : 5,
                   })
             }
             else  if (item.record==1)
@@ -706,6 +716,7 @@ export default {
             alarmLevel:parseInt(this.EditForm.getFieldValue('AlarmLevel')),
             AlarmMessage:this.EditForm.getFieldValue('AlarmMessage'),
             AlarmClearMessage:this.EditForm.getFieldValue('AlarmClearMessage'),
+              alarmConfirmDelaySec: this.EditForm.getFieldValue('alarmConfirmDelayEnable') ? (parseInt(this.EditForm.getFieldValue('alarmConfirmDelaySec') || '0') || 0) : 0,
             record:parseInt(this.EditForm.getFieldValue('dataRecord')),
             RecordType:parseInt(this.EditForm.getFieldValue('dataRecordType')),
             recordInterval:parseInt(this.EditForm.getFieldValue('dataRecordTime')),
@@ -728,6 +739,7 @@ export default {
                 target.alarmLevel=parseInt(_t.EditForm.getFieldValue('AlarmLevel')),
                 target.AlarmMessage = _t.EditForm.getFieldValue('AlarmMessage')
                 target.AlarmClearMessage = _t.EditForm.getFieldValue('AlarmClearMessage')
+                target.alarmConfirmDelaySec = _t.EditForm.getFieldValue('alarmConfirmDelayEnable') ? (parseInt(_t.EditForm.getFieldValue('alarmConfirmDelaySec') || '0') || 0) : 0
                 target.record=parseInt(_t.EditForm.getFieldValue('dataRecord'))
                 target.RecordType=parseInt(_t.EditForm.getFieldValue('dataRecordType'))
                 target.recordInterval=parseInt(_t.EditForm.getFieldValue('dataRecordTime'))
