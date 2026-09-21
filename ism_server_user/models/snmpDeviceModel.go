@@ -14,6 +14,7 @@ import (
 	"ISMServer/utils/errmsg"
 	"errors"
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/beego/beego/v2/core/logs"
@@ -185,12 +186,25 @@ func ParseMib(module string) ([]gosmi.SmiNode, int) {
 
 	gosmi.Init()
 	gosmi.AppendPath(MibsPath)
-	_, err := gosmi.LoadModule(module)
+	loadedName, err := gosmi.LoadModule(module)
 	if err != nil {
-		logs.Error("Init Error: %s\n", err)
+		logs.Error("LoadModule Error: %s module=%s", err, module)
 		return nil, -1
 	}
-	return ModuleTrees(module), 0
+	lookup := loadedName
+	if lookup == "" {
+		lookup = strings.TrimSuffix(module, path.Ext(module))
+	}
+	nodes := ModuleTrees(lookup)
+	if len(nodes) == 0 && lookup != module {
+		nodes = ModuleTrees(module)
+	}
+	if len(nodes) == 0 {
+		logs.Error("ParseMib empty nodes: file=%s loaded=%s", module, loadedName)
+		return nil, -1
+	}
+	logs.Info("ParseMib ok: file=%s loaded=%s nodes=%d", module, loadedName, len(nodes))
+	return nodes, 0
 }
 
 func ModuleTrees(module string) []gosmi.SmiNode {
@@ -206,10 +220,12 @@ func ModuleTrees(module string) []gosmi.SmiNode {
 
 // MIB 添加
 func SnmpModelMibSave(mibs []SnmpDevicesDataModel) int {
-	var SnmpDevices []MonitorList
-	if len(mibs) > 0 {
-		_ = Db.Unscoped().Where("muid = ?", mibs[0].Muid).Delete(&SnmpDevicesDataModel{}).Error
+	if len(mibs) == 0 {
+		logs.Error("SnmpModelMibSave empty mibs")
+		return errmsg.ERROR
 	}
+	var SnmpDevices []MonitorList
+	_ = Db.Unscoped().Where("muid = ?", mibs[0].Muid).Delete(&SnmpDevicesDataModel{}).Error
 
 	Db.Model(&SnmpDevicesDataModel{}).CreateInBatches(&mibs, 20)
 	err6 := Db.Model(&MonitorList{}).Where("muid = ?", mibs[0].Muid).Find(&SnmpDevices).Error

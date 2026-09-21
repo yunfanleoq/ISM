@@ -954,8 +954,36 @@ export default {
         }
       })
     },
+    isImportableMibNode(node){
+      if (!node || node.Oid == null || !node.Oid.length) {
+        return false
+      }
+      const access = node.Access
+      if (access && access !== 'Unknown' && access !== 'NotImplemented') {
+        return true
+      }
+      const decl = node.Decl || ''
+      const kind = node.Kind || ''
+      const objectDecls = ['ObjectType', 'Scalar', 'Column', 'NotificationType', 'TrapType', 'Notification']
+      const objectKinds = ['Scalar', 'Column', 'Notification']
+      return objectDecls.indexOf(decl) >= 0 || objectKinds.indexOf(kind) >= 0
+    },
+    isFallbackMibNode(node){
+      if (!node || node.Oid == null || !node.Oid.length) {
+        return false
+      }
+      const skipDecls = [
+        'ModuleIdentity', 'ObjectGroup', 'NotificationGroup', 'ModuleCompliance',
+        'AgentCapabilities', 'Macro', 'TextualConvention', 'Unknown'
+      ]
+      return skipDecls.indexOf(node.Decl || '') < 0
+    },
     saveMibData(){
       let saveParams=[]
+      if (!this.dataSource || this.dataSource.length === 0) {
+        this.$message.warning(this.$t("dataModel.saveMibEmpty"))
+        return
+      }
       this.messageShowLoad = true
       for(let i=0;i<this.dataSource.length;i++)
       {
@@ -1014,30 +1042,45 @@ export default {
         if(result.Code==0) {
           let tempData = {}
           if (result.Nodes != null) {
-            this.$message.success(`${info.file.name} `+this.$t("dataModel.parseSuccess"));
+            let picked = []
             for (let i = 0; i < result.Nodes.length; i++) {
-              if ((result.Nodes[i].Access != 'Unknown')&&(result.Nodes[i].Oid!=null)) {
-                tempData.key = i.toString()
-                tempData.oidName = result.Nodes[i].Name
-                tempData.oidPath = result.Nodes[i].Oid.join(".")+'.0'
-                if(result.Nodes[i].Type==null)
-                {
-                  tempData.oidType = result.Nodes[i].Decl
-                }
-                else {
-                  tempData.oidType = result.Nodes[i].Type.BaseType
-                }
-
-                tempData.oidAuth = result.Nodes[i].Access
-                tempData.uuid = ""
-                tempData.dataAlarm=0
-                tempData.dataRecord=0
-                tempData.dataRecordTime=0
-                this.dataSource.push(tempData)
-                tempData = {}
+              if (this.isImportableMibNode(result.Nodes[i])) {
+                picked.push(result.Nodes[i])
               }
             }
+            if (picked.length === 0) {
+              for (let i = 0; i < result.Nodes.length; i++) {
+                if (this.isFallbackMibNode(result.Nodes[i])) {
+                  picked.push(result.Nodes[i])
+                }
+              }
+            }
+            for (let i = 0; i < picked.length; i++) {
+              tempData.key = i.toString()
+              tempData.oidName = picked[i].Name
+              tempData.oidPath = picked[i].Oid.join(".")+'.0'
+              if(picked[i].Type==null)
+              {
+                tempData.oidType = picked[i].Decl
+              }
+              else {
+                tempData.oidType = picked[i].Type.BaseType
+              }
+
+              tempData.oidAuth = picked[i].Access && picked[i].Access !== 'Unknown' ? picked[i].Access : 'ReadOnly'
+              tempData.uuid = ""
+              tempData.dataAlarm=0
+              tempData.dataRecord=0
+              tempData.dataRecordTime=0
+              this.dataSource.push(tempData)
+              tempData = {}
+            }
             this.cacheData = this.dataSource.map(item => ({ ...item }));
+            if (this.dataSource.length === 0) {
+              this.$message.warning(`${info.file.name} `+this.$t("dataModel.parseNoPoints"));
+            } else {
+              this.$message.success(`${info.file.name} `+this.$t("dataModel.parseSuccess"));
+            }
           }
           else
           {
