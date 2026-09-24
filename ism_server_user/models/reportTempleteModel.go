@@ -625,7 +625,7 @@ func HandTsExportModel(Uuid string, dbClient *sql.DB) (string, int) {
 		dataListStr := "(" + StringJoin(HistoryName, ",") + ")"
 		tdStart := protocol_common.FormatTDengineTimestamp(startTimeBe)
 		tdEnd := protocol_common.FormatTDengineTimestamp(endTimeBe)
-		querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where device_uuid = '%s' AND data_name in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceUuid, dataListStr, tdStart, tdEnd)
+		querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.TempleteHistoryDatas where device_uuid = '%s' AND data_name in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceUuid, dataListStr, tdStart, tdEnd)
 		queryRows, err := dbClient.Query(querySql)
 
 		// err = Db.Model(&DevicesHistoryDataList{}).Where("device_uuid = ? AND model_data_uuid in ? and record_time>=? AND record_time<=? ", deviceUuid, ModelDataUuid, startTimeBe, endTimeBe).Select("data_name,device_uuid,device_name,model_data_uuid,record_time,data_value").Order("record_time asc ").Limit(1000000).Find(&getAllDataHistorys).Error

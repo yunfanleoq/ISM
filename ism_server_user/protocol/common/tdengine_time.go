@@ -9,6 +9,10 @@ import (
 const tdengineTimeLayout = "2006-01-02 15:04:05.0000"
 const localWallLayout = "2006-01-02 15:04:05"
 
+// TDengineHistoryStable 历史超级表。同一秒多点必须各写一张子表，查询走超级表。
+// 旧单子表 HistoryDatas 的时间戳是主键，同秒后写会盖掉先写的点。
+const TDengineHistoryStable = "ISMHistoryDb.TempleteHistoryDatas"
+
 // FormatTDengineTimestamp 将业务时间格式化为 TDengine TIMESTAMP 字面量。
 // TDengine 对无时区字符串按 UTC 解释；此处统一写 UTC，避免北京墙钟被当成 UTC 导致显示快 8 小时。
 func FormatTDengineTimestamp(t time.Time) string {

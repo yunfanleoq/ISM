@@ -1075,31 +1075,13 @@ func GetDataTsHistoryList(projectuuid string, params map[string]interface{}, dbC
 	queryStartTime, queryEndTime = tdengineBoundStrings(queryStartTime, queryEndTime)
 
 	var queryRows *sql.Rows
-	if (len(deviceList) == 0) && (len(dataList) == 0) {
-		querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where project_uuid ='%s' and  record_time>='%s' and record_time<='%s' order by record_time asc", projectuuid, queryStartTime, queryEndTime)
-		queryRows, err = dbClient.Query(querySql)
-	} else {
-
-		deviceListStr := "(" + StringJoin(deviceList, ",") + ")"
-
-		dataListStr := "(" + StringJoin(dataList, ",") + ")"
-
-		if (len(deviceList) != 0) && (len(dataList) != 0) {
-
-			querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where project_uuid ='%s' and  device_uuid in %s AND (model_data_uuid in %s OR data_uuid in %s) and record_time>='%s' and record_time<='%s' order by record_time asc", projectuuid, deviceListStr, dataListStr, dataListStr, queryStartTime, queryEndTime)
-			queryRows, err = dbClient.Query(querySql)
-		} else if len(deviceList) != 0 {
-			querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where project_uuid ='%s' and   device_uuid in %s AND record_time>='%s' and record_time<='%s' order by record_time asc", projectuuid, deviceListStr, queryStartTime, queryEndTime)
-			queryRows, err = dbClient.Query(querySql)
-		} else if len(dataList) != 0 {
-			querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where project_uuid ='%s' and   (model_data_uuid in %s OR data_uuid in %s) AND record_time>='%s' and record_time<='%s' order by record_time asc", projectuuid, dataListStr, dataListStr, queryStartTime, queryEndTime)
-			queryRows, err = dbClient.Query(querySql)
-		}
-	}
+	querySql := buildDataTsHistoryQuerySQL(projectuuid, deviceList, dataList, queryStartTime, queryEndTime)
+	queryRows, err = dbClient.Query(querySql)
 	if err != nil {
 		fmt.Print(err)
 		return getDataHistorys, errmsg.ERROR_DATABASE
 	}
+	defer queryRows.Close()
 
 	for queryRows.Next() {
 		var r DevicesHistoryDataList
@@ -1936,7 +1918,7 @@ func GetDiyDataTsHistoryList(projectuuid string, params map[string]interface{}, 
 
 	dataListStr := "(" + StringJoin(HistoryName, ",") + ")"
 	tdStart, tdEnd := tdengineBoundStrings(queryStartTime, queryEndTime)
-	querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where project_uuid ='%s' and device_uuid = '%s' AND data_name in %s and record_time>='%s' and record_time<='%s' order by record_time asc", projectuuid, deviceList, dataListStr, tdStart, tdEnd)
+	querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.TempleteHistoryDatas where project_uuid ='%s' and device_uuid = '%s' AND data_name in %s and record_time>='%s' and record_time<='%s' order by record_time asc", projectuuid, deviceList, dataListStr, tdStart, tdEnd)
 	queryRows, err := dbClient.Query(querySql)
 	// err = Db.Model(&DevicesHistoryDataList{}).Where("device_uuid = ? AND model_data_uuid in ? and record_time>=? AND record_time<=? ", deviceList, ModelDataUuid, queryStartTime, queryEndTime).Select("data_name,device_uuid,device_name,model_data_uuid,record_time,data_value").Order("record_time asc ").Limit(1000000).Find(&getAllDataHistorys).Error
 	if err != nil {
@@ -2527,7 +2509,7 @@ func GetChartDataTsHistoryList(params []byte, dbClient *sql.DB) (int, []map[stri
 
 	dataListStr := "(" + StringJoin(modelDataUuidList, ",") + ")"
 
-	querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceListStr, dataListStr, startTimeBeStr, endTimeBeStr)
+	querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.TempleteHistoryDatas where device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceListStr, dataListStr, startTimeBeStr, endTimeBeStr)
 	queryRows, err := dbClient.Query(querySql)
 
 	// err = Db.Model(&DevicesHistoryDataList{}).Where("device_uuid in ? AND model_data_uuid in ? and record_time>=? AND record_time<=? ", deviceList, modelDataUuidList, startTimeBe, endTimeBe).Select("data_name,device_uuid,device_name,model_data_uuid,record_time,data_value").Limit(1000000).Find(&getAllDataHistorys).Error
@@ -2976,7 +2958,7 @@ func GetTsTrendChartData(params []byte, dbClient *sql.DB) (int, []DevicesHistory
 
 	dataListStr := "(" + StringJoin(modelDataUuidList, ",") + ")"
 
-	querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceListStr, dataListStr, startTimeBeStr, endTimeBeStr)
+	querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.TempleteHistoryDatas where device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceListStr, dataListStr, startTimeBeStr, endTimeBeStr)
 	queryRows, err := dbClient.Query(querySql)
 
 	// err = Db.Model(&DevicesHistoryDataList{}).Where("device_uuid in ? AND model_data_uuid in ? and record_time>=? AND record_time<=? ", deviceList, modelDataUuidList, startTimeBe, endTimeBe).Select("data_name,device_uuid,device_name,model_data_uuid,record_time,data_value").Limit(1000000).Find(&getAllDataHistorys).Error
@@ -3390,7 +3372,7 @@ func GetTsHourDataBatch(pairs []HourDataPair, startDate, endDate string, dbClien
 	tdStart, tdEnd := tdengineBoundStrings(startDate, endDate)
 	querySql := fmt.Sprintf(`
 SELECT record_time, data_name, device_uuid, project_uuid, device_name, data_uuid, model_data_uuid, data_unit, data_value
-FROM ISMHistoryDb.HistoryDatas
+FROM ISMHistoryDb.TempleteHistoryDatas
 WHERE (%s) AND record_time >= ? AND record_time <= ?
 ORDER BY record_time ASC
 `, wherePairs)
@@ -4514,7 +4496,7 @@ func GetTsHourData(deviceName, dataname string, startDate, endDate string, dbCli
 	// 2. 安全 SQL 查询（防止注入，不用字符串拼接）；边界转 UTC
 	querySql := `
 	SELECT record_time, data_name, device_uuid, project_uuid, device_name, data_uuid, model_data_uuid, data_unit, data_value
-	FROM ISMHistoryDb.HistoryDatas
+	FROM ISMHistoryDb.TempleteHistoryDatas
 	WHERE device_name = ? AND data_name = ? AND record_time >= ? AND record_time <= ?
 	ORDER BY record_time ASC
 `
@@ -4803,7 +4785,7 @@ func GetTsTrendChartDataByDate(params []byte, dbClient *sql.DB) (int, []DevicesH
 
 	dataListStr := "(" + StringJoin(modelDataUuidList, ",") + ")"
 
-	querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceListStr, dataListStr, startTimeBeStr, endTimeBeStr)
+	querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.TempleteHistoryDatas where device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceListStr, dataListStr, startTimeBeStr, endTimeBeStr)
 	queryRows, err := dbClient.Query(querySql)
 
 	// err = Db.Model(&DevicesHistoryDataList{}).Where("device_uuid in ? AND model_data_uuid in ? and record_time>=? AND record_time<=? ", deviceList, modelDataUuidList, startTimeBe, endTimeBe).Select("data_name,device_uuid,device_name,model_data_uuid,record_time,data_value").Limit(1000000).Find(&getAllDataHistorys).Error

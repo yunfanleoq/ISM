@@ -2697,6 +2697,7 @@ module.exports = {
         "TempleteContent":"模板内容",
         "HandExport":"手动导出",
         "HandExportFailed":"导出失败",
+        "LoadFailed":"报表模板加载失败，已打开空白表格",
         "PeriodList": {
           "oneDay":"最近一天",
           "threeDay":"最近三天",
@@ -5833,6 +5834,7 @@ module.exports = {
         "TempleteContent":"Template content",
         "HandExport":"Manual export",
         "HandExportFailed":"Export failed",
+        "LoadFailed":"Failed to load the report template, opened a blank sheet",
         "PeriodList": {
           "oneDay":"Last Day",
           "threeDay":"Last three days",
@@ -8970,6 +8972,7 @@ module.exports = {
         "TempleteContent":"模板內容",
         "HandExport":"手動導出",
         "HandExportFailed":"導出失敗",
+        "LoadFailed":"報表模板加載失敗，已打開空白表格",
         "PeriodList": {
           "oneDay":"最近一天",
           "threeDay":"最近三天",

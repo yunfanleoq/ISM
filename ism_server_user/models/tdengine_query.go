@@ -2,8 +2,30 @@ package models
 
 import (
 	protocol_common "ISMServer/protocol/common"
+	"fmt"
 	"time"
 )
+
+func tdengineHistoryQueryTable() string {
+	return protocol_common.TDengineHistoryStable
+}
+
+// buildDataTsHistoryQuerySQL 历史数据页 TDengine 查询。全量不按单点过滤；表必须是超级表。
+func buildDataTsHistoryQuerySQL(projectuuid string, deviceList, dataList []string, queryStartTime, queryEndTime string) string {
+	table := tdengineHistoryQueryTable()
+	if len(deviceList) == 0 && len(dataList) == 0 {
+		return fmt.Sprintf("SELECT * FROM %s where project_uuid ='%s' and  record_time>='%s' and record_time<='%s' order by record_time asc", table, projectuuid, queryStartTime, queryEndTime)
+	}
+	deviceListStr := "(" + StringJoin(deviceList, ",") + ")"
+	dataListStr := "(" + StringJoin(dataList, ",") + ")"
+	if len(deviceList) != 0 && len(dataList) != 0 {
+		return fmt.Sprintf("SELECT * FROM %s where project_uuid ='%s' and  device_uuid in %s AND (model_data_uuid in %s OR data_uuid in %s) and record_time>='%s' and record_time<='%s' order by record_time asc", table, projectuuid, deviceListStr, dataListStr, dataListStr, queryStartTime, queryEndTime)
+	}
+	if len(deviceList) != 0 {
+		return fmt.Sprintf("SELECT * FROM %s where project_uuid ='%s' and   device_uuid in %s AND record_time>='%s' and record_time<='%s' order by record_time asc", table, projectuuid, deviceListStr, queryStartTime, queryEndTime)
+	}
+	return fmt.Sprintf("SELECT * FROM %s where project_uuid ='%s' and   (model_data_uuid in %s OR data_uuid in %s) AND record_time>='%s' and record_time<='%s' order by record_time asc", table, projectuuid, dataListStr, dataListStr, queryStartTime, queryEndTime)
+}
 
 // tdengineBoundStrings 将本地墙钟查询边界转为 TDengine UTC 字面量。
 func tdengineBoundStrings(start, end string) (string, string) {

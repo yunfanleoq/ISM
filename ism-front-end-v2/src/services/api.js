@@ -340,6 +340,7 @@ module.exports = {
   GETREPORTTEMPLETE:`${BASE_URL}GetReportTemplete`,
   EDITREPORTTEMPLETE:`${BASE_URL}EditReportTemplete`,
   SAVEREPORTTEMPLETE:`${BASE_URL}SaveReportTemplete`,
+  GETREPORTTEMPLETEFILE:`${BASE_URL}GetReportTempleteFile`,
   HANDEXPORT:`${BASE_URL}HandExport`,
 
   //SQL模板

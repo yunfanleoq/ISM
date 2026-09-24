@@ -100,6 +100,8 @@ if command -v rg >/dev/null 2>&1; then
     || rg -q 'image-bound-hotspot' "$FE_SRC/static/js/"*.js \
     || { echo "错误: dist 缺少 image-bound-hotspot（0921 图片热区）"; exit 1; }
   rg -q '悬停/点击测点' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少图片绑点入口（0921）"; exit 1; }
+  rg -q 'GetReportTempleteFile' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 GetReportTempleteFile（0924 报表模板）"; exit 1; }
+  rg -q 'initLuckySheet' "$FE_SRC/static/js/"*.js || { echo "错误: dist 缺少 initLuckySheet（0924 mounted 初始化）"; exit 1; }
 fi
 # 不用 grep -q：提前退出会让 strings 收到 SIGPIPE，pipefail 下误判失败
 if ! strings "$BIN_SRC" 2>/dev/null | grep -F 'intervalSec=[' >/dev/null; then
@@ -116,6 +118,18 @@ if ! strings "$BIN_SRC" 2>/dev/null | grep -F 'HisDbRestore DROP failed' >/dev/n
 fi
 if ! strings "$BIN_SRC" 2>/dev/null | grep -F 'iec104_devices_data_model.alarm_confirm_delay_sec' >/dev/null; then
   echo "错误: 后端缺少 0921 告警确认延迟补列，禁止复用旧包"
+  exit 1
+fi
+if ! strings "$BIN_SRC" 2>/dev/null | grep -F 'GetReportTempleteFile' >/dev/null; then
+  echo "错误: 后端缺少 GetReportTempleteFile（0924 报表模板），禁止复用旧包"
+  exit 1
+fi
+if ! strings "$BIN_SRC" 2>/dev/null | grep -F 'hd_unknown' >/dev/null; then
+  echo "错误: 后端缺少 hd_{uuid} 子表（0924 历史点互盖），禁止复用旧包"
+  exit 1
+fi
+if ! strings "$BIN_SRC" 2>/dev/null | grep -F 'ISMHistoryDb.TempleteHistoryDatas' >/dev/null; then
+  echo "错误: 后端缺少 TempleteHistoryDatas 超级表查询，禁止复用旧包"
   exit 1
 fi
 if strings "$BIN_SRC" 2>/dev/null | grep -F 'docker exec -T' >/dev/null; then
@@ -347,7 +361,7 @@ cat > "$STAGING/README-部署说明.md" << READMEEOF
 
 - 与主包 \`ism-release-oceanbase-20260817-0001-c851\` **同族**（麒麟 V10 + OceanBase + TDengine 离线一体）
 - **一份 zip，两种用法**：全新机器整包安装；已有系统只覆盖程序/前端
-- 版本基线: V3.01.RC07（0817）+ 0819/0820 五项 + 20260825 + **20260826 问题项**
+- 版本基线: V3.01.RC07（0817）+ 0819/0820 五项 + 20260825 + **20260924 报表模板/历史点**
 - 业务库: OceanBase（\`dbtype=4\`）
 - 历史库: TDengine（REST 6041 / 原生 6030）
 - 默认端口: 前端 **7090** / 后端 **8091** / OceanBase **2881** / TDengine **6041**
@@ -417,7 +431,12 @@ bash start-all.sh
 
 浏览器 **Ctrl+F5**。验证通过后可删除 \`web/dist.bak-*\` 省空间。
 
-## 本次相对 0817 含哪些修复（含 20260921 晚间现场项 / SNMP / 20260910）
+## 本次相对 0817 含哪些修复（含 20260924 / 20260921 晚间现场项 / SNMP / 20260910）
+
+**20260924**
+
+1. **报表模板空白**：编辑页 \`mounted\`/\`activated\` 初始化 Luckysheet；xlsx 走登录接口 \`GetReportTempleteFile\`；容器不再 \`z-index: -1\`；拉失败打开空白表并提示。
+2. **历史只存最后一个点**：TDengine 按测点写 \`hd_{uuid}\` 子表，同一秒多点不再互盖；查询走超级表 \`TempleteHistoryDatas\`。
 
 **20260921 晚间（庞云泽备注两项）**
 

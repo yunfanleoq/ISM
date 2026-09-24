@@ -1,4 +1,4 @@
-import {ADDREPORTTEMPLETE,DelREPORTTEMPLETE,GETREPORTTEMPLETE,EDITREPORTTEMPLETE,SAVEREPORTTEMPLETE,HANDEXPORT} from '@/services/api'
+import {ADDREPORTTEMPLETE,DelREPORTTEMPLETE,GETREPORTTEMPLETE,EDITREPORTTEMPLETE,SAVEREPORTTEMPLETE,GETREPORTTEMPLETEFILE,HANDEXPORT} from '@/services/api'
 import {request, METHOD} from '@/utils/request'
 
 //历史告警
@@ -30,6 +30,12 @@ export async function SaveReportTemplete(params) {
         timeout:600000000
     })
 }
+export async function GetReportTempleteFile(uuid) {
+    return request(GETREPORTTEMPLETEFILE, METHOD.POST, {Uuid: uuid},{
+        timeout:600000,
+        responseType: 'arraybuffer'
+    })
+}
 
 //手动导出
 export async function HandExportReportTemplete(params) {
@@ -43,5 +49,6 @@ export default {
     DelReportTemplete,
     EditReportTemplete,
     SaveReportTemplete,
+    GetReportTempleteFile,
     HandExportReportTemplete
 }

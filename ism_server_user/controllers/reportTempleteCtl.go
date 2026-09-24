@@ -15,6 +15,9 @@ import (
 	"ISMServer/utils/errmsg"
 	"bytes"
 	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
 
 	beego "github.com/beego/beego/v2/server/web"
 	"github.com/go-basic/uuid"
@@ -187,6 +190,58 @@ func (c *ReportTempleteController) SaveReportTemplete() {
 
 	c.ServeJSON() //返回json格式
 }
+
+func sanitizeReportTempleteUuid(raw string) (string, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || strings.ContainsAny(raw, `/\`) || strings.Contains(raw, "..") {
+		return "", false
+	}
+	return raw, true
+}
+
+func ensureReportTempleteFile(uuid string) (string, error) {
+	filePath := filepath.Join("static", "reportTemplete", uuid+".xlsx")
+	if _, err := os.Stat(filePath); err == nil {
+		return filePath, nil
+	}
+	if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
+		return "", err
+	}
+	xlsx := excelize.NewFile()
+	if err := xlsx.SaveAs(filePath); err != nil {
+		return "", err
+	}
+	return filePath, nil
+}
+
+func (c *ReportTempleteController) GetReportTempleteFile() {
+	uuidStr := strings.TrimSpace(c.GetString("Uuid"))
+	if uuidStr == "" {
+		uuidStr = strings.TrimSpace(c.GetString("uuid"))
+	}
+	if uuidStr == "" {
+		var body struct {
+			Uuid string `json:"Uuid"`
+		}
+		_ = json.Unmarshal(c.Ctx.Input.RequestBody, &body)
+		uuidStr = strings.TrimSpace(body.Uuid)
+	}
+	clean, ok := sanitizeReportTempleteUuid(uuidStr)
+	if !ok {
+		c.Data["json"] = map[string]interface{}{"code": -1, "msg": "invalid uuid"}
+		c.ServeJSON()
+		return
+	}
+	filePath, err := ensureReportTempleteFile(clean)
+	if err != nil {
+		c.Data["json"] = map[string]interface{}{"code": -2, "msg": err.Error()}
+		c.ServeJSON()
+		return
+	}
+	c.Ctx.Output.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Ctx.Output.Download(filePath, clean+".xlsx")
+}
+
 func (c *ReportTempleteController) HandExport() {
 
 	type EditReportTemplete struct {

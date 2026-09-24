@@ -386,6 +386,7 @@ func init() {
 	beego.Router("/GetReportTemplete", &controllers.ReportTempleteController{}, "*:GetReportTemplete")
 	beego.Router("/EditReportTemplete", &controllers.ReportTempleteController{}, "*:EditReportTemplete")
 	beego.Router("/SaveReportTemplete", &controllers.ReportTempleteController{}, "*:SaveReportTemplete")
+	beego.Router("/GetReportTempleteFile", &controllers.ReportTempleteController{}, "*:GetReportTempleteFile")
 	beego.Router("/HandExport", &controllers.ReportTempleteController{}, "*:HandExport")
 
 	// SQL报表模板
