@@ -34,6 +34,7 @@ bash scripts/xunzhi_jf_alarm_demo.sh
 | `xunzhi-jf_w2_device_points.json` | W2 配电/UPS 附录 |
 | `generate_xunzhi_jf_package.py` | 生成 W1 基线包 |
 | `append_w2_power_ups.py` | 向包追加 PWR/UPS（slave 3/4） |
+| `append_s1_envmon_demo.py` | S1：组态告警列表 + 第二机房树节点 |
 
 组态：**寻智机房环境平面监视-xunzhi-jf** / 页 **`xunzhi-jf-env-plane`**
 

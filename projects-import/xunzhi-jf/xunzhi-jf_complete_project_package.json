@@ -4,7 +4,8 @@
     "probe": "P-COL-01",
     "project_slug": "xunzhi-jf",
     "gather_interval_ms_default": 5000,
-    "w2": "power+ups appended"
+    "w2": "power+ups appended",
+    "s1": "envmon-alarm+envmon-viz"
   },
   "project": {
     "name": "寻智机房环境-xunzhi-jf",
@@ -524,6 +525,46 @@
       "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
       "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1502,\"slaveId\":4,\"packTime\":5000,\"gather_interval_ms\":5000}",
       "Status": 2
+    },
+    {
+      "uuid": "b0b0b0b0b0b04b0b00000000000000001",
+      "sid": 1006,
+      "pid": 1000,
+      "name": "F3-模块机房-02-Mock",
+      "type": 0,
+      "timeout": 5,
+      "IsEnable": 1,
+      "interval": 5000,
+      "failedTimes": 5,
+      "description": "S1 envmon-viz 第二机房树节点草稿（Mock，无设备）",
+      "offlineClear": 0,
+      "offlineDefaultValue": "0",
+      "deviceType": 0,
+      "muid": "",
+      "configUid": "a1b2c3d4e5f6478990abcdef12345678",
+      "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
+      "extra": "",
+      "Status": 0
+    },
+    {
+      "uuid": "b1b1b1b1b1b14b1b00000000000000002",
+      "sid": 1007,
+      "pid": 1006,
+      "name": "xunzhi-jf-TH-02-Mock",
+      "type": 1,
+      "timeout": 5,
+      "IsEnable": 0,
+      "interval": 5000,
+      "failedTimes": 5,
+      "description": "第二机房占位设备（未启用，仅树形演示）",
+      "offlineClear": 0,
+      "offlineDefaultValue": "0",
+      "deviceType": 2,
+      "muid": "d4e5f6a7b8c94a0a1111111111111111",
+      "configUid": "a1b2c3d4e5f6478990abcdef12345678",
+      "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1502,\"slaveId\":1,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "Status": 2
     }
   ],
   "alarmTriggers": [
@@ -781,6 +822,155 @@
                     "dataName": ""
                   }
                 }
+              },
+              "action": [],
+              "active": [],
+              "dataBind": []
+            }
+          }
+        },
+        {
+          "shape": "view-svg-text",
+          "id": "9ffc494ebd774fdbbf955ac284d5c04e",
+          "x": 60,
+          "y": 100,
+          "width": 1600,
+          "height": 48,
+          "zIndex": 2,
+          "visible": true,
+          "position": {
+            "x": 60,
+            "y": 100
+          },
+          "size": {
+            "width": 1600,
+            "height": 48
+          },
+          "data": {
+            "detail": {
+              "type": "view-svg-text",
+              "name": "envmon-viz-hint",
+              "identifier": "bf2ee4df9a8f4cc8bba31d49d8313805",
+              "style": {
+                "position": {
+                  "x": 60,
+                  "y": 100,
+                  "w": 1600,
+                  "h": 48
+                },
+                "text": "envmon-viz · 监视树：F3-模块机房-01（竖切实装）｜F3-模块机房-02-Mock（第二节点草稿，无采集）",
+                "visible": 1,
+                "fontSize": 16,
+                "foreColor": "#90caf9",
+                "diy": []
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "isExpression": false,
+                "animateList": []
+              }
+            }
+          }
+        },
+        {
+          "shape": "view-device-alarm-list",
+          "id": "ad8a2a017958447b843e79e20b13e61d",
+          "x": 80,
+          "y": 700,
+          "width": 1760,
+          "height": 320,
+          "zIndex": 8,
+          "visible": true,
+          "position": {
+            "x": 80,
+            "y": 700
+          },
+          "size": {
+            "width": 1760,
+            "height": 320
+          },
+          "data": {
+            "detail": {
+              "type": "view-device-alarm-list",
+              "name": "envmon-alarm",
+              "identifier": "b3ee50217e864fd8bf66f25b7ed8b797",
+              "style": {
+                "position": {
+                  "x": 80,
+                  "y": 700,
+                  "w": 1760,
+                  "h": 320
+                },
+                "text": "",
+                "visible": 1,
+                "backColor": "#0a1628",
+                "foreColor": "#e5eefc",
+                "fontSize": 14,
+                "diy": [
+                  {
+                    "name": "configComponent.AlarmList.rowNum",
+                    "type": 1,
+                    "value": 6,
+                    "min": 5,
+                    "max": 100,
+                    "key": "rowNum"
+                  },
+                  {
+                    "name": "configComponent.AlarmList.headerBGC",
+                    "type": 2,
+                    "value": "#0d47a1",
+                    "key": "headerBGC"
+                  },
+                  {
+                    "name": "configComponent.AlarmList.oddRowBGC",
+                    "type": 2,
+                    "value": "#0a2732",
+                    "key": "oddRowBGC"
+                  },
+                  {
+                    "name": "configComponent.AlarmList.evenRowBGC",
+                    "type": 2,
+                    "value": "#003b51",
+                    "key": "evenRowBGC"
+                  },
+                  {
+                    "name": "configComponent.AlarmList.waitTime",
+                    "type": 7,
+                    "value": 3000,
+                    "min": 100,
+                    "max": 10000,
+                    "key": "waitTime"
+                  }
+                ]
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "isExpression": false,
+                "animateList": []
               },
               "action": [],
               "active": [],
