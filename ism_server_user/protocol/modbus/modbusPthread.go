@@ -2075,6 +2075,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 
 		} else {
 			c.rwMutex.Lock()
+			cycleStart := time.Now()
 			var tempPushData protocol_common.PushRealDataWebData
 
 			tempPushData.DeviceUuid = device.Uuid
@@ -2898,6 +2899,10 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 				protocol_common.ErrorThrottled("modbus:reconn:"+device.Uuid, "设备:%s,连接断开,%d毫秒后尝试重连", device.Name, device.Interval)
 			}
 			if len(tempPushData.Data) > 0 {
+				protocol_common.CycleLogThLeak(
+					device.Name, device.ProjectUuid, device.Interval,
+					time.Since(cycleStart).Milliseconds(), len(tempPushData.Data),
+				)
 				// QueuePush 只写库；WSSend 单入口推前端（合并窗）。勿在队列出口再推 WS。
 				protocol_common.GGatherDataQueue.QueuePush(tempPushData)
 				go ismWebsocket.WSSend(tempPushData, tempPushData.ProjectUuid, 2)
