@@ -34,6 +34,7 @@ module.exports = {
   MONITOREDIT:`${BASE_URL}monitorEdit`,
   MONITORREALDATA:`${BASE_URL}getRealData`,
   MONITORREALDATABYUUID:`${BASE_URL}getRealDataByUuid`,
+  GETDEVICEARCHIVE:`${BASE_URL}getDeviceArchive`,
   SETDATA:`${BASE_URL}setData`,
   MODELDATAEDIT:`${BASE_URL}modelDataEdit`,
   SUPPORTDEVICELIST:`${BASE_URL}supportDevice`,

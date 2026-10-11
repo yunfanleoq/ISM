@@ -56,6 +56,7 @@ func init() {
 	beego.Router("/ping", &controllers.DeviceLibraryController{}, "*:Ping")
 	beego.Router("/getRealData", &controllers.DeviceLibraryController{}, "*:GetRealData")
 	beego.Router("/getRealDataByUuid", &controllers.DeviceLibraryController{}, "*:GetRealDataByUuid")
+	beego.Router("/getDeviceArchive", &controllers.DeviceLibraryController{}, "*:GetDeviceArchive")
 	beego.Router("/setData", &controllers.DeviceLibraryController{}, "*:SetRealData")
 	beego.Router("/SetDeviceStartOrStop", &controllers.DeviceLibraryController{}, "*:SetDeviceStartOrStop")
 

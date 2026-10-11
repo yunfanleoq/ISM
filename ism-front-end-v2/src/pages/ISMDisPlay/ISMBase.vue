@@ -96,6 +96,20 @@ const toolSvgElectricBoxList={
   vueCount:0,
   items:[]
 }
+const toolDcEnvBoxList={
+  title: "displayConfig.ToolBox.DcEnv",
+  "icon": "icon-electric",
+  "opened": false,
+  "isSequence": false,
+  items:[]
+}
+const toolSldBoxList={
+  title: "displayConfig.ToolBox.Sld",
+  "icon": "icon-electric",
+  "opened": false,
+  "isSequence": false,
+  items:[]
+}
 const toolBigScreenBoxContainerList={
   title: "displayConfig.ToolBox.bigScreen.Container",
   icon: "icon-standard-big-screen",
@@ -119,6 +133,8 @@ const componentsCharts = require.context('./ISMComponents/charts/', true, /\.vue
 const componentsBigScreen = require.context('./ISMComponents/bigScreen/', true, /\.vue$/)
 const componentsSvgArrows = require.context('./ISMComponents/svg/arrows/', true, /\.vue$/)
 const componentsSvgElectric = require.context('./ISMComponents/ComponentClassification/electric/', true, /\.vue$/)
+const componentsDcEnv = require.context('./ISMComponents/ComponentClassification/dcenv/', true, /\.vue$/)
+const componentsSld = require.context('./ISMComponents/ComponentClassification/sld/', true, /\.vue$/)
 const componentsImages = require.context('./ISMComponents/Images/', true, /\.vue$/)
 const componentPiping = require.context('../../../public/static/ISM/Conduit', true, /\.png$/)
 const componentPageNavigationList = require.context('../../../public/static/ISM/page/navigation/', true, /\.png$/)
@@ -372,6 +388,22 @@ componentsSvgElectric.keys().forEach(filePath => {
     console.error(filePath+"缺少base基本样式")
   }
 })
+function registerPowerGroup(context, groupList) {
+  context.keys().sort().forEach(filePath => {
+    let comp = context(filePath)
+    let componentsInfo = safeBaseOf(comp, filePath)
+    if (typeof componentsInfo != "undefined" && comp.default && comp.default.name) {
+      registerShapeSafe(comp.default.name, comp.default, filePath)
+      componentsInfo.info.type = comp.default.name
+      groupList.items.push(componentsInfo)
+      res_components[componentsInfo.info.type] = comp.default
+    } else {
+      console.error(filePath + "缺少base基本样式")
+    }
+  })
+}
+registerPowerGroup(componentsDcEnv, toolDcEnvBoxList)
+registerPowerGroup(componentsSld, toolSldBoxList)
 // PNG图片组件
 componentsImages.keys().forEach(filePath => {
   let comp = componentsImages(filePath)
@@ -884,6 +916,8 @@ export default {
 
     toolBoxList.push(toolSvgArrowsBoxList)
     toolBoxList.push(toolSvgElectricBoxList)
+    toolBoxList.push(toolDcEnvBoxList)
+    toolBoxList.push(toolSldBoxList)
 
     //==================管道开始========================
     const toolConduitBoxList={

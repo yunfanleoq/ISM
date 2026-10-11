@@ -239,6 +239,7 @@ func GetModuleDeviceList(moduleName string) []moduleDeviceStu {
 	models.Db.Raw("SELECT monitor_list.project_uuid,monitor_list.uuid,monitor_list.name, monitor_list.muid  FROM monitor_list, devices_model WHERE monitor_list.muid = devices_model.uuid and devices_model.name=?", moduleName).Scan(&results)
 	return results
 }
+
 func SetDeviceData(deviceData string, floatValue interface{}) int {
 	return setDeviceDataEx(deviceData, floatValue, false)
 }
@@ -328,6 +329,7 @@ func setDeviceDataEx(deviceData string, floatValue interface{}, skipAlarm bool) 
 			signleAlarm.DataName = getRealData.Name
 			signleAlarm.DeviceName = getRealData.DeviceName
 			signleAlarm.HappenTime = time.Now()
+			protocol_common.BindAlarmOnValue(&signleAlarm, getRealData.AlarmOnValue)
 			if !skipAlarm {
 				protocol_common.GAlarmQueue.QueuePush(signleAlarm)
 			}
@@ -447,6 +449,7 @@ func setDeviceDataEx(deviceData string, floatValue interface{}, skipAlarm bool) 
 					signleAlarm.DataName = readData.Name
 					signleAlarm.DeviceName = readData.DeviceName
 					signleAlarm.HappenTime = time.Now()
+					protocol_common.BindAlarmOnValue(&signleAlarm, readData.AlarmOnValue)
 					if !skipAlarm {
 						protocol_common.GAlarmQueue.QueuePush(signleAlarm)
 					}
