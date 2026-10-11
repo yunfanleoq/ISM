@@ -54,13 +54,17 @@ python3 projects-import/xunzhi-jf/append_w3_ac_h2.py
 python3 projects-import/xunzhi-jf/append_s1_envmon_demo.py
 python3 projects-import/xunzhi-jf/append_s1_chart_thicken.py
 python3 projects-import/xunzhi-jf/append_s1_gauge_plus.py
+python3 projects-import/xunzhi-jf/append_w4_battery_sample.py
+python3 projects-import/xunzhi-jf/append_s6_25d_nav_shell.py
+python3 projects-import/xunzhi-jf/append_s6_chart_catalog_push.py
 ```
 
 S2 资产 U 位 Mock：`bash scripts/xunzhi_jf_asset_u_demo.sh`（见 `docs/ISM-寻智-S2-资产U位骨架.md`）。  
 S3 NSPC 容量 Mock（骨架）：`bash scripts/xunzhi_jf_capacity_demo.sh`（见 `docs/ISM-寻智-S3-NSPC容量骨架.md`）。  
 S4 工单 Mock（骨架）：`bash scripts/xunzhi_jf_workorder_demo.sh`（见 `docs/ISM-寻智-S4-工单骨架.md`）。  
 S5 能耗 PUE/碳 Mock：`bash scripts/xunzhi_jf_energy_demo.sh`（见 `docs/ISM-寻智-S5-能耗PUE碳骨架.md`）。  
-S6 安防/消防事件桩：`bash scripts/xunzhi_jf_security_demo.sh`（见 `docs/ISM-寻智-S6-安防消防事件桩.md`）。
+S6 安防/消防事件桩：`bash scripts/xunzhi_jf_security_demo.sh`（见 `docs/ISM-寻智-S6-安防消防事件桩.md`）。  
+2.5D 导航壳：`docs/ISM-寻智-S6-2.5D导航壳.md` · 电池抽样：`bash scripts/xunzhi_jf_battery_demo.sh` · 双机演练：`docs/ISM-寻智-双机软件就绪演练.md`。
 
 Mock：`scripts/xunzhi_jf_modbus_mock.py`（slave 1–6）。周期日志：`P-COL-01` 温湿度/漏水 · `P-COL-02` PWR/UPS · `P-COL-03` AC/H2。
 

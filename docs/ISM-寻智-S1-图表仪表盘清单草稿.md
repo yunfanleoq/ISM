@@ -34,8 +34,9 @@
 | 23 | `ism-view-chart-gauge-7` | 表盘实例 #7 | **已挂屏** |
 | 24 | `ism-view-measuring` | 测量仪表 | **已挂屏** |
 
-**已挂 shape 去重计数**：**29** 类（≥20 切片达标；业主须 **ImportProject 复导入** 后目视确认）。  
-**单屏仪表盘/表盘类数据组件实例**：**10** 个（gauge-0…5、gauge-7、gauge-diy、category-1、measuring；契约 S1 ≥10 **达标**）。
+**已挂 shape 去重计数（Import 包 `_meta.s6_chart_shape_count_on_plane`）**：**52** 类（同窗目标 ≥50 **达标**；含 `view-svg-arrows*` 等装饰 shape，业主须复导入后目视）。  
+**单屏仪表盘/表盘类数据组件实例（`_meta.s6_gauge_dashboard_instance_count`）**：**28** 个（同窗目标 ≥20 **达标**）。  
+**未宣称**：同窗终态 ≥50/≥20 的「产品级仪表盘大屏」验收；仅为组态页挂点计数。
 
 生成后包内 `_meta.s1_chart_shape_count` 可与上表交叉核对。
 
@@ -49,9 +50,9 @@
 
 | 契约项 | 目标 | 寻智当前 | 下一步 |
 |--------|------|----------|--------|
-| 图表模板 ≥20 | S1 切片 | **已挂 27 类** | 业主复导入 + 7080 目视 |
-| 仪表盘 ≥10 | S1 切片 | **10 实例** | 业主复导入 + 7080 目视 |
-| ≥50 / ≥20 | 同窗终态 | 未宣称 | S6 加厚 |
+| 图表模板 ≥20 | S1 切片 | **52 类已挂** | 7080 目视 |
+| 仪表盘 ≥10 | S1 切片 | **28 实例** | 7080 目视 |
+| ≥50 / ≥20 | 同窗计数 | **52 / 28** | 非产品级大屏终验 |
 
 代码索引：`ism-front-end-v2/src/pages/ISMDisPlay/ISMComponents/`（`charts/`、`historyCharts/`、`device/`）。  
-导入管线：`generate` → `append_w2` → `append_w3` → `append_s1_envmon_demo` → `append_s1_chart_thicken` → **`append_s1_gauge_plus`**.
+导入管线：`generate` → `append_w2` → `append_w3` → `append_w4_battery_sample` → `append_s1_*` → **`append_s6_25d_nav_shell`** → **`append_s6_chart_catalog_push`**.
