@@ -4,7 +4,7 @@
 
 | 项 | 值 |
 |----|-----|
-| **Git tip** | `0c3d8bc0` |
+| **Git tip** | `160c056f` |
 | **试打样包** | `dist/xunzhi-jf/ism-patch-xunzhi-jf-20261012-e8bb7f8/` |
 | **分支** | `feature/xunzhi-jf-env-monitor` · PR [#5](https://github.com/yunfanleoq/ISM/pull/5) |
 | **口径** | 脚本/Mock/文档在仓内冻结；**ism_server / 7080 / 本机 DB 运行态由演示机自启**；不覆盖 `patches/*kylin`、`releases/` 现网 |
