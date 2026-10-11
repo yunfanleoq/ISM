@@ -41,6 +41,8 @@ bash scripts/xunzhi_jf_alarm_demo.sh
 | `append_s1_gauge_plus.py` | S1：补足仪表盘实例 ≥10 |
 | `xunzhi-jf_dcim_capacity_mock.json` | S3：dcim-capacity Mock 种子（骨架，非闭环） |
 | `xunzhi-jf_dcim_workorder_mock.json` | S4：dcim-workorder Mock 种子（骨架） |
+| `xunzhi-jf_dcim_energy_mock.json` | S5：dcim-energy PUE/碳 Mock 种子 |
+| `xunzhi-jf_security_event_mock.json` | S6：安防/消防事件队列 Mock 种子 |
 | `xunzhi-jf_dcim_asset_mock.json` | S2：dcim-asset Mock 种子（rack_id = MonitorList 节点） |
 
 ### 生成完整导入包（推荐顺序）
@@ -56,7 +58,9 @@ python3 projects-import/xunzhi-jf/append_s1_gauge_plus.py
 
 S2 资产 U 位 Mock：`bash scripts/xunzhi_jf_asset_u_demo.sh`（见 `docs/ISM-寻智-S2-资产U位骨架.md`）。  
 S3 NSPC 容量 Mock（骨架）：`bash scripts/xunzhi_jf_capacity_demo.sh`（见 `docs/ISM-寻智-S3-NSPC容量骨架.md`）。  
-S4 工单 Mock（骨架）：`bash scripts/xunzhi_jf_workorder_demo.sh`（见 `docs/ISM-寻智-S4-工单骨架.md`）。
+S4 工单 Mock（骨架）：`bash scripts/xunzhi_jf_workorder_demo.sh`（见 `docs/ISM-寻智-S4-工单骨架.md`）。  
+S5 能耗 PUE/碳 Mock：`bash scripts/xunzhi_jf_energy_demo.sh`（见 `docs/ISM-寻智-S5-能耗PUE碳骨架.md`）。  
+S6 安防/消防事件桩：`bash scripts/xunzhi_jf_security_demo.sh`（见 `docs/ISM-寻智-S6-安防消防事件桩.md`）。
 
 Mock：`scripts/xunzhi_jf_modbus_mock.py`（slave 1–6）。周期日志：`P-COL-01` 温湿度/漏水 · `P-COL-02` PWR/UPS · `P-COL-03` AC/H2。
 

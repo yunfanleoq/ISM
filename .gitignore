@@ -33,6 +33,8 @@ releases/
 data/xunzhi-jf/dcim_asset_store.json
 data/xunzhi-jf/dcim_capacity_store.json
 data/xunzhi-jf/dcim_workorder_store.json
+data/xunzhi-jf/dcim_energy_store.json
+data/xunzhi-jf/security_event_store.json
 
 # ============================================
 # 数据库备份
