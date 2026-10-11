@@ -20,4 +20,4 @@
 | 平面组态 | `xunzhi-jf-env-plane` + `ism-view-real-table` + 多机房提示条 |
 | 监视树 | `F3-模块机房-01` + **`F3-模块机房-02-Mock`**（`append_s1_envmon_demo.py`） |
 | 实时 | WS `RealData`（端口见 `app.conf` wsport） |
-| 图表加厚 ≥20/≥10 | 同窗目标；W5 加厚，本骨架仅占位 |
+| 图表加厚 ≥20/≥10 | 清单草稿 `docs/ISM-寻智-S1-图表仪表盘清单草稿.md`（**未宣称已达标**） |

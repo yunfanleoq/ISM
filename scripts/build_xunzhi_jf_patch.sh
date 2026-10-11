@@ -14,10 +14,11 @@ mkdir -p "$DEST/projects-import/xunzhi-jf" "$DEST/scripts" "$DEST/docs"
 cp projects-import/xunzhi-jf/xunzhi-jf_complete_project_package.json "$DEST/projects-import/xunzhi-jf/"
 cp projects-import/xunzhi-jf/xunzhi-jf_device_points.json "$DEST/projects-import/xunzhi-jf/" 2>/dev/null || true
 cp projects-import/xunzhi-jf/xunzhi-jf_w2_device_points.json "$DEST/projects-import/xunzhi-jf/" 2>/dev/null || true
+cp projects-import/xunzhi-jf/xunzhi-jf_w3_device_points.json "$DEST/projects-import/xunzhi-jf/" 2>/dev/null || true
 cp scripts/xunzhi_jf_*.sh scripts/xunzhi_jf_*.py "$DEST/scripts/" 2>/dev/null || true
 cp scripts/import_xunzhi_jf_project.py "$DEST/scripts/" 2>/dev/null || true
-cp docs/ISM-寻智-W1竖切验收.md docs/ISM-寻智-W1业主本机目视自证.md docs/ISM-寻智-S1-envmon演示.md docs/ISM-寻智-W1复测证据/README.md "$DEST/docs/" 2>/dev/null || true
-cp projects-import/xunzhi-jf/append_w2_power_ups.py "$DEST/projects-import/xunzhi-jf/" 2>/dev/null || true
+cp docs/ISM-寻智-W1竖切验收.md docs/ISM-寻智-W1业主本机目视自证.md docs/ISM-寻智-S1-envmon演示.md docs/ISM-寻智-S1-图表仪表盘清单草稿.md docs/ISM-寻智-W1复测证据/README.md "$DEST/docs/" 2>/dev/null || true
+cp projects-import/xunzhi-jf/append_w2_power_ups.py projects-import/xunzhi-jf/append_w3_ac_h2.py "$DEST/projects-import/xunzhi-jf/" 2>/dev/null || true
 cp projects-import/xunzhi-jf/append_s1_envmon_demo.py "$DEST/projects-import/xunzhi-jf/" 2>/dev/null || true
 
 cat >"$DEST/README.md" <<EOF

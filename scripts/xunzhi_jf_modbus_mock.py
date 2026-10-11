@@ -3,8 +3,9 @@
 寻智 xunzhi-jf 竖切 Modbus TCP Mock（127.0.0.1:1502）
   slave 1 — 温湿度：HR0 温度×10，HR1 湿度×10；DI0 传感器故障
   slave 2 — 漏水：DI0 漏水信号，DI1 控制器故障；HR0 位置米数×10
+  slave 3/4 — W2 配电/UPS；slave 5/6 — W3 空调/氢气
 
-日志含 [xunzhi-jf-mock-cycle] 便于与后端 P-COL-01 cycle_log_th_leak 对照。
+日志含 [xunzhi-jf-mock-cycle] 便于与后端 P-COL-01/02/03 周期日志对照。
 """
 import argparse
 import math
@@ -17,8 +18,8 @@ HOST = "0.0.0.0"
 PORT = 1502
 CYCLE_S = 5.0
 
-hr = {1: [0] * 64, 2: [0] * 64, 3: [0] * 64, 4: [0] * 64}
-di = {1: [0] * 64, 2: [0] * 64, 3: [0] * 64, 4: [0] * 64}
+hr = {i: [0] * 64 for i in range(1, 7)}
+di = {i: [0] * 64 for i in range(1, 7)}
 lock = threading.Lock()
 
 
@@ -48,9 +49,17 @@ def tick_values():
         hr[4][0] = 3800
         hr[4][1] = 420
         hr[4][2] = 5400
+        # W3 slave 5 空调 / slave 6 氢气
+        hr[5][0] = 240  # 回风 24.0℃
+        hr[5][1] = 180  # 送风 18.0℃
+        hr[5][2] = 220  # 设定 22.0℃
+        di[5][0] = 1
+        hr[6][0] = 35  # 35 ppm
+        di[6][0] = 0
     print(
         f"[xunzhi-jf-mock-cycle] cycle_s={CYCLE_S:.0f} slave1 temp={temp:.1f}C humi={humi:.1f}%RH "
-        f"slave2 leak={leak} pos_m={pos_m:.1f}m slave3_pwr=380V slave4_ups_batt=540V",
+        f"slave2 leak={leak} pos_m={pos_m:.1f}m slave3_pwr=380V slave4_ups_batt=540V "
+        f"slave5_ac_ret=24C slave6_h2=35ppm",
         flush=True,
     )
 

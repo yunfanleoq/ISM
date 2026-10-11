@@ -1,6 +1,6 @@
-# 寻智机房环境 · xunzhi-jf（S0 竖切 + W2 扩展）
+# 寻智机房环境 · xunzhi-jf（S0 竖切 + W2/W3 扩展）
 
-Modbus TCP：**温湿度 + 漏水**（W1）+ **列头柜 + UPS**（W2 点表已并入同一导入包）。
+Modbus TCP：**温湿度 + 漏水**（W1）+ **列头柜 + UPS**（W2）+ **精密空调 + 氢气**（W3），默认 **`gather_interval_ms=5000`**（≤10s 契约）。
 
 链路：**协议 → DeviceRealData → WebSocket（`conf/app.conf` 的 `wsport`，本仓 dev 常见 10225）→ 组态**。
 
@@ -32,9 +32,22 @@ bash scripts/xunzhi_jf_alarm_demo.sh
 | `xunzhi-jf_complete_project_package.json` | `POST /ImportProject`（含 W2 设备时需重新导入或新库） |
 | `xunzhi-jf_device_points.json` | W1 点表 |
 | `xunzhi-jf_w2_device_points.json` | W2 配电/UPS 附录 |
+| `xunzhi-jf_w3_device_points.json` | W3 空调/氢气附录 |
 | `generate_xunzhi_jf_package.py` | 生成 W1 基线包 |
 | `append_w2_power_ups.py` | 向包追加 PWR/UPS（slave 3/4） |
+| `append_w3_ac_h2.py` | 向包追加 AC/H2（slave 5/6）· 探针 **P-COL-03** `cycle_log_ac_h2` |
 | `append_s1_envmon_demo.py` | S1：组态告警列表 + 第二机房树节点 |
+
+### 生成完整导入包（推荐顺序）
+
+```bash
+python3 projects-import/xunzhi-jf/generate_xunzhi_jf_package.py
+python3 projects-import/xunzhi-jf/append_w2_power_ups.py
+python3 projects-import/xunzhi-jf/append_w3_ac_h2.py
+python3 projects-import/xunzhi-jf/append_s1_envmon_demo.py
+```
+
+Mock：`scripts/xunzhi_jf_modbus_mock.py`（slave 1–6）。周期日志：`P-COL-01` 温湿度/漏水 · `P-COL-02` PWR/UPS · `P-COL-03` AC/H2。
 
 组态：**寻智机房环境平面监视-xunzhi-jf** / 页 **`xunzhi-jf-env-plane`**
 
