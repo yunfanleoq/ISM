@@ -16,7 +16,7 @@ git fetch && git checkout feature/xunzhi-jf-env-monitor && git pull
 
 1. 浏览器打开 `http://127.0.0.1:7080`，登录 `admin` / `123456`
 2. 切换项目 **寻智机房环境-xunzhi-jf**
-3. **项目树**：展开 **F3-模块机房-01**，可见 `xunzhi-jf-TH-01`、`xunzhi-jf-LEAK-01`（F3.1）
+3. **项目树**：展开 **F3-模块机房-01**，可见 `xunzhi-jf-TH-01`、`xunzhi-jf-LEAK-01`（F3.1）；W2 导入后另见 `xunzhi-jf-PWR-01`、`xunzhi-jf-UPS-01`
 4. 打开组态 **寻智机房环境平面监视-xunzhi-jf** → 页 **`xunzhi-jf-env-plane`**
 5. 确认表格温湿度/漏水列数值随 Mock 变化刷新（F3.3）
 6. 截图或录屏保存到 `docs/ISM-寻智-W1复测证据/` 或 `artifacts/`

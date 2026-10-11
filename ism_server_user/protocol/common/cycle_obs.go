@@ -1,5 +1,5 @@
 /**
- * P-COL-01 探针 cycle_log_th_leak：温湿度/漏水竖切采集周期可观测日志。
+ * P-COL-01 cycle_log_th_leak / P-COL-02 cycle_log_power_ups：xunzhi-jf 采集周期可观测日志。
  */
 package protocolCommon
 
@@ -39,8 +39,14 @@ func CycleLogThLeak(deviceName, projectUuid string, gatherIntervalMs int, cycleM
 	}
 	cycleLogMu.Unlock()
 
+	probe := "P-COL-01"
+	tag := "cycle_log_th_leak"
+	if strings.Contains(strings.ToUpper(deviceName), "PWR") || strings.Contains(strings.ToUpper(deviceName), "UPS") {
+		probe = "P-COL-02"
+		tag = "cycle_log_power_ups"
+	}
 	logs.Info(
-		"[cycle_log_th_leak] probe=P-COL-01 device=%s project=%s gather_interval_ms=%d cycle_ms=%d points=%d channel=DeviceRealData->WS:RealData",
-		deviceName, projectUuid, gatherIntervalMs, cycleMs, pointCount,
+		"[%s] probe=%s device=%s project=%s gather_interval_ms=%d cycle_ms=%d points=%d channel=DeviceRealData->WS:RealData",
+		tag, probe, deviceName, projectUuid, gatherIntervalMs, cycleMs, pointCount,
 	)
 }
