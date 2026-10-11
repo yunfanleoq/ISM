@@ -30,6 +30,9 @@ PT_LEAK_SIG = "44444444444444444444444444444444"
 PT_LEAK_POS = "55555555555555555555555555555555"
 PT_LEAK_FAULT = "66666666666666666666666666666666"
 
+TRIG_LEAK = "a0a0a0a0a0a04a0a00000000000000001"
+TRIG_TH_TEMP_HI = "a0a0a0a0a0a04a0a00000000000000002"
+
 NODE_ROOT = "77777777777777777777777777777777"
 NODE_ROOM = "88888888888888888888888888888888"
 DEV_TH = "99999999999999999999999999999999"
@@ -37,7 +40,7 @@ DEV_LEAK = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 
 
 def pt(uuid_, muid, name, rg, addr, typ, unit, expr, alarm=0, level=0, msg="", clear=""):
-    return {
+    row = {
         "uuid": uuid_,
         "muid": muid,
         "name": name,
@@ -63,6 +66,61 @@ def pt(uuid_, muid, name, rg, addr, typ, unit, expr, alarm=0, level=0, msg="", c
         "signal_type": "AI" if typ not in ("Bool",) else "DI",
         "protocol": "modbus",
     }
+    if alarm == 1:
+        row["alarmOnValue"] = 1
+    return row
+
+
+def make_alarm_triggers():
+    """与 1A 配电室包一致：TriggerModelDataUuid 绑定模型点 uuid，引擎按点实时值判条件。"""
+    return [
+        {
+            "Uuid": TRIG_LEAK,
+            "TriggerName": "漏水信号告警",
+            "TriggerDeviceUuid": "",
+            "TriggerDeviceName": "",
+            "TriggerDataUuid": "",
+            "TriggerDeviceType": 2,
+            "TriggerDeviceModelUuid": MUID_LEAK,
+            "TriggerModelDataUuid": PT_LEAK_SIG,
+            "TriggerAlarmHideText": "漏水报警恢复",
+            "TriggerAlarmShowText": "漏水报警",
+            "TriggerCondition": "=",
+            "TriggerXValue": "1",
+            "TriggerYValue": "",
+            "TriggerAlarmLevel": 1,
+            "TriggerKeepTime": 0,
+            "TriggerLinkDeviceType": 0,
+            "TriggerLinkdeviceModelUuid": "",
+            "TriggerLinkModelDataUuid": "",
+            "TriggerLinkageAlarmValue": "",
+            "TriggerLinkageAlarmClearValue": "",
+            "TriggerType": 0,
+        },
+        {
+            "Uuid": TRIG_TH_TEMP_HI,
+            "TriggerName": "温度过高告警",
+            "TriggerDeviceUuid": "",
+            "TriggerDeviceName": "",
+            "TriggerDataUuid": "",
+            "TriggerDeviceType": 2,
+            "TriggerDeviceModelUuid": MUID_TH,
+            "TriggerModelDataUuid": PT_TH_TEMP,
+            "TriggerAlarmHideText": "温度恢复正常",
+            "TriggerAlarmShowText": "温度超过35℃",
+            "TriggerCondition": ">",
+            "TriggerXValue": "35",
+            "TriggerYValue": "",
+            "TriggerAlarmLevel": 2,
+            "TriggerKeepTime": 5,
+            "TriggerLinkDeviceType": 0,
+            "TriggerLinkdeviceModelUuid": "",
+            "TriggerLinkModelDataUuid": "",
+            "TriggerLinkageAlarmValue": "",
+            "TriggerLinkageAlarmClearValue": "",
+            "TriggerType": 0,
+        },
+    ]
 
 
 def make_animate():
@@ -313,7 +371,7 @@ def build_package():
                 "Status": 2,
             },
         ],
-        "alarmTriggers": [],
+        "alarmTriggers": make_alarm_triggers(),
         "displayModel": {
             "uuid": PROJECT_PKG_UUID,
             "name": "寻智机房环境平面监视-xunzhi-jf",

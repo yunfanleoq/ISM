@@ -22,12 +22,18 @@ di = {1: [0] * 64, 2: [0] * 64, 3: [0] * 64, 4: [0] * 64}
 lock = threading.Lock()
 
 
+FORCE_LEAK = 0
+
+
 def tick_values():
     t = time.time()
     temp = 22.0 + 3.0 * math.sin(t / 30.0)
     humi = 48.0 + 5.0 * math.cos(t / 45.0)
     pos_m = 12.5 + 2.0 * math.sin(t / 60.0)
-    leak = 1 if (int(t) % 120) > 100 else 0
+    if FORCE_LEAK:
+        leak = 1
+    else:
+        leak = 1 if (int(t) % 120) > 100 else 0
     with lock:
         hr[1][0] = int(round(temp * 10))
         hr[1][1] = int(round(humi * 10))
@@ -115,13 +121,15 @@ def serve():
 
 
 def main():
-    global PORT, CYCLE_S
+    global PORT, CYCLE_S, FORCE_LEAK
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=PORT)
     ap.add_argument("--cycle", type=float, default=CYCLE_S)
+    ap.add_argument("--leak-on", action="store_true", help="漏水 DI0 恒为 1（告警造数）")
     args = ap.parse_args()
     PORT = args.port
     CYCLE_S = args.cycle
+    FORCE_LEAK = 1 if args.leak_on else 0
     threading.Thread(target=serve, daemon=True).start()
     while True:
         tick_values()

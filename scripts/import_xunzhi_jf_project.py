@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
-"""POST /ImportProject 导入寻智 xunzhi-jf 竖切包。"""
+"""POST /ImportProject 导入寻智 xunzhi-jf 竖切包（含 alarmTriggers）。
+
+项目已存在（code 4001）时不会更新触发器/点表：请删项目后重导，或运行 scripts/xunzhi_jf_sync_alarm_db.py。
+"""
 import json
 import subprocess
 import sys

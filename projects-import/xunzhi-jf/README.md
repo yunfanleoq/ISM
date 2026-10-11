@@ -9,7 +9,10 @@ Modbus TCP：**温湿度 + 漏水**（W1）+ **列头柜 + UPS**（W2 点表已�
 ```bash
 ./scripts/xunzhi_jf_smoke_env.sh
 ./scripts/xunzhi_jf_collect_evidence.sh
+bash scripts/xunzhi_jf_alarm_demo.sh
 ```
+
+告警：导入包含 **`alarmTriggers`**（漏水 `=`1、温度 `>`35）及告警点 **`alarmOnValue: 1`**。项目已存在时用 `scripts/xunzhi_jf_sync_alarm_db.py`，勿仅重复 ImportProject（会 4001）。
 
 证据目录：`docs/ISM-寻智-W1复测证据/` · 试打样包：`dist/xunzhi-jf/ism-patch-xunzhi-jf-*`
 

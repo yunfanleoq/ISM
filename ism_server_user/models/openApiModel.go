@@ -177,6 +177,7 @@ type ProjectPackagePointData struct {
 	Unit                 string `json:"unit"`
 	ConversionExpression string `json:"conversionExpression"`
 	Alarm                int    `json:"alarm"`
+	AlarmOnValue         int    `json:"alarmOnValue"`
 	AlarmLevel           int    `json:"alarmLevel"`
 	AlarmMessage         string `json:"AlarmMessage"`
 	AlarmClearMessage    string `json:"AlarmClearMessage"`
@@ -375,6 +376,15 @@ func ImportCreateProjectFromPackage(pkg *ImportProjectPackage, creatorName, crea
 			newGroupUuid = pt.RegisterGroupUuid
 		}
 
+		alarmOnValue := 0
+		if pt.Alarm == 1 {
+			// 导入包未写 alarmOnValue 时 JSON 反序列化为 0，会误配为「值=0 才告警」；竖切 DI 统一按 1 触发
+			alarmOnValue = 1
+			if pt.AlarmOnValue == 1 {
+				alarmOnValue = 1
+			}
+		}
+
 		dataPoint := ModbusDevicesDataModel{
 			Uuid:                 newPointId,
 			Muid:                 newMuid,
@@ -388,6 +398,7 @@ func ImportCreateProjectFromPackage(pkg *ImportProjectPackage, creatorName, crea
 			DataUnit:             pt.Unit,
 			ConversionExpression: normalizeConversionExpr(pt.ConversionExpression),
 			IsAlarm:              pt.Alarm,
+			AlarmOnValue:         alarmOnValue,
 			AlarmLevel:           pt.AlarmLevel,
 			AlarmMessage:         pt.AlarmMessage,
 			AlarmClearMessage:    pt.AlarmClearMessage,
@@ -511,6 +522,7 @@ func ImportCreateProjectFromPackage(pkg *ImportProjectPackage, creatorName, crea
 				ConversionExpression: mp.ConversionExpression,
 				DataUnit:             mp.DataUnit,
 				IsAlarm:              mp.IsAlarm,
+				AlarmOnValue:         mp.AlarmOnValue,
 				AlarmLevel:           mp.AlarmLevel,
 				AlarmMessage:         mp.AlarmMessage,
 				AlarmClearMessage:    mp.AlarmClearMessage,
@@ -535,6 +547,10 @@ func ImportCreateProjectFromPackage(pkg *ImportProjectPackage, creatorName, crea
 		if newModelUuid == "" {
 			newModelUuid = trig.TriggerDeviceModelUuid
 		}
+		newModelDataUuid := uuidMap[trig.TriggerModelDataUuid]
+		if newModelDataUuid == "" {
+			newModelDataUuid = trig.TriggerModelDataUuid
+		}
 
 		alarmTrigger := AlarmTrigger{
 			Uuid:                       newTriggerUuid,
@@ -545,7 +561,7 @@ func ImportCreateProjectFromPackage(pkg *ImportProjectPackage, creatorName, crea
 			TriggerDataUuid:            "",
 			TriggerDeviceType:          trig.TriggerDeviceType,
 			TriggerDeviceModelUuid:     newModelUuid,
-			TriggerModelDataUuid:       "",
+			TriggerModelDataUuid:       newModelDataUuid,
 			TriggerAlarmHideText:       trig.TriggerAlarmHideText,
 			TriggerAlarmShowText:       trig.TriggerAlarmShowText,
 			TriggerCondition:           trig.TriggerCondition,

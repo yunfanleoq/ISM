@@ -31,3 +31,12 @@ Modbus(Mock:1502) → DeviceRealData → WS(`wsport`) RealData → 组态 `ism-v
 
 - P-COL-01：`cycle_log_th_leak`（温湿度/漏水）
 - P-COL-02：`cycle_log_power_ups`（W2 配电/UPS 设备名含 PWR/UPS）
+
+**W2 探针自证（重导或新库后）**：`ImportProject` 含 PWR/UPS 设备 → 起 Mock（slave 3/4）+ 重编/重启 `ism_server` → `grep cycle_log_power_ups` 后端日志应见 `xunzhi-jf-PWR-01` / `xunzhi-jf-UPS-01`。
+
+## 告警复测（关阻塞项）
+
+1. 已存在项目：`python3 scripts/xunzhi_jf_sync_alarm_db.py`（`alarm_on_value=1` + 补 `alarm_trigger`）
+2. 新库/可删项目：`python3 scripts/import_xunzhi_jf_project.py`（包内 `alarmTriggers`≥2）
+3. Mock：`python3 scripts/xunzhi_jf_modbus_mock.py --leak-on`
+4. 闭环：`bash scripts/xunzhi_jf_alarm_demo.sh` → 证据在 `docs/ISM-寻智-W1复测证据/F4_*`

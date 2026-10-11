@@ -30,8 +30,12 @@ git fetch && git checkout feature/xunzhi-jf-env-monitor && git pull
 ./scripts/xunzhi_jf_collect_evidence.sh
 ```
 
-## 告警闭环（可选）
+## 告警闭环（关阻塞 · 与目视独立）
 
 ```bash
-./scripts/xunzhi_jf_alarm_demo.sh
+python3 scripts/xunzhi_jf_sync_alarm_db.py   # 项目已存在、未整包重导时先跑
+python3 scripts/xunzhi_jf_modbus_mock.py --leak-on &   # 或 smoke 已起 Mock 则重启带 --leak-on
+bash scripts/xunzhi_jf_alarm_demo.sh
 ```
+
+整包重导：删项目后 `python3 scripts/import_xunzhi_jf_project.py`（导入包含 `alarmTriggers` 与 `alarmOnValue`）。

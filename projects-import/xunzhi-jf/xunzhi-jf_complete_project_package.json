@@ -194,7 +194,8 @@
       "FloatAccuracy": "2",
       "gather_interval_ms": 5000,
       "signal_type": "DI",
-      "protocol": "modbus"
+      "protocol": "modbus",
+      "alarmOnValue": 1
     },
     {
       "uuid": "44444444444444444444444444444444",
@@ -220,7 +221,8 @@
       "FloatAccuracy": "2",
       "gather_interval_ms": 5000,
       "signal_type": "DI",
-      "protocol": "modbus"
+      "protocol": "modbus",
+      "alarmOnValue": 1
     },
     {
       "uuid": "55555555555555555555555555555555",
@@ -272,7 +274,8 @@
       "FloatAccuracy": "2",
       "gather_interval_ms": 5000,
       "signal_type": "DI",
-      "protocol": "modbus"
+      "protocol": "modbus",
+      "alarmOnValue": 1
     },
     {
       "uuid": "p111111111111111111111111111111",
@@ -523,7 +526,54 @@
       "Status": 2
     }
   ],
-  "alarmTriggers": [],
+  "alarmTriggers": [
+    {
+      "Uuid": "a0a0a0a0a0a04a0a00000000000000001",
+      "TriggerName": "漏水信号告警",
+      "TriggerDeviceUuid": "",
+      "TriggerDeviceName": "",
+      "TriggerDataUuid": "",
+      "TriggerDeviceType": 2,
+      "TriggerDeviceModelUuid": "e5f6a7b8c9d04b0b2222222222222222",
+      "TriggerModelDataUuid": "44444444444444444444444444444444",
+      "TriggerAlarmHideText": "漏水报警恢复",
+      "TriggerAlarmShowText": "漏水报警",
+      "TriggerCondition": "=",
+      "TriggerXValue": "1",
+      "TriggerYValue": "",
+      "TriggerAlarmLevel": 1,
+      "TriggerKeepTime": 0,
+      "TriggerLinkDeviceType": 0,
+      "TriggerLinkdeviceModelUuid": "",
+      "TriggerLinkModelDataUuid": "",
+      "TriggerLinkageAlarmValue": "",
+      "TriggerLinkageAlarmClearValue": "",
+      "TriggerType": 0
+    },
+    {
+      "Uuid": "a0a0a0a0a0a04a0a00000000000000002",
+      "TriggerName": "温度过高告警",
+      "TriggerDeviceUuid": "",
+      "TriggerDeviceName": "",
+      "TriggerDataUuid": "",
+      "TriggerDeviceType": 2,
+      "TriggerDeviceModelUuid": "d4e5f6a7b8c94a0a1111111111111111",
+      "TriggerModelDataUuid": "11111111111111111111111111111111",
+      "TriggerAlarmHideText": "温度恢复正常",
+      "TriggerAlarmShowText": "温度超过35℃",
+      "TriggerCondition": ">",
+      "TriggerXValue": "35",
+      "TriggerYValue": "",
+      "TriggerAlarmLevel": 2,
+      "TriggerKeepTime": 5,
+      "TriggerLinkDeviceType": 0,
+      "TriggerLinkdeviceModelUuid": "",
+      "TriggerLinkModelDataUuid": "",
+      "TriggerLinkageAlarmValue": "",
+      "TriggerLinkageAlarmClearValue": "",
+      "TriggerType": 0
+    }
+  ],
   "displayModel": {
     "uuid": "c3d4e5f6a7b84990abcdef1234567890",
     "name": "寻智机房环境平面监视-xunzhi-jf",
@@ -549,7 +599,7 @@
       "cells": [
         {
           "shape": "view-svg-text",
-          "id": "db3864cc79a94e50a8100ee8e6989997",
+          "id": "63ecc92b149c42359657ec30949df2d0",
           "x": 60,
           "y": 40,
           "width": 1200,
@@ -568,7 +618,7 @@
             "detail": {
               "type": "view-svg-text",
               "name": "标题",
-              "identifier": "007928f3b7644b4aac041a69c199c0a6",
+              "identifier": "fefa8959e58344c4bd89911207269553",
               "style": {
                 "position": {
                   "x": 60,
@@ -621,7 +671,7 @@
         },
         {
           "shape": "ism-view-real-table",
-          "id": "a4ef2c022c384c16ab51d7b8f8b7db07",
+          "id": "8011fe860a8f47799cb959b419521c8e",
           "x": 80,
           "y": 160,
           "width": 1760,
@@ -639,7 +689,7 @@
           "data": {
             "detail": {
               "type": "ism-view-real-table",
-              "identifier": "a4ef2c022c384c16ab51d7b8f8b7db07",
+              "identifier": "8011fe860a8f47799cb959b419521c8e",
               "name": "动环实时表",
               "style": {
                 "position": {
