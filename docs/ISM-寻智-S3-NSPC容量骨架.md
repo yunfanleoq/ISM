@@ -1,35 +1,50 @@
-# S3 骨架 · dcim-capacity / NSPC（契约 v2 · Mock 未宣称闭环交付）
+# S3 · dcim-capacity / NSPC（Mock 加厚 · 非闭环交付）
 
-> **诚实口径**：本迭代仅 **JSON 种子 + 本地脚本** 演示「单机房空间/供电水位 + 一笔预占」；**无** 组态页、**无** 正式 `dcim_capacity_*` 表与 HTTP API。**未实现部分不得记为已交付。**
+> **诚实口径**：JSON 种子 + 脚本演示单机房 **空间(S)+供电(P)水位** 与 **一笔供电预占**；无组态 NSPC 页、无正式表迁移。**未实现不得记为已交付。**
 
-## 与契约对齐（规划）
+## 与契约对齐
 
-| 契约模块 | 本仓 Mock | 正式版（未做） |
-|----------|-----------|----------------|
+| 项 | Mock | 正式版（未做） |
+|----|------|----------------|
 | `dcim-capacity` | `xunzhi-jf_dcim_capacity_mock.json` | `dcim_capacity_snapshot` / `dcim_capacity_reservation` |
-| 维度 N/S/P/C | snapshot.dims 四水位 | 读 MonitorList + RealData 功率测点 |
-| 预占 | `reserve` → `409` 冲突 | 同步 API |
+| room_id | `88888888888888888888888888888888`（`F3-模块机房-01`） | MonitorList 节点 |
 
-**room_id** 与 MonitorList **`F3-模块机房-01`** uuid `88888888888888888888888888888888` 一致（与 S2 `rack_id` 同源）。
+种子默认：**S** 42U 总量 / 8 已用 / 2 预占 → **free 32U**；**P** 120kW / 45.5 已用 / 10 预占 → **free 64.5kW**。
 
 ## 路径
 
 | 文件 | 说明 |
 |------|------|
-| `projects-import/xunzhi-jf/xunzhi-jf_dcim_capacity_mock.json` | 种子：N/S/P/C 水位 |
+| `projects-import/xunzhi-jf/xunzhi-jf_dcim_capacity_mock.json` | 种子 |
+| `scripts/xunzhi_jf_capacity_store.py` | init / snapshot / reserve / **demo** |
+| `scripts/xunzhi_jf_capacity_demo.sh` | 一步自证 |
 | `data/xunzhi-jf/dcim_capacity_store.json` | 运行态（gitignore） |
-| `scripts/xunzhi_jf_capacity_store.py` | init / snapshot / reserve / demo |
-| `scripts/xunzhi_jf_capacity_demo.sh` | 一步抽样 |
 
-## 一步命令
+## 自证步骤（一步）
 
 ```bash
 bash scripts/xunzhi_jf_capacity_demo.sh
 ```
 
-期望：`DEMO PASS`，供电维 `P` 的 `reserved` 增加 3.5 kW，且仅 1 条 `active` 预占记录。
+### 期望输出（关键行）
 
-## 与 S2 关系
+```
+ASSERT OK: 空间(S) total=42 used=8 reserved=2 free=32.0U
+ASSERT OK: 供电(P) total=120.0 used=45.5 reserved=10.0 free=64.5kW
+=== reserve 3.5 kW on dim P (一笔预占) ===
+ASSERT OK: 空间(S) unchanged; 供电(P) reserved +3.5kW; 1 active reservation
+DEMO PASS · Store: .../data/xunzhi-jf/dcim_capacity_store.json
+```
 
-- **S2 dcim-asset**：U 位占用真相（上架/下架）。
-- **S3 dcim-capacity**：机房级水位与预占；正式版读 asset + 树，**禁止**采集侧反写容量。
+分步（可选）：
+
+```bash
+python3 scripts/xunzhi_jf_capacity_store.py init
+python3 scripts/xunzhi_jf_capacity_store.py snapshot
+python3 scripts/xunzhi_jf_capacity_store.py reserve --dim P --amount 3.5 --rack-id 88888888888888888888888888888888
+```
+
+## 与 S2
+
+- S2：U 位占用（dcim-asset）。
+- S3：机房级水位；预占冲突返回 `409`（`reserve` 超额时）。

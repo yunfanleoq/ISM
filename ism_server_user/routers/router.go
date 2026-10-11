@@ -506,6 +506,11 @@ func init() {
 	beego.Router("/xunzhi-jf/asset/u-position/unbind", &controllers.XunzhiJfAssetController{}, "post:UPositionUnbind")
 	// ===== end 寻智 dcim-asset Mock =====
 
+	// ===== 寻智 dcim-workorder Mock（S4 骨架）=====
+	beego.Router("/xunzhi-jf/workorder/:woId", &controllers.XunzhiJfWorkorderController{}, "get:GetWorkorder")
+	beego.Router("/xunzhi-jf/workorder/from-alarm", &controllers.XunzhiJfWorkorderController{}, "post:CreateFromAlarm")
+	// ===== end 寻智 dcim-workorder Mock =====
+
 	// 验证用户是否已经登录
 	beego.InsertFilter("/*", beego.BeforeExec, FilterUser)
 

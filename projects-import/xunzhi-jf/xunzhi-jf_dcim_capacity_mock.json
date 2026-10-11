@@ -16,5 +16,10 @@
     },
     "ts": "2026-10-12T00:00:00Z"
   },
-  "reservations": []
+  "reservations": [],
+  "demo_expect": {
+    "space_S_free_u": 32,
+    "power_P_free_kw": 64.5,
+    "single_reserve": { "dim": "P", "amount_kw": 3.5, "power_P_reserved_after": 13.5 }
+  }
 }

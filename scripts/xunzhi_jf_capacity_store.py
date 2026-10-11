@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""dcim-capacity Mock（S3 骨架）：单机房空间+供电水位 + 一笔预占，无 SpringBoot。"""
+"""dcim-capacity Mock（S3）：单机房空间(S)+供电(P)水位 + 一笔预占，无 SpringBoot。"""
 import argparse
 import json
 import sys
 import uuid
-from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -32,6 +31,10 @@ def save_store(data):
     STORE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
+def dim_free(d):
+    return round(float(d["total"]) - float(d["used"]) - float(d["reserved"]), 3)
+
+
 def cmd_init(_):
     save_store(bootstrap_from_seed())
     print(f"INIT ok -> {STORE}")
@@ -57,7 +60,7 @@ def cmd_reserve(args):
         return 1
     amount = float(args.amount)
     d = dims[dim]
-    free = d["total"] - d["used"] - d["reserved"]
+    free = dim_free(d)
     if amount > free:
         print(json.dumps({"code": 409, "message": "capacity conflict", "free": free}, ensure_ascii=False))
         return 2
@@ -74,32 +77,63 @@ def cmd_reserve(args):
         "created_at": _now(),
     }
     data.setdefault("reservations", []).append(rec)
-    d["reserved"] = round(d["reserved"] + amount, 3)
+    d["reserved"] = round(float(d["reserved"]) + amount, 3)
     save_store(data)
     print(json.dumps({"code": 1000, "reservation": rec, "snapshot_dims": dims}, ensure_ascii=False, indent=2))
     return 0
 
 
+def _assert_room_space_power(data, phase):
+    dims = data["snapshot"]["dims"]
+    s, p = dims["S"], dims["P"]
+    if phase == "before":
+        if int(s["total"]) != 42 or float(p["total"]) != 120.0:
+            raise SystemExit("ASSERT FAIL: seed snapshot totals mismatch")
+        s_free = dim_free(s)
+        p_free = dim_free(p)
+        if s_free != 32.0:
+            raise SystemExit(f"ASSERT FAIL: space(S) free expected 32U, got {s_free}")
+        if p_free != 64.5:
+            raise SystemExit(f"ASSERT FAIL: power(P) free expected 64.5kW, got {p_free}")
+        print(
+            f"ASSERT OK: 空间(S) total={s['total']} used={s['used']} reserved={s['reserved']} free={s_free}U"
+        )
+        print(
+            f"ASSERT OK: 供电(P) total={p['total']} used={p['used']} reserved={p['reserved']} free={p_free}kW"
+        )
+    elif phase == "after":
+        s_after = dims["S"]
+        p_after = dims["P"]
+        if float(s_after["reserved"]) != 2.0:
+            raise SystemExit("ASSERT FAIL: space(S) reserved should be unchanged (2U)")
+        if float(p_after["reserved"]) != 13.5:
+            raise SystemExit("ASSERT FAIL: power(P) reserved should be 13.5kW after +3.5")
+        active = [r for r in data.get("reservations", []) if r.get("state") == "active"]
+        if len(active) != 1 or active[0].get("dim") != "P":
+            raise SystemExit("ASSERT FAIL: expected exactly 1 active P reservation")
+        print("ASSERT OK: 空间(S) unchanged; 供电(P) reserved +3.5kW; 1 active reservation")
+
+
 def cmd_demo(_):
     save_store(bootstrap_from_seed())
     data = load_store()
-    p_kw = data["snapshot"]["dims"]["P"]
-    before = p_kw["reserved"]
-    print("=== snapshot (before reserve) ===")
-    print(json.dumps(data["snapshot"], ensure_ascii=False, indent=2))
+    print("=== init (fresh seed) ===")
+    print(f"room: {data['room']['name']} ({data['room']['room_id']})")
+    _assert_room_space_power(data, "before")
+    print("\n=== reserve 3.5 kW on dim P (一笔预占) ===")
     rc = cmd_reserve(
-        argparse.Namespace(dim="P", amount="3.5", rack_id="88888888888888888888888888888888", holder="S3-demo", expire_at=None)
+        argparse.Namespace(
+            dim="P",
+            amount="3.5",
+            rack_id="88888888888888888888888888888888",
+            holder="S3-demo",
+            expire_at=None,
+        )
     )
     if rc != 0:
         raise SystemExit(rc)
     data = load_store()
-    after = data["snapshot"]["dims"]["P"]["reserved"]
-    if after != round(before + 3.5, 3):
-        raise SystemExit("ASSERT FAIL: reserved power not updated")
-    active = [r for r in data["reservations"] if r["state"] == "active"]
-    if len(active) != 1:
-        raise SystemExit("ASSERT FAIL: expected 1 active reservation")
-    print("ASSERT OK: 1 active P reservation, reserved +3.5 kW")
+    _assert_room_space_power(data, "after")
     print(f"\nDEMO PASS · Store: {STORE}")
     return 0
 

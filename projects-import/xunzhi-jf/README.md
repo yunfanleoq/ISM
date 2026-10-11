@@ -40,6 +40,7 @@ bash scripts/xunzhi_jf_alarm_demo.sh
 | `append_s1_chart_thicken.py` | S1：平面页挂 ≥20 类图表/仪表 shape |
 | `append_s1_gauge_plus.py` | S1：补足仪表盘实例 ≥10 |
 | `xunzhi-jf_dcim_capacity_mock.json` | S3：dcim-capacity Mock 种子（骨架，非闭环） |
+| `xunzhi-jf_dcim_workorder_mock.json` | S4：dcim-workorder Mock 种子（骨架） |
 | `xunzhi-jf_dcim_asset_mock.json` | S2：dcim-asset Mock 种子（rack_id = MonitorList 节点） |
 
 ### 生成完整导入包（推荐顺序）
@@ -54,7 +55,8 @@ python3 projects-import/xunzhi-jf/append_s1_gauge_plus.py
 ```
 
 S2 资产 U 位 Mock：`bash scripts/xunzhi_jf_asset_u_demo.sh`（见 `docs/ISM-寻智-S2-资产U位骨架.md`）。  
-S3 NSPC 容量 Mock（骨架）：`bash scripts/xunzhi_jf_capacity_demo.sh`（见 `docs/ISM-寻智-S3-NSPC容量骨架.md`）。
+S3 NSPC 容量 Mock（骨架）：`bash scripts/xunzhi_jf_capacity_demo.sh`（见 `docs/ISM-寻智-S3-NSPC容量骨架.md`）。  
+S4 工单 Mock（骨架）：`bash scripts/xunzhi_jf_workorder_demo.sh`（见 `docs/ISM-寻智-S4-工单骨架.md`）。
 
 Mock：`scripts/xunzhi_jf_modbus_mock.py`（slave 1–6）。周期日志：`P-COL-01` 温湿度/漏水 · `P-COL-02` PWR/UPS · `P-COL-03` AC/H2。
 
