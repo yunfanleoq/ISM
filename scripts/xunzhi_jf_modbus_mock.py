@@ -17,8 +17,8 @@ HOST = "0.0.0.0"
 PORT = 1502
 CYCLE_S = 5.0
 
-hr = {1: [0] * 64, 2: [0] * 64}
-di = {1: [0] * 64, 2: [0] * 64}
+hr = {1: [0] * 64, 2: [0] * 64, 3: [0] * 64, 4: [0] * 64}
+di = {1: [0] * 64, 2: [0] * 64, 3: [0] * 64, 4: [0] * 64}
 lock = threading.Lock()
 
 
@@ -35,9 +35,16 @@ def tick_values():
         hr[2][0] = int(round(pos_m * 10))
         di[2][0] = leak
         di[2][1] = 0
+        # W2 slave 3 配电 / slave 4 UPS
+        hr[3][0] = 3800
+        hr[3][1] = 850
+        hr[3][2] = 120
+        hr[4][0] = 3800
+        hr[4][1] = 420
+        hr[4][2] = 5400
     print(
         f"[xunzhi-jf-mock-cycle] cycle_s={CYCLE_S:.0f} slave1 temp={temp:.1f}C humi={humi:.1f}%RH "
-        f"slave2 leak={leak} pos_m={pos_m:.1f}m",
+        f"slave2 leak={leak} pos_m={pos_m:.1f}m slave3_pwr=380V slave4_ups_batt=540V",
         flush=True,
     )
 

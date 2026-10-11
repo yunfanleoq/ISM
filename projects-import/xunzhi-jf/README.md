@@ -1,46 +1,48 @@
-# 寻智机房环境 · xunzhi-jf W1 竖切包
+# 寻智机房环境 · xunzhi-jf（S0 竖切 + W2 扩展）
 
-温湿度 + 漏水 Modbus TCP 竖切，走 **协议 → DeviceRealData → WS(:10215 RealData) → 组态**。
+Modbus TCP：**温湿度 + 漏水**（W1）+ **列头柜 + UPS**（W2 点表已并入同一导入包）。
+
+链路：**协议 → DeviceRealData → WebSocket（`conf/app.conf` 的 `wsport`，本仓 dev 常见 10225）→ 组态**。
+
+## 测试复测入口（推荐）
+
+```bash
+./scripts/xunzhi_jf_smoke_env.sh
+./scripts/xunzhi_jf_collect_evidence.sh
+```
+
+证据目录：`docs/ISM-寻智-W1复测证据/` · 试打样包：`dist/xunzhi-jf/ism-patch-xunzhi-jf-*`
+
+### WebSocket 端口
+
+| 说明 | 端口 |
+|------|------|
+| 契约/前端默认示例 | 10215 |
+| **本仓 `ism_server_user/conf/app.conf`** | **10225（联调以实测为准）** |
+
+业主本机冒烟：`:10225` 可连 RealData，`:10215` 拒连。文档已对齐，**未改现网配置**。
 
 ## 资产路径
 
 | 文件 | 说明 |
 |------|------|
-| `xunzhi-jf_complete_project_package.json` | `POST /ImportProject` 正式导入包 |
-| `xunzhi-jf_device_points.json` | 点表说明（含 `gather_interval_ms`） |
-| `generate_xunzhi_jf_package.py` | 重新生成上述 JSON |
+| `xunzhi-jf_complete_project_package.json` | `POST /ImportProject`（含 W2 设备时需重新导入或新库） |
+| `xunzhi-jf_device_points.json` | W1 点表 |
+| `xunzhi-jf_w2_device_points.json` | W2 配电/UPS 附录 |
+| `generate_xunzhi_jf_package.py` | 生成 W1 基线包 |
+| `append_w2_power_ups.py` | 向包追加 PWR/UPS（slave 3/4） |
 
-组态画面（导入后）：项目 **寻智机房环境-xunzhi-jf** → 组态模型 **寻智机房环境平面监视-xunzhi-jf** → 页面 `xunzhi-jf-env-plane`。
+组态：**寻智机房环境平面监视-xunzhi-jf** / 页 **`xunzhi-jf-env-plane`**
 
-## 自证步骤（开发机）
+## 账号与端口
 
-```bash
-# 1) Mock 采集（1502，周期 5s）
-python3 scripts/xunzhi_jf_modbus_mock.py
-
-# 2) 启动后端（需已编译 ism_server）
-cd ism_server_user && ./ism_server >> /tmp/ism_be.log 2>&1 &
-
-# 3) 导入项目包
-python3 scripts/import_xunzhi_jf_project.py
-
-# 4) 周期日志 P-COL-01
-grep cycle_log_th_leak /tmp/ism_be.log | tail -5
-# 期望：gather_interval_ms=5000 cycle_ms<10000 points=3
-
-# 5) 实时值（导入后替换 PROJECT_UUID）
-curl -s -X POST http://127.0.0.1:8081/login -H 'Content-Type: application/json' \
-  -d '{"Username":"admin","password":"e10adc3949ba59abbe56e057f20f883e"}'
-```
-
-前端：登录 → 切换项目 **寻智机房环境-xunzhi-jf** → 打开组态 **寻智机房环境平面监视-xunzhi-jf**，表格应刷新温湿度/漏水列。
-
-## 复用说明（相对 1A 配电室）
-
-- 导入链路同 `liu-chang-1A-dev/1A_complete_project_package.json`（`ImportProject` + `monitorTree` + `displayLayer`）
-- `extra` 字段沿用 `modbusIP` / `slaveId` / `packTime` 约定（`normalizeExtraData`）
-- 组态绑点采用 `ism-view-real-table` 的 `设备名->测点名` 绑定（同 `build_ncc_dashboard.py`）
+| 服务 | 默认 |
+|------|------|
+| HTTP API | `http://127.0.0.1:8081` |
+| 前端 dev | `http://127.0.0.1:7080` |
+| Mock Modbus | `127.0.0.1:1502` |
+| 登录 | `admin` / `123456`（前端 MD5 后传 `e10adc3949ba59abbe56e057f20f883e`） |
 
 ## 禁止
 
-- 不覆盖麒麟生产 / `patches/` / `releases/` 现网包
+不覆盖麒麟生产、`patches/ism-*-kylin`、`releases/` 现网包。
