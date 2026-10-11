@@ -1,0 +1,26 @@
+{
+  "project": "寻智机房环境-xunzhi-jf",
+  "gather_interval_ms": 5000,
+  "devices": [
+    {
+      "name": "xunzhi-jf-AC-01",
+      "model": "xunzhi-jf-精密空调",
+      "slave_id": 5,
+      "points": [
+        "回风温度",
+        "送风温度",
+        "设定温度",
+        "压缩机运行"
+      ]
+    },
+    {
+      "name": "xunzhi-jf-H2-01",
+      "model": "xunzhi-jf-氢气检测",
+      "slave_id": 6,
+      "points": [
+        "氢气浓度",
+        "氢气高报"
+      ]
+    }
+  ]
+}
