@@ -14,7 +14,7 @@ bash scripts/xunzhi_jf_alarm_demo.sh
 
 告警：导入包含 **`alarmTriggers`**（漏水 `=`1、温度 `>`35）及告警点 **`alarmOnValue: 1`**。项目已存在时用 `scripts/xunzhi_jf_sync_alarm_db.py`，勿仅重复 ImportProject（会 4001）。
 
-证据目录：`docs/ISM-寻智-W1复测证据/` · 试打样包：`dist/xunzhi-jf/ism-patch-xunzhi-jf-*`
+证据目录：`docs/ISM-寻智-W1复测证据/` · 试打样包：`dist/xunzhi-jf/ism-patch-xunzhi-jf-*` · **演示索引**：`docs/ISM-寻智-演示脚本索引.md`
 
 ### WebSocket 端口
 
@@ -66,7 +66,7 @@ S5 能耗 PUE/碳 Mock：`bash scripts/xunzhi_jf_energy_demo.sh`（见 `docs/ISM
 S6 安防/消防事件桩：`bash scripts/xunzhi_jf_security_demo.sh`（见 `docs/ISM-寻智-S6-安防消防事件桩.md`）。  
 2.5D 导航壳：`docs/ISM-寻智-S6-2.5D导航壳.md` · 电池抽样：`bash scripts/xunzhi_jf_battery_demo.sh` · 双机演练：`docs/ISM-寻智-双机软件就绪演练.md`。
 
-Mock：`scripts/xunzhi_jf_modbus_mock.py`（slave 1–6）。周期日志：`P-COL-01` 温湿度/漏水 · `P-COL-02` PWR/UPS · `P-COL-03` AC/H2。
+Mock：`scripts/xunzhi_jf_modbus_mock.py`（slave 1–7）。周期日志：`P-COL-01` 温湿度/漏水 · `P-COL-02` PWR/UPS · `P-COL-03` AC/H2。
 
 组态：**寻智机房环境平面监视-xunzhi-jf** / 页 **`xunzhi-jf-env-plane`**
 
