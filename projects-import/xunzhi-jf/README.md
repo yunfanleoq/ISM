@@ -37,6 +37,8 @@ bash scripts/xunzhi_jf_alarm_demo.sh
 | `append_w2_power_ups.py` | 向包追加 PWR/UPS（slave 3/4） |
 | `append_w3_ac_h2.py` | 向包追加 AC/H2（slave 5/6）· 探针 **P-COL-03** `cycle_log_ac_h2` |
 | `append_s1_envmon_demo.py` | S1：组态告警列表 + 第二机房树节点 |
+| `append_s1_chart_thicken.py` | S1：平面页挂 ≥20 类图表/仪表 shape |
+| `xunzhi-jf_dcim_asset_mock.json` | S2：dcim-asset Mock 种子（rack_id = MonitorList 节点） |
 
 ### 生成完整导入包（推荐顺序）
 
@@ -45,7 +47,10 @@ python3 projects-import/xunzhi-jf/generate_xunzhi_jf_package.py
 python3 projects-import/xunzhi-jf/append_w2_power_ups.py
 python3 projects-import/xunzhi-jf/append_w3_ac_h2.py
 python3 projects-import/xunzhi-jf/append_s1_envmon_demo.py
+python3 projects-import/xunzhi-jf/append_s1_chart_thicken.py
 ```
+
+S2 资产 U 位 Mock：`bash scripts/xunzhi_jf_asset_u_demo.sh`（见 `docs/ISM-寻智-S2-资产U位骨架.md`）。
 
 Mock：`scripts/xunzhi_jf_modbus_mock.py`（slave 1–6）。周期日志：`P-COL-01` 温湿度/漏水 · `P-COL-02` PWR/UPS · `P-COL-03` AC/H2。
 

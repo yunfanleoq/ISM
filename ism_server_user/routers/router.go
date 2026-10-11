@@ -500,6 +500,12 @@ func init() {
 	beego.Router("/autoGen/templateGet", &controllers.AutoGenController{}, "*:TemplateGet")
 	// ===== end 自动化批量导入 API =====
 
+	// ===== 寻智 dcim-asset Mock（S2 骨架 · JSON 存储）=====
+	beego.Router("/xunzhi-jf/asset/rack/:rackId/u-positions", &controllers.XunzhiJfAssetController{}, "get:RackUPositions")
+	beego.Router("/xunzhi-jf/asset/u-position/bind", &controllers.XunzhiJfAssetController{}, "post:UPositionBind")
+	beego.Router("/xunzhi-jf/asset/u-position/unbind", &controllers.XunzhiJfAssetController{}, "post:UPositionUnbind")
+	// ===== end 寻智 dcim-asset Mock =====
+
 	// 验证用户是否已经登录
 	beego.InsertFilter("/*", beego.BeforeExec, FilterUser)
 

@@ -29,6 +29,9 @@ patches/**/ism_server
 patches/ism-server-kylin-glibc228/
 releases/
 
+# 寻智 S2 Mock 运行态（由 xunzhi_jf_asset_store.py 生成）
+data/xunzhi-jf/dcim_asset_store.json
+
 # ============================================
 # 数据库备份
 # ============================================
