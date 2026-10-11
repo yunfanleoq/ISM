@@ -16,9 +16,7 @@ def _now():
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
-def load_store():
-    if STORE.exists():
-        return json.loads(STORE.read_text(encoding="utf-8"))
+def bootstrap_from_seed():
     data = json.loads(SEED.read_text(encoding="utf-8"))
     rack = data["rack"]
     u_count = int(rack.get("u_count", 42))
@@ -39,13 +37,19 @@ def load_store():
     return data
 
 
+def load_store():
+    if STORE.exists():
+        return json.loads(STORE.read_text(encoding="utf-8"))
+    return bootstrap_from_seed()
+
+
 def save_store(data):
     STORE.parent.mkdir(parents=True, exist_ok=True)
     STORE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 def cmd_init(_):
-    data = load_store()
+    data = bootstrap_from_seed()
     save_store(data)
     print(f"INIT ok -> {STORE}")
     return 0
@@ -143,32 +147,68 @@ def cmd_unbind(args):
     return 0
 
 
+def _u_at(data, rack_id, u_index):
+    for p in data["u_positions"]:
+        if p["rack_id"] == rack_id and p["u_index"] == u_index:
+            return p
+    return None
+
+
+def _assert_demo_ok(data, phase):
+    rack_id = data["rack"]["rack_id"]
+    asset = _find_asset(data, "as-xz-0001")
+    if phase == "after_bind":
+        for u in (10, 11):
+            p = _u_at(data, rack_id, u)
+            if not p or p["status"] != "occupied" or p["asset_id"] != "as-xz-0001":
+                raise SystemExit(f"ASSERT FAIL: U{u} should be occupied by as-xz-0001")
+        if asset.get("status") != "mounted":
+            raise SystemExit("ASSERT FAIL: asset should be mounted")
+        print("ASSERT OK: U10-U11 occupied, asset mounted")
+    elif phase == "after_unbind":
+        for u in (10, 11):
+            p = _u_at(data, rack_id, u)
+            if not p or p["status"] != "empty" or p["asset_id"]:
+                raise SystemExit(f"ASSERT FAIL: U{u} should be empty after unbind")
+        if asset.get("status") != "in_stock" or asset.get("rack_id"):
+            raise SystemExit("ASSERT FAIL: asset should be in_stock with no rack")
+        print("ASSERT OK: U10-U11 empty, asset in_stock")
+
+
 def cmd_demo(_):
-    save_store(load_store())
+    save_store(bootstrap_from_seed())
+    print("=== init (fresh seed) ===")
     steps = [
-        ("list (empty rack sample)", ["list"]),
-        ("bind as-xz-0001 @ U10-11", ["bind", "--asset-id", "as-xz-0001", "--u-start", "10", "--u-height", "2"]),
-        ("list (occupied)", ["list"]),
-        ("unbind", ["unbind", "--asset-id", "as-xz-0001"]),
-        ("list (after down)", ["list"]),
+        ("list (empty rack sample)", "list", None),
+        ("bind as-xz-0001 @ U10-11", "bind", ("as-xz-0001", "10", "2")),
+        ("assert occupied", "assert", "after_bind"),
+        ("list (occupied)", "list", None),
+        ("unbind", "unbind", ("as-xz-0001",)),
+        ("assert empty", "assert", "after_unbind"),
+        ("list (after down)", "list", None),
     ]
-    for label, cmd in steps:
+    for label, kind, arg in steps:
         print(f"\n=== {label} ===")
-        p = argparse.Namespace(rack_id=None, asset_id=None, u_start=None, u_height=None)
-        if cmd[0] == "list":
-            cmd_list(p)
-        elif cmd[0] == "bind":
-            p = argparse.Namespace(
-                rack_id=None,
-                asset_id=cmd[2],
-                u_start=cmd[4],
-                u_height=cmd[6],
+        if kind == "list":
+            cmd_list(argparse.Namespace(rack_id=None))
+        elif kind == "bind":
+            rc = cmd_bind(
+                argparse.Namespace(
+                    rack_id=None,
+                    asset_id=arg[0],
+                    u_start=arg[1],
+                    u_height=arg[2],
+                )
             )
-            cmd_bind(p)
-        elif cmd[0] == "unbind":
-            p = argparse.Namespace(asset_id=cmd[2])
-            cmd_unbind(p)
-    print(f"\nStore: {STORE}")
+            if rc != 0:
+                raise SystemExit(rc)
+        elif kind == "unbind":
+            rc = cmd_unbind(argparse.Namespace(asset_id=arg[0]))
+            if rc != 0:
+                raise SystemExit(rc)
+        elif kind == "assert":
+            _assert_demo_ok(load_store(), arg)
+    print(f"\nDEMO PASS · Store: {STORE}")
     return 0
 
 

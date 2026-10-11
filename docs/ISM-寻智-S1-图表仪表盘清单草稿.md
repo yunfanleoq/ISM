@@ -5,7 +5,7 @@
 
 ## 寻智 xunzhi-jf 当前已挂（`xunzhi-jf-env-plane`）
 
-由 `append_s1_envmon_demo.py` + `append_s1_chart_thicken.py` 写入 ImportProject 包；**重新导入项目后**组态页可见。
+由 `append_s1_envmon_demo.py` + `append_s1_chart_thicken.py` + `append_s1_gauge_plus.py` 写入 ImportProject 包；**重新导入项目后**组态页可见。
 
 | # | shape | 用途 | 状态 |
 |---|--------|------|------|
@@ -31,9 +31,11 @@
 | 20 | `ism-view-chart-gauge-0` … `gauge-5` | 表盘（6 实例） | **已挂屏** |
 | 21 | `ism-view-chart-category-1` | 分类仪表 | **已挂屏** |
 | 22 | `ism-view-chart-gauge-diy` | 自定义表盘 | **已挂屏** |
+| 23 | `ism-view-chart-gauge-7` | 表盘实例 #7 | **已挂屏** |
+| 24 | `ism-view-measuring` | 测量仪表 | **已挂屏** |
 
-**已挂 shape 去重计数**：**27** 类（≥20 切片达标；业主须 **ImportProject 复导入** 后目视确认）。  
-**单屏仪表盘数据组件实例**：gauge/category **8** 个（距 ≥10 仍差 2，属后续加厚）。
+**已挂 shape 去重计数**：**29** 类（≥20 切片达标；业主须 **ImportProject 复导入** 后目视确认）。  
+**单屏仪表盘/表盘类数据组件实例**：**10** 个（gauge-0…5、gauge-7、gauge-diy、category-1、measuring；契约 S1 ≥10 **达标**）。
 
 生成后包内 `_meta.s1_chart_shape_count` 可与上表交叉核对。
 
@@ -48,8 +50,8 @@
 | 契约项 | 目标 | 寻智当前 | 下一步 |
 |--------|------|----------|--------|
 | 图表模板 ≥20 | S1 切片 | **已挂 27 类** | 业主复导入 + 7080 目视 |
-| 仪表盘 ≥10 | S1 切片 | **8 实例** | 再挂 gauge-6/7 等 2 实例 |
+| 仪表盘 ≥10 | S1 切片 | **10 实例** | 业主复导入 + 7080 目视 |
 | ≥50 / ≥20 | 同窗终态 | 未宣称 | S6 加厚 |
 
 代码索引：`ism-front-end-v2/src/pages/ISMDisPlay/ISMComponents/`（`charts/`、`historyCharts/`、`device/`）。  
-导入管线：`generate` → `append_w2` → `append_w3` → `append_s1_envmon_demo` → **`append_s1_chart_thicken`**.
+导入管线：`generate` → `append_w2` → `append_w3` → `append_s1_envmon_demo` → `append_s1_chart_thicken` → **`append_s1_gauge_plus`**.

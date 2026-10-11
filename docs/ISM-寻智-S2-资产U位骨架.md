@@ -36,8 +36,9 @@ Rack(rack_id) 1─* UPosition(u_index) 1─0..1 Asset(asset_id)
 ## 抽样路径（上架 → 占用 → 下架）
 
 ```bash
-# Mock 全流程（无需后端）
+# 一步自证（从种子重置 + 绑 U10-11 + 断言 + 下架；无需后端）
 bash scripts/xunzhi_jf_asset_u_demo.sh
+# 期望末尾：DEMO PASS · ASSERT OK（U10-U11 occupied / empty）
 
 # 或分步
 python3 scripts/xunzhi_jf_asset_store.py init

@@ -37,7 +37,21 @@
       "view-device-alarm-list",
       "view-svg-text"
     ],
-    "s1_chart_shape_count": 27
+    "s1_chart_shape_count": 27,
+    "s1_gauge_plus_v1": true,
+    "s1_gauge_dashboard_instance_count": 10,
+    "s1_gauge_dashboard_shapes": [
+      "ism-view-chart-category-1",
+      "ism-view-chart-gauge-0",
+      "ism-view-chart-gauge-1",
+      "ism-view-chart-gauge-2",
+      "ism-view-chart-gauge-3",
+      "ism-view-chart-gauge-4",
+      "ism-view-chart-gauge-5",
+      "ism-view-chart-gauge-7",
+      "ism-view-chart-gauge-diy",
+      "ism-view-measuring"
+    ]
   },
   "project": {
     "name": "寻智机房环境-xunzhi-jf",
@@ -4835,6 +4849,268 @@
                     "bandType": 1,
                     "dataID": "11111111111111111111111111111111",
                     "dataName": "温度",
+                    "operator": "",
+                    "OperatorValue": "",
+                    "OperatorMaxValue": ""
+                  }
+                }
+              ],
+              "dataBind": []
+            }
+          }
+        },
+        {
+          "shape": "ism-view-chart-gauge-7",
+          "id": "2d945aa0fe8546aaa022eadbc4437d1e",
+          "x": 80,
+          "y": 1640,
+          "width": 400,
+          "height": 130,
+          "zIndex": 90,
+          "visible": true,
+          "position": {
+            "x": 80,
+            "y": 1640
+          },
+          "size": {
+            "width": 400,
+            "height": 130
+          },
+          "data": {
+            "detail": {
+              "type": "ism-view-chart-gauge-7",
+              "name": "s1-chart-ism-view-chart-gauge-7",
+              "identifier": "2d945aa0fe8546aaa022eadbc4437d1e",
+              "style": {
+                "position": {
+                  "x": 80,
+                  "y": 1640,
+                  "w": 400,
+                  "h": 130
+                },
+                "text": "ism-view-chart-gauge-7",
+                "visible": 1,
+                "backColor": "transparent",
+                "foreColor": "#e5eefc",
+                "fontSize": 12,
+                "diy": [
+                  {
+                    "name": "configComponent.ChartPublic.ChartTitle",
+                    "type": 4,
+                    "value": "ism-view-chart-gauge-7",
+                    "key": "ChartTitle"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.ChartUnit",
+                    "type": 4,
+                    "value": "℃",
+                    "key": "ChartUnit"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.ChartMinValue",
+                    "type": 7,
+                    "value": 0,
+                    "key": "ChartMinValue"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.ChartMaxValue",
+                    "type": 7,
+                    "value": 50,
+                    "key": "ChartMaxValue"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.splitNumber",
+                    "type": 1,
+                    "value": 10,
+                    "key": "splitNumber"
+                  }
+                ]
+              },
+              "animate": {
+                "selected": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "isExpression": false,
+                "animateList": [
+                  {
+                    "id": "Forbidden",
+                    "name": "component.public.Forbidden"
+                  },
+                  {
+                    "id": "blink",
+                    "name": "component.public.animateBlink"
+                  }
+                ],
+                "animateElement": [
+                  {
+                    "id": "blink",
+                    "elementList": [
+                      {
+                        "name": "component.public.animateSpeed",
+                        "type": 7,
+                        "value": 1,
+                        "min": 0.1,
+                        "key": "blinkSpeed"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "action": [],
+              "active": [
+                {
+                  "id": "ShowData",
+                  "name": "configComponent.ChartPublic.ShowData",
+                  "result": "",
+                  "isExpression": false,
+                  "condition": {
+                    "deviceSN": "99999999999999999999999999999999",
+                    "DeviceName": "xunzhi-jf-TH-01",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "11111111111111111111111111111111",
+                    "dataName": "温度",
+                    "operator": "",
+                    "OperatorValue": "",
+                    "OperatorMaxValue": ""
+                  }
+                }
+              ],
+              "dataBind": []
+            }
+          }
+        },
+        {
+          "shape": "ism-view-measuring",
+          "id": "cd91974bb4fa42f489e49ea01d333c45",
+          "x": 504,
+          "y": 1640,
+          "width": 400,
+          "height": 130,
+          "zIndex": 91,
+          "visible": true,
+          "position": {
+            "x": 504,
+            "y": 1640
+          },
+          "size": {
+            "width": 400,
+            "height": 130
+          },
+          "data": {
+            "detail": {
+              "type": "ism-view-measuring",
+              "name": "s1-chart-ism-view-measuring",
+              "identifier": "cd91974bb4fa42f489e49ea01d333c45",
+              "style": {
+                "position": {
+                  "x": 504,
+                  "y": 1640,
+                  "w": 400,
+                  "h": 130
+                },
+                "text": "ism-view-measuring",
+                "visible": 1,
+                "backColor": "transparent",
+                "foreColor": "#e5eefc",
+                "fontSize": 12,
+                "diy": [
+                  {
+                    "name": "configComponent.ChartPublic.ChartTitle",
+                    "type": 4,
+                    "value": "ism-view-measuring",
+                    "key": "ChartTitle"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.ChartUnit",
+                    "type": 4,
+                    "value": "℃",
+                    "key": "ChartUnit"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.ChartMinValue",
+                    "type": 7,
+                    "value": 0,
+                    "key": "ChartMinValue"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.ChartMaxValue",
+                    "type": 7,
+                    "value": 50,
+                    "key": "ChartMaxValue"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.splitNumber",
+                    "type": 1,
+                    "value": 10,
+                    "key": "splitNumber"
+                  }
+                ]
+              },
+              "animate": {
+                "selected": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "isExpression": false,
+                "animateList": [
+                  {
+                    "id": "Forbidden",
+                    "name": "component.public.Forbidden"
+                  },
+                  {
+                    "id": "blink",
+                    "name": "component.public.animateBlink"
+                  }
+                ],
+                "animateElement": [
+                  {
+                    "id": "blink",
+                    "elementList": [
+                      {
+                        "name": "component.public.animateSpeed",
+                        "type": 7,
+                        "value": 1,
+                        "min": 0.1,
+                        "key": "blinkSpeed"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "action": [],
+              "active": [
+                {
+                  "id": "ShowChartVariable1",
+                  "name": "configComponent.variable.ShowData",
+                  "result": "",
+                  "isExpression": false,
+                  "condition": {
+                    "deviceSN": "99999999999999999999999999999999",
+                    "DeviceName": "xunzhi-jf-TH-01",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "22222222222222222222222222222222",
+                    "dataName": "湿度",
                     "operator": "",
                     "OperatorValue": "",
                     "OperatorMaxValue": ""
