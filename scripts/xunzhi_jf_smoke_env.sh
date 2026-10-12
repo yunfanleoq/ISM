@@ -38,7 +38,7 @@ if [[ ! -x "$ROOT/ism_server_user/ism_server" ]]; then
     exit 1
   }
 fi
-if ! pgrep -f "ism_server_user/ism_server" >/dev/null; then
+if ! python3 -c "import sys; sys.path.insert(0,'$ROOT/scripts'); from xunzhi_jf_lib import ism_server_running; sys.exit(0 if ism_server_running() else 1)" 2>/dev/null; then
   (cd "$ROOT/ism_server_user" && nohup ./ism_server >>"$ARTIFACTS_DIR/ism_be.log" 2>&1 &)
   echo "后端已启动 日志: $ARTIFACTS_DIR/ism_be.log (cwd=ism_server_user)"
 else

@@ -22,7 +22,8 @@
 
 **StartupAlarmDelay**：`sync` / `alarm_demo` 会为寻智项目写入 `DelayMinutes:0`；若 `ism_server` 在写入前已启动，须 **保持 Mock:1502 后重启 ism_server**（或 `export XUNZHI_WAIT_STARTUP_DELAY=1` 等旧 10min 窗结束）。  
 **采集判定**：以 LEAK `device_real_data` 刷新 / 日志 `cycle_log_th_leak` 为准；`monitor_list.status=2` 可滞后。  
-**告警 sync**：`AlarmTriggerEdit` 热加载；`alarm_demo` 强制漏水 **0→1** 边沿。
+**告警 sync**：`AlarmTriggerEdit` 热加载；`alarm_demo` 用 `xunzhi_jf_mock_leak_ctl.sh off|on` **热切换** 0→1（禁止 pkill Mock）。  
+**ism 检测**：HTTP **8081** LISTEN 或 `pgrep ism_server` + `/proc/PID/cwd`（支持 `cd ism_server_user && ./ism_server`）。
 
 ---
 

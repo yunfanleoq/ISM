@@ -167,7 +167,7 @@ def main():
     rows = fix_sqlite(db, proj)
     triggers_added = upsert_triggers(db, proj)
     after = db_preflight(db, proj)
-    remaining = startup_suppression_remaining_sec(db, proj, __import__("xunzhi_jf_lib").ism_server_uptime_sec())
+    remaining = startup_suppression_remaining_sec(db, proj, ism_server_uptime_sec())
 
     reloaded = 0
     reload_note = ""
