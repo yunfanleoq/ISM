@@ -193,7 +193,13 @@ for a in lst:
 " 2>/dev/null || true)
 [[ -n "$DATA_UUID" ]] || { fail_diag "$TOKEN" "$PROJ"; exit 1; }
 
-BODY=$(python3 -c "import json; print(json.dumps({'type':1,'update':{'uuid':'$DATA_UUID','device_uuid':'$DEV_UUID','name':'漏水信号'}}))")
+BODY=$(python3 -c "import json; print(json.dumps({'type':1,'update':{'uuid':'$DATA_UUID','duid':'$DEV_UUID','name':'漏水信号'}}))")
 echo "6) AlarmOpt"
-curl_json /AlarmOpt "$BODY" "$TOKEN" "$PROJ" | tee "$EVIDENCE_DIR/F4_alarm_ack_${STAMP}.json"
+ACK=$(curl_json /AlarmOpt "$BODY" "$TOKEN" "$PROJ" | tee "$EVIDENCE_DIR/F4_alarm_ack_${STAMP}.json")
+CODE=$(echo "$ACK" | python3 -c "import sys,json; print(json.load(sys.stdin).get('code',''))" 2>/dev/null || echo "")
+if [[ "$CODE" != "0" ]]; then
+  echo "FAIL: AlarmOpt code=$CODE (期望 0 / SUCCSECODE)" >&2
+  echo "$ACK" >&2
+  exit 1
+fi
 echo "告警闭环脚本完成（非正式验收结论）"
