@@ -962,8 +962,9 @@ export default {
       return [tm.home, tm.deviceList, tm.datapointList].filter(Boolean).indexOf(pageUuid) >= 0
     },
     /**
-     * 层级模板兜底：链接目标是「已删除的旧 page_id」时，
-     * 按导航树索引转换为对应层级模板页并附带 navContext。
+     * 层级模板兜底：只转换导航树里登记过的「已删除旧 page_id」。
+     * 菜单、按钮绑定的真实子页必须原样跳转。找不到旧页映射时不能改回首页，
+     * 否则一次图等多页面会全部落在当前页，再点就提示「已在目标页面」。
      */
     convertLegacyPageLink(linkInfo) {
       try {
@@ -974,19 +975,13 @@ export default {
         const index = st.navTreeIndex
         const pageUuid = linkInfo.Inside.pageUUID
         if (this.isTemplatePage(pageUuid)) return linkInfo
-        if (!index) {
-          const homePage = (st.navTemplateMap && st.navTemplateMap.home) || this.showUuid
-          return homePage
-            ? { ...linkInfo, Inside: { ...linkInfo.Inside, pageUUID: homePage }, navContext: null }
-            : linkInfo
+        if (!index || !index.byOldPageId || !index.byOldPageId[pageUuid]) {
+          return linkInfo
         }
         const { resolveOldPageTarget } = require('@/pages/ISMDisPlay/utils/navTreeIndex')
         const conv = resolveOldPageTarget(pageUuid, index, st.navTemplateMap)
-        if (!conv) {
-          const homePage = (st.navTemplateMap && st.navTemplateMap.home) || this.showUuid
-          return homePage
-            ? { ...linkInfo, Inside: { ...linkInfo.Inside, pageUUID: homePage }, navContext: null }
-            : linkInfo
+        if (!conv || !conv.pageUuid) {
+          return linkInfo
         }
         console.log('[showPage] legacy page link converted:', pageUuid, '→', conv.pageUuid, conv.navContext && conv.navContext.kind)
         return {
