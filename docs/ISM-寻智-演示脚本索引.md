@@ -13,6 +13,18 @@
 
 ---
 
+## 唯一演示根目录（必读）
+
+- 全链路只认 **一个** 仓库根 `XUNZHI_ISM_ROOT`（默认=脚本上级目录；业主常见 `~/cursorProjects/ISM源码`）。
+- **禁止** `ISM源码` 与 `ISM源码-xunzhi-jf` 各起 `ism_server` 混用 sqlite。
+- 起服：`cd "$XUNZHI_ISM_ROOT/ism_server_user" && ./ism_server`
+- 自检：`python3 scripts/xunzhi_jf_sync_alarm_db.py --print-env`（打印 `ism_server` cwd、`ism.db`、项目设备/触发器预检）
+
+**告警 sync 后热加载**：`python3 scripts/xunzhi_jf_sync_alarm_db.py` 默认 API `AlarmTriggerEdit` 重载内存 map；失败则本树重启 `ism_server`。  
+**漏水边沿**：`bash scripts/xunzhi_jf_alarm_demo.sh` 内先 Mock 无 `--leak-on`（≥12s）再 `--leak-on`（0→1）。
+
+---
+
 ## 导入包 regenerate / append 顺序
 
 从干净 W1 重生成时（**已提交仓内的 `xunzhi-jf_complete_project_package.json` 通常已跑完全部 append**，仅改脚本时需重跑）：
@@ -69,7 +81,7 @@ WebSocket：以 `ism_server_user/conf/app.conf` 的 **wsport** 为准（dev 常�
 
 | 域 | 命令 | 自证期望（末尾关键行） |
 |----|------|------------------------|
-| **告警** | `bash scripts/xunzhi_jf_alarm_demo.sh` | `告警闭环脚本完成（非正式验收结论）`（需后端+Mock；漏水入列） |
+| **告警** | `bash scripts/xunzhi_jf_alarm_demo.sh` | `告警闭环脚本完成（非正式验收结论）`（sync+热加载；Mock 0→1；入列断言） |
 | **S2 资产/U 位** | `bash scripts/xunzhi_jf_asset_u_demo.sh` | `DEMO PASS · Store: .../dcim_asset_store.json` |
 | **S3 容量/NSPC** | `bash scripts/xunzhi_jf_capacity_demo.sh` | `DEMO PASS · Store: .../dcim_capacity_store.json` |
 | **S4 工单** | `bash scripts/xunzhi_jf_workorder_demo.sh` | `DEMO PASS · Store: .../dcim_workorder_store.json` |

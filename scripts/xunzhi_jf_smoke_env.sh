@@ -11,6 +11,8 @@ for a in "$@"; do
 done
 
 echo "== xunzhi-jf smoke env =="
+echo "演示根 XUNZHI_ISM_ROOT=$XUNZHI_ISM_ROOT"
+python3 "$ROOT/scripts/xunzhi_jf_sync_alarm_db.py" --print-env 2>/dev/null || true
 echo "HTTP: $BASE_URL  WS: ws://127.0.0.1:${WSPORT}/ws  Mock: 127.0.0.1:${MOCK_PORT}"
 echo "账号: ${ADMIN_USER} / 密码: 123456 (前端 MD5 后登录)"
 echo "注意: 联调 WebSocket 端口以 ism_server_user/conf/app.conf 的 wsport 为准（当前 ${WSPORT}），"

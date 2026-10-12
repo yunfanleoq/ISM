@@ -138,11 +138,21 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=PORT)
     ap.add_argument("--cycle", type=float, default=CYCLE_S)
-    ap.add_argument("--leak-on", action="store_true", help="漏水 DI0 恒为 1（告警造数）")
+    ap.add_argument("--leak-on", action="store_true", help="漏水 DI0 恒为 1（须先无此开关跑一段再打 0→1 边沿）")
+    ap.add_argument(
+        "--leak-off",
+        action="store_true",
+        help="显式保持周期漏水=0 段（默认；与 --leak-on 互斥时以 --leak-on 为准）",
+    )
     args = ap.parse_args()
     PORT = args.port
     CYCLE_S = args.cycle
-    FORCE_LEAK = 1 if args.leak_on else 0
+    if args.leak_on:
+        FORCE_LEAK = 1
+    elif args.leak_off:
+        FORCE_LEAK = 0
+    else:
+        FORCE_LEAK = 0
     threading.Thread(target=serve, daemon=True).start()
     while True:
         tick_values()
