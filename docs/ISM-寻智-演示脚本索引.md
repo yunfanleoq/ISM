@@ -4,7 +4,7 @@
 
 | 项 | 值 |
 |----|-----|
-| **Git tip** | `125e9e91` |
+| **Git tip（冻结演示）** | `195e90a4` |
 | **试打样包** | `dist/xunzhi-jf/ism-patch-xunzhi-jf-20261012-e8bb7f8/` |
 | **分支** | `feature/xunzhi-jf-env-monitor` · PR [#5](https://github.com/yunfanleoq/ISM/pull/5) |
 | **口径** | 脚本/Mock/文档在仓内冻结；**ism_server / 7080 / 本机 DB 运行态由演示机自启**；不覆盖 `patches/*kylin`、`releases/` 现网 |
@@ -28,7 +28,7 @@
 ### 告警闭环完整复测（旧树 `~/cursorProjects/ISM源码`）
 
 - `python3 scripts/xunzhi_jf_sync_alarm_db.py` 写入 `alarm_notice` · `StartupAlarmDelay` · **`{"DelayMinutes":0}`**，并 `AlarmTriggerEdit` 热加载。
-- `bash scripts/xunzhi_jf_alarm_demo.sh`：**GetCurrentAlarmList** 非空 → **AlarmOpt**（`update` 须 **`duid`**=DeviceUuid，勿 `device_uuid`）→ 响应 **`code==0`** 须绿；Mock 漏水 **0→1** 用热切换（勿 pkill Mock）。
+- `bash scripts/xunzhi_jf_alarm_demo.sh`：**GetCurrentAlarmList** 非空 → **AlarmOpt**（`update` 须 **`uuid`**=DataUuid + **`duid`**=DeviceUuid，勿 `device_uuid`）→ 响应 **`code==0`** 须绿；Mock 漏水 **0→1** 用热切换（勿 pkill Mock）。
 - **sync 写 Delay=0 后须保持 Mock:1502，重启 `ism_server`**，抑警窗才关闭。
 
 ```bash
@@ -49,7 +49,7 @@ cd "$XUNZHI_ISM_ROOT" && bash scripts/xunzhi_jf_alarm_demo.sh
 # 通过：末尾「告警闭环脚本完成」= 入列 + AlarmOpt code==0 均绿（500 不得算过）
 ```
 
-> 自 `1101f209` 起 **AlarmOpt `duid` + code 断言**；自 `819fd616` 起 mac **`lsof` cwd / `ps etime`**。pull 后 `git rev-parse --short=8 HEAD` 再跑。
+> **演示冻结 tip=`195e90a4`**（含 AlarmOpt **`uuid`+`duid`**、code 断言；mac **`lsof` cwd / `ps etime`**）。仅索引钉 tip 的后续提交不改变冻结点；拉代码以 `git checkout 195e90a4` 或 pull 后 `HEAD≥195e90a4` 均可。
 
 ---
 
