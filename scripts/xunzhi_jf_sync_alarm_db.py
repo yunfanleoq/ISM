@@ -86,10 +86,27 @@ def upsert_triggers(db: Path, proj_uuid: str) -> int:
             continue
         model_data_uuid = pt[0]
         cur.execute(
-            "SELECT id FROM alarm_trigger WHERE project_uuid=? AND trigger_name=? AND deleted_at IS NULL",
+            "SELECT uuid FROM alarm_trigger WHERE project_uuid=? AND trigger_name=? AND deleted_at IS NULL",
             (proj_uuid, tname),
         )
-        if cur.fetchone():
+        row_trig = cur.fetchone()
+        if row_trig:
+            cur.execute(
+                """
+                UPDATE alarm_trigger SET
+                  trigger_device_model_uuid=?,
+                  trigger_model_data_uuid=?,
+                  trigger_condition=?,
+                  trigger_x_value=?,
+                  trigger_alarm_level=?,
+                  trigger_alarm_show_text=?,
+                  trigger_alarm_hide_text=?,
+                  updated_at=datetime('now')
+                WHERE uuid=?
+                """,
+                (muid, model_data_uuid, cond, xval, level, show, hide, row_trig[0]),
+            )
+            added += cur.rowcount
             continue
         cur.execute(
             """

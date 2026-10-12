@@ -338,8 +338,8 @@ def ensure_startup_delay_zero(db: Path, proj_uuid: str, token: str) -> dict:
         "sqlite_action": sqlite_action,
         "api_code": api.get("code"),
         "note": (
-            "已写入 DelayMinutes=0；须从本树重启 ism_server（Mock:1502 保持）使抑警窗关闭。"
-            "批量 Modbus 重连也会 ReconfigureStartupAlarmWindows。"
+            "已写入 DelayMinutes=0；UpdateAlarmNotice(StartupAlarmDelay) 会 ReconfigureStartupAlarmWindows。"
+            "若仍不入列，从本树重启 ism_server 后再跑 demo。"
         ),
     }
 
@@ -553,7 +553,7 @@ def diagnose_failure(root: Path | None, proj_uuid: str) -> None:
     fr = leak_realdata_freshness(db, proj_uuid)
     if not fr.get("fresh"):
         print(
-            f"HINT: LEAK realdata 未刷新（value={fr.get('value')} age={fr.get('age_sec')}s）；"
-            "确认 Mock:1502 LISTEN 且 ism_server 已采集（见 cycle_log_th_leak）",
+            f            f"HINT: LEAK realdata 未刷新（value={fr.get('value')} age={fr.get('age_sec')}s）；"
+            f"确认 Mock:{mock_port()} LISTEN 且 ism_server 已采集（见 cycle_log_th_leak）",
             file=sys.stderr,
         )

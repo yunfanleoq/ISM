@@ -18,7 +18,7 @@ sys.path.insert(0, '$ROOT/scripts')
 from xunzhi_jf_lib import mock_port, tcp_port_listening
 print('yes' if tcp_port_listening(port=mock_port()) else 'no')
 " | grep -q yes; then
-    echo "Mock:1502 已在监听（不重启进程）"
+    echo "Mock:${MOCK_PORT} 已在监听（不重启进程）"
     return 0
   fi
   echo "启动 Mock listener（仅此一次，边沿用热切换）"
@@ -99,12 +99,12 @@ if est < 1:
 echo "== xunzhi-jf 告警 demo =="
 echo "演示根: $XUNZHI_ISM_ROOT"
 
-echo "1) Mock:1502 先起并保持 listener"
+echo "1) Mock:${MOCK_PORT} 先起并保持 listener"
 ensure_mock_listener
 
 if ! ism_server_ok; then
   echo "FAIL: ism_server 未运行（检测 HTTP:${ISM_HTTP_PORT} LISTEN 或 pgrep ism_server + /proc/PID/cwd）" >&2
-  echo "顺序：Mock:1502 → cd ism_server_user && ./ism_server" >&2
+  echo "顺序：Mock:${MOCK_PORT} → cd ism_server_user && ./ism_server" >&2
   exit 1
 fi
 
@@ -128,12 +128,12 @@ if [[ "${REMAIN:-0}" -gt 0 ]]; then
     echo "等待旧 StartupAlarmDelay 窗 ${REMAIN}s …"
     sleep "$REMAIN"
   else
-    echo "FAIL: 抑警窗约剩余 ${REMAIN}s；保持 Mock:1502，重启 ism_server 后再跑 demo" >&2
+    echo "FAIL: 抑警窗约剩余 ${REMAIN}s；保持 Mock:${MOCK_PORT}，执行 sync 或重启 ism_server 后再跑 demo" >&2
     exit 1
   fi
 fi
 
-echo "3) 采集就绪（realdata 新鲜；1502 ESTABLISHED / cycle_log 为准）"
+echo "3) 采集就绪（realdata 新鲜；Mock:${MOCK_PORT} ESTABLISHED / cycle_log 为准）"
 assert_collector_ready "$PROJ" | tee "$EVIDENCE_DIR/F4_collector_${STAMP}.json"
 
 ALARM_ID_BEFORE="$(max_alarm_id)"

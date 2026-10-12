@@ -21,16 +21,20 @@
 python3 projects-import/xunzhi-jf/append_w2_power_ups.py   # 若包已含 W2 可跳过
 python3 projects-import/xunzhi-jf/append_w2_power_viz.py
 python3 projects-import/xunzhi-jf/reflow_xunzhi_jf_env_plane_layout.py
-python3 scripts/import_xunzhi_jf_project.py
+python3 scripts/import_xunzhi_jf_project.py --force
 ```
+
+> **平面仍是旧版（③ 只有告警、无 PWR/UPS）**：多为未重导组态。须 `ProjectDel` + 重导：  
+> `python3 scripts/import_xunzhi_jf_project.py --force`（勿写死 project/display uuid）。
 
 ## 本机双口演示（7081 / 8082 / 1503）
 
 1. Mock：`python3 scripts/xunzhi_jf_modbus_mock.py`（或 `XUNZHI_MOCK_PORT=1503`）
 2. 后端：`ism_server_user` 监听 **8082**（见 `docs/ISM-寻智-本机双开端口.md`）
 3. 前端 dev **7081**，登录 `admin` / `123456`（前端 MD5）
-4. 重导项目后打开 **`/#/xunzhi/jf/viz/plane`**（`noRunTree=1` 平面闸）
-5. 目视 **③ W2** 区：`xunzhi-jf-PWR-01` / `xunzhi-jf-UPS-01` 实时表 + 总有功功率 / 电池电压表盘
+4. **重导**：`ISM_HTTP_PORT=8082 BASE_URL=http://127.0.0.1:8082 python3 scripts/import_xunzhi_jf_project.py --force`
+5. 打开 **`/#/xunzhi/jf/viz/plane`**（`noRunTree=1` 平面闸）
+6. 目视 **③ W2** 区：`xunzhi-jf-PWR-01` / `xunzhi-jf-UPS-01` 实时表 + 总有功功率 / 电池电压表盘
 
 探针：
 
