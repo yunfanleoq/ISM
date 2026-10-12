@@ -5,10 +5,15 @@
     :style="boxStyle"
     @mouseenter="onEnter"
     @mouseleave="onLeave"
+    @mousedown.stop
+    @click.stop="onCardClick"
   >
     <div class="bpp-title">
       <span class="bpp-title-text">{{ cardTitle }}</span>
-      <span class="bpp-title-hint">{{ pinned ? '已钉住' : '点击钉住' }}</span>
+      <span class="bpp-actions">
+        <span class="bpp-title-hint">{{ pinned ? '已钉住' : '点击钉住' }}</span>
+        <button type="button" class="bpp-close" title="关闭" @click.stop="hide(true)">×</button>
+      </span>
     </div>
     <div class="bpp-body">
       <div v-if="loading" class="bpp-tip">数据加载中…</div>
@@ -58,8 +63,9 @@
 import { getRealDataByUuid, getDeviceArchive } from '@/services/device'
 import { GetChartDataHistoryList } from '@/services/report'
 import BoundPointsTrend from './BoundPointsTrend.vue'
+import { bindId, deviceId } from './boundPointsIds'
 
-const HIDE_DELAY = 180
+const HIDE_DELAY = 420
 const MAX_W = 460
 const MAX_H = 760
 const HISTORY_MINUTES = 24 * 60
@@ -84,7 +90,8 @@ export default {
       posX: 0,
       posY: 0,
       reqSeq: 0,
-      hideTimer: null
+      hideTimer: null,
+      currentKey: ''
     }
   },
   computed: {
@@ -123,30 +130,45 @@ export default {
     if (this.hideTimer) clearTimeout(this.hideTimer)
   },
   methods: {
-    show(payload) {
+    bindKey(binds) {
+      return (binds || []).map((item) => bindId(item) + '@' + deviceId(item)).join('|')
+    },
+    show(payload, options) {
       if (!payload || !Array.isArray(payload.binds) || payload.binds.length === 0) {
+        return
+      }
+      const key = this.bindKey(payload.binds)
+      const force = !!(options && options.force)
+      if (this.pinned && this.visible && key !== this.currentKey && !force) {
         return
       }
       if (this.hideTimer) {
         clearTimeout(this.hideTimer)
         this.hideTimer = null
       }
-      this.computePosition(payload.clientX, payload.clientY)
+      const same = this.visible && key && key === this.currentKey
+      if (!same) {
+        this.computePosition(payload.clientX, payload.clientY)
+        this.currentKey = key
+        this.loadData(payload.binds)
+      }
       this.visible = true
-      this.loadData(payload.binds)
     },
     togglePin(payload) {
-      if (this.pinned && this.visible) {
+      const key = this.bindKey(payload && payload.binds)
+      if (this.pinned && this.visible && key === this.currentKey) {
         this.pinned = false
         this.hide(true)
         return
       }
       this.pinned = true
-      this.show(payload)
+      this.show(payload, { force: true })
     },
-    move(payload) {
-      if (!this.visible || this.pinned || !payload) return
-      this.computePosition(payload.clientX, payload.clientY)
+    onCardClick() {
+      this.pinned = true
+    },
+    move() {
+      // 卡片停在出现位置。跟着鼠标走时，点不到「钉住」和「关闭」。
     },
     hide(force) {
       if (this.pinned && !force) return
@@ -167,22 +189,30 @@ export default {
       this.hide(false)
     },
     loadData(binds) {
-      const uuids = binds.map((item) => item && (item.dataID || item.dataId)).filter(Boolean)
+      const list = Array.isArray(binds) ? binds : []
+      const uuids = []
+      const devices = []
+      list.forEach((item) => {
+        const id = bindId(item)
+        const dev = deviceId(item)
+        if (id && uuids.indexOf(id) === -1) uuids.push(id)
+        if (dev && devices.indexOf(dev) === -1) devices.push(dev)
+      })
       const seq = ++this.reqSeq
       this.loading = true
       this.error = ''
       this.archives = []
       this.historyTimes = []
       this.historySeries = []
-      this.rows = binds.map((item, index) => ({
-        key: (item && item.dataID) || index,
-        device: (item && (item.DeviceName || item.deviceSN)) || '',
-        deviceUuid: (item && item.deviceSN) || '',
+      this.rows = list.map((item, index) => ({
+        key: bindId(item) || index,
+        device: (item && (item.DeviceName || deviceId(item))) || '',
+        deviceUuid: deviceId(item),
         modelDataUuid: '',
         name: (item && item.dataName) || '',
         section: (item && item.section) || '',
         value: '—',
-        unit: '',
+        unit: (item && (item.unit || item.dataUnit)) || '',
         record: 0
       }))
       if (uuids.length === 0) {
@@ -190,27 +220,37 @@ export default {
         this.loadExtras(seq)
         return
       }
-      getRealDataByUuid({ uuid: uuids }).then((res) => {
+      const params = { uuid: uuids }
+      if (devices.length) params.devices = devices
+      getRealDataByUuid(params).then((res) => {
         if (seq !== this.reqSeq) return
         const data = res && res.data ? res.data : {}
-        const list = Array.isArray(data.realData) ? data.realData : []
+        const realList = Array.isArray(data.realData) ? data.realData : []
         const byUuid = {}
-        list.forEach((it) => {
+        const byModel = {}
+        realList.forEach((it) => {
           const id = it.uuid || it.Uuid
+          const modelId = it.mduid || it.ModelDataUuid
+          const dev = it.duid || it.DeviceUuid || ''
           if (id) byUuid[id] = it
+          if (modelId) {
+            byModel[dev + '|' + modelId] = it
+            if (!byModel[modelId]) byModel[modelId] = it
+          }
         })
-        this.rows = binds.map((item, index) => {
-          const id = item && (item.dataID || item.dataId)
-          const real = id ? byUuid[id] : null
+        this.rows = list.map((item, index) => {
+          const id = bindId(item)
+          const dev = deviceId(item)
+          const real = (id && byUuid[id]) || (id && dev && byModel[dev + '|' + id]) || (id && byModel[id]) || null
           return {
             key: id || index,
-            device: (real && (real.DeviceName || real.deviceName)) || (item && (item.DeviceName || item.deviceSN)) || '',
-            deviceUuid: (real && (real.duid || real.DeviceUuid)) || (item && item.deviceSN) || '',
+            device: (real && (real.DeviceName || real.deviceName)) || (item && (item.DeviceName || dev)) || '',
+            deviceUuid: (real && (real.duid || real.DeviceUuid)) || dev,
             modelDataUuid: (real && (real.mduid || real.ModelDataUuid)) || '',
             name: (real && (real.name || real.Name)) || (item && item.dataName) || '',
             section: (item && item.section) || '',
-            value: this.fmtValue(real && real.value),
-            unit: (real && (real.unit || real.DataUnit)) || '',
+            value: this.fmtValue(real && (real.value != null && real.value !== '' ? real.value : real.Value)),
+            unit: (real && (real.unit || real.DataUnit)) || (item && (item.unit || item.dataUnit)) || '',
             record: real && real.record ? real.record : 0
           }
         })
@@ -384,11 +424,26 @@ export default {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.bpp-title-hint {
+.bpp-actions {
+  display: flex;
+  align-items: center;
   flex: 0 0 auto;
   margin-left: 8px;
+}
+.bpp-title-hint {
+  flex: 0 0 auto;
   font-size: 12px;
   opacity: 0.9;
+}
+.bpp-close {
+  margin-left: 8px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
 }
 .bpp-body {
   overflow-y: auto;
