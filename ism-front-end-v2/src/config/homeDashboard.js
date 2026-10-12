@@ -2,9 +2,8 @@
 import { AUTH_TYPE, setAuthorization } from '@/utils/request'
 import {
   buildEnvPlaneAppRunQuery,
-  isEnvPlaneNoRunTreeSession,
-  readHashRouteQuery,
-  SESSION_ENV_PLANE_PAGE_NAME,
+  isNoRunTreeMode,
+  mergedAppRunQuery,
 } from '@/xunzhiJf/appRunEmbed'
 import { isXunzhiJfActiveProject } from '@/xunzhiJf/projectContext'
 
@@ -56,48 +55,12 @@ export function isConfiguredHomeDashboard(uid, store) {
   return !!configured && uid === configured
 }
 
-/** 寻智动环平面页：组态内已含「①机房监视树」，禁止 AppRun 旁路 RunTree 叠层 */
+/** 寻智动环平面页；noRunTree=1 时隐藏旁路 RunTree 与组态内嵌机房监视树 */
 export const XUNZHI_JF_ENV_PLANE_PAGE = 'xunzhi-jf-env-plane'
 
-function readPageList(store) {
-  const ism = store && store.state && store.state.ISM
-  if (!ism) return []
-  return [...(ism.PCPageList || []), ...(ism.PhonePageList || [])]
-}
-
-function mergedAppRunQuery(route) {
-  const fromRoute = route && route.query ? route.query : {}
-  const fromHash = readHashRouteQuery()
-  return { ...fromHash, ...fromRoute }
-}
-
-/** 当前 AppRun 是否为寻智平面页（URL pageName / pageId→PageName / 已加载 LayerData） */
+/** 当前 AppRun 是否为寻智平面 noRunTree 模式（旁路树 + 内嵌监视树均隐藏） */
 export function isXunzhiJfEnvPlaneAppRun(route, store) {
-  if (isEnvPlaneNoRunTreeSession()) {
-    try {
-      const pn = sessionStorage.getItem(SESSION_ENV_PLANE_PAGE_NAME)
-      if (!pn || pn === XUNZHI_JF_ENV_PLANE_PAGE) return true
-    } catch (e) {
-      return true
-    }
-  }
-  const q = mergedAppRunQuery(route)
-  if (q.pageName === XUNZHI_JF_ENV_PLANE_PAGE || q.noRunTree === '1') {
-    return true
-  }
-  const pageId = q.pageId || ''
-  if (pageId) {
-    const hit = readPageList(store).find(
-      p => (p.pageUuid || p.PageId || '') === pageId
-    )
-    const name = hit && (hit.name || hit.PageName || hit.title || '')
-    if (name === XUNZHI_JF_ENV_PLANE_PAGE) return true
-  }
-  const ism = store && store.state && store.state.ISM
-  if (ism && ism.LayerData && ism.LayerData.name === XUNZHI_JF_ENV_PLANE_PAGE) {
-    return true
-  }
-  return false
+  return isNoRunTreeMode(route, store)
 }
 
 /** AppRun 是否显示左侧设备导航树（避免 AppRunShell 引用 xunanDashboardPages 引发循环依赖） */
@@ -130,10 +93,14 @@ export function resolveScadaMonitorRoute() {
   if (shouldUseXunzhiJfVizEmbed(store)) {
     return '/xunzhi/jf/viz/plane'
   }
-  return {
-    path: `/AppRun/${uid}`,
-    query: buildEnvPlaneAppRunQuery(),
+  const name = getHomeDashboardConfig(store).dashboardName || ''
+  if (/平面|env-plane|寻智|xunzhi/i.test(name)) {
+    return {
+      path: `/AppRun/${uid}`,
+      query: buildEnvPlaneAppRunQuery(),
+    }
   }
+  return `/AppRun/${uid}`
 }
 
 export function createHomeDashboardRedirect() {

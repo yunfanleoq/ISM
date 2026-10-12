@@ -1,5 +1,5 @@
 <template>
-  <div class="ism-pageview" :class="{ 'ism-pageview--no-runtree': !showRunTree }">
+  <div class="ism-pageview" :class="{ 'ism-pageview--no-runtree': suppressRunTreeChrome }">
     <ISMRenderLoader :show-uuid="dashboardUuid" />
     <ScadaOrgOverview
       v-if="showRunTree"
@@ -33,11 +33,10 @@ const ScadaOrgOverview = () => import(/* webpackChunkName: "scada-org-overview" 
 import {
   applyHomeProjectAuth,
   HOME_PROJECT_UUID,
-  isXunzhiJfEnvPlaneAppRun,
   resolveHomeProjectUuid,
   shouldShowRunTreeNav,
 } from '@/config/homeDashboard.js'
-import { markEnvPlaneAppRunSession } from '@/xunzhiJf/appRunEmbed'
+import { isNoRunTreeMode, markEnvPlaneAppRunSession } from '@/xunzhiJf/appRunEmbed'
 import { AUTH_TYPE, getAuthorization } from '@/utils/request'
 
 export default {
@@ -54,7 +53,7 @@ export default {
     uid: { type: String, required: true },
   },
   created() {
-    if (isXunzhiJfEnvPlaneAppRun(this.$route, this.$store)) {
+    if (isNoRunTreeMode(this.$route, this.$store)) {
       markEnvPlaneAppRunSession()
     }
     if (shouldShowRunTreeNav(this.uid, this.$store, this.$route)) applyHomeProjectAuth(this.$store)
@@ -78,6 +77,9 @@ export default {
     },
     showRunTree() {
       return shouldShowRunTreeNav(this.dashboardUuid, this.$store, this.$route)
+    },
+    suppressRunTreeChrome() {
+      return isNoRunTreeMode(this.$route, this.$store) || !this.showRunTree
     },
     projectUuid() {
       const uid = this.dashboardUuid

@@ -26,19 +26,72 @@ export function isEnvPlaneNoRunTreeSession() {
   }
 }
 
-/** 从 location.hash 解析 query（iframe 内 AppRun 与父页路由解耦时 route.query 可能为空） */
+export function isNoRunTreeFlag(value) {
+  if (value === undefined || value === null || value === '') return false
+  if (value === true || value === 1) return true
+  const s = String(value).toLowerCase()
+  return s === '1' || s === 'true' || s === 'yes'
+}
+
+/** 从 location.hash / search 解析 query（iframe AppRun 与父页路由解耦时 route.query 可能为空） */
 export function readHashRouteQuery() {
   const out = {}
   try {
+    const search = window.location.search || ''
+    if (search.startsWith('?')) {
+      new URLSearchParams(search.slice(1)).forEach((value, key) => {
+        out[key] = value
+      })
+    }
     const hash = window.location.hash || ''
     const qIdx = hash.indexOf('?')
-    if (qIdx < 0) return out
-    const params = new URLSearchParams(hash.slice(qIdx + 1))
-    params.forEach((value, key) => {
-      out[key] = value
-    })
+    if (qIdx >= 0) {
+      const params = new URLSearchParams(hash.slice(qIdx + 1))
+      params.forEach((value, key) => {
+        out[key] = value
+      })
+    }
   } catch (e) { /* ignore */ }
   return out
+}
+
+export function mergedAppRunQuery(route) {
+  const fromRoute = route && route.query ? route.query : {}
+  const fromHash = readHashRouteQuery()
+  return { ...fromHash, ...fromRoute }
+}
+
+/** AppRun / embed：须隐藏旁路 RunTree 与组态内嵌「机房监视树」 */
+export function isNoRunTreeMode(route, store) {
+  const q = mergedAppRunQuery(route)
+  if (isNoRunTreeFlag(q.noRunTree)) return true
+  if (q.pageName === XUNZHI_JF_ENV_PLANE_PAGE) return true
+  if (
+    isEnvPlaneNoRunTreeSession()
+    && (isNoRunTreeFlag(q.noRunTree) || q.pageName === XUNZHI_JF_ENV_PLANE_PAGE)
+  ) {
+    return true
+  }
+  const pageId = q.pageId || ''
+  if (pageId && store && store.state && store.state.ISM) {
+    const lists = [
+      ...(store.state.ISM.PCPageList || []),
+      ...(store.state.ISM.PhonePageList || []),
+    ]
+    const hit = lists.find(p => (p.pageUuid || p.PageId || '') === pageId)
+    const name = hit && (hit.name || hit.PageName || hit.title || '')
+    if (name === XUNZHI_JF_ENV_PLANE_PAGE) return true
+  }
+  const ism = store && store.state && store.state.ISM
+  if (
+    ism
+    && ism.LayerData
+    && ism.LayerData.name === XUNZHI_JF_ENV_PLANE_PAGE
+    && (isNoRunTreeFlag(q.noRunTree) || q.pageName === XUNZHI_JF_ENV_PLANE_PAGE || isEnvPlaneNoRunTreeSession())
+  ) {
+    return true
+  }
+  return false
 }
 
 /** AppRun 须从 SPA 根加载，勿带 /xunzhi/jf/viz/plane 等嵌套 pathname */
