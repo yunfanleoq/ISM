@@ -2,13 +2,14 @@
 """生成寻智机房环境 W1 竖切 ImportProject 包（温湿度 + 漏水，Modbus TCP）。"""
 
 import json
+import os
 import uuid
 from pathlib import Path
 
 OUT_DIR = Path(__file__).resolve().parent
 PROJECT_NAME = "寻智机房环境-xunzhi-jf"
 GATEWAY_IP = "127.0.0.1"
-GATEWAY_PORT = 1502
+GATEWAY_PORT = int(os.environ.get("XUNZHI_MOCK_PORT", "1503"))
 GATHER_INTERVAL_MS = 5000
 
 DISPLAY_UID = "a1b2c3d4e5f6478990abcdef12345678"

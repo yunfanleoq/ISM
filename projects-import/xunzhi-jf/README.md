@@ -78,7 +78,7 @@ Mock：`scripts/xunzhi_jf_modbus_mock.py`（slave 1–7）。周期日志：`P-C
 |------|------|
 | HTTP API | `http://127.0.0.1:8081` |
 | 前端 dev | `http://127.0.0.1:7080` |
-| Mock Modbus | `127.0.0.1:1502` |
+| Mock Modbus | `127.0.0.1:1503`（双口树默认；`XUNZHI_MOCK_PORT` 可覆盖） |
 | 登录 | `admin` / `123456`（前端 MD5 后传 `e10adc3949ba59abbe56e057f20f883e`） |
 
 ## 禁止

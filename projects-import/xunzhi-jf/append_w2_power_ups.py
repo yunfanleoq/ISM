@@ -7,7 +7,9 @@ OUT = Path(__file__).resolve().parent
 PKG_PATH = OUT / "xunzhi-jf_complete_project_package.json"
 PTS_PATH = OUT / "xunzhi-jf_w2_device_points.json"
 GATHER = 5000
-PORT = 1502
+import os
+
+PORT = int(os.environ.get("XUNZHI_MOCK_PORT", "1503"))
 
 MUID_PWR = "b1b1b1b1b1b14c0c000000000000001"
 MUID_UPS = "c2c2c2c2c2c24d0d000000000000002"

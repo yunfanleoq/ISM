@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-寻智 xunzhi-jf 竖切 Modbus TCP Mock（127.0.0.1:1502）
+寻智 xunzhi-jf 竖切 Modbus TCP Mock（127.0.0.1，双口默认 1503）
   slave 1 — 温湿度：HR0 温度×10，HR1 湿度×10；DI0 传感器故障
   slave 2 — 漏水：DI0 漏水信号，DI1 控制器故障；HR0 位置米数×10
   slave 3/4 — W2 配电/UPS；slave 5/6 — W3 空调/氢气；slave 7 — 电池抽样
@@ -19,7 +19,7 @@ import threading
 import time
 
 HOST = "0.0.0.0"
-PORT = 1502
+PORT = int(os.environ.get("XUNZHI_MOCK_PORT", "1503"))
 CYCLE_S = 5.0
 
 hr = {i: [0] * 64 for i in range(1, 8)}

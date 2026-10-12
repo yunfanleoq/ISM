@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
 """S1 envmon-alarm / envmon-viz：组态页挂告警列表 + 监视树第二机房 Mock 节点。"""
 import json
+import os
 import uuid
 from pathlib import Path
+
+MOCK_PORT = int(os.environ.get("XUNZHI_MOCK_PORT", "1503"))
 
 OUT = Path(__file__).resolve().parent
 PKG_PATH = OUT / "xunzhi-jf_complete_project_package.json"
@@ -155,7 +158,7 @@ def main():
                 "configUid": DISPLAY_UID,
                 "PageUUID": PAGE_ID,
                 "extra": json.dumps(
-                    {"modbusIP": "127.0.0.1", "modbusPort": 1502, "slaveId": 1, "packTime": GATHER, "gather_interval_ms": GATHER},
+                    {"modbusIP": "127.0.0.1", "modbusPort": MOCK_PORT, "slaveId": 1, "packTime": GATHER, "gather_interval_ms": GATHER},
                     separators=(",", ":"),
                 ),
                 "Status": 2,

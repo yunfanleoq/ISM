@@ -47,7 +47,7 @@
     "name": "寻智机房环境-xunzhi-jf",
     "gateway": {
       "ip": "127.0.0.1",
-      "port": 1502
+      "port": 1503
     }
   },
   "deviceModels": [
@@ -60,7 +60,7 @@
       "modbusConnectMode": "TCP/IP",
       "DataFormat": "CDAB",
       "timeout": 3000,
-      "port": 1502,
+      "port": 1503,
       "gatherNumber": 30,
       "gather_interval_ms": 5000
     },
@@ -73,7 +73,7 @@
       "modbusConnectMode": "TCP/IP",
       "DataFormat": "CDAB",
       "timeout": 3000,
-      "port": 1502,
+      "port": 1503,
       "gatherNumber": 30,
       "gather_interval_ms": 5000
     },
@@ -86,7 +86,7 @@
       "modbusConnectMode": "TCP/IP",
       "DataFormat": "CDAB",
       "timeout": 3000,
-      "port": 1502,
+      "port": 1503,
       "gatherNumber": 30,
       "gather_interval_ms": 5000
     },
@@ -99,7 +99,7 @@
       "modbusConnectMode": "TCP/IP",
       "DataFormat": "CDAB",
       "timeout": 3000,
-      "port": 1502,
+      "port": 1503,
       "gatherNumber": 30,
       "gather_interval_ms": 5000
     },
@@ -112,7 +112,7 @@
       "modbusConnectMode": "TCP/IP",
       "DataFormat": "CDAB",
       "timeout": 3000,
-      "port": 1502,
+      "port": 1503,
       "gatherNumber": 30,
       "gather_interval_ms": 5000
     },
@@ -125,7 +125,7 @@
       "modbusConnectMode": "TCP/IP",
       "DataFormat": "CDAB",
       "timeout": 3000,
-      "port": 1502,
+      "port": 1503,
       "gatherNumber": 30,
       "gather_interval_ms": 5000
     },
@@ -138,7 +138,7 @@
       "modbusConnectMode": "TCP/IP",
       "DataFormat": "CDAB",
       "timeout": 3000,
-      "port": 1502,
+      "port": 1503,
       "gatherNumber": 30,
       "gather_interval_ms": 5000
     }
@@ -778,7 +778,7 @@
       "muid": "d4e5f6a7b8c94a0a1111111111111111",
       "configUid": "a1b2c3d4e5f6478990abcdef12345678",
       "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
-      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1502,\"slaveId\":1,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1503,\"slaveId\":1,\"packTime\":5000,\"gather_interval_ms\":5000}",
       "Status": 2
     },
     {
@@ -798,7 +798,7 @@
       "muid": "e5f6a7b8c9d04b0b2222222222222222",
       "configUid": "a1b2c3d4e5f6478990abcdef12345678",
       "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
-      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1502,\"slaveId\":2,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1503,\"slaveId\":2,\"packTime\":5000,\"gather_interval_ms\":5000}",
       "Status": 2
     },
     {
@@ -818,7 +818,7 @@
       "muid": "b1b1b1b1b1b14c0c000000000000001",
       "configUid": "a1b2c3d4e5f6478990abcdef12345678",
       "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
-      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1502,\"slaveId\":3,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1503,\"slaveId\":3,\"packTime\":5000,\"gather_interval_ms\":5000}",
       "Status": 2
     },
     {
@@ -838,7 +838,7 @@
       "muid": "c2c2c2c2c2c24d0d000000000000002",
       "configUid": "a1b2c3d4e5f6478990abcdef12345678",
       "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
-      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1502,\"slaveId\":4,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1503,\"slaveId\":4,\"packTime\":5000,\"gather_interval_ms\":5000}",
       "Status": 2
     },
     {
@@ -878,7 +878,7 @@
       "muid": "d4e5f6a7b8c94a0a1111111111111111",
       "configUid": "a1b2c3d4e5f6478990abcdef12345678",
       "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
-      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1502,\"slaveId\":1,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1503,\"slaveId\":1,\"packTime\":5000,\"gather_interval_ms\":5000}",
       "Status": 2
     },
     {
@@ -898,7 +898,7 @@
       "muid": "c3c3c3c3c3c34c0c00000000000000003",
       "configUid": "a1b2c3d4e5f6478990abcdef12345678",
       "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
-      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1502,\"slaveId\":5,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1503,\"slaveId\":5,\"packTime\":5000,\"gather_interval_ms\":5000}",
       "Status": 2
     },
     {
@@ -918,7 +918,7 @@
       "muid": "d4d4d4d4d4d44d0d00000000000000004",
       "configUid": "a1b2c3d4e5f6478990abcdef12345678",
       "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
-      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1502,\"slaveId\":6,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1503,\"slaveId\":6,\"packTime\":5000,\"gather_interval_ms\":5000}",
       "Status": 2
     },
     {
@@ -938,7 +938,7 @@
       "muid": "d7d7d7d7d7d74d7d00000000000000007",
       "configUid": "a1b2c3d4e5f6478990abcdef12345678",
       "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
-      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1502,\"slaveId\":7,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1503,\"slaveId\":7,\"packTime\":5000,\"gather_interval_ms\":5000}",
       "Status": 2
     }
   ],

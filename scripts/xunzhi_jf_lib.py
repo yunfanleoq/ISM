@@ -25,7 +25,12 @@ BASE = os.environ.get("BASE_URL", "http://127.0.0.1:8081").rstrip("/")
 
 
 def mock_port() -> int:
-    return int(os.environ.get("MOCK_PORT", "1502"))
+    return int(
+        os.environ.get(
+            "XUNZHI_MOCK_PORT",
+            os.environ.get("MOCK_PORT", "1503"),
+        )
+    )
 
 
 def resolve_root() -> Path:

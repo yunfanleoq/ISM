@@ -6,7 +6,9 @@ from pathlib import Path
 PKG = Path(__file__).resolve().parent / "xunzhi-jf_complete_project_package.json"
 PTS_OUT = Path(__file__).resolve().parent / "xunzhi-jf_battery_device_points.json"
 GATHER = 5000
-PORT = 1502
+import os
+
+PORT = int(os.environ.get("XUNZHI_MOCK_PORT", "1503"))
 DISPLAY_UID = "a1b2c3d4e5f6478990abcdef12345678"
 PAGE_ID = "b2c3d4e5f6a7488990abcdef123456789"
 MUID_BAT = "d7d7d7d7d7d74d7d00000000000000007"

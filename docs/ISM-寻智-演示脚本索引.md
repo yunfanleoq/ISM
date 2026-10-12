@@ -17,7 +17,8 @@
 
 - 全链路只认 **一个** 仓库根 `XUNZHI_ISM_ROOT`（默认=脚本上级目录；业主常见 `~/cursorProjects/ISM源码`）。
 - **禁止** `ISM源码` 与 `ISM源码-xunzhi-jf` 各起 `ism_server` 混用 sqlite。
-- 起服顺序（告警复测）：**先** `python3 scripts/xunzhi_jf_modbus_mock.py --port 1502`（保持 LISTEN）→ **再** `cd ism_server_user && ./ism_server`（本树）
+- 起服顺序（双口树）：见 **`docs/ISM-寻智-本机双开端口.md`**（Mock **1503** → ism **8082** → FE **7081** → **重新登录** → ProjectDel 重导）。
+- 单口旧树告警复测仍可用 `MOCK_PORT=1502`；寻智投屏默认 **1503**。
 - 自检：`python3 scripts/xunzhi_jf_sync_alarm_db.py --print-env --strict-mock`（`ism_server` cwd、`ism.db`、**Mock:1502**、LEAK `realdata.updated_at`）
 
 **StartupAlarmDelay**：`sync` / `alarm_demo` 会为寻智项目写入 `DelayMinutes:0`；若 `ism_server` 在写入前已启动，须 **保持 Mock:1502 后重启 ism_server**（或 `export XUNZHI_WAIT_STARTUP_DELAY=1` 等旧 10min 窗结束）。  

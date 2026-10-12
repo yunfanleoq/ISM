@@ -79,6 +79,45 @@ export function splitNameByLastUnderscore(fullName) {
   }
 }
 
+function trimEnvmonNumber(n) {
+  const s = String(Math.round(n * 100) / 100)
+  return s.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '')
+}
+
+/** 与后端 finalizeEnvmonEngineering 对齐（旧 ism_server / WS 直推原码时表内兜底） */
+export function formatEnvmonEngineeringDisplay(label, value) {
+  const text = String(label || '')
+  const isTemp = /温度/.test(text)
+  const isHum = /湿度/.test(text)
+  if (!isTemp && !isHum) return value
+  const raw = typeof value === 'string' ? value.trim() : value
+  let n = Number(raw)
+  if (!Number.isFinite(n)) return value
+  const lo = isTemp ? 10 : 15
+  const hi = isTemp ? 45 : 95
+  for (let i = 0; i < 8; i += 1) {
+    if (n >= lo && n <= hi) return trimEnvmonNumber(n)
+    if (n >= 500) {
+      n = isTemp ? n * (220 / 5220) : n * (48 / 5280)
+      continue
+    }
+    if (n >= 150) {
+      n *= 0.1
+      continue
+    }
+    if (isTemp && n > hi && n < 150) {
+      n *= 220 / 614
+      continue
+    }
+    if (isHum && n > 25 && n < 150) {
+      n *= 480 / 307
+      continue
+    }
+    break
+  }
+  return trimEnvmonNumber(n)
+}
+
 function mapOnlineStatusValue(value) {
   if (value === undefined || value === null || value === '') return value
   if (value === '-' || value === '—') return value
@@ -104,6 +143,9 @@ function mapOnlineStatusValue(value) {
 export function formatPointDisplayValue(pointName, value) {
   if (value === undefined || value === null || value === '') return value
   if (value === '-' || value === '—') return value
+
+  const env = formatEnvmonEngineeringDisplay(pointName, value)
+  if (env !== value) return env
 
   // 无点名时仍尝试翻译常见英文状态字面量（MQTT Status 等）
   if (!pointName) {

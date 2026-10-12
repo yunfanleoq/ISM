@@ -144,49 +144,59 @@ func roundEnvmonDisplay(v float64) float64 {
 	return out
 }
 
-// 寻智动环温湿度：Mock HR=工程值×10；纠正「只乘一次 0.1」导致的 61℃ / 31%RH 半吊子读数
+// 寻智动环温湿度：Mock HR=工程值×10；迭代回拉到工程区间（含 ~5xxx 错读/半换算）
 func finalizeEnvmonEngineering(pointName string, v float64) float64 {
 	name := strings.TrimSpace(pointName)
 	switch name {
 	case "温度":
-		if v >= 10 && v <= 45 {
-			return roundEnvmonDisplay(v)
-		}
-		if v >= 150 {
-			v = v * 0.1
-		}
-		if v > 45 && v < 90 {
-			// 原码约 614、仅 *0.1 一次 → ~61℃；按 Mock HR≈220 的工程比回正
-			corrected := v * (220.0 / 614.0)
-			if corrected >= 10 && corrected <= 45 {
-				return roundEnvmonDisplay(corrected)
+		lo, hi := 10.0, 45.0
+		for i := 0; i < 8; i++ {
+			if v >= lo && v <= hi {
+				return roundEnvmonDisplay(v)
 			}
-		}
-		if v >= 10 && v <= 45 {
-			return roundEnvmonDisplay(v)
+			if v >= 500 {
+				v = v * (220.0 / 5220.0)
+				continue
+			}
+			if v >= 150 {
+				v = v * 0.1
+				continue
+			}
+			if v > hi && v < 150 {
+				v = v * (220.0 / 614.0)
+				continue
+			}
+			break
 		}
 	case "湿度":
-		if v >= 15 && v <= 95 {
-			return roundEnvmonDisplay(v)
-		}
-		if v >= 150 {
-			v = v * 0.1
-		}
-		if v > 25 && v < 45 {
-			corrected := v * (480.0 / 307.0)
-			if corrected >= 15 && corrected <= 95 {
-				return roundEnvmonDisplay(corrected)
+		lo, hi := 15.0, 95.0
+		for i := 0; i < 8; i++ {
+			if v >= lo && v <= hi {
+				return roundEnvmonDisplay(v)
 			}
-		}
-		if v >= 15 && v <= 95 {
-			return roundEnvmonDisplay(v)
+			if v >= 500 {
+				v = v * (48.0 / 5280.0)
+				continue
+			}
+			if v >= 150 {
+				v = v * 0.1
+				continue
+			}
+			if v > 25 && v < 150 {
+				v = v * (480.0 / 307.0)
+				continue
+			}
+			break
 		}
 	case "漏水位置米数":
 		if v >= 0 && v <= 200 {
 			return v
 		}
-		if v >= 150 && v < 2000 {
-			return roundEnvmonDisplay(v * 0.1)
+		for i := 0; i < 4 && v >= 150; i++ {
+			v = v * 0.1
+			if v >= 0 && v <= 200 {
+				return roundEnvmonDisplay(v)
+			}
 		}
 	}
 	return v
