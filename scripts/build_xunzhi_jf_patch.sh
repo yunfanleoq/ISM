@@ -18,7 +18,10 @@ cp projects-import/xunzhi-jf/xunzhi-jf_w3_device_points.json "$DEST/projects-imp
 cp scripts/xunzhi_jf_*.sh scripts/xunzhi_jf_*.py "$DEST/scripts/" 2>/dev/null || true
 chmod +x "$DEST/scripts/"*.sh 2>/dev/null || true
 cp scripts/import_xunzhi_jf_project.py "$DEST/scripts/" 2>/dev/null || true
-cp docs/ISM-寻智-演示脚本索引.md docs/ISM-寻智-W1竖切验收.md docs/ISM-寻智-W1业主本机目视自证.md docs/ISM-寻智-S1-envmon演示.md docs/ISM-寻智-S1-图表仪表盘清单草稿.md docs/ISM-寻智-S2-资产U位骨架.md docs/ISM-寻智-S3-NSPC容量骨架.md docs/ISM-寻智-S4-工单骨架.md docs/ISM-寻智-S5-能耗PUE碳骨架.md docs/ISM-寻智-S6-安防消防事件桩.md docs/ISM-寻智-S6-2.5D导航壳.md docs/ISM-寻智-电池1920抽样.md docs/ISM-寻智-双机软件就绪演练.md docs/ISM-寻智-W1复测证据/README.md "$DEST/docs/" 2>/dev/null || true
+cp docs/ISM-寻智-演示脚本索引.md docs/ISM-寻智-本机双开端口.md docs/ISM-寻智-W1竖切验收.md docs/ISM-寻智-W1业主本机目视自证.md docs/ISM-寻智-S1-envmon演示.md docs/ISM-寻智-S1-图表仪表盘清单草稿.md docs/ISM-寻智-S2-资产U位骨架.md docs/ISM-寻智-S3-NSPC容量骨架.md docs/ISM-寻智-S4-工单骨架.md docs/ISM-寻智-S5-能耗PUE碳骨架.md docs/ISM-寻智-S6-安防消防事件桩.md docs/ISM-寻智-S6-2.5D导航壳.md docs/ISM-寻智-电池1920抽样.md docs/ISM-寻智-双机软件就绪演练.md docs/ISM-寻智-W1复测证据/README.md "$DEST/docs/" 2>/dev/null || true
+mkdir -p "$DEST/docs/ISM-寻智-W1复测证据"
+cp docs/ISM-寻智-W1复测证据/机房环境监测-复测-aa65d820.md docs/ISM-寻智-W1复测证据/机房环境监测-复测-大屏.md "$DEST/docs/ISM-寻智-W1复测证据/" 2>/dev/null || true
+git rev-parse HEAD >"$DEST/GIT_TIP.txt"
 cp projects-import/xunzhi-jf/append_w2_power_ups.py projects-import/xunzhi-jf/append_w3_ac_h2.py projects-import/xunzhi-jf/append_w4_battery_sample.py projects-import/xunzhi-jf/append_s6_25d_nav_shell.py projects-import/xunzhi-jf/append_s6_chart_catalog_push.py "$DEST/projects-import/xunzhi-jf/" 2>/dev/null || true
 cp projects-import/xunzhi-jf/append_s1_envmon_demo.py projects-import/xunzhi-jf/append_s1_chart_thicken.py projects-import/xunzhi-jf/append_s1_gauge_plus.py "$DEST/projects-import/xunzhi-jf/" 2>/dev/null || true
 cp projects-import/xunzhi-jf/xunzhi-jf_dcim_asset_mock.json projects-import/xunzhi-jf/xunzhi-jf_dcim_capacity_mock.json projects-import/xunzhi-jf/xunzhi-jf_dcim_workorder_mock.json projects-import/xunzhi-jf/xunzhi-jf_dcim_energy_mock.json projects-import/xunzhi-jf/xunzhi-jf_security_event_mock.json projects-import/xunzhi-jf/xunzhi-jf_25d_shell_page.json projects-import/xunzhi-jf/xunzhi-jf_battery_device_points.json "$DEST/projects-import/xunzhi-jf/" 2>/dev/null || true
@@ -26,22 +29,46 @@ cp projects-import/xunzhi-jf/xunzhi-jf_dcim_asset_mock.json projects-import/xunz
 cat >"$DEST/README.md" <<EOF
 # ${NAME}（试打样 · 非麒麟现网包）
 
-- **Git tip**: \`${SHA7}\`（分支 \`feature/xunzhi-jf-env-monitor\`）
+- **Git tip**: \`${SHA7}\`（分支 \`feature/xunzhi-jf-env-monitor\`，完整 SHA 见 \`GIT_TIP.txt\`）
 - **禁止**：覆盖 \`patches/ism-*-kylin\`、\`releases/\` 或现场麒麟生产目录
-- **安装**：解压到任意路径（如 \`/opt/ism-patch-xunzhi-jf-dev/\`），按 \`scripts/xunzhi_jf_smoke_env.sh\` 起 Mock+后端+导入
+- **禁止**：使用 \`/tmp/keep_xunzhi_be.sh\` 等方式保活双口后端（易锁错/写坏 \`ism.db\`）
 
-## 内容
-- 竖切 ImportProject 包（温湿度+漏水；若含 W2 则含配电/UPS 扩展点表）
-- 冒烟脚本与证据采集
-- 文档：wsport 以目标机 \`conf/app.conf\` 为准（dev 常见 10225）
+## 双口演示（\`ISM源码-xunzhi-jf\` / 本包文档）
 
-## 导入
+| 服务 | 端口 |
+|------|------|
+| 前端 | **7081** |
+| \`ism_server\` | **8082** |
+| Modbus Mock | **1503**（\`XUNZHI_MOCK_PORT\`） |
+
+平面闸（须 **同一 git tip 的前后端源码**，本 tar 仅增量脚本+导入包）：
+- \`noRunTree=1\` 真删监视树格；\`/#/xunzhi/jf/viz/plane\` missPlane 修复
+- ProjectUuid 按项目名「寻智机房环境-xunzhi-jf」动态解析（勿写死 uuid）
+- 量纲 **DataFormat=ABCD**（导入包内）
+
+## Apply（到已有 ISM 工作区）
+
+\`\`\`bash
+# 1) 工作区先 checkout 到与本包相同的 git tip
+git fetch && git checkout feature/xunzhi-jf-env-monitor && git checkout ${SHA7}
+
+# 2) 复制导入包与脚本（不覆盖 data/db）
+bash apply-patch.sh /path/to/ISM-workspace
+
+# 3) 按 docs/ISM-寻智-本机双开端口.md 起 Mock → 8082 后端 → 7081 前端 → 登录 → 重导
+python3 scripts/import_xunzhi_jf_project.py
+python3 scripts/xunzhi_jf_seed_admin.py --dbtype 1   # 双口 SQLite 登录 1003 时
+\`\`\`
+
+## 导入（已在 ISM 根目录且已 apply）
+
 \`\`\`bash
 python3 scripts/import_xunzhi_jf_project.py
 \`\`\`
 
 ## 组态
-项目「寻智机房环境-xunzhi-jf」→「寻智机房环境平面监视-xunzhi-jf」→ 页 \`xunzhi-jf-env-plane\`
+
+项目「寻智机房环境-xunzhi-jf」→ 页 \`xunzhi-jf-env-plane\`；侧栏「监控大屏」或 \`/#/xunzhi/jf/viz/plane\`
 EOF
 
 cat >"$DEST/apply-patch.sh" <<'EOS'
