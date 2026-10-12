@@ -43,7 +43,7 @@ def login():
 
 def find_project_uuid(token: str) -> str:
     data = curl_json("/ProjectList", {}, token)
-    for p in data.get("list", []):
+    for p in data.get("list") or []:
         pi = p.get("ProjectInfo", p)
         if pi.get("name") == PROJECT_NAME:
             return pi.get("uuid", "") or ""
@@ -70,7 +70,7 @@ def main():
     if existing and args.force:
         del_resp = project_del(token, existing)
         print(json.dumps({"project_del": del_resp, "deleted_uuid": existing}, ensure_ascii=False, indent=2))
-        if del_resp.get("code") not in (0, 1000):
+        if del_resp.get("code") not in (0, 1000, 200):
             raise SystemExit(f"ProjectDel failed: {del_resp}")
         existing = find_project_uuid(token)
         if existing:
