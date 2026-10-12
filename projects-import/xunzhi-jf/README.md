@@ -37,6 +37,7 @@ bash scripts/xunzhi_jf_alarm_demo.sh
 | `xunzhi-jf_w3_device_points.json` | W3 空调/氢气附录 |
 | `generate_xunzhi_jf_package.py` | 生成 W1 基线包 |
 | `append_w2_power_ups.py` | 向包追加 PWR/UPS（slave 3/4） |
+| `append_w2_power_viz.py` | W2：平面实时表 + 配电/UPS 表盘 |
 | `append_w3_ac_h2.py` | 向包追加 AC/H2（slave 5/6）· 探针 **P-COL-03** `cycle_log_ac_h2` |
 | `append_s1_envmon_demo.py` | S1：组态告警列表 + 第二机房树节点 |
 | `append_s1_chart_thicken.py` | S1：平面页挂 ≥20 类图表/仪表 shape（**演示平面勿依赖**） |
@@ -53,6 +54,7 @@ bash scripts/xunzhi_jf_alarm_demo.sh
 ```bash
 python3 projects-import/xunzhi-jf/generate_xunzhi_jf_package.py
 python3 projects-import/xunzhi-jf/append_w2_power_ups.py
+python3 projects-import/xunzhi-jf/append_w2_power_viz.py
 python3 projects-import/xunzhi-jf/append_w3_ac_h2.py
 python3 projects-import/xunzhi-jf/append_s1_envmon_demo.py
 python3 projects-import/xunzhi-jf/append_s1_chart_thicken.py

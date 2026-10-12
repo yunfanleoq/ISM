@@ -108,9 +108,14 @@ def tick_values():
         hr[7][0] = 528
         hr[7][1] = 850
         hr[7][2] = 285
+    with lock:
+        p_v, p_i, p_kw = hr[3][0], hr[3][1], hr[3][2]
+        u_v, u_i, u_batt = hr[4][0], hr[4][1], hr[4][2]
     print(
         f"[xunzhi-jf-mock-cycle] leak_mode={LEAK_MODE} cycle_s={CYCLE_S:.0f} "
-        f"slave1 temp={temp:.1f}C humi={humi:.1f}%RH slave2 leak={leak} pos_m={pos_m:.1f}m",
+        f"slave1 temp={temp:.1f}C humi={humi:.1f}%RH slave2 leak={leak} pos_m={pos_m:.1f}m "
+        f"slave3 PWR V={p_v * 0.1:.1f} I={p_i * 0.01:.2f}A P={p_kw * 0.1:.1f}kW "
+        f"slave4 UPS V={u_v * 0.1:.1f} batt={u_batt * 0.1:.1f}V",
         flush=True,
     )
 

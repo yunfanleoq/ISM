@@ -1,14 +1,23 @@
 #!/usr/bin/env python3
 """平面页 xunzhi-jf-env-plane 演示布局收口：实时表 + 机房树 + 告警面板（去 S1 图表/箭头堆叠）。"""
 import json
+import sys
 import uuid
 from pathlib import Path
 
-PKG_PATH = Path(__file__).resolve().parent / "xunzhi-jf_complete_project_package.json"
+_PKG_DIR = Path(__file__).resolve().parent
+if str(_PKG_DIR) not in sys.path:
+    sys.path.insert(0, str(_PKG_DIR))
+PKG_PATH = _PKG_DIR / "xunzhi-jf_complete_project_package.json"
 META_KEY = "env_plane_demo_layout_v1"
 PAGE_NAME = "xunzhi-jf-env-plane"
 
 W, H = 1920, 1080
+
+try:
+    from append_w2_power_viz import w2_section_cells  # type: ignore
+except ImportError:
+    w2_section_cells = None  # type: ignore
 
 
 def make_animate():
@@ -155,14 +164,17 @@ def main():
         raise SystemExit("missing ism-view-real-table or view-device-alarm-list")
 
     real_table = patch_real_table_units(real_table)
-    real_table = place_cell(real_table, 368, 108, 1528, 400, 5)
-    alarm_list = place_cell(alarm_list, 24, 528, 1872, 528, 8)
+    real_table = place_cell(real_table, 368, 108, 1528, 260, 5)
+    alarm_list = place_cell(alarm_list, 24, 560, 1872, 500, 8)
+
+    w2_cells = w2_section_cells() if w2_section_cells else []
+    tree_h = 260
 
     tree_text = build_tree_lines(pkg.get("monitorTree") or [])
     new_cells = [
         make_text(
             "plane-title",
-            "寻智机房环境平面图 · 实时表 / 机房树 / 告警（演示收口）",
+            "寻智机房环境平面图 · W1 动环 + W2 配电/UPS + 告警（演示收口）",
             24,
             16,
             1872,
@@ -179,14 +191,27 @@ def main():
             24,
             108,
             320,
-            400,
+            tree_h,
             3,
             font_size=13,
             color="#cfd8dc",
         ),
-        make_text("plane-sec-table", "② 动环实时表（工程量纲，非仪表原码）", 368, 72, 1528, 28, 2, font_size=15, color="#81d4fa", bold=True),
+        make_text("plane-sec-table", "② 动环实时表（W1 · 工程量纲）", 368, 72, 1528, 28, 2, font_size=15, color="#81d4fa", bold=True),
         real_table,
-        make_text("plane-sec-alarm", "③ 实时告警面板", 24, 492, 600, 28, 7, font_size=15, color="#81d4fa", bold=True),
+        make_text(
+            "plane-sec-w2",
+            "③ W2 配电/UPS（Mock slave 3/4 · 1503 · ABCD）",
+            368,
+            376,
+            1200,
+            28,
+            4,
+            font_size=15,
+            color="#ffb74d",
+            bold=True,
+        ),
+        *w2_cells,
+        make_text("plane-sec-alarm", "④ 实时告警面板", 24, 524, 600, 28, 7, font_size=15, color="#81d4fa", bold=True),
         alarm_list,
     ]
 
@@ -202,6 +227,7 @@ def main():
         "canvas": f"{W}x{H}",
         "cells": len(new_cells),
         "removed_s1_chart_gallery": True,
+        "w2_power_viz_cells": len(w2_cells),
     }
     shapes_on_plane = sorted({c.get("shape") for c in new_cells if c.get("shape")})
     meta["s1_chart_shapes_on_plane"] = shapes_on_plane

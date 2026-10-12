@@ -72,6 +72,7 @@ cd "$XUNZHI_ISM_ROOT" && bash scripts/xunzhi_jf_alarm_demo.sh
 ```bash
 python3 projects-import/xunzhi-jf/generate_xunzhi_jf_package.py
 python3 projects-import/xunzhi-jf/append_w2_power_ups.py
+python3 projects-import/xunzhi-jf/append_w2_power_viz.py
 python3 projects-import/xunzhi-jf/append_w3_ac_h2.py
 python3 projects-import/xunzhi-jf/append_s1_envmon_demo.py
 python3 projects-import/xunzhi-jf/append_s1_chart_thicken.py
@@ -114,6 +115,7 @@ WebSocket：以 `ism_server_user/conf/app.conf` 的 **wsport** 为准（dev 常�
 | 脚本 | 用途 | 成功判据 |
 |------|------|----------|
 | `scripts/xunzhi_jf_smoke_env.sh` | Mock + 后端 + 导入 | 登录 API、端口监听 |
+| `scripts/xunzhi_jf_power_demo.sh` | **W2** 配电/UPS 探针 + 重导 | `cycle_log_power_ups` / P-COL-02 |
 | `scripts/xunzhi_jf_collect_evidence.sh` | 证据落盘 | 日志含 `cycle_log_*` 等 |
 
 ---

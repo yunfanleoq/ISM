@@ -9,11 +9,12 @@
     "w3": "ac+h2 appended",
     "s1_chart_thicken_v1": true,
     "s1_chart_shapes_on_plane": [
+      "ism-view-chart-gauge-0",
       "ism-view-real-table",
       "view-device-alarm-list",
       "view-svg-text"
     ],
-    "s1_chart_shape_count": 3,
+    "s1_chart_shape_count": 4,
     "s1_gauge_plus_v1": true,
     "s1_gauge_dashboard_instance_count": 10,
     "s1_gauge_dashboard_shapes": [
@@ -39,8 +40,21 @@
     "env_plane_demo_layout": {
       "page": "xunzhi-jf-env-plane",
       "canvas": "1920x1080",
-      "cells": 7,
-      "removed_s1_chart_gallery": true
+      "cells": 11,
+      "removed_s1_chart_gallery": true,
+      "w2_power_viz_cells": 3
+    },
+    "w2_power_viz_v1": true,
+    "w2_power_viz": {
+      "devices": [
+        "xunzhi-jf-PWR-01",
+        "xunzhi-jf-UPS-01"
+      ],
+      "mock_slaves": [
+        3,
+        4
+      ],
+      "data_format": "ABCD"
     }
   },
   "project": {
@@ -1015,7 +1029,7 @@
       "cells": [
         {
           "shape": "view-svg-text",
-          "id": "45b8a8d56a52400eb470c3bd7b391c22",
+          "id": "890036627e3349ec846a972f4db0e748",
           "x": 24,
           "y": 16,
           "width": 1872,
@@ -1034,7 +1048,7 @@
             "detail": {
               "type": "view-svg-text",
               "name": "plane-title",
-              "identifier": "70ae2a472f204b279884ef0ef7af9acf",
+              "identifier": "11c5235b002141e3a0f18db1e5823e20",
               "style": {
                 "position": {
                   "x": 24,
@@ -1042,7 +1056,7 @@
                   "w": 1872,
                   "h": 44
                 },
-                "text": "寻智机房环境平面图 · 实时表 / 机房树 / 告警（演示收口）",
+                "text": "寻智机房环境平面图 · W1 动环 + W2 配电/UPS + 告警（演示收口）",
                 "visible": 1,
                 "fontSize": 22,
                 "foreColor": "#00e5ff",
@@ -1089,7 +1103,7 @@
         },
         {
           "shape": "view-svg-text",
-          "id": "0b83530e70184111a55fda5165c58be6",
+          "id": "695976dd680e498698d697e0e1a00bd0",
           "x": 24,
           "y": 72,
           "width": 320,
@@ -1108,7 +1122,7 @@
             "detail": {
               "type": "view-svg-text",
               "name": "plane-sec-tree",
-              "identifier": "153f342edc844641b0c7832408694f13",
+              "identifier": "7c83ac07d3bb4571ac2b380a98edc26d",
               "style": {
                 "position": {
                   "x": 24,
@@ -1163,11 +1177,11 @@
         },
         {
           "shape": "view-svg-text",
-          "id": "38141235c6694eaaa4046428dd27bef8",
+          "id": "e99665cca32446c5b2980e902bbdde19",
           "x": 24,
           "y": 108,
           "width": 320,
-          "height": 400,
+          "height": 260,
           "zIndex": 3,
           "visible": true,
           "position": {
@@ -1176,19 +1190,19 @@
           },
           "size": {
             "width": 320,
-            "height": 400
+            "height": 260
           },
           "data": {
             "detail": {
               "type": "view-svg-text",
               "name": "plane-monitor-tree",
-              "identifier": "a28815dcc0074882a185df3d5a53d938",
+              "identifier": "495c563c709d4cc1a7c116750b04bb55",
               "style": {
                 "position": {
                   "x": 24,
                   "y": 108,
                   "w": 320,
-                  "h": 400
+                  "h": 260
                 },
                 "text": "▸ 寻智机房环境-xunzhi-jf (区域)\n▸ F3-模块机房-01 (区域)\n▸ F3-模块机房-02-Mock (区域)\n  ▸ xunzhi-jf-TH-01 (设备)\n  ▸ xunzhi-jf-LEAK-01 (设备)\n  ▸ xunzhi-jf-PWR-01 (设备)\n  ▸ xunzhi-jf-UPS-01 (设备)\n  ▸ xunzhi-jf-AC-01 (设备)\n  ▸ xunzhi-jf-H2-01 (设备)\n  ▸ xunzhi-jf-BAT-01-Sample (设备)\n  ▸ xunzhi-jf-TH-02-Mock (设备) [未启用]\n\n温湿度工程量纲：℃ / %RH（×0.1 换算）\n左侧运行态树与 monitortree 同源",
                 "visible": 1,
@@ -1236,7 +1250,7 @@
         },
         {
           "shape": "view-svg-text",
-          "id": "4e7967096420485ea5caf33cbb03c025",
+          "id": "44896548520845be925bb311403bbe1e",
           "x": 368,
           "y": 72,
           "width": 1528,
@@ -1255,7 +1269,7 @@
             "detail": {
               "type": "view-svg-text",
               "name": "plane-sec-table",
-              "identifier": "449a3a1b618f4ca49fd7589eac579d3e",
+              "identifier": "92b7cfaae2274481bb2fa8ce1efbb89d",
               "style": {
                 "position": {
                   "x": 368,
@@ -1263,7 +1277,7 @@
                   "w": 1528,
                   "h": 28
                 },
-                "text": "② 动环实时表（工程量纲，非仪表原码）",
+                "text": "② 动环实时表（W1 · 工程量纲）",
                 "visible": 1,
                 "fontSize": 15,
                 "foreColor": "#81d4fa",
@@ -1314,7 +1328,7 @@
           "x": 368,
           "y": 108,
           "width": 1528,
-          "height": 400,
+          "height": 260,
           "zIndex": 5,
           "visible": true,
           "position": {
@@ -1323,7 +1337,7 @@
           },
           "size": {
             "width": 1528,
-            "height": 400
+            "height": 260
           },
           "data": {
             "detail": {
@@ -1335,7 +1349,7 @@
                   "x": 368,
                   "y": 108,
                   "w": 1528,
-                  "h": 400
+                  "h": 260
                 },
                 "text": "",
                 "visible": 1,
@@ -1429,16 +1443,411 @@
         },
         {
           "shape": "view-svg-text",
-          "id": "240155cee4b447dead2d0c31e5b96e09",
+          "id": "8135f96a91c942b08f33198a6d90615e",
+          "x": 368,
+          "y": 376,
+          "width": 1200,
+          "height": 28,
+          "zIndex": 4,
+          "visible": true,
+          "position": {
+            "x": 368,
+            "y": 376
+          },
+          "size": {
+            "width": 1200,
+            "height": 28
+          },
+          "data": {
+            "detail": {
+              "type": "view-svg-text",
+              "name": "plane-sec-w2",
+              "identifier": "66987eceeb5f4dfbb05d3a8187c4421e",
+              "style": {
+                "position": {
+                  "x": 368,
+                  "y": 376,
+                  "w": 1200,
+                  "h": 28
+                },
+                "text": "③ W2 配电/UPS（Mock slave 3/4 · 1503 · ABCD）",
+                "visible": 1,
+                "fontSize": 15,
+                "foreColor": "#ffb74d",
+                "diy": [],
+                "fontWeight": "bold"
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "isExpression": false,
+                "animateList": [],
+                "move": {
+                  "x": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  },
+                  "y": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "shape": "ism-view-real-table",
+          "id": "f765228144ca4cf49095c52d0f80e62d",
+          "x": 368,
+          "y": 404,
+          "width": 1000,
+          "height": 120,
+          "zIndex": 6,
+          "visible": true,
+          "position": {
+            "x": 368,
+            "y": 404
+          },
+          "size": {
+            "width": 1000,
+            "height": 120
+          },
+          "data": {
+            "detail": {
+              "type": "ism-view-real-table",
+              "identifier": "f765228144ca4cf49095c52d0f80e62d",
+              "name": "w2-power-real-table",
+              "style": {
+                "position": {
+                  "x": 368,
+                  "y": 404,
+                  "w": 1000,
+                  "h": 120
+                },
+                "text": "",
+                "visible": 1,
+                "fontSize": 14,
+                "foreColor": "#e5eefc",
+                "diy": [
+                  {
+                    "name": "configComponent.viewRealTable.columnHeaders",
+                    "type": 9,
+                    "value": "AB线电压(V), A相电流(A), 有功/电池(V或kW)",
+                    "key": "columnHeaders"
+                  },
+                  {
+                    "name": "configComponent.viewRealTable.rowDeviceNames",
+                    "type": 9,
+                    "value": "配电-01\nUPS-01",
+                    "key": "rowDeviceNames"
+                  },
+                  {
+                    "name": "configComponent.viewRealTable.rowDeviceCodes",
+                    "type": 9,
+                    "value": "xunzhi-jf-PWR-01\nxunzhi-jf-UPS-01",
+                    "key": "rowDeviceCodes"
+                  },
+                  {
+                    "name": "configComponent.viewRealTable.rowBindings",
+                    "type": 9,
+                    "value": "xunzhi-jf-PWR-01->AB线电压,xunzhi-jf-PWR-01->A相电流,xunzhi-jf-PWR-01->总有功功率;xunzhi-jf-UPS-01->输出AB线电压,xunzhi-jf-UPS-01->输出A相电流,xunzhi-jf-UPS-01->电池电压",
+                    "key": "rowBindings"
+                  },
+                  {
+                    "name": "configComponent.AlarmList.waitTime",
+                    "type": 7,
+                    "value": 2000,
+                    "min": 100,
+                    "max": 10000,
+                    "key": "waitTime"
+                  },
+                  {
+                    "name": "主题风格",
+                    "type": 6,
+                    "value": "dark",
+                    "enumList": [
+                      {
+                        "value": "dark",
+                        "option": "深空夜幕"
+                      }
+                    ],
+                    "key": "themeName"
+                  }
+                ]
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "isExpression": false,
+                "animateList": []
+              },
+              "action": [],
+              "active": [],
+              "dataBind": []
+            }
+          }
+        },
+        {
+          "shape": "ism-view-chart-gauge-0",
+          "id": "68c31b74edb34098b29babfed1f3b6c7",
+          "x": 1400,
+          "y": 404,
+          "width": 220,
+          "height": 120,
+          "zIndex": 6,
+          "visible": true,
+          "position": {
+            "x": 1400,
+            "y": 404
+          },
+          "size": {
+            "width": 220,
+            "height": 120
+          },
+          "data": {
+            "detail": {
+              "type": "ism-view-chart-gauge-0",
+              "name": "w2-pwr-kw-gauge",
+              "identifier": "68c31b74edb34098b29babfed1f3b6c7",
+              "style": {
+                "position": {
+                  "x": 1400,
+                  "y": 404,
+                  "w": 220,
+                  "h": 120
+                },
+                "text": "总有功功率",
+                "visible": 1,
+                "backColor": "transparent",
+                "foreColor": "#e5eefc",
+                "fontSize": 12,
+                "diy": [
+                  {
+                    "name": "configComponent.ChartPublic.ChartTitle",
+                    "type": 4,
+                    "value": "总有功功率",
+                    "key": "ChartTitle"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.ChartUnit",
+                    "type": 4,
+                    "value": "kW",
+                    "key": "ChartUnit"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.ChartMinValue",
+                    "type": 7,
+                    "value": 0,
+                    "key": "ChartMinValue"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.ChartMaxValue",
+                    "type": 7,
+                    "value": 200,
+                    "key": "ChartMaxValue"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.splitNumber",
+                    "type": 1,
+                    "value": 8,
+                    "key": "splitNumber"
+                  }
+                ]
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "isExpression": false,
+                "animateList": []
+              },
+              "action": [],
+              "active": [
+                {
+                  "id": "ShowData",
+                  "name": "configComponent.ChartPublic.ShowData",
+                  "result": "",
+                  "isExpression": false,
+                  "condition": {
+                    "deviceSN": "f5f5f5f5f5f54010500000000000005",
+                    "DeviceName": "xunzhi-jf-PWR-01",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "p333333333333333333333333333333",
+                    "dataName": "总有功功率",
+                    "operator": "",
+                    "OperatorValue": "",
+                    "OperatorMaxValue": ""
+                  }
+                }
+              ],
+              "dataBind": []
+            }
+          }
+        },
+        {
+          "shape": "ism-view-chart-gauge-0",
+          "id": "f842807c4de449bab3ba0cf7c74e2328",
+          "x": 1640,
+          "y": 404,
+          "width": 220,
+          "height": 120,
+          "zIndex": 6,
+          "visible": true,
+          "position": {
+            "x": 1640,
+            "y": 404
+          },
+          "size": {
+            "width": 220,
+            "height": 120
+          },
+          "data": {
+            "detail": {
+              "type": "ism-view-chart-gauge-0",
+              "name": "w2-ups-batt-gauge",
+              "identifier": "f842807c4de449bab3ba0cf7c74e2328",
+              "style": {
+                "position": {
+                  "x": 1640,
+                  "y": 404,
+                  "w": 220,
+                  "h": 120
+                },
+                "text": "电池电压",
+                "visible": 1,
+                "backColor": "transparent",
+                "foreColor": "#e5eefc",
+                "fontSize": 12,
+                "diy": [
+                  {
+                    "name": "configComponent.ChartPublic.ChartTitle",
+                    "type": 4,
+                    "value": "电池电压",
+                    "key": "ChartTitle"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.ChartUnit",
+                    "type": 4,
+                    "value": "V",
+                    "key": "ChartUnit"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.ChartMinValue",
+                    "type": 7,
+                    "value": 400,
+                    "key": "ChartMinValue"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.ChartMaxValue",
+                    "type": 7,
+                    "value": 600,
+                    "key": "ChartMaxValue"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.splitNumber",
+                    "type": 1,
+                    "value": 8,
+                    "key": "splitNumber"
+                  }
+                ]
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "isExpression": false,
+                "animateList": []
+              },
+              "action": [],
+              "active": [
+                {
+                  "id": "ShowData",
+                  "name": "configComponent.ChartPublic.ShowData",
+                  "result": "",
+                  "isExpression": false,
+                  "condition": {
+                    "deviceSN": "a6a6a6a6a6a64110600000000000006",
+                    "DeviceName": "xunzhi-jf-UPS-01",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "u333333333333333333333333333333",
+                    "dataName": "电池电压",
+                    "operator": "",
+                    "OperatorValue": "",
+                    "OperatorMaxValue": ""
+                  }
+                }
+              ],
+              "dataBind": []
+            }
+          }
+        },
+        {
+          "shape": "view-svg-text",
+          "id": "9fef2c30f26a405fac2cbf3481b5017f",
           "x": 24,
-          "y": 492,
+          "y": 524,
           "width": 600,
           "height": 28,
           "zIndex": 7,
           "visible": true,
           "position": {
             "x": 24,
-            "y": 492
+            "y": 524
           },
           "size": {
             "width": 600,
@@ -1448,15 +1857,15 @@
             "detail": {
               "type": "view-svg-text",
               "name": "plane-sec-alarm",
-              "identifier": "a2b5b9fcf9ce468fa838d6678a7c91c4",
+              "identifier": "d02975e7ba044ad1b5686468b5d637d8",
               "style": {
                 "position": {
                   "x": 24,
-                  "y": 492,
+                  "y": 524,
                   "w": 600,
                   "h": 28
                 },
-                "text": "③ 实时告警面板",
+                "text": "④ 实时告警面板",
                 "visible": 1,
                 "fontSize": 15,
                 "foreColor": "#81d4fa",
@@ -1505,18 +1914,18 @@
           "shape": "view-device-alarm-list",
           "id": "ad8a2a017958447b843e79e20b13e61d",
           "x": 24,
-          "y": 528,
+          "y": 560,
           "width": 1872,
-          "height": 528,
+          "height": 500,
           "zIndex": 8,
           "visible": true,
           "position": {
             "x": 24,
-            "y": 528
+            "y": 560
           },
           "size": {
             "width": 1872,
-            "height": 528
+            "height": 500
           },
           "data": {
             "detail": {
@@ -1526,9 +1935,9 @@
               "style": {
                 "position": {
                   "x": 24,
-                  "y": 528,
+                  "y": 560,
                   "w": 1872,
-                  "h": 528
+                  "h": 500
                 },
                 "text": "",
                 "visible": 1,
