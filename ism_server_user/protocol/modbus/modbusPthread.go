@@ -1365,9 +1365,12 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 									var getValueFloat32 float32
 									var getValueFloat64 float64
 									var isIntType byte = 0
+									var exprConverted float64
+									var exprConvertedOk bool
 									var dataFlasg int = 0
 									var iAdvance int = 0 // 记录多字节类型需要额外跳过的寄存器数
 									for _, data := range readDataList {
+										exprConvertedOk = false
 										if data.RegisterGroupUuid == group.Uuid && data.RegisterAddress == registerAddress {
 
 											var signleAlarm protocol_common.PushAlarm
@@ -1633,10 +1636,16 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 																	_, ok := result.(float64)
 																	if ok {
 																		getValue = int32(result.(float64))
+																		exprConvertedOk = true
+																		exprConverted = result.(float64)
 																	}
 																}
 															}
 														}
+													}
+
+													if exprConvertedOk {
+														updateValue = exprConverted
 													}
 
 													if isIntType == 1 {
@@ -2211,9 +2220,12 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 							var getValueFloat32 float32
 							var getValueFloat64 float64
 							var isIntType byte = 0
+							var exprConverted float64
+							var exprConvertedOk bool
 							var dataFlasg int = 0
 							var iAdvance int = 0
 							for _, data := range readDataList {
+								exprConvertedOk = false
 								if data.RegisterGroupUuid == group.Uuid && data.RegisterAddress == registerAddress {
 
 									var signleAlarm protocol_common.PushAlarm
@@ -2474,10 +2486,16 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 															_, ok := result.(float64)
 															if ok {
 																getValue = int32(result.(float64))
+																exprConvertedOk = true
+																exprConverted = result.(float64)
 															}
 														}
 													}
 												}
+											}
+
+											if exprConvertedOk {
+												updateValue = exprConverted
 											}
 
 											if isIntType == 1 {

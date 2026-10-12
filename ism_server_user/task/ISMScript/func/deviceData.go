@@ -43,6 +43,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Knetic/govaluate"
 	"github.com/shiena/ansicolor"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -138,6 +139,48 @@ func ExecCommand(name string, args ...string) {
 	}
 }
 
+func formatDisplayWithConversion(raw string, conversionExpr string) string {
+	raw = strings.TrimSpace(raw)
+	conversionExpr = strings.TrimSpace(conversionExpr)
+	if raw == "" || conversionExpr == "" || !strings.Contains(conversionExpr, "{val}") {
+		return raw
+	}
+	fv, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		return raw
+	}
+	// 已写入工程值（如 22.5）时勿二次换算
+	if strings.Contains(conversionExpr, "*0.1") && fv >= -40 && fv <= 150 {
+		return raw
+	}
+	replaced := strings.ReplaceAll(conversionExpr, "{val}", raw)
+	expression, err := govaluate.NewEvaluableExpressionWithFunctions(replaced, protocol_common.DataFloatNumberFunc)
+	if err != nil || expression == nil {
+		return raw
+	}
+	result, err := expression.Evaluate(nil)
+	if err != nil {
+		return raw
+	}
+	out, ok := result.(float64)
+	if !ok {
+		return raw
+	}
+	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.4f", out), "0"), ".")
+}
+
+func loadConversionExpression(deviceName, pointName string) string {
+	var row models.DeviceRealData
+	err := models.Db.Model(&models.DeviceRealData{}).
+		Select("conversion_expression").
+		Where("device_name = ? and name = ?", deviceName, pointName).
+		First(&row).Error
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(row.ConversionExpression)
+}
+
 func GetDeviceData(deviceData string) interface{} {
 	data := strings.Split(deviceData, "->")
 	if len(data) != 2 {
@@ -145,6 +188,7 @@ func GetDeviceData(deviceData string) interface{} {
 	}
 	getValue, exists := loadDeviceValue(data[0], data[1])
 	if exists {
+		getValue = formatDisplayWithConversion(getValue, loadConversionExpression(data[0], data[1]))
 		t, convError := strconv.ParseFloat(getValue, 64)
 		if convError != nil {
 			return getValue
