@@ -35,8 +35,9 @@ const blocks = src.match(/\{ sort:[^}]+\}/g) || []
 for (const block of blocks) {
   const menu_code = /menu_code:\s*'([^']+)'/.exec(block)?.[1]
   const parent_code = /parent_code:\s*'([^']+)'/.exec(block)?.[1]
+  const title = /title:\s*'([^']+)'/.exec(block)?.[1]
   if (menu_code && parent_code) {
-    rows.push({ menu_code, parent_code })
+    rows.push({ menu_code, parent_code, title })
   }
 }
 
@@ -45,6 +46,7 @@ function buildMenuChildren(parentCode) {
     .filter(r => r.parent_code === parentCode)
     .map(r => {
       const node = { router: menuCodeToRouterKey(r.menu_code) }
+      if (r.title) node.name = r.title
       const kids = buildMenuChildren(r.menu_code)
       if (kids.length) node.children = kids
       return node

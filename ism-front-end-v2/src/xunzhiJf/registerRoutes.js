@@ -4,7 +4,6 @@ import {
   menuCodeToRouterKey,
   XUNZHI_JF_SECTION_ROUTER,
 } from '@/xunzhiJf/menuFlat'
-import { XUNZHI_JF_ENV_PLANE_PAGE, XUNZHI_JF_NAV_25D_PAGE } from '@/xunzhiJf/resolveDisplayPage'
 
 const GROUP_ICON = {
   'jf.monitor': 'dashboard',
@@ -29,34 +28,47 @@ const WIRED = new Set([
   'jf.viz.nav25d',
 ])
 
-function firstLeafRoute(menuCode) {
+/** 菜单嵌套下的单段相对 path（禁止 leading `/`，否则脱离 root/TabsView） */
+export function routeSegmentForRow(row) {
+  if (row.route_or_page === '—') {
+    const parts = row.menu_code.split('.')
+    return parts[parts.length - 1]
+  }
+  if (row.route_or_page.startsWith('page:')) {
+    if (row.menu_code === 'jf.viz.plane') return 'plane'
+    if (row.menu_code === 'jf.viz.nav25d') return 'nav25d'
+    return 'plane'
+  }
+  const rest = row.route_or_page.replace(/^\/xunzhi\/jf\//, '')
+  const segs = rest.split('/').filter(Boolean)
+  return segs[segs.length - 1] || row.menu_code.split('.').pop()
+}
+
+export function fullPathForRow(row) {
+  if (row.route_or_page && row.route_or_page.startsWith('/')) {
+    return row.route_or_page
+  }
+  if (row.route_or_page && row.route_or_page.startsWith('page:')) {
+    if (row.menu_code === 'jf.viz.plane') return '/xunzhi/jf/viz/plane'
+    if (row.menu_code === 'jf.viz.nav25d') return '/xunzhi/jf/viz/nav25d'
+  }
+  const segs = []
+  let code = row.menu_code
+  while (code && code !== 'jf') {
+    const rowAt = XUNZHI_JF_MENU_FLAT.find(r => r.menu_code === code)
+    if (rowAt) segs.unshift(routeSegmentForRow(rowAt))
+    const dot = code.lastIndexOf('.')
+    code = dot > 0 ? code.slice(0, dot) : ''
+  }
+  return `/xunzhi/jf/${segs.join('/')}`
+}
+
+function firstLeafSegment(menuCode) {
   const child = XUNZHI_JF_MENU_FLAT
     .filter(r => r.parent_code === menuCode && r.route_or_page && r.route_or_page !== '—')
     .sort((a, b) => a.sort - b.sort)[0]
   if (!child) return ''
-  if (child.route_or_page.startsWith('page:')) {
-    if (child.menu_code === 'jf.viz.plane') return '/xunzhi/jf/viz/plane'
-    if (child.menu_code === 'jf.viz.nav25d') return '/xunzhi/jf/viz/nav25d'
-    return '/xunzhi/jf/viz/plane'
-  }
-  return child.route_or_page
-}
-
-function groupPathFromCode(menuCode) {
-  const suffix = menuCode.replace(/^jf\./, '').replace(/\./g, '/')
-  return `/xunzhi/jf/${suffix}`
-}
-
-function routePathForRow(row) {
-  if (row.route_or_page && row.route_or_page !== '—') {
-    if (row.route_or_page.startsWith('page:')) {
-      if (row.menu_code === 'jf.viz.plane') return '/xunzhi/jf/viz/plane'
-      if (row.menu_code === 'jf.viz.nav25d') return '/xunzhi/jf/viz/nav25d'
-      return groupPathFromCode(row.menu_code)
-    }
-    return row.route_or_page
-  }
-  return groupPathFromCode(row.menu_code)
+  return routeSegmentForRow(child)
 }
 
 function skeletonMeta(row) {
@@ -65,7 +77,7 @@ function skeletonMeta(row) {
     menuCode: row.menu_code,
     moduleId: row.module_id,
     perm: row.perm,
-    routePath: row.route_or_page.startsWith('/') ? row.route_or_page : '',
+    routePath: fullPathForRow(row),
     sliceHint: row.sort < 500 ? 'S0/S1' : row.sort < 700 ? 'S2–S4' : 'S5/S6',
   }
 }
@@ -95,11 +107,12 @@ export function buildXunzhiJfRouterMap() {
   const map = {}
 
   map[XUNZHI_JF_SECTION_ROUTER] = {
-    path: '/xunzhi/jf',
-    name: '循智·机房环境',
-    redirect: '/xunzhi/jf/home',
+    path: 'xunzhi/jf',
+    name: XUNZHI_JF_SECTION_ROUTER,
+    redirect: 'home',
     meta: {
       icon: 'cloud-server',
+      title: '循智·机房环境',
       menuCode: 'jf.section',
       moduleId: 'envmon',
       authority: { role: ['Admin', 'Operator', 'User'] },
@@ -110,11 +123,11 @@ export function buildXunzhiJfRouterMap() {
   XUNZHI_JF_MENU_FLAT.forEach(row => {
     const key = menuCodeToRouterKey(row.menu_code)
     const isGroup = row.route_or_page === '—'
-    const path = routePathForRow(row)
     const entry = {
-      path,
-      name: row.title,
+      path: routeSegmentForRow(row),
+      name: key,
       meta: {
+        title: row.title,
         icon: GROUP_ICON[row.menu_code] || 'file',
         menuCode: row.menu_code,
         moduleId: row.module_id,
@@ -124,8 +137,8 @@ export function buildXunzhiJfRouterMap() {
     }
     if (isGroup) {
       entry.component = BlankView
-      const redirect = firstLeafRoute(row.menu_code)
-      if (redirect) entry.redirect = redirect
+      const seg = firstLeafSegment(row.menu_code)
+      if (seg) entry.redirect = seg
     } else {
       entry.component = componentForRow(row)
       if (!WIRED.has(row.menu_code)) {
@@ -153,7 +166,10 @@ export function buildXunzhiJfMenuConfigChildren() {
 
   function build(parentCode) {
     return (byParent.get(parentCode) || []).map(row => {
-      const node = { router: menuCodeToRouterKey(row.menu_code) }
+      const node = {
+        router: menuCodeToRouterKey(row.menu_code),
+        name: row.title,
+      }
       const kids = build(row.menu_code)
       if (kids.length) node.children = kids
       return node
