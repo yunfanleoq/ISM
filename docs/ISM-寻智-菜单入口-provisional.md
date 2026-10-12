@@ -13,7 +13,7 @@
 | 登录菜单 | `ism_server_user/conf/MenuConfig.json`（及 Opt/User 菜单） |
 | 同步脚本 | `scripts/sync_xunzhi_jf_menu_config.mjs` |
 
-修改 §8 后执行：`node scripts/sync_xunzhi_jf_menu_config.mjs`
+修改 §8 后执行：`node scripts/sync_xunzhi_jf_menu_config.mjs`（**仅 upsert** `XunzhiJfSection`，不替换整份 MenuConfig）
 
 ## 演示优先接通
 
