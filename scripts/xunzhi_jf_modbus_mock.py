@@ -5,10 +5,14 @@
   slave 2 — 漏水：DI0 漏水信号，DI1 控制器故障；HR0 位置米数×10
   slave 3/4 — W2 配电/UPS；slave 5/6 — W3 空调/氢气；slave 7 — 电池抽样
 
-日志含 [xunzhi-jf-mock-cycle] 便于与后端 P-COL-01/02/03 周期日志对照。
+热切换漏水（不关 listener、不 pkill）：
+  控制文件见环境变量 XUNZHI_MOCK_LEAK_CTL，内容为 off | on | auto
+  或向本进程发 SIGUSR1（漏水=0）/ SIGUSR2（漏水=1）
 """
 import argparse
 import math
+import os
+import signal
 import socket
 import struct
 import threading
@@ -22,17 +26,64 @@ hr = {i: [0] * 64 for i in range(1, 8)}
 di = {i: [0] * 64 for i in range(1, 8)}
 lock = threading.Lock()
 
+# off | on | auto（周期末段为 1）
+LEAK_MODE = "auto"
 
-FORCE_LEAK = 0
+
+def leak_control_path() -> str:
+    return os.environ.get(
+        "XUNZHI_MOCK_LEAK_CTL",
+        os.path.join(os.environ.get("ARTIFACTS_DIR", "/tmp"), "xunzhi_jf_mock_leak.mode"),
+    )
+
+
+def read_leak_control_file() -> None:
+    global LEAK_MODE
+    path = leak_control_path()
+    try:
+        if not os.path.isfile(path):
+            return
+        mode = open(path, encoding="utf-8").read().strip().lower()
+        if mode in ("0", "off", "false"):
+            LEAK_MODE = "off"
+        elif mode in ("1", "on", "true"):
+            LEAK_MODE = "on"
+        elif mode == "auto":
+            LEAK_MODE = "auto"
+    except OSError:
+        pass
+
+
+def set_leak_mode(mode: str) -> None:
+    global LEAK_MODE
+    LEAK_MODE = mode
+    path = leak_control_path()
+    try:
+        os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(mode)
+    except OSError:
+        pass
+
+
+def _sigusr1(_signum, _frame):
+    set_leak_mode("off")
+
+
+def _sigusr2(_signum, _frame):
+    set_leak_mode("on")
 
 
 def tick_values():
+    read_leak_control_file()
     t = time.time()
     temp = 22.0 + 3.0 * math.sin(t / 30.0)
     humi = 48.0 + 5.0 * math.cos(t / 45.0)
     pos_m = 12.5 + 2.0 * math.sin(t / 60.0)
-    if FORCE_LEAK:
+    if LEAK_MODE == "on":
         leak = 1
+    elif LEAK_MODE == "off":
+        leak = 0
     else:
         leak = 1 if (int(t) % 120) > 100 else 0
     with lock:
@@ -42,28 +93,24 @@ def tick_values():
         hr[2][0] = int(round(pos_m * 10))
         di[2][0] = leak
         di[2][1] = 0
-        # W2 slave 3 配电 / slave 4 UPS
         hr[3][0] = 3800
         hr[3][1] = 850
         hr[3][2] = 120
         hr[4][0] = 3800
         hr[4][1] = 420
         hr[4][2] = 5400
-        # W3 slave 5 空调 / slave 6 氢气
-        hr[5][0] = 240  # 回风 24.0℃
-        hr[5][1] = 180  # 送风 18.0℃
-        hr[5][2] = 220  # 设定 22.0℃
+        hr[5][0] = 240
+        hr[5][1] = 180
+        hr[5][2] = 220
         di[5][0] = 1
-        hr[6][0] = 35  # 35 ppm
+        hr[6][0] = 35
         di[6][0] = 0
-        # W4 slave 7 电池抽样
-        hr[7][0] = 528  # 52.8 V
-        hr[7][1] = 850  # 85.0 %
-        hr[7][2] = 285  # 28.5 ℃
+        hr[7][0] = 528
+        hr[7][1] = 850
+        hr[7][2] = 285
     print(
-        f"[xunzhi-jf-mock-cycle] cycle_s={CYCLE_S:.0f} slave1 temp={temp:.1f}C humi={humi:.1f}%RH "
-        f"slave2 leak={leak} pos_m={pos_m:.1f}m slave3_pwr=380V slave4_ups_batt=540V "
-        f"slave5_ac_ret=24C slave6_h2=35ppm slave7_bat=52.8V/85%",
+        f"[xunzhi-jf-mock-cycle] leak_mode={LEAK_MODE} cycle_s={CYCLE_S:.0f} "
+        f"slave1 temp={temp:.1f}C humi={humi:.1f}%RH slave2 leak={leak} pos_m={pos_m:.1f}m",
         flush=True,
     )
 
@@ -127,32 +174,33 @@ def serve():
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind((HOST, PORT))
     sock.listen(8)
-    print(f"[xunzhi-jf-mock] Modbus TCP listening {HOST}:{PORT}", flush=True)
+    print(f"[xunzhi-jf-mock] Modbus TCP listening {HOST}:{PORT} ctl={leak_control_path()}", flush=True)
     while True:
         c, addr = sock.accept()
         threading.Thread(target=client_loop, args=(c,), daemon=True).start()
 
 
 def main():
-    global PORT, CYCLE_S, FORCE_LEAK
+    global PORT, CYCLE_S, LEAK_MODE
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=PORT)
     ap.add_argument("--cycle", type=float, default=CYCLE_S)
-    ap.add_argument("--leak-on", action="store_true", help="漏水 DI0 恒为 1（须先无此开关跑一段再打 0→1 边沿）")
-    ap.add_argument(
-        "--leak-off",
-        action="store_true",
-        help="显式保持周期漏水=0 段（默认；与 --leak-on 互斥时以 --leak-on 为准）",
-    )
+    ap.add_argument("--leak-on", action="store_true", help="启动时漏水=1（仍可用控制文件热切换）")
+    ap.add_argument("--leak-off", action="store_true", help="启动时漏水=0")
+    ap.add_argument("--flip", action="store_true", help="同 --leak-off，供 demo 先 0 后热切 on")
     args = ap.parse_args()
     PORT = args.port
     CYCLE_S = args.cycle
     if args.leak_on:
-        FORCE_LEAK = 1
-    elif args.leak_off:
-        FORCE_LEAK = 0
+        set_leak_mode("on")
+    elif args.leak_off or args.flip:
+        set_leak_mode("off")
     else:
-        FORCE_LEAK = 0
+        set_leak_mode("auto")
+
+    signal.signal(signal.SIGUSR1, _sigusr1)
+    signal.signal(signal.SIGUSR2, _sigusr2)
+
     threading.Thread(target=serve, daemon=True).start()
     while True:
         tick_values()

@@ -6,6 +6,8 @@ export ROOT
 export XUNZHI_ISM_ROOT="${XUNZHI_ISM_ROOT:-$ROOT}"
 # 演示唯一树：ism_server 须在 $XUNZHI_ISM_ROOT/ism_server_user 下启动，勿与「ISM源码」/「ISM源码-xunzhi-jf」混用
 export ISM_DB="${ISM_DB:-$XUNZHI_ISM_ROOT/ism_server_user/data/db/ism.db}"
+export XUNZHI_MOCK_LEAK_CTL="${XUNZHI_MOCK_LEAK_CTL:-$ARTIFACTS_DIR/xunzhi_jf_mock_leak.mode}"
+export ISM_HTTP_PORT="${ISM_HTTP_PORT:-8081}"
 export BASE_URL="${BASE_URL:-http://127.0.0.1:8081}"
 export MOCK_PORT="${MOCK_PORT:-1502}"
 export PROJECT_NAME="${PROJECT_NAME:-寻智机房环境-xunzhi-jf}"

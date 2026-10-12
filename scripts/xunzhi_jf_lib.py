@@ -100,39 +100,67 @@ def project_uuid(token: str) -> str | None:
     return None
 
 
+def ism_http_port() -> int:
+    if os.environ.get("ISM_HTTP_PORT"):
+        return int(os.environ["ISM_HTTP_PORT"])
+    if BASE.endswith(":8081"):
+        return 8081
+    return 8081
+
+
+def ism_server_pids() -> list[int]:
+    pids: list[int] = []
+    for cmd in (["pgrep", "-x", "ism_server"], ["pgrep", "-f", r"(^|/)ism_server( |$)"]):
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            for line in (r.stdout or "").split():
+                if line.isdigit():
+                    pids.append(int(line))
+        except (OSError, subprocess.SubprocessError):
+            continue
+    seen: set[int] = set()
+    out: list[int] = []
+    for p in pids:
+        if p not in seen:
+            seen.add(p)
+            out.append(p)
+    return out
+
+
+def ism_server_listen_http() -> bool:
+    return tcp_port_listening("127.0.0.1", ism_http_port())
+
+
+def ism_server_running() -> bool:
+    if ism_server_listen_http():
+        return True
+    return len(ism_server_pids()) > 0
+
+
+def ism_server_cwds() -> list[str]:
+    cwds: list[str] = []
+    for pid in ism_server_pids():
+        try:
+            cwd = Path(f"/proc/{pid}/cwd")
+            if cwd.is_symlink():
+                cwds.append(str(cwd.resolve()))
+        except OSError:
+            pass
+    return cwds
+
+
 def ism_server_cwd() -> str | None:
-    try:
-        r = subprocess.run(
-            ["pgrep", "-f", "ism_server_user/ism_server"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        pids = [x for x in (r.stdout or "").split() if x.strip()]
-        if not pids:
-            return None
-        pid = pids[0]
-        cwd = Path(f"/proc/{pid}/cwd")
-        if cwd.is_symlink():
-            return str(cwd.resolve())
-    except (OSError, subprocess.SubprocessError):
-        pass
-    return None
+    cwds = ism_server_cwds()
+    return cwds[0] if cwds else None
 
 
 def ism_server_uptime_sec() -> int | None:
+    pids = ism_server_pids()
+    if not pids:
+        return None
     try:
-        r = subprocess.run(
-            ["pgrep", "-f", "ism_server_user/ism_server"],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        pid = (r.stdout or "").strip().split("\n")[0] if r.stdout else ""
-        if not pid:
-            return None
         ps = subprocess.run(
-            ["ps", "-o", "etimes=", "-p", pid],
+            ["ps", "-o", "etimes=", "-p", str(pids[0])],
             capture_output=True,
             text=True,
             timeout=5,
@@ -140,6 +168,32 @@ def ism_server_uptime_sec() -> int | None:
         return int((ps.stdout or "0").strip() or "0")
     except (OSError, subprocess.SubprocessError, ValueError):
         return None
+
+
+def mock_tcp_established_count(port: int | None = None) -> int:
+    port = port if port is not None else mock_port()
+    try:
+        r = subprocess.run(
+            ["ss", "-H", "-tn", "state", "established", f"( sport = :{port} or dport = :{port} )"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        lines = [ln for ln in (r.stdout or "").splitlines() if ln.strip()]
+        if lines:
+            return len(lines)
+    except (OSError, subprocess.SubprocessError, FileNotFoundError):
+        pass
+    try:
+        r = subprocess.run(
+            ["lsof", "-nP", f"-iTCP:{port}", "-sTCP:ESTABLISHED"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        return max(0, len([ln for ln in (r.stdout or "").splitlines() if "ESTABLISHED" in ln]) - 1)
+    except (OSError, subprocess.SubprocessError, FileNotFoundError):
+        return 0
 
 
 def read_startup_delay_minutes(db: Path, proj_uuid: str) -> int:
@@ -309,11 +363,17 @@ def print_env(root: Path | None = None, proj_uuid: str | None = None, strict_moc
         "ism_db": str(db),
         "ism_db_exists": db.is_file(),
         "ism_db_bytes": db.stat().st_size if db.is_file() else 0,
+        "ism_http_port": ism_http_port(),
+        "ism_server_listen_http": ism_server_listen_http(),
+        "ism_server_running": ism_server_running(),
+        "ism_server_pids": ism_server_pids(),
         "ism_server_cwd": server_cwd,
+        "ism_server_cwds": ism_server_cwds(),
         "ism_server_uptime_sec": uptime,
         "mock_host": "127.0.0.1",
         "mock_port": port,
         "mock_port_listening": mock_ok,
+        "mock_tcp_established": mock_tcp_established_count(port),
         "db_matches_script_tree": db == expected_db if db.is_file() else None,
         "server_cwd_matches_script_tree": (
             server_cwd is not None and Path(server_cwd).resolve() == (root / "ism_server_user").resolve()
@@ -324,6 +384,9 @@ def print_env(root: Path | None = None, proj_uuid: str | None = None, strict_moc
         info["startup_suppression_remaining_sec"] = startup_suppression_remaining_sec(db, proj_uuid, uptime)
         info["leak_realdata"] = leak_realdata_freshness(db, proj_uuid)
     print(json.dumps(info, indent=2, ensure_ascii=False))
+    if not ism_server_running():
+        msg = f"WARN: ism_server 未检测到（HTTP:{ism_http_port()} LISTEN 或 pgrep ism_server）"
+        print(msg, file=sys.stderr)
     if not mock_ok:
         msg = f"FAIL: Mock 未监听 127.0.0.1:{port}（ISM 会 dial refused，无边沿）"
         if strict_mock:
