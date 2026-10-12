@@ -33,9 +33,11 @@ const ScadaOrgOverview = () => import(/* webpackChunkName: "scada-org-overview" 
 import {
   applyHomeProjectAuth,
   HOME_PROJECT_UUID,
+  isXunzhiJfEnvPlaneAppRun,
   resolveHomeProjectUuid,
   shouldShowRunTreeNav,
 } from '@/config/homeDashboard.js'
+import { markEnvPlaneAppRunSession } from '@/xunzhiJf/appRunEmbed'
 import { AUTH_TYPE, getAuthorization } from '@/utils/request'
 
 export default {
@@ -52,6 +54,9 @@ export default {
     uid: { type: String, required: true },
   },
   created() {
+    if (isXunzhiJfEnvPlaneAppRun(this.$route, this.$store)) {
+      markEnvPlaneAppRunSession()
+    }
     if (shouldShowRunTreeNav(this.uid, this.$store, this.$route)) applyHomeProjectAuth(this.$store)
   },
   watch: {
@@ -131,5 +136,14 @@ export default {
   14%  { opacity: 0.3; }
   84%  { opacity: 0.3; }
   100% { background-position: 160% 160%; opacity: 0; }
+}
+
+/* 寻智平面页：强制隐藏旁路 RunTree / 组织层级总览（防止 v-if 竞态或旧 chunk 残留） */
+.ism-pageview--no-runtree .org-overview,
+.ism-pageview--no-runtree .ism-runtree,
+.ism-pageview--no-runtree .scada-alarm-root {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 </style>

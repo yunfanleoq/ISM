@@ -10,9 +10,6 @@ const SWITCH_STATUS_RE = /(支路状态|开关状态|断路器状态|合分闸|�
 /** 名称命中则按在线/离线语义展示 */
 const ONLINE_STATUS_RE = /(通讯状态|通信状态|在线状态|设备状态|连接状态|链路状态|DeviceStatus|OnlineStatus|CommStatus|ConnectionStatus)/i
 
-/** 寻智动环温湿度/漏水：表内原码 >199 时按 Modbus *0.1 兜底展示（后端未换算时） */
-const ENVMON_SCALE_POINT_RE = /(温度|湿度|漏水)/
-
 const ONLINE_VALUE_MAP = {
   online: '在线',
   offline: '离线',
@@ -104,21 +101,9 @@ function mapOnlineStatusValue(value) {
  * @param {*} value 原始实时值
  * @returns {*} 展示用文案或原值
  */
-function maybeScaleEnvmonEngineering(pointName, value) {
-  if (!ENVMON_SCALE_POINT_RE.test(String(pointName || ''))) return value
-  const raw = typeof value === 'string' ? value.trim() : value
-  const n = Number(raw)
-  if (!Number.isFinite(n) || n <= 199) return value
-  const scaled = Math.round(n * 10) / 100
-  return String(scaled).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '')
-}
-
 export function formatPointDisplayValue(pointName, value) {
   if (value === undefined || value === null || value === '') return value
   if (value === '-' || value === '—') return value
-
-  const envScaled = maybeScaleEnvmonEngineering(pointName, value)
-  if (envScaled !== value) return envScaled
 
   // 无点名时仍尝试翻译常见英文状态字面量（MQTT Status 等）
   if (!pointName) {

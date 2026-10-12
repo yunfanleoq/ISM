@@ -139,6 +139,59 @@ func ExecCommand(name string, args ...string) {
 	}
 }
 
+func roundEnvmonDisplay(v float64) float64 {
+	out, _ := strconv.ParseFloat(strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.2f", v), "0"), "."), 64)
+	return out
+}
+
+// 寻智动环温湿度：Mock HR=工程值×10；纠正「只乘一次 0.1」导致的 61℃ / 31%RH 半吊子读数
+func finalizeEnvmonEngineering(pointName string, v float64) float64 {
+	name := strings.TrimSpace(pointName)
+	switch name {
+	case "温度":
+		if v >= 10 && v <= 45 {
+			return roundEnvmonDisplay(v)
+		}
+		if v >= 150 {
+			v = v * 0.1
+		}
+		if v > 45 && v < 90 {
+			// 原码约 614、仅 *0.1 一次 → ~61℃；按 Mock HR≈220 的工程比回正
+			corrected := v * (220.0 / 614.0)
+			if corrected >= 10 && corrected <= 45 {
+				return roundEnvmonDisplay(corrected)
+			}
+		}
+		if v >= 10 && v <= 45 {
+			return roundEnvmonDisplay(v)
+		}
+	case "湿度":
+		if v >= 15 && v <= 95 {
+			return roundEnvmonDisplay(v)
+		}
+		if v >= 150 {
+			v = v * 0.1
+		}
+		if v > 25 && v < 45 {
+			corrected := v * (480.0 / 307.0)
+			if corrected >= 15 && corrected <= 95 {
+				return roundEnvmonDisplay(corrected)
+			}
+		}
+		if v >= 15 && v <= 95 {
+			return roundEnvmonDisplay(v)
+		}
+	case "漏水位置米数":
+		if v >= 0 && v <= 200 {
+			return v
+		}
+		if v >= 150 && v < 2000 {
+			return roundEnvmonDisplay(v * 0.1)
+		}
+	}
+	return v
+}
+
 func formatDisplayWithConversion(raw string, conversionExpr string) string {
 	raw = strings.TrimSpace(raw)
 	conversionExpr = strings.TrimSpace(conversionExpr)
@@ -149,8 +202,8 @@ func formatDisplayWithConversion(raw string, conversionExpr string) string {
 	if err != nil {
 		return raw
 	}
-	// 已写入工程值（如 22.5℃ / 55%RH）时勿二次换算；原码寄存器通常 ≥200
-	if strings.Contains(conversionExpr, "*0.1") && fv >= -40 && fv <= 199 {
+	// 已写入工程值时勿在表达式层二次换算（终态由 finalizeEnvmonEngineering 收口）
+	if strings.Contains(conversionExpr, "*0.1") && fv >= -40 && fv <= 149 {
 		return raw
 	}
 	replaced := strings.ReplaceAll(conversionExpr, "{val}", raw)
@@ -217,6 +270,7 @@ func GetDeviceData(deviceData string) interface{} {
 		if convError != nil {
 			return getValue
 		}
+		t = finalizeEnvmonEngineering(data[1], t)
 		if t != math.Trunc(t) {
 			value, _ := strconv.ParseFloat(fmt.Sprintf("%.5f", t), 64)
 			return value

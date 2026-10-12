@@ -1,5 +1,10 @@
 // 项目默认监控大屏：唯一来源是 GET /SystemHomeDashboard（按当前 ProjectUuid 隔离），禁止绑定某套种子数据 UUID。
 import { AUTH_TYPE, setAuthorization } from '@/utils/request'
+import {
+  isEnvPlaneNoRunTreeSession,
+  readHashRouteQuery,
+  SESSION_ENV_PLANE_PAGE_NAME,
+} from '@/xunzhiJf/appRunEmbed'
 
 export const HOME_DASHBOARD_UUID = ''
 export const HOME_PROJECT_UUID = ''
@@ -58,9 +63,23 @@ function readPageList(store) {
   return [...(ism.PCPageList || []), ...(ism.PhonePageList || [])]
 }
 
+function mergedAppRunQuery(route) {
+  const fromRoute = route && route.query ? route.query : {}
+  const fromHash = readHashRouteQuery()
+  return { ...fromHash, ...fromRoute }
+}
+
 /** 当前 AppRun 是否为寻智平面页（URL pageName / pageId→PageName / 已加载 LayerData） */
 export function isXunzhiJfEnvPlaneAppRun(route, store) {
-  const q = route && route.query ? route.query : {}
+  if (isEnvPlaneNoRunTreeSession()) {
+    try {
+      const pn = sessionStorage.getItem(SESSION_ENV_PLANE_PAGE_NAME)
+      if (!pn || pn === XUNZHI_JF_ENV_PLANE_PAGE) return true
+    } catch (e) {
+      return true
+    }
+  }
+  const q = mergedAppRunQuery(route)
   if (q.pageName === XUNZHI_JF_ENV_PLANE_PAGE || q.noRunTree === '1') {
     return true
   }

@@ -14,6 +14,11 @@
 
 <script>
 import { resolveDisplayPageByName, XUNZHI_JF_ENV_PLANE_PAGE } from '@/xunzhiJf/resolveDisplayPage'
+import {
+  buildAppRunIframeSrc,
+  buildEnvPlaneAppRunQuery,
+  markEnvPlaneAppRunSession,
+} from '@/xunzhiJf/appRunEmbed'
 
 export default {
   name: 'XunzhiJfVizDisplayHost',
@@ -34,15 +39,16 @@ export default {
         this.error = `未找到组态页 ${this.pageName}`
         return
       }
-      const params = new URLSearchParams()
-      if (resolved.pageId) params.set('pageId', resolved.pageId)
       if (this.pageName === XUNZHI_JF_ENV_PLANE_PAGE) {
-        params.set('pageName', XUNZHI_JF_ENV_PLANE_PAGE)
-        params.set('noRunTree', '1')
+        markEnvPlaneAppRunSession(this.pageName)
       }
-      const q = params.toString() ? `?${params.toString()}` : ''
-      const base = `${window.location.origin}${window.location.pathname}`
-      this.iframeSrc = `${base}#/AppRun/${resolved.displayUid}${q}`
+      const query =
+        this.pageName === XUNZHI_JF_ENV_PLANE_PAGE
+          ? buildEnvPlaneAppRunQuery(resolved.pageId)
+          : resolved.pageId
+            ? { pageId: resolved.pageId }
+            : {}
+      this.iframeSrc = buildAppRunIframeSrc(resolved.displayUid, query)
     } catch (e) {
       this.error = (e && e.message) || '解析组态失败'
     } finally {
