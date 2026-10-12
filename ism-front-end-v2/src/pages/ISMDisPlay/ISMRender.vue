@@ -4088,9 +4088,9 @@ export default {
         const hasObserver = !!_t.configData.components?.__ob__
         console.log("[RunCavasContainerInit] components has __ob__ (Vue Observer)=", hasObserver)
         const { isNoRunTreeMode } = require('@/xunzhiJf/appRunEmbed')
-        const { patchLayerCellsForNoRunTree } = require('@/xunzhiJf/envPlaneNoRunTreeLayout')
+        const { removeEmbeddedMonitorTreeCells } = require('@/xunzhiJf/envPlaneNoRunTreeLayout')
         if (isNoRunTreeMode(_t.$route, _t.$store) && _t.configData.components?.cells) {
-          patchLayerCellsForNoRunTree(_t.configData.components.cells)
+          removeEmbeddedMonitorTreeCells(_t.configData.components.cells)
         }
         const { sanitizeGraphComponents } = require('@/pages/ISMDisPlay/utils/graphCellSanitizer')
         const components = sanitizeGraphComponents(_t.configData.components, { tag: 'RunCavasContainerInit' })

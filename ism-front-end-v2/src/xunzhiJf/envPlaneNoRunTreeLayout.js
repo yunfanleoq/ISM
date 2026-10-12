@@ -1,4 +1,4 @@
-/** noRunTree=1 时隐藏组态页左侧「机房监视树」占位格并放宽实时表布局 */
+/** noRunTree=1 时从 page JSON 移除组态内嵌「机房监视树」格（非 CSS 隐藏） */
 import { XUNZHI_JF_ENV_PLANE_PAGE } from '@/xunzhiJf/resolveDisplayPage'
 
 export const EMBEDDED_MONITOR_TREE_CELL_NAMES = new Set([
@@ -13,6 +13,7 @@ export function isEmbeddedMonitorTreeCell(detail) {
   const text = String((detail.style && detail.style.text) || '')
   if (/机房[监监]视树/.test(text)) return true
   if (/^①\s*机房[监监]视树/.test(text.trim())) return true
+  if (/左侧运行态树与 monitortree 同源/.test(text)) return true
   return false
 }
 
@@ -36,47 +37,51 @@ function syncCellGeometry(cell) {
 }
 
 /**
- * 就地修改 layer cells（fromJSON 前调用）。仅影响寻智平面 noRunTree 场景。
+ * 从 cells 数组 **删除** 监视树相关格（fromJSON 前调用），并左移加宽实时表。
+ * @returns {{ removed: number }}
  */
-export function patchLayerCellsForNoRunTree(cells) {
-  if (!Array.isArray(cells) || !cells.length) return false
-  let changed = false
-  let hiddenTreeWidth = 0
-  let treeLeft = 24
+export function removeEmbeddedMonitorTreeCells(cells) {
+  if (!Array.isArray(cells) || !cells.length) {
+    return { removed: 0 }
+  }
+  const treeLeft = 24
+  let removed = 0
+  let shiftWidth = 0
 
-  for (const cell of cells) {
-    const det = cell.data && cell.data.detail
+  for (let i = cells.length - 1; i >= 0; i--) {
+    const cell = cells[i]
+    const det = cell && cell.data && cell.data.detail
     if (!isEmbeddedMonitorTreeCell(det)) continue
     if (typeof cell.x === 'number' && cell.x < 400) {
-      hiddenTreeWidth = Math.max(hiddenTreeWidth, (cell.width || 320) + Math.max(0, cell.x - treeLeft))
+      shiftWidth = Math.max(shiftWidth, (cell.width || 320) + Math.max(0, cell.x - treeLeft))
     }
-    if (det.style) det.style.visible = 0
-    cell.visible = false
-    changed = true
+    cells.splice(i, 1)
+    removed++
   }
 
-  const realTable = cells.find(c => c && c.shape === 'ism-view-real-table')
-  if (realTable && hiddenTreeWidth > 0 && typeof realTable.x === 'number' && realTable.x >= 200) {
-    const shift = realTable.x - treeLeft
-    realTable.x = treeLeft
-    realTable.width = (realTable.width || 1528) + shift
-    syncCellGeometry(realTable)
-    changed = true
+  if (shiftWidth > 0) {
+    const expand = (cell) => {
+      if (!cell || typeof cell.x !== 'number' || cell.x < 200) return
+      const delta = cell.x - treeLeft
+      if (delta <= 0) return
+      cell.x = treeLeft
+      cell.width = (cell.width || 1528) + delta
+      syncCellGeometry(cell)
+    }
+    cells.forEach((cell) => {
+      if (cell.shape === 'ism-view-real-table') expand(cell)
+      const det = cell.data && cell.data.detail
+      if (det && det.name === 'plane-sec-table') expand(cell)
+    })
   }
 
-  const secTable = cells.find(c => {
-    const det = c && c.data && c.data.detail
-    return det && det.name === 'plane-sec-table'
-  })
-  if (secTable && hiddenTreeWidth > 0 && typeof secTable.x === 'number' && secTable.x >= 200) {
-    const shift = secTable.x - treeLeft
-    secTable.x = treeLeft
-    secTable.width = (secTable.width || 1528) + shift
-    syncCellGeometry(secTable)
-    changed = true
-  }
+  return { removed }
+}
 
-  return changed
+/** @deprecated 使用 removeEmbeddedMonitorTreeCells */
+export function patchLayerCellsForNoRunTree(cells) {
+  const { removed } = removeEmbeddedMonitorTreeCells(cells)
+  return removed > 0
 }
 
 export function layerNameIsEnvPlane(layerData) {

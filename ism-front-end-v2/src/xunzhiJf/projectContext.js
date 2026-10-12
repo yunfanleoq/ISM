@@ -14,34 +14,76 @@ export function getActiveProjectUuid() {
   )
 }
 
+export function isXunzhiJfDashboardName(name) {
+  const n = String(name || '')
+  return /寻智|xunzhi-jf|平面监视|env-plane|机房环境/i.test(n)
+}
+
+export function syncXunzhiJfProjectToClient(uuid, name) {
+  if (!uuid) return
+  try {
+    Cookie.set('ProjectUuid', uuid)
+    sessionStorage.setItem('ProjectUuid', uuid)
+    sessionStorage.setItem(CACHE_UUID, uuid)
+    if (name) sessionStorage.setItem(CACHE_NAME, name)
+  } catch (e) { /* ignore */ }
+  setAuthorization({ token: uuid }, AUTH_TYPE.AUTH1)
+}
+
+export function invalidateXunzhiJfProjectCache() {
+  try {
+    sessionStorage.removeItem(CACHE_UUID)
+    sessionStorage.removeItem(CACHE_NAME)
+  } catch (e) { /* ignore */ }
+}
+
+function pickXunzhiJfFromList(list) {
+  if (!Array.isArray(list) || !list.length) return null
+  let hit = list.find(p => (p.name || p.Name) === XUNZHI_JF_PROJECT_NAME_HINT)
+  if (!hit) {
+    hit = list.find(
+      p => (p.name || '').indexOf('xunzhi-jf') !== -1
+        || (p.name || '').indexOf('寻智机房环境') !== -1
+    )
+  }
+  return hit || null
+}
+
+/**
+ * 以 project_lists / ProjectList API 为准解析寻智项目 uuid（禁止信任过期 session 缓存）。
+ */
 export async function resolveXunzhiJfProjectUuid() {
   const fromEnv = process.env.VUE_APP_XUNZHI_JF_PROJECT_UUID
-  if (fromEnv) return String(fromEnv).trim()
-
-  try {
-    const cached = sessionStorage.getItem(CACHE_UUID)
-    if (cached) return cached
-  } catch (e) { /* ignore */ }
+  if (fromEnv) {
+    const uuid = String(fromEnv).trim()
+    syncXunzhiJfProjectToClient(uuid, XUNZHI_JF_PROJECT_NAME_HINT)
+    return uuid
+  }
 
   try {
     const res = await ProjectList()
     const list = (res && res.data && res.data.list) || []
-    let hit = list.find(p => (p.name || p.Name) === XUNZHI_JF_PROJECT_NAME_HINT)
-    if (!hit) {
-      hit = list.find(
-        p => (p.name || '').indexOf('xunzhi-jf') !== -1
-          || (p.name || '').indexOf('寻智机房环境') !== -1
-      )
+    const hit = pickXunzhiJfFromList(list)
+    if (hit) {
+      const uuid = hit.uuid || hit.UUID || ''
+      if (uuid) {
+        syncXunzhiJfProjectToClient(uuid, hit.name || hit.Name || '')
+        return uuid
+      }
     }
-    const uuid = hit ? (hit.uuid || hit.UUID || '') : ''
-    if (uuid) {
-      sessionStorage.setItem(CACHE_UUID, uuid)
-      sessionStorage.setItem(CACHE_NAME, hit.name || hit.Name || '')
+    const cached = sessionStorage.getItem(CACHE_UUID)
+    if (cached && list.some(p => (p.uuid || p.UUID) === cached)) {
+      return cached
     }
-    return uuid
+    invalidateXunzhiJfProjectCache()
   } catch (e) {
-    return ''
+    try {
+      const cached = sessionStorage.getItem(CACHE_UUID)
+      if (cached) return cached
+    } catch (err) { /* ignore */ }
   }
+
+  return getActiveProjectUuid()
 }
 
 export async function ensureXunzhiJfProjectAuth() {
@@ -66,7 +108,7 @@ export function isXunzhiJfActiveProject() {
   }
 }
 
-/** GetSystemHomeDashboard 勿用航信等旧 scope 的 projectUuid 覆盖当前寻智 ProjectUuid 头 */
+/** GetSystemHomeDashboard 返回的 projectUuid 须与当前库寻智项目一致（重导后 uuid 会变） */
 export function alignHomeDashboardProjectUuid(apiProjectUuid) {
   const active = getActiveProjectUuid()
   if (!active) return apiProjectUuid || ''
@@ -80,10 +122,15 @@ export function alignHomeDashboardProjectUuid(apiProjectUuid) {
   return apiProjectUuid
 }
 
+export async function alignHomeDashboardProjectUuidAsync(apiProjectUuid, dashboardName) {
+  const xunzhiUuid = await resolveXunzhiJfProjectUuid()
+  if (xunzhiUuid && (isXunzhiJfActiveProject() || isXunzhiJfDashboardName(dashboardName))) {
+    return xunzhiUuid
+  }
+  return alignHomeDashboardProjectUuid(apiProjectUuid)
+}
+
 export function rememberProjectSelection(uuid, name) {
   if (!uuid) return
-  try {
-    sessionStorage.setItem(CACHE_UUID, uuid)
-    if (name) sessionStorage.setItem(CACHE_NAME, name)
-  } catch (e) { /* ignore */ }
+  syncXunzhiJfProjectToClient(uuid, name)
 }
