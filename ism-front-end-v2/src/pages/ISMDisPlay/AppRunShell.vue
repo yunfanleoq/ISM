@@ -1,5 +1,5 @@
 <template>
-  <div class="ism-pageview">
+  <div class="ism-pageview" :class="{ 'ism-pageview--no-runtree': !showRunTree }">
     <ISMRenderLoader :show-uuid="dashboardUuid" />
     <ScadaOrgOverview
       v-if="showRunTree"
@@ -52,13 +52,19 @@ export default {
     uid: { type: String, required: true },
   },
   created() {
-    if (shouldShowRunTreeNav(this.uid, this.$store)) applyHomeProjectAuth(this.$store)
+    if (shouldShowRunTreeNav(this.uid, this.$store, this.$route)) applyHomeProjectAuth(this.$store)
   },
   watch: {
     projectUuid(value) {
-      if (value && shouldShowRunTreeNav(this.uid, this.$store)) {
+      if (value && shouldShowRunTreeNav(this.uid, this.$store, this.$route)) {
         applyHomeProjectAuth(this.$store)
       }
+    },
+    '$route.query': {
+      handler() {
+        this.$forceUpdate()
+      },
+      deep: true,
     },
   },
   computed: {
@@ -66,11 +72,11 @@ export default {
       return this.uid
     },
     showRunTree() {
-      return shouldShowRunTreeNav(this.dashboardUuid, this.$store)
+      return shouldShowRunTreeNav(this.dashboardUuid, this.$store, this.$route)
     },
     projectUuid() {
       const uid = this.dashboardUuid
-      if (shouldShowRunTreeNav(uid, this.$store)) {
+      if (shouldShowRunTreeNav(uid, this.$store, this.$route)) {
         return resolveHomeProjectUuid(uid, this.$store) || HOME_PROJECT_UUID
       }
       const resolved = resolveHomeProjectUuid(uid, this.$store)

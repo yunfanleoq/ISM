@@ -28,8 +28,9 @@
 ### 平面布局复看（页 `xunzhi-jf-env-plane` · 模型「寻智机房环境平面监视-xunzhi-jf」）
 
 - **平面布局收口 tip**：pull 后 `git rev-parse --short=8 HEAD`（含 `reflow_xunzhi_jf_env_plane_layout.py` 的导入包）。
+- **AppRun 无旁路树**：平面页 URL 带 `pageName=xunzhi-jf-env-plane` / `noRunTree=1`（`VizDisplayHost` iframe）；运行态不再叠 `RunTreeNav`/`ScadaOrgOverview`，避免盖住「② 动环实时表」。
 - 主路径三块（1920×1080，无叠层图表库/箭头）：**左 机房监视树** → **右 动环实时表**（列头带 ℃ / %RH / m 工程量纲）→ **下 实时告警面板**。
-- **温湿度量纲**：点表 `{val}*0.1`（Mock HR=工程值×10）；`pull` 后 **重启 `ism_server`**，必要时 `python3 scripts/xunzhi_jf_sync_conversion_db.py` 同步 `device_real_data.conversion_expression`。
+- **温湿度量纲**：点表 `{val}*0.1`（Mock HR=工程值×10）；`pull` 后 **重编译并重启 `ism_server`**，必要时 `python3 scripts/xunzhi_jf_sync_conversion_db.py`；表内仍见 6118 等原码时查 `GetDeviceData` 换算与 `conversion_expression` 是否入库。
 - 本机：`git pull` → **删项目重导** `python3 scripts/import_xunzhi_jf_project.py`（或组态编辑器覆盖同页）→ 登录 **7080** 打开上述平面页目视（截图由协调侧本机）。
 
 ### 告警闭环完整复测（旧树 `~/cursorProjects/ISM源码`）

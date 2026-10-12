@@ -13,7 +13,7 @@
 </template>
 
 <script>
-import { resolveDisplayPageByName } from '@/xunzhiJf/resolveDisplayPage'
+import { resolveDisplayPageByName, XUNZHI_JF_ENV_PLANE_PAGE } from '@/xunzhiJf/resolveDisplayPage'
 
 export default {
   name: 'XunzhiJfVizDisplayHost',
@@ -34,7 +34,13 @@ export default {
         this.error = `未找到组态页 ${this.pageName}`
         return
       }
-      const q = resolved.pageId ? `?pageId=${encodeURIComponent(resolved.pageId)}` : ''
+      const params = new URLSearchParams()
+      if (resolved.pageId) params.set('pageId', resolved.pageId)
+      if (this.pageName === XUNZHI_JF_ENV_PLANE_PAGE) {
+        params.set('pageName', XUNZHI_JF_ENV_PLANE_PAGE)
+        params.set('noRunTree', '1')
+      }
+      const q = params.toString() ? `?${params.toString()}` : ''
       const base = `${window.location.origin}${window.location.pathname}`
       this.iframeSrc = `${base}#/AppRun/${resolved.displayUid}${q}`
     } catch (e) {

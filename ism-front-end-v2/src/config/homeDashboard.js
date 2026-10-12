@@ -49,9 +49,40 @@ export function isConfiguredHomeDashboard(uid, store) {
   return !!configured && uid === configured
 }
 
+/** 寻智动环平面页：组态内已含「①机房监视树」，禁止 AppRun 旁路 RunTree 叠层 */
+export const XUNZHI_JF_ENV_PLANE_PAGE = 'xunzhi-jf-env-plane'
+
+function readPageList(store) {
+  const ism = store && store.state && store.state.ISM
+  if (!ism) return []
+  return [...(ism.PCPageList || []), ...(ism.PhonePageList || [])]
+}
+
+/** 当前 AppRun 是否为寻智平面页（URL pageName / pageId→PageName / 已加载 LayerData） */
+export function isXunzhiJfEnvPlaneAppRun(route, store) {
+  const q = route && route.query ? route.query : {}
+  if (q.pageName === XUNZHI_JF_ENV_PLANE_PAGE || q.noRunTree === '1') {
+    return true
+  }
+  const pageId = q.pageId || ''
+  if (pageId) {
+    const hit = readPageList(store).find(
+      p => (p.pageUuid || p.PageId || '') === pageId
+    )
+    const name = hit && (hit.name || hit.PageName || hit.title || '')
+    if (name === XUNZHI_JF_ENV_PLANE_PAGE) return true
+  }
+  const ism = store && store.state && store.state.ISM
+  if (ism && ism.LayerData && ism.LayerData.name === XUNZHI_JF_ENV_PLANE_PAGE) {
+    return true
+  }
+  return false
+}
+
 /** AppRun 是否显示左侧设备导航树（避免 AppRunShell 引用 xunanDashboardPages 引发循环依赖） */
-export function shouldShowRunTreeNav(modelId, store) {
+export function shouldShowRunTreeNav(modelId, store, route) {
   if (!modelId) return false
+  if (route && isXunzhiJfEnvPlaneAppRun(route, store)) return false
   return isConfiguredHomeDashboard(modelId, store)
 }
 

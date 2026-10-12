@@ -149,8 +149,8 @@ func formatDisplayWithConversion(raw string, conversionExpr string) string {
 	if err != nil {
 		return raw
 	}
-	// 已写入工程值（如 22.5）时勿二次换算
-	if strings.Contains(conversionExpr, "*0.1") && fv >= -40 && fv <= 150 {
+	// 已写入工程值（如 22.5℃ / 55%RH）时勿二次换算；原码寄存器通常 ≥200
+	if strings.Contains(conversionExpr, "*0.1") && fv >= -40 && fv <= 199 {
 		return raw
 	}
 	replaced := strings.ReplaceAll(conversionExpr, "{val}", raw)
@@ -172,13 +172,28 @@ func formatDisplayWithConversion(raw string, conversionExpr string) string {
 func loadConversionExpression(deviceName, pointName string) string {
 	var row models.DeviceRealData
 	err := models.Db.Model(&models.DeviceRealData{}).
-		Select("conversion_expression").
+		Select("conversion_expression", "model_data_uuid").
 		Where("device_name = ? and name = ?", deviceName, pointName).
 		First(&row).Error
 	if err != nil {
 		return ""
 	}
-	return strings.TrimSpace(row.ConversionExpression)
+	expr := strings.TrimSpace(row.ConversionExpression)
+	if expr != "" {
+		return expr
+	}
+	if strings.TrimSpace(row.ModelDataUuid) == "" {
+		return ""
+	}
+	var modbus models.ModbusDevicesDataModel
+	err = models.Db.Model(&models.ModbusDevicesDataModel{}).
+		Select("conversion_expression").
+		Where("uuid = ?", row.ModelDataUuid).
+		First(&modbus).Error
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(modbus.ConversionExpression)
 }
 
 func GetDeviceData(deviceData string) interface{} {
@@ -188,7 +203,16 @@ func GetDeviceData(deviceData string) interface{} {
 	}
 	getValue, exists := loadDeviceValue(data[0], data[1])
 	if exists {
-		getValue = formatDisplayWithConversion(getValue, loadConversionExpression(data[0], data[1]))
+		expr := loadConversionExpression(data[0], data[1])
+		if expr == "" {
+			switch strings.TrimSpace(data[1]) {
+			case "温度", "湿度", "漏水位置米数":
+				if fv, err := strconv.ParseFloat(strings.TrimSpace(getValue), 64); err == nil && fv > 199 {
+					expr = "{val}*0.1"
+				}
+			}
+		}
+		getValue = formatDisplayWithConversion(getValue, expr)
 		t, convError := strconv.ParseFloat(getValue, 64)
 		if convError != nil {
 			return getValue
