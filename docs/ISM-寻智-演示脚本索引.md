@@ -4,7 +4,7 @@
 
 | 项 | 值 |
 |----|-----|
-| **Git tip** | `64c8fc44` |
+| **Git tip** | `b3f85d09` |
 | **试打样包** | `dist/xunzhi-jf/ism-patch-xunzhi-jf-20261012-e8bb7f8/` |
 | **分支** | `feature/xunzhi-jf-env-monitor` · PR [#5](https://github.com/yunfanleoq/ISM/pull/5) |
 | **口径** | 脚本/Mock/文档在仓内冻结；**ism_server / 7080 / 本机 DB 运行态由演示机自启**；不覆盖 `patches/*kylin`、`releases/` 现网 |
@@ -23,7 +23,33 @@
 **StartupAlarmDelay**：`sync` / `alarm_demo` 会为寻智项目写入 `DelayMinutes:0`；若 `ism_server` 在写入前已启动，须 **保持 Mock:1502 后重启 ism_server**（或 `export XUNZHI_WAIT_STARTUP_DELAY=1` 等旧 10min 窗结束）。  
 **采集判定**：以 LEAK `device_real_data` 刷新 / 日志 `cycle_log_th_leak` 为准；`monitor_list.status=2` 可滞后。  
 **告警 sync**：`AlarmTriggerEdit` 热加载；`alarm_demo` 用 `xunzhi_jf_mock_leak_ctl.sh off|on` **热切换** 0→1（禁止 pkill Mock）。  
-**ism 检测**：HTTP **8081** LISTEN 或 `pgrep ism_server` + `/proc/PID/cwd`（支持 `cd ism_server_user && ./ism_server`）。
+**ism 检测**：以 **`ism_server_running()`**（HTTP **8081** LISTEN）为准；cwd 用 Linux `/proc/PID/cwd` 或 macOS `lsof -a -p PID -d cwd`（cwd 未知时不判串库）。
+
+### 告警闭环完整复测（旧树 `~/cursorProjects/ISM源码`）
+
+- `python3 scripts/xunzhi_jf_sync_alarm_db.py` 写入 `alarm_notice` · `StartupAlarmDelay` · **`{"DelayMinutes":0}`**，并 `AlarmTriggerEdit` 热加载。
+- `bash scripts/xunzhi_jf_alarm_demo.sh`：**GetCurrentAlarmList** 非空 → **AlarmOpt** 确认；Mock 漏水 **0→1** 用热切换（勿 pkill Mock）。
+- **sync 写 Delay=0 后须保持 Mock:1502，重启 `ism_server`**，抑警窗才关闭。
+
+```bash
+export XUNZHI_ISM_ROOT=~/cursorProjects/ISM源码
+export ARTIFACTS_DIR=/tmp/xunzhi-artifacts
+mkdir -p "$ARTIFACTS_DIR"
+cd "$XUNZHI_ISM_ROOT"
+git fetch && git checkout feature/xunzhi-jf-env-monitor && git pull
+git rev-parse --short=8 HEAD
+# Mock 先在线（--flip）
+pgrep -f xunzhi_jf_modbus_mock || python3 scripts/xunzhi_jf_modbus_mock.py --flip --port 1502 &
+sleep 2
+python3 scripts/xunzhi_jf_sync_alarm_db.py --print-env   # 写入 DelayMinutes=0 + 热加载
+# 保持 Mock，重启 ism 使 Delay=0 生效
+cd "$XUNZHI_ISM_ROOT/ism_server_user" && (pkill -x ism_server || true); sleep 1; ./ism_server &
+sleep 5
+cd "$XUNZHI_ISM_ROOT" && bash scripts/xunzhi_jf_alarm_demo.sh
+# 通过：末尾「告警闭环脚本完成」= 入列 + AlarmOpt 确认均绿
+```
+
+> 自 `57df4546` 起须 **pull 新 tip** 后再跑；勿在 `07bbb02d` 及更早 tip 上复测 mac cwd/uptime 修复。
 
 ---
 

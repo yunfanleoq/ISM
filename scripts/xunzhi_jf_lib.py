@@ -5,6 +5,8 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import platform
+import re
 import socket
 import sqlite3
 import subprocess
@@ -137,15 +139,35 @@ def ism_server_running() -> bool:
     return len(ism_server_pids()) > 0
 
 
+def _pid_cwd(pid: int) -> str | None:
+    try:
+        proc_cwd = Path(f"/proc/{pid}/cwd")
+        if proc_cwd.is_symlink():
+            return str(proc_cwd.resolve())
+    except OSError:
+        pass
+    try:
+        r = subprocess.run(
+            ["lsof", "-a", "-p", str(pid), "-d", "cwd", "-Fn"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if r.returncode == 0:
+            for line in (r.stdout or "").splitlines():
+                if line.startswith("n"):
+                    return line[1:].strip()
+    except (OSError, subprocess.SubprocessError, FileNotFoundError):
+        pass
+    return None
+
+
 def ism_server_cwds() -> list[str]:
     cwds: list[str] = []
     for pid in ism_server_pids():
-        try:
-            cwd = Path(f"/proc/{pid}/cwd")
-            if cwd.is_symlink():
-                cwds.append(str(cwd.resolve()))
-        except OSError:
-            pass
+        cwd = _pid_cwd(pid)
+        if cwd:
+            cwds.append(cwd)
     return cwds
 
 
@@ -154,20 +176,61 @@ def ism_server_cwd() -> str | None:
     return cwds[0] if cwds else None
 
 
+def _parse_ps_etime_seconds(raw: str) -> int | None:
+    s = raw.strip()
+    if not s:
+        return None
+    days = 0
+    if "-" in s:
+        day_part, rest = s.split("-", 1)
+        if not day_part.isdigit():
+            return None
+        days = int(day_part)
+        s = rest
+    parts = s.split(":")
+    try:
+        if len(parts) == 3:
+            h, m, sec = int(parts[0]), int(parts[1]), int(parts[2])
+        elif len(parts) == 2:
+            h, m, sec = 0, int(parts[0]), int(parts[1])
+        else:
+            return None
+        return days * 86400 + h * 3600 + m * 60 + sec
+    except ValueError:
+        return None
+
+
 def ism_server_uptime_sec() -> int | None:
     pids = ism_server_pids()
     if not pids:
         return None
-    try:
-        ps = subprocess.run(
-            ["ps", "-o", "etimes=", "-p", str(pids[0])],
-            capture_output=True,
-            text=True,
-            timeout=5,
-        )
-        return int((ps.stdout or "0").strip() or "0")
-    except (OSError, subprocess.SubprocessError, ValueError):
-        return None
+    pid = pids[0]
+    attempts: list[list[str]] = []
+    if platform.system() == "Darwin":
+        attempts.append(["ps", "-o", "etime=", "-p", str(pid)])
+        attempts.append(["ps", "-o", "etimes=", "-p", str(pid)])
+    else:
+        attempts.append(["ps", "-o", "etimes=", "-p", str(pid)])
+        attempts.append(["ps", "-o", "etime=", "-p", str(pid)])
+    for cmd in attempts:
+        try:
+            ps = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            if ps.returncode != 0:
+                continue
+            lines = [ln.strip() for ln in (ps.stdout or "").splitlines() if ln.strip()]
+            if not lines:
+                continue
+            raw = lines[-1]
+            if "etimes" in cmd[1]:
+                if re.fullmatch(r"\d+", raw):
+                    return int(raw)
+                continue
+            sec = _parse_ps_etime_seconds(raw)
+            if sec is not None:
+                return sec
+        except (OSError, subprocess.SubprocessError, ValueError):
+            continue
+    return None
 
 
 def mock_tcp_established_count(port: int | None = None) -> int:
@@ -376,7 +439,9 @@ def print_env(root: Path | None = None, proj_uuid: str | None = None, strict_moc
         "mock_tcp_established": mock_tcp_established_count(port),
         "db_matches_script_tree": db == expected_db if db.is_file() else None,
         "server_cwd_matches_script_tree": (
-            server_cwd is not None and Path(server_cwd).resolve() == (root / "ism_server_user").resolve()
+            None
+            if server_cwd is None
+            else Path(server_cwd).resolve() == (root / "ism_server_user").resolve()
         ),
     }
     if proj_uuid and db.is_file():
@@ -392,7 +457,11 @@ def print_env(root: Path | None = None, proj_uuid: str | None = None, strict_moc
         if strict_mock:
             raise SystemExit(msg)
         print(f"WARN: {msg}", file=sys.stderr)
-    if server_cwd and Path(server_cwd).resolve() != (root / "ism_server_user").resolve():
+    if (
+        ism_server_running()
+        and server_cwd
+        and Path(server_cwd).resolve() != (root / "ism_server_user").resolve()
+    ):
         print(
             f"WARN: ism_server cwd={server_cwd} 与脚本树 {root}/ism_server_user 不一致（双目录串库风险）",
             file=sys.stderr,
