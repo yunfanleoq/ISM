@@ -25,6 +25,12 @@
 **告警 sync**：`AlarmTriggerEdit` 热加载；`alarm_demo` 用 `xunzhi_jf_mock_leak_ctl.sh off|on` **热切换** 0→1（禁止 pkill Mock）。  
 **ism 检测**：以 **`ism_server_running()`**（HTTP **8081** LISTEN）为准；cwd 用 Linux `/proc/PID/cwd` 或 macOS `lsof -a -p PID -d cwd`（cwd 未知时不判串库）。
 
+### 平面布局复看（页 `xunzhi-jf-env-plane` · 模型「寻智机房环境平面监视-xunzhi-jf」）
+
+- **平面布局收口 tip**：pull 后 `git rev-parse --short=8 HEAD`（含 `reflow_xunzhi_jf_env_plane_layout.py` 的导入包）。
+- 主路径三块（1920×1080，无叠层图表库/箭头）：**左 机房监视树** → **右 动环实时表**（列头带 ℃ / %RH / m 工程量纲）→ **下 实时告警面板**。
+- 本机：`git pull` → **删项目重导** `python3 scripts/import_xunzhi_jf_project.py`（或组态编辑器覆盖同页）→ 登录 **7080** 打开上述平面页目视（截图由协调侧本机）。
+
 ### 告警闭环完整复测（旧树 `~/cursorProjects/ISM源码`）
 
 - `python3 scripts/xunzhi_jf_sync_alarm_db.py` 写入 `alarm_notice` · `StartupAlarmDelay` · **`{"DelayMinutes":0}`**，并 `AlarmTriggerEdit` 热加载。

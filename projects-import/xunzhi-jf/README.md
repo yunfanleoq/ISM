@@ -37,7 +37,8 @@ bash scripts/xunzhi_jf_alarm_demo.sh
 | `append_w2_power_ups.py` | 向包追加 PWR/UPS（slave 3/4） |
 | `append_w3_ac_h2.py` | 向包追加 AC/H2（slave 5/6）· 探针 **P-COL-03** `cycle_log_ac_h2` |
 | `append_s1_envmon_demo.py` | S1：组态告警列表 + 第二机房树节点 |
-| `append_s1_chart_thicken.py` | S1：平面页挂 ≥20 类图表/仪表 shape |
+| `append_s1_chart_thicken.py` | S1：平面页挂 ≥20 类图表/仪表 shape（**演示平面勿依赖**） |
+| `reflow_xunzhi_jf_env_plane_layout.py` | **演示平面收口**：实时表 + 机房树 + 告警（去图表/箭头堆叠） |
 | `append_s1_gauge_plus.py` | S1：补足仪表盘实例 ≥10 |
 | `xunzhi-jf_dcim_capacity_mock.json` | S3：dcim-capacity Mock 种子（骨架，非闭环） |
 | `xunzhi-jf_dcim_workorder_mock.json` | S4：dcim-workorder Mock 种子（骨架） |
@@ -57,6 +58,7 @@ python3 projects-import/xunzhi-jf/append_s1_gauge_plus.py
 python3 projects-import/xunzhi-jf/append_w4_battery_sample.py
 python3 projects-import/xunzhi-jf/append_s6_25d_nav_shell.py
 python3 projects-import/xunzhi-jf/append_s6_chart_catalog_push.py
+python3 projects-import/xunzhi-jf/reflow_xunzhi_jf_env_plane_layout.py
 ```
 
 S2 资产 U 位 Mock：`bash scripts/xunzhi_jf_asset_u_demo.sh`（见 `docs/ISM-寻智-S2-资产U位骨架.md`）。  
