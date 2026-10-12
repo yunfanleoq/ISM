@@ -199,7 +199,8 @@ ACK=$(curl_json /AlarmOpt "$BODY" "$TOKEN" "$PROJ" | tee "$EVIDENCE_DIR/F4_alarm
 CODE=$(echo "$ACK" | python3 -c "import sys,json; print(json.load(sys.stdin).get('code',''))" 2>/dev/null || echo "")
 if [[ "$CODE" != "0" ]]; then
   echo "FAIL: AlarmOpt code=$CODE (期望 0 / SUCCSECODE)" >&2
-  echo "$ACK" >&2
+  echo "request body: $BODY" >&2
+  echo "response: $ACK" >&2
   exit 1
 fi
 echo "告警闭环脚本完成（非正式验收结论）"
