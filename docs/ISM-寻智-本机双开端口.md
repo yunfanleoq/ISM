@@ -36,6 +36,11 @@
    `#/AppRun/<displayUid>?pageId=…&pageName=xunzhi-jf-env-plane&noRunTree=1`  
    无左侧 **组织层级总览** / RunTree 叠层；实时表温湿度约 **20–25℃ / 40–55%RH**。
 
+## 喊测 / 保活注意
+
+- **勿用** `/tmp/keep_xunzhi_be.sh`（或同类脚本）保活双口 `ism_server`：多实例/错 cwd 易**写坏或锁错** `ism.db`。
+- **ProjectUuid** 以喊测当日 **现库**为准：`sqlite3 ism_server_user/data/db/ism.db "SELECT uuid,name FROM project_lists WHERE name LIKE '%寻智%';"` 或登录后看 Cookie / `ProjectList` API；**禁止**死记文档里的示例 uuid。
+
 ## 常见 FAIL
 
 | 现象 | 处理 |
