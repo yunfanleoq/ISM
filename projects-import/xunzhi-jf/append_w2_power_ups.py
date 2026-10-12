@@ -10,6 +10,9 @@ GATHER = 5000
 import os
 
 PORT = int(os.environ.get("XUNZHI_MOCK_PORT", "1503"))
+# 与 generate_xunzhi_jf_package：Mock BE 原码 → ABCD；CDAB 致温湿度 ~5xxx
+MODBUS_DATA_FORMAT = "ABCD"
+MODBUS_BYTE_ORDER = "ABCD"
 
 MUID_PWR = "b1b1b1b1b1b14c0c000000000000001"
 MUID_UPS = "c2c2c2c2c2c24d0d000000000000002"
@@ -30,7 +33,7 @@ def pt(uid, muid, name, rg, addr, unit, expr):
         "registerGroupUuid": rg,
         "auth": "ReadOnly",
         "type": "Unsigned short",
-        "ByteOrder": "CDAB",
+        "ByteOrder": MODBUS_BYTE_ORDER,
         "modeltype": 2,
         "unit": unit,
         "conversionExpression": expr,
@@ -63,7 +66,7 @@ def main():
                 "type": 2,
                 "modbusConnectType": "TCPClient",
                 "modbusConnectMode": "TCP/IP",
-                "DataFormat": "CDAB",
+                "DataFormat": MODBUS_DATA_FORMAT,
                 "timeout": 3000,
                 "port": PORT,
                 "gatherNumber": 30,
@@ -76,7 +79,7 @@ def main():
                 "type": 2,
                 "modbusConnectType": "TCPClient",
                 "modbusConnectMode": "TCP/IP",
-                "DataFormat": "CDAB",
+                "DataFormat": MODBUS_DATA_FORMAT,
                 "timeout": 3000,
                 "port": PORT,
                 "gatherNumber": 30,

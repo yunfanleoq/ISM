@@ -27,7 +27,8 @@
    **改代码或拉 tip 后须重新登录一次**，以便 `loadRoutes` 挂上 `/xunzhi/jf/*`（含 `viz/plane`）。
 
 5. **项目**  
-   **ProjectDel + 重导** `python3 scripts/import_xunzhi_jf_project.py`，确保含页 **`xunzhi-jf-env-plane`** 且设备 `modbusPort` 为 **1503**。
+   **ProjectDel + 重导** `python3 scripts/import_xunzhi_jf_project.py`，确保含页 **`xunzhi-jf-env-plane`** 且设备 `modbusPort` 为 **1503**。  
+   重导后抽查 SQLite：`devices_model.data_format`（或导入字段 `DataFormat`）对温湿度物模型为 **`ABCD`**（勿 **CDAB**，否则 TH 易炸成 ~5xxx）。
 
 6. **平面**  
    菜单 **环境平面大屏**（`/xunzhi/jf/viz/plane`）→ iframe 应为  
@@ -38,6 +39,6 @@
 
 | 现象 | 处理 |
 |------|------|
-| TH ~5xxx / 61℃ | Mock 未在 **1503** 或导入包仍为 1502；重导 + 重编译 **ism_server** |
+| TH ~5xxx / 61℃ | 多为 **`DataFormat=CDAB`**（改 **ABCD** 后重导 + 重启 ism）；或 Mock 非 **1503** |
 | 菜单无「循智·机房环境」 | **退出重新登录** |
 | 组织总览仍叠层 | 查 iframe query 是否带 `pageName` / `noRunTree=1`；硬刷新 |

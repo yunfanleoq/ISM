@@ -9,6 +9,8 @@ GATHER = 5000
 import os
 
 PORT = int(os.environ.get("XUNZHI_MOCK_PORT", "1503"))
+MODBUS_DATA_FORMAT = "ABCD"
+MODBUS_BYTE_ORDER = "ABCD"
 DISPLAY_UID = "a1b2c3d4e5f6478990abcdef12345678"
 PAGE_ID = "b2c3d4e5f6a7488990abcdef123456789"
 MUID_BAT = "d7d7d7d7d7d74d7d00000000000000007"
@@ -29,7 +31,7 @@ def pt(uid, name, addr, unit, expr):
         "registerGroupUuid": RG_BAT,
         "auth": "ReadOnly",
         "type": "Unsigned short",
-        "ByteOrder": "CDAB",
+        "ByteOrder": MODBUS_BYTE_ORDER,
         "modeltype": 2,
         "unit": unit,
         "conversionExpression": expr,
@@ -56,7 +58,7 @@ def main():
             "type": 2,
             "modbusConnectType": "TCPClient",
             "modbusConnectMode": "TCP/IP",
-            "DataFormat": "CDAB",
+            "DataFormat": MODBUS_DATA_FORMAT,
             "timeout": 3000,
             "port": PORT,
             "gatherNumber": 30,

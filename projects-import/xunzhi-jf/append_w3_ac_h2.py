@@ -10,6 +10,8 @@ GATHER = 5000
 import os
 
 PORT = int(os.environ.get("XUNZHI_MOCK_PORT", "1503"))
+MODBUS_DATA_FORMAT = "ABCD"
+MODBUS_BYTE_ORDER = "ABCD"
 
 MUID_AC = "c3c3c3c3c3c34c0c00000000000000003"
 MUID_H2 = "d4d4d4d4d4d44d0d00000000000000004"
@@ -32,7 +34,7 @@ def pt_ai(uid, muid, name, rg, addr, unit, expr, alarm=0, level=0):
         "registerGroupUuid": rg,
         "auth": "ReadOnly",
         "type": "Unsigned short",
-        "ByteOrder": "CDAB",
+        "ByteOrder": MODBUS_BYTE_ORDER,
         "modeltype": 2,
         "unit": unit,
         "conversionExpression": expr,
@@ -61,7 +63,7 @@ def pt_di(uid, muid, name, rg, addr, alarm=0, level=0, msg="", clear=""):
         "registerGroupUuid": rg,
         "auth": "ReadOnly",
         "type": "Bool",
-        "ByteOrder": "CDAB",
+        "ByteOrder": MODBUS_BYTE_ORDER,
         "modeltype": 2,
         "unit": "",
         "conversionExpression": "{val}*1",
@@ -101,7 +103,7 @@ def main():
                     "type": 2,
                     "modbusConnectType": "TCPClient",
                     "modbusConnectMode": "TCP/IP",
-                    "DataFormat": "CDAB",
+                    "DataFormat": MODBUS_DATA_FORMAT,
                     "timeout": 3000,
                     "port": PORT,
                     "gatherNumber": 30,
@@ -114,7 +116,7 @@ def main():
                     "type": 2,
                     "modbusConnectType": "TCPClient",
                     "modbusConnectMode": "TCP/IP",
-                    "DataFormat": "CDAB",
+                    "DataFormat": MODBUS_DATA_FORMAT,
                     "timeout": 3000,
                     "port": PORT,
                     "gatherNumber": 30,

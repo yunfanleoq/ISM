@@ -5,6 +5,8 @@
   "gateway_port": 1503,
   "gather_interval_ms": 5000,
   "protocol": "modbus_tcp",
+  "devices_model_data_format": "ABCD",
+  "_note_data_format": "ImportProject 写入 devices_model.DataFormat；勿 CDAB（Unsigned short 误读 BE 原码 → ~5xxx）",
   "devices": [
     {
       "name": "xunzhi-jf-TH-01",

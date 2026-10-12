@@ -2,6 +2,8 @@
 
 Modbus TCP：**温湿度 + 漏水**（W1）+ **列头柜 + UPS**（W2）+ **精密空调 + 氢气**（W3），默认 **`gather_interval_ms=5000`**（≤10s 契约）。
 
+**字节序**：物模型 `DataFormat` / 点表 `ByteOrder` 默认 **ABCD**（与 Mock BE 寄存器原码一致）。**勿用 CDAB** — Unsigned short 会按 LittleEndian 误读，温湿度再 `{val}*0.1` 后表内常见 **~5xxx**。
+
 链路：**协议 → DeviceRealData → WebSocket（`conf/app.conf` 的 `wsport`，本仓 dev 常见 10225）→ 组态**。
 
 ## 测试复测入口（推荐）

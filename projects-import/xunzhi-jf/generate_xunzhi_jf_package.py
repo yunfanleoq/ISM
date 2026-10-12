@@ -11,6 +11,9 @@ PROJECT_NAME = "寻智机房环境-xunzhi-jf"
 GATEWAY_IP = "127.0.0.1"
 GATEWAY_PORT = int(os.environ.get("XUNZHI_MOCK_PORT", "1503"))
 GATHER_INTERVAL_MS = 5000
+# Mock HR 为 BE 原码；Unsigned short 须 ABCD。勿用 CDAB（会按 LittleEndian 误读 → ~5xxx 再 *0.1 入库）
+MODBUS_DATA_FORMAT = "ABCD"
+MODBUS_BYTE_ORDER = "ABCD"
 
 DISPLAY_UID = "a1b2c3d4e5f6478990abcdef12345678"
 PAGE_ID = "b2c3d4e5f6a7488990abcdef123456789"
@@ -49,7 +52,7 @@ def pt(uuid_, muid, name, rg, addr, typ, unit, expr, alarm=0, level=0, msg="", c
         "registerGroupUuid": rg,
         "auth": "ReadOnly",
         "type": typ,
-        "ByteOrder": "CDAB",
+        "ByteOrder": MODBUS_BYTE_ORDER,
         "modeltype": 2,
         "unit": unit,
         "conversionExpression": expr,
@@ -256,7 +259,7 @@ def build_package():
                 "type": 2,
                 "modbusConnectType": "TCPClient",
                 "modbusConnectMode": "TCP/IP",
-                "DataFormat": "CDAB",
+                "DataFormat": MODBUS_DATA_FORMAT,
                 "timeout": 3000,
                 "port": GATEWAY_PORT,
                 "gatherNumber": 30,
@@ -269,7 +272,7 @@ def build_package():
                 "type": 2,
                 "modbusConnectType": "TCPClient",
                 "modbusConnectMode": "TCP/IP",
-                "DataFormat": "CDAB",
+                "DataFormat": MODBUS_DATA_FORMAT,
                 "timeout": 3000,
                 "port": GATEWAY_PORT,
                 "gatherNumber": 30,
