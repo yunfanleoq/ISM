@@ -318,7 +318,7 @@ func ReconnectDbServer() {
 	//单机版初始化超级管理员数据
 	AdminUserError := userTable().Where("username = 'admin'").First(&adminUser)
 
-	if errors.Is(AdminUserError, gorm.ErrRecordNotFound) {
+	if errors.Is(AdminUserError.Error, gorm.ErrRecordNotFound) {
 		adminUser.Username = "admin"
 		adminUser.Password = "$2a$10$h9swLjbTTcSVUCqQDt6nAetw.FVRLPE0WPDzqloprYRO7PDtLC5Ii" // bcrypt(MD5("123456"))
 		adminUser.Role = "Admin"
@@ -330,7 +330,7 @@ func ReconnectDbServer() {
 
 	AdminUserError = Db.Model(&RolesList{}).Where("role_id = ?", "Admin").First(&adminRole)
 
-	if errors.Is(AdminUserError, gorm.ErrRecordNotFound) {
+	if errors.Is(AdminUserError.Error, gorm.ErrRecordNotFound) {
 		var insertrole = make([]RolesList, 3)
 		insertrole[0].RoleName = "管理员"
 		insertrole[0].RoleId = "Admin"
