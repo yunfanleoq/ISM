@@ -553,7 +553,7 @@ def diagnose_failure(root: Path | None, proj_uuid: str) -> None:
     fr = leak_realdata_freshness(db, proj_uuid)
     if not fr.get("fresh"):
         print(
-            f            f"HINT: LEAK realdata 未刷新（value={fr.get('value')} age={fr.get('age_sec')}s）；"
+            f"HINT: LEAK realdata 未刷新（value={fr.get('value')} age={fr.get('age_sec')}s）；"
             f"确认 Mock:{mock_port()} LISTEN 且 ism_server 已采集（见 cycle_log_th_leak）",
             file=sys.stderr,
         )
