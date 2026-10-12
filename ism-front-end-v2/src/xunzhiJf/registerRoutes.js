@@ -1,4 +1,5 @@
 import BlankView from '@/layouts/BlankView'
+import { xunzhiJfVizRouteBeforeEnter } from '@/xunzhiJf/projectContext'
 import {
   XUNZHI_JF_MENU_FLAT,
   menuCodeToRouterKey,
@@ -141,6 +142,9 @@ export function buildXunzhiJfRouterMap() {
       if (seg) entry.redirect = seg
     } else {
       entry.component = componentForRow(row)
+      if (row.menu_code === 'jf.viz.plane' || row.menu_code === 'jf.viz.dashboard') {
+        entry.beforeEnter = xunzhiJfVizRouteBeforeEnter
+      }
       if (!WIRED.has(row.menu_code)) {
         entry.meta.skeletonProps = skeletonMeta(row)
       }
