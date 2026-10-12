@@ -1,0 +1,70 @@
+{
+  "project": "寻智机房环境-xunzhi-jf",
+  "slug": "xunzhi-jf",
+  "gateway_ip": "127.0.0.1",
+  "gateway_port": 1503,
+  "gather_interval_ms": 5000,
+  "protocol": "modbus_tcp",
+  "devices_model_data_format": "ABCD",
+  "_note_data_format": "ImportProject 写入 devices_model.DataFormat；勿 CDAB（Unsigned short 误读 BE 原码 → ~5xxx）",
+  "devices": [
+    {
+      "name": "xunzhi-jf-TH-01",
+      "model": "xunzhi-jf-温湿度传感器",
+      "slave_id": 1,
+      "room": "F3-模块机房-01",
+      "points": [
+        {
+          "name": "温度",
+          "signal_type": "AI",
+          "unit": "℃",
+          "address": "HR:0",
+          "gather_interval_ms": 5000
+        },
+        {
+          "name": "湿度",
+          "signal_type": "AI",
+          "unit": "%RH",
+          "address": "HR:1",
+          "gather_interval_ms": 5000
+        },
+        {
+          "name": "传感器故障",
+          "signal_type": "DI",
+          "unit": "",
+          "address": "DI:0",
+          "gather_interval_ms": 5000
+        }
+      ]
+    },
+    {
+      "name": "xunzhi-jf-LEAK-01",
+      "model": "xunzhi-jf-漏水控制器",
+      "slave_id": 2,
+      "room": "F3-模块机房-01",
+      "points": [
+        {
+          "name": "漏水信号",
+          "signal_type": "DI",
+          "unit": "",
+          "address": "DI:0",
+          "gather_interval_ms": 5000
+        },
+        {
+          "name": "漏水位置米数",
+          "signal_type": "AI",
+          "unit": "m",
+          "address": "HR:0",
+          "gather_interval_ms": 5000
+        },
+        {
+          "name": "控制器故障",
+          "signal_type": "DI",
+          "unit": "",
+          "address": "DI:1",
+          "gather_interval_ms": 5000
+        }
+      ]
+    }
+  ]
+}

@@ -4,8 +4,8 @@
 
 | 项 | 值 |
 |----|-----|
-| **Git tip（冻结演示）** | `195e90a4` |
-| **试打样包** | `dist/xunzhi-jf/ism-patch-xunzhi-jf-20261012-e8bb7f8/` |
+| **Git tip（冻结演示）** | `3e604c5f` |
+| **试打样包** | `dist/xunzhi-jf/ism-patch-xunzhi-jf-20261013-3e604c5/` |
 | **分支** | `feature/xunzhi-jf-env-monitor` · PR [#5](https://github.com/yunfanleoq/ISM/pull/5) |
 | **口径** | 脚本/Mock/文档在仓内冻结；**ism_server / 7080 / 本机 DB 运行态由演示机自启**；不覆盖 `patches/*kylin`、`releases/` 现网 |
 
@@ -61,7 +61,7 @@ cd "$XUNZHI_ISM_ROOT" && bash scripts/xunzhi_jf_alarm_demo.sh
 # 通过：末尾「告警闭环脚本完成」= 入列 + AlarmOpt code==0 均绿（500 不得算过）
 ```
 
-> **演示冻结 tip=`195e90a4`**（含 AlarmOpt **`uuid`+`duid`**、code 断言；mac **`lsof` cwd / `ps etime`**）。仅索引钉 tip 的后续提交不改变冻结点；拉代码以 `git checkout 195e90a4` 或 pull 后 `HEAD≥195e90a4` 均可。
+> **演示冻结 tip=`3e604c5f`**（完整 SHA 见试打样包 `GIT_TIP.txt`）：含 **告警热刷新**（`UpdateAlarmNotice` → `ReconfigureStartupAlarmWindows` + `alarm_demo`）、**W2 配电/UPS 竖切**（平面 ③ + `import --force` 组态 UUID 映射）、**import 小硬**（`ProjectDel` 成功码含 `200`、`ProjectList` 的 `list: null`）、AlarmOpt **`uuid`+`duid`** 与 mac **`lsof` cwd / `ps etime`**。历史 tip/包（如 `195e90a4`、`e8bb7f8`、`84dbc6f`、`d628f7f`）可对照保留，不删下文操作说明。拉代码以 `git checkout 3e604c5f` 或 pull 后 `HEAD≥3e604c5f` 均可；PR#5 仍 **Draft**，不覆盖 `patches/*kylin`、`releases/`，勿用 `/tmp/keep_xunzhi_be.sh`。
 
 ---
 
@@ -83,10 +83,10 @@ python3 projects-import/xunzhi-jf/append_s6_chart_catalog_push.py
 python3 projects-import/xunzhi-jf/reflow_xunzhi_jf_env_plane_layout.py
 ```
 
-**导入项目**（新库或删项目后）：
+**导入项目**（新库或删项目后；**平面/W2 更新须** `--force`）：
 
 ```bash
-python3 scripts/import_xunzhi_jf_project.py
+python3 scripts/import_xunzhi_jf_project.py --force
 ```
 
 项目已存在且仅告警字段需对齐：
