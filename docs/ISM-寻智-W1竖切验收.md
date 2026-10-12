@@ -54,7 +54,7 @@ Modbus(Mock:1502) → DeviceRealData → WS(`wsport`) RealData → 组态 `ism-v
    - 写 `alarm_on_value=1`、补 `alarm_trigger`  
    - 默认对每个触发器 `AlarmTriggerEdit` → 等价 `AlarmTriggerCloseChan` 热加载  
    - 若跳过热加载：加 `--skip-reload`，并**必须从本树 `ism_server_user` 重启** `ism_server`
-2. **新库/可删项目**：`python3 scripts/import_xunzhi_jf_project.py` 或 `--force`（包内 `alarmTriggers`≥2`）
+2. **新库/可删项目**：`python3 scripts/import_xunzhi_jf_project.py` 或 `--force`（包内 `alarmTriggers`≥2）
 3. **边沿造数**：勿单独长期 `--leak-on` 指望入列；须 **先漏水=0 再 =1**（见 `xunzhi_jf_alarm_demo.sh`）  
    - 刚重启 `ism_server` 后存在 **StartupAlarmDelay（默认可达 10min）** 抑警窗，期间须保持漏水=0 再打 0→1
 4. **起服顺序**：Mock `127.0.0.1:1503`（双口默认，`XUNZHI_MOCK_PORT`）LISTEN → 本树 `ism_server`；无 Mock 会 `connection refused`、无边沿。
