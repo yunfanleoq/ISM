@@ -17,12 +17,15 @@ from xunzhi_jf_lib import (  # noqa: E402
     PROJECT_NAME,
     db_preflight,
     diagnose_failure,
+    ensure_startup_delay_zero,
     login_token,
     print_env,
     project_uuid,
     reload_alarm_triggers,
     resolve_db,
     resolve_root,
+    ism_server_uptime_sec,
+    startup_suppression_remaining_sec,
 )
 
 def fix_sqlite(db: Path, proj_uuid: str) -> int:
@@ -126,17 +129,29 @@ def main():
     import argparse
 
     ap = argparse.ArgumentParser()
-    ap.add_argument("--print-env", action="store_true", help="仅打印 cwd / ism.db 路径后退出")
+    ap.add_argument("--print-env", action="store_true", help="打印 cwd / ism.db / Mock:1502 等后退出")
+    ap.add_argument(
+        "--strict-mock",
+        action="store_true",
+        help="与 --print-env 合用：Mock 未监听 1502 时 exit 1",
+    )
     ap.add_argument("--skip-reload", action="store_true", help="跳过 AlarmTriggerEdit 热加载（改库后须重启 ism_server）")
+    ap.add_argument("--skip-startup-delay-zero", action="store_true", help="不写入 StartupAlarmDelay DelayMinutes=0")
     args = ap.parse_args()
 
     root = resolve_root()
     db = resolve_db(root)
     if args.print_env:
-        print_env(root)
+        proj = None
+        try:
+            token = login_token()
+            proj = project_uuid(token)
+        except SystemExit:
+            pass
+        print_env(root, proj, strict_mock=args.strict_mock)
         return
 
-    print_env(root)
+    print_env(root, strict_mock=args.strict_mock)
     token = login_token()
     proj = project_uuid(token)
     if not proj:
@@ -144,10 +159,15 @@ def main():
             f"API 未找到项目「{PROJECT_NAME}」；请在本树执行: python3 scripts/import_xunzhi_jf_project.py"
         )
 
+    startup_delay = None
+    if not args.skip_startup_delay_zero:
+        startup_delay = ensure_startup_delay_zero(db, proj, token)
+
     before = db_preflight(db, proj)
     rows = fix_sqlite(db, proj)
     triggers_added = upsert_triggers(db, proj)
     after = db_preflight(db, proj)
+    remaining = startup_suppression_remaining_sec(db, proj, __import__("xunzhi_jf_lib").ism_server_uptime_sec())
 
     reloaded = 0
     reload_note = ""
@@ -164,6 +184,8 @@ def main():
         "sqlite_alarm_on_value_rows": rows,
         "alarm_triggers_added": triggers_added,
         "alarm_triggers_reloaded_via_api": reloaded,
+        "startup_delay_zero": startup_delay,
+        "startup_suppression_remaining_sec": remaining,
         "preflight_before": before,
         "preflight_after": after,
         "note": reload_note,

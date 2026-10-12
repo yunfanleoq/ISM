@@ -17,11 +17,12 @@
 
 - 全链路只认 **一个** 仓库根 `XUNZHI_ISM_ROOT`（默认=脚本上级目录；业主常见 `~/cursorProjects/ISM源码`）。
 - **禁止** `ISM源码` 与 `ISM源码-xunzhi-jf` 各起 `ism_server` 混用 sqlite。
-- 起服：`cd "$XUNZHI_ISM_ROOT/ism_server_user" && ./ism_server`
-- 自检：`python3 scripts/xunzhi_jf_sync_alarm_db.py --print-env`（打印 `ism_server` cwd、`ism.db`、项目设备/触发器预检）
+- 起服顺序（告警复测）：**先** `python3 scripts/xunzhi_jf_modbus_mock.py --port 1502`（保持 LISTEN）→ **再** `cd ism_server_user && ./ism_server`（本树）
+- 自检：`python3 scripts/xunzhi_jf_sync_alarm_db.py --print-env --strict-mock`（`ism_server` cwd、`ism.db`、**Mock:1502**、LEAK `realdata.updated_at`）
 
-**告警 sync 后热加载**：`python3 scripts/xunzhi_jf_sync_alarm_db.py` 默认 API `AlarmTriggerEdit` 重载内存 map；失败则本树重启 `ism_server`。  
-**漏水边沿**：`bash scripts/xunzhi_jf_alarm_demo.sh` 内先 Mock 无 `--leak-on`（≥12s）再 `--leak-on`（0→1）。
+**StartupAlarmDelay**：`sync` / `alarm_demo` 会为寻智项目写入 `DelayMinutes:0`；若 `ism_server` 在写入前已启动，须 **保持 Mock:1502 后重启 ism_server**（或 `export XUNZHI_WAIT_STARTUP_DELAY=1` 等旧 10min 窗结束）。  
+**采集判定**：以 LEAK `device_real_data` 刷新 / 日志 `cycle_log_th_leak` 为准；`monitor_list.status=2` 可滞后。  
+**告警 sync**：`AlarmTriggerEdit` 热加载；`alarm_demo` 强制漏水 **0→1** 边沿。
 
 ---
 

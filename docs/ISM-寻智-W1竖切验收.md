@@ -56,5 +56,7 @@ Modbus(Mock:1502) → DeviceRealData → WS(`wsport`) RealData → 组态 `ism-v
 2. **新库/可删项目**：`python3 scripts/import_xunzhi_jf_project.py`（包内 `alarmTriggers`≥2）
 3. **边沿造数**：勿单独长期 `--leak-on` 指望入列；须 **先漏水=0 再 =1**（见 `xunzhi_jf_alarm_demo.sh`）  
    - 刚重启 `ism_server` 后存在 **StartupAlarmDelay（默认可达 10min）** 抑警窗，期间须保持漏水=0 再打 0→1
-4. **闭环**：`bash scripts/xunzhi_jf_alarm_demo.sh` → 证据 `docs/ISM-寻智-W1复测证据/F4_*`  
-   - 断言：`devices_alarm_list` max id 增长或 `GetCurrentAlarmList` 含漏水项
+4. **起服顺序**：Mock `127.0.0.1:1502` LISTEN → 本树 `ism_server`；无 Mock 会 `connection refused`、无边沿。
+5. **抑警窗**：`sync`/`demo` 写入 `StartupAlarmDelay` `{"DelayMinutes":0}`；已运行的 `ism_server` 须重启（Mock 保持）或等待默认 10min 窗结束。
+6. **闭环**：`bash scripts/xunzhi_jf_alarm_demo.sh` → 证据 `docs/ISM-寻智-W1复测证据/F4_*`  
+   - 断言：1502 LISTEN、LEAK realdata 新鲜、再 0→1、`devices_alarm_list` / `GetCurrentAlarmList`

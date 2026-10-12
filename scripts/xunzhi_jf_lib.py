@@ -1,19 +1,29 @@
 #!/usr/bin/env python3
-"""寻智 xunzhi-jf 脚本公共：路径、DB 预检、API、触发器热加载。"""
+"""寻智 xunzhi-jf 脚本公共：路径、DB 预检、API、触发器热加载、Mock/抑警窗。"""
 from __future__ import annotations
 
 import hashlib
 import json
 import os
+import socket
 import sqlite3
 import subprocess
 import sys
+import time
+import uuid as uuidlib
+from datetime import datetime, timezone
 from pathlib import Path
 
 PROJECT_NAME = "寻智机房环境-xunzhi-jf"
 LEAK_DEVICE = "xunzhi-jf-LEAK-01"
+LEAK_POINT = "漏水信号"
 LEAK_TRIGGER = "漏水信号告警"
+DEFAULT_STARTUP_DELAY_MIN = 10
 BASE = os.environ.get("BASE_URL", "http://127.0.0.1:8081").rstrip("/")
+
+
+def mock_port() -> int:
+    return int(os.environ.get("MOCK_PORT", "1502"))
 
 
 def resolve_root() -> Path:
@@ -28,6 +38,34 @@ def resolve_db(root: Path | None = None) -> Path:
     if os.environ.get("ISM_DB"):
         return Path(os.environ["ISM_DB"]).resolve()
     return (root / "ism_server_user" / "data" / "db" / "ism.db").resolve()
+
+
+def tcp_port_listening(host: str = "127.0.0.1", port: int | None = None, timeout: float = 1.0) -> bool:
+    port = port if port is not None else mock_port()
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    sock.settimeout(timeout)
+    try:
+        sock.connect((host, port))
+        return True
+    except OSError:
+        return False
+    finally:
+        sock.close()
+
+
+def wait_tcp_port(
+    host: str = "127.0.0.1",
+    port: int | None = None,
+    timeout_sec: float = 30.0,
+    interval: float = 0.5,
+) -> bool:
+    port = port if port is not None else mock_port()
+    deadline = time.time() + timeout_sec
+    while time.time() < deadline:
+        if tcp_port_listening(host, port):
+            return True
+        time.sleep(interval)
+    return False
 
 
 def curl_json(path: str, body=None, token: str | None = None, project_uuid: str | None = None) -> dict:
@@ -82,23 +120,215 @@ def ism_server_cwd() -> str | None:
     return None
 
 
-def print_env(root: Path | None = None) -> dict:
+def ism_server_uptime_sec() -> int | None:
+    try:
+        r = subprocess.run(
+            ["pgrep", "-f", "ism_server_user/ism_server"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        pid = (r.stdout or "").strip().split("\n")[0] if r.stdout else ""
+        if not pid:
+            return None
+        ps = subprocess.run(
+            ["ps", "-o", "etimes=", "-p", pid],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        return int((ps.stdout or "0").strip() or "0")
+    except (OSError, subprocess.SubprocessError, ValueError):
+        return None
+
+
+def read_startup_delay_minutes(db: Path, proj_uuid: str) -> int:
+    """库内 StartupAlarmDelay；无记录时与后端默认一致为 10。"""
+    if not db.is_file():
+        return DEFAULT_STARTUP_DELAY_MIN
+    conn = sqlite3.connect(db)
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT alarm_notice_params FROM alarm_notice
+        WHERE project_uuid=? AND alarm_notice_type='StartupAlarmDelay' AND deleted_at IS NULL
+        LIMIT 1
+        """,
+        (proj_uuid,),
+    )
+    row = cur.fetchone()
+    conn.close()
+    if not row or not row[0]:
+        return DEFAULT_STARTUP_DELAY_MIN
+    try:
+        return int(json.loads(row[0]).get("DelayMinutes", DEFAULT_STARTUP_DELAY_MIN))
+    except (json.JSONDecodeError, TypeError, ValueError):
+        return DEFAULT_STARTUP_DELAY_MIN
+
+
+def upsert_startup_delay_sqlite(db: Path, proj_uuid: str, delay_minutes: int) -> str:
+    params = json.dumps({"DelayMinutes": delay_minutes}, ensure_ascii=False)
+    conn = sqlite3.connect(db)
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT id FROM alarm_notice
+        WHERE project_uuid=? AND alarm_notice_type='StartupAlarmDelay' AND deleted_at IS NULL
+        LIMIT 1
+        """,
+        (proj_uuid,),
+    )
+    row = cur.fetchone()
+    if row:
+        cur.execute(
+            "UPDATE alarm_notice SET alarm_notice_params=?, updated_at=datetime('now') WHERE id=?",
+            (params, row[0]),
+        )
+        action = "updated"
+    else:
+        cur.execute(
+            """
+            INSERT INTO alarm_notice (uuid, alarm_notice_type, alarm_notice_params, project_uuid, created_at, updated_at)
+            VALUES (?,?,?,?,datetime('now'),datetime('now'))
+            """,
+            (uuidlib.uuid4().hex, "StartupAlarmDelay", params, proj_uuid),
+        )
+        action = "inserted"
+    conn.commit()
+    conn.close()
+    return action
+
+
+def ensure_startup_delay_zero(db: Path, proj_uuid: str, token: str) -> dict:
+    before = read_startup_delay_minutes(db, proj_uuid)
+    sqlite_action = upsert_startup_delay_sqlite(db, proj_uuid, 0)
+    params = json.dumps({"DelayMinutes": 0}, ensure_ascii=False)
+    api = curl_json(
+        "/UpdateAlarmNotice",
+        {"type": "StartupAlarmDelay", "params": params},
+        token,
+        proj_uuid,
+    )
+    after = read_startup_delay_minutes(db, proj_uuid)
+    return {
+        "delay_minutes_before": before,
+        "delay_minutes_after": after,
+        "sqlite_action": sqlite_action,
+        "api_code": api.get("code"),
+        "note": (
+            "已写入 DelayMinutes=0；须从本树重启 ism_server（Mock:1502 保持）使抑警窗关闭。"
+            "批量 Modbus 重连也会 ReconfigureStartupAlarmWindows。"
+        ),
+    }
+
+
+def startup_suppression_remaining_sec(db: Path, proj_uuid: str, server_uptime: int | None) -> int:
+    """
+    服务端启动时若仍为 10min 抑警窗，ObserveStartupAlarm 会吞入列。
+    DB 已改为 0 但进程未重启时，按「启动时默认 10min」估算剩余秒数。
+    """
+    if server_uptime is None:
+        return 0
+    delay_db = read_startup_delay_minutes(db, proj_uuid)
+    if delay_db <= 0 and server_uptime < 20:
+        return 0
+    if server_uptime >= DEFAULT_STARTUP_DELAY_MIN * 60:
+        return 0
+    effective = DEFAULT_STARTUP_DELAY_MIN
+    return max(0, effective * 60 - server_uptime)
+
+
+def leak_realdata_freshness(db: Path, proj_uuid: str, max_age_sec: int = 45) -> dict:
+    out = {
+        "value": None,
+        "updated_at": None,
+        "age_sec": None,
+        "fresh": False,
+        "monitor_status": None,
+    }
+    if not db.is_file():
+        return out
+    conn = sqlite3.connect(db)
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT d.value, d.updated_at, m.status
+        FROM device_real_data d
+        JOIN monitor_list m ON m.uuid = d.device_uuid
+        WHERE m.project_uuid=? AND m.name=? AND d.name=? AND m.deleted_at IS NULL
+        LIMIT 1
+        """,
+        (proj_uuid, LEAK_DEVICE, LEAK_POINT),
+    )
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return out
+    out["value"], updated_at, out["monitor_status"] = row[0], row[1], row[2]
+    out["updated_at"] = updated_at
+    if updated_at:
+        try:
+            if "T" in updated_at:
+                dt = datetime.fromisoformat(updated_at.replace("Z", "+00:00"))
+            else:
+                dt = datetime.strptime(updated_at, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+            age = (datetime.now(timezone.utc) - dt.astimezone(timezone.utc)).total_seconds()
+            out["age_sec"] = int(age)
+            out["fresh"] = age <= max_age_sec
+        except (ValueError, TypeError):
+            out["fresh"] = False
+    return out
+
+
+def wait_leak_realdata_fresh(
+    db: Path,
+    proj_uuid: str,
+    max_age_sec: int = 45,
+    timeout_sec: float = 90.0,
+) -> dict:
+    deadline = time.time() + timeout_sec
+    last: dict = {}
+    while time.time() < deadline:
+        last = leak_realdata_freshness(db, proj_uuid, max_age_sec)
+        if last.get("fresh"):
+            return last
+        time.sleep(3)
+    return last
+
+
+def print_env(root: Path | None = None, proj_uuid: str | None = None, strict_mock: bool = False) -> dict:
     root = root or resolve_root()
     db = resolve_db(root)
+    port = mock_port()
     server_cwd = ism_server_cwd()
+    uptime = ism_server_uptime_sec()
     expected_db = (root / "ism_server_user" / "data" / "db" / "ism.db").resolve()
-    info = {
+    mock_ok = tcp_port_listening(port=port)
+    info: dict = {
         "script_root": str(root),
         "ism_db": str(db),
         "ism_db_exists": db.is_file(),
         "ism_db_bytes": db.stat().st_size if db.is_file() else 0,
         "ism_server_cwd": server_cwd,
+        "ism_server_uptime_sec": uptime,
+        "mock_host": "127.0.0.1",
+        "mock_port": port,
+        "mock_port_listening": mock_ok,
         "db_matches_script_tree": db == expected_db if db.is_file() else None,
         "server_cwd_matches_script_tree": (
             server_cwd is not None and Path(server_cwd).resolve() == (root / "ism_server_user").resolve()
         ),
     }
+    if proj_uuid and db.is_file():
+        info["startup_delay_minutes"] = read_startup_delay_minutes(db, proj_uuid)
+        info["startup_suppression_remaining_sec"] = startup_suppression_remaining_sec(db, proj_uuid, uptime)
+        info["leak_realdata"] = leak_realdata_freshness(db, proj_uuid)
     print(json.dumps(info, indent=2, ensure_ascii=False))
+    if not mock_ok:
+        msg = f"FAIL: Mock 未监听 127.0.0.1:{port}（ISM 会 dial refused，无边沿）"
+        if strict_mock:
+            raise SystemExit(msg)
+        print(f"WARN: {msg}", file=sys.stderr)
     if server_cwd and Path(server_cwd).resolve() != (root / "ism_server_user").resolve():
         print(
             f"WARN: ism_server cwd={server_cwd} 与脚本树 {root}/ism_server_user 不一致（双目录串库风险）",
@@ -153,7 +383,6 @@ def db_preflight(db: Path, proj_uuid: str) -> dict:
 
 
 def reload_alarm_triggers(token: str, proj_uuid: str) -> int:
-    """对每个触发器调用 AlarmTriggerEdit（等价于 UI 保存），触发 AlarmTriggerCloseChan 热加载。"""
     listed = curl_json("/GetAlarmTriggerList", {}, token, proj_uuid)
     triggers = listed.get("list") or []
     n = 0
@@ -174,7 +403,7 @@ def diagnose_failure(root: Path | None, proj_uuid: str) -> None:
     root = root or resolve_root()
     db = resolve_db(root)
     print("=== xunzhi-jf 告警诊断 ===", file=sys.stderr)
-    print_env(root)
+    print_env(root, proj_uuid, strict_mock=False)
     pf = db_preflight(db, proj_uuid)
     print(json.dumps(pf, indent=2, ensure_ascii=False), file=sys.stderr)
     if pf["leak_device_rows"] == 0:
@@ -184,9 +413,10 @@ def diagnose_failure(root: Path | None, proj_uuid: str) -> None:
         )
     if pf["leak_trigger_rows"] == 0:
         print(f"FAIL: 库中无触发器「{LEAK_TRIGGER}」；请运行 xunzhi_jf_sync_alarm_db.py", file=sys.stderr)
-    if pf.get("leak_point_value") == "1":
+    fr = leak_realdata_freshness(db, proj_uuid)
+    if not fr.get("fresh"):
         print(
-            "HINT: 漏水 DI 已为 1；若刚重启 ism_server，StartupAlarmDelay 默认约 10min 内抑警，"
-            "须先 Mock 漏水=0 再打 0→1 边沿",
+            f"HINT: LEAK realdata 未刷新（value={fr.get('value')} age={fr.get('age_sec')}s）；"
+            "确认 Mock:1502 LISTEN 且 ism_server 已采集（见 cycle_log_th_leak）",
             file=sys.stderr,
         )
