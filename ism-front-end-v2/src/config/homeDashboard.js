@@ -3,7 +3,6 @@ import { AUTH_TYPE, setAuthorization } from '@/utils/request'
 import {
   buildEnvPlaneAppRunQuery,
   isNoRunTreeMode,
-  mergedAppRunQuery,
 } from '@/xunzhiJf/appRunEmbed'
 import { isXunzhiJfActiveProject } from '@/xunzhiJf/projectContext'
 
