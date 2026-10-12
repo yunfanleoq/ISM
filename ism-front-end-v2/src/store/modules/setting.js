@@ -9,6 +9,7 @@ import {filterMenu} from '@/utils/authority-utils'
 import {getLocalSetting} from '@/utils/themeUtil'
 import deepClone from 'lodash.clonedeep'
 import {GetSystemHomeDashboard, SetSystemHomeDashboard} from '@/services/system'
+import { alignHomeDashboardProjectUuid } from '@/xunzhiJf/projectContext'
 
 const localSetting = getLocalSetting(true)
 const customTitlesStr = sessionStorage.getItem(process.env.VUE_APP_TBAS_TITLES_KEY)
@@ -162,7 +163,7 @@ export default {
         if (res.data && res.data.code === 0) {
           commit('setSystemHomeDashboard', {
             dashboardUuid: res.data.dashboardUuid || '',
-            projectUuid: res.data.projectUuid || '',
+            projectUuid: alignHomeDashboardProjectUuid(res.data.projectUuid || ''),
             dashboardName: res.data.dashboardName || '',
           })
           // 侧栏固定「监控大屏」，不按应用名覆盖

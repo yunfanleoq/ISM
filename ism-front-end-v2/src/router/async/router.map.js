@@ -1174,4 +1174,24 @@ const routerMap = {
 }
 applyXunzhiJfRouterMap(routerMap)
 
+// 静态别名：避免仅 loadRoutes 后嵌套未挂载时 /xunzhi/jf/viz/plane 404（missPlane）
+routerMap.XunzhiJfVizPlaneAlias = {
+  path: '/xunzhi/jf/viz/plane',
+  name: 'XunzhiJfVizPlaneAlias',
+  meta: {
+    invisible: true,
+    authority: { role: ['Admin', 'Operator', 'User'] },
+  },
+  component: () => import('@/xunzhiJf/pages/VizPlanePage.vue'),
+}
+routerMap.XunzhiJfVizDashboardAlias = {
+  path: '/xunzhi/jf/viz/dashboard',
+  name: 'XunzhiJfVizDashboardAlias',
+  meta: {
+    invisible: true,
+    authority: { role: ['Admin', 'Operator', 'User'] },
+  },
+  component: () => import('@/xunzhiJf/pages/VizDashboardPage.vue'),
+}
+
 export default routerMap

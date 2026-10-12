@@ -1,10 +1,12 @@
 // 项目默认监控大屏：唯一来源是 GET /SystemHomeDashboard（按当前 ProjectUuid 隔离），禁止绑定某套种子数据 UUID。
 import { AUTH_TYPE, setAuthorization } from '@/utils/request'
 import {
+  buildEnvPlaneAppRunQuery,
   isEnvPlaneNoRunTreeSession,
   readHashRouteQuery,
   SESSION_ENV_PLANE_PAGE_NAME,
 } from '@/xunzhiJf/appRunEmbed'
+import { isXunzhiJfActiveProject } from '@/xunzhiJf/projectContext'
 
 export const HOME_DASHBOARD_UUID = ''
 export const HOME_PROJECT_UUID = ''
@@ -112,13 +114,28 @@ export function resolveHomeProjectUuid(dashboardUid, store) {
   return ''
 }
 
-export function createHomeDashboardRedirect() {
-  return () => {
-    const store = require('@/store').default
-    // 未配置当前项目默认大屏时，回到项目管理页，勿跳到别的项目大屏
-    if (!getHomeDashboardUuid(store)) {
-      return '/dashboard'
-    }
-    return getHomeDashboardPath(store)
+function shouldUseXunzhiJfVizEmbed(store) {
+  if (isXunzhiJfActiveProject()) return true
+  const name = getHomeDashboardConfig(store).dashboardName || ''
+  return /寻智|xunzhi-jf|平面监视|env-plane/i.test(name)
+}
+
+/** 侧栏「监控大屏」/ SCADAMonitor：寻智平面走 embed；否则 AppRun 带 noRunTree */
+export function resolveScadaMonitorRoute() {
+  const store = require('@/store').default
+  const uid = getHomeDashboardUuid(store)
+  if (!uid) {
+    return '/dashboard'
   }
+  if (shouldUseXunzhiJfVizEmbed(store)) {
+    return '/xunzhi/jf/viz/plane'
+  }
+  return {
+    path: `/AppRun/${uid}`,
+    query: buildEnvPlaneAppRunQuery(),
+  }
+}
+
+export function createHomeDashboardRedirect() {
+  return () => resolveScadaMonitorRoute()
 }

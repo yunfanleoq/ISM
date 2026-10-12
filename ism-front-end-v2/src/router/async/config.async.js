@@ -17,6 +17,8 @@ const routesConfig = [
   'DisPlay3DRunApp',
   'AmisEditor',
   'AppRun',
+  'XunzhiJfVizPlaneAlias',
+  'XunzhiJfVizDashboardAlias',
   'DisPlayRunApp',
   'ShareApp',
   'AppLogin',
