@@ -2,6 +2,10 @@
 """POST /ImportProject 导入寻智 xunzhi-jf 竖切包（含 alarmTriggers）。
 
 项目已存在（code 4001）时不会更新触发器/点表：请删项目后重导，或运行 scripts/xunzhi_jf_sync_alarm_db.py。
+
+重导后 project_uuid / 默认大屏 display_uid 会变（勿写死旧 uuid）。前端以 ProjectList 名称
+「寻智机房环境-xunzhi-jf」解析；浏览器可清 ProjectUuid Cookie 或重新进入该项目。
+导入成功后可用 sqlite3 核对: SELECT uuid,name FROM project_lists WHERE name LIKE '%寻智%';
 """
 import json
 import subprocess

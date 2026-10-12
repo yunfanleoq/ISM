@@ -29,7 +29,7 @@
 5. **项目**  
    **ProjectDel + 重导** `python3 scripts/import_xunzhi_jf_project.py`，确保含页 **`xunzhi-jf-env-plane`** 且设备 `modbusPort` 为 **1503**。  
    重导后抽查 SQLite：`devices_model.data_format`（或导入字段 `DataFormat`）对温湿度物模型为 **`ABCD`**（勿 **CDAB**，否则 TH 易炸成 ~5xxx）。  
-   浏览器 **ProjectUuid** Cookie 须为寻智项目（与 `GetSystemHomeDashboard.projectUuid` 一致，勿串航信库）。
+   浏览器 **ProjectUuid** Cookie 须为 **当前库** `project_lists` 中「寻智机房环境-xunzhi-jf」的 uuid（重导后会变，**禁止**记死某一版 uuid）；与 `GetSystemHomeDashboard.projectUuid` 一致，勿串航信库。直链 `/#/xunzhi/jf/viz/plane` 依赖 `primeXunzhiJfRouteContext` 自动对齐 Cookie。
 
 6. **平面**  
    菜单 **环境平面大屏**（`/xunzhi/jf/viz/plane`）→ iframe 应为  

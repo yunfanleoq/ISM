@@ -14,7 +14,7 @@
 
 <script>
 import { resolveDisplayPageByName, XUNZHI_JF_ENV_PLANE_PAGE } from '@/xunzhiJf/resolveDisplayPage'
-import { ensureXunzhiJfProjectAuth, resolveXunzhiJfProjectUuid } from '@/xunzhiJf/projectContext'
+import { primeXunzhiJfRouteContext } from '@/xunzhiJf/projectContext'
 import {
   buildAppRunIframeSrc,
   buildEnvPlaneAppRunQuery,
@@ -35,17 +35,10 @@ export default {
   },
   async mounted() {
     try {
-      await ensureXunzhiJfProjectAuth()
-      let resolved = await resolveDisplayPageByName(this.pageName)
+      await primeXunzhiJfRouteContext(this.$store)
+      const resolved = await resolveDisplayPageByName(this.pageName)
       if (!resolved) {
-        const uuid = await resolveXunzhiJfProjectUuid()
-        if (uuid) {
-          await ensureXunzhiJfProjectAuth()
-          resolved = await resolveDisplayPageByName(this.pageName)
-        }
-      }
-      if (!resolved) {
-        this.error = `missPlane: 未找到组态页 ${this.pageName}（请 ProjectDel 重导；projectUuid 以 project_lists 中「寻智机房环境-xunzhi-jf」为准，勿用旧缓存）`
+        this.error = `missPlane: 未找到组态页 ${this.pageName}（请确认已登录 code1000、ProjectDel 重导；ProjectUuid 以 project_lists「寻智机房环境-xunzhi-jf」当前 uuid 为准，勿用历史 Cookie）`
         return
       }
       if (this.pageName === XUNZHI_JF_ENV_PLANE_PAGE) {

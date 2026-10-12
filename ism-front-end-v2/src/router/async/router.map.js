@@ -9,6 +9,7 @@ import TabsView from '@/layouts/tabs/TabsView'
 import BlankView from '@/layouts/BlankView'
 import {createHomeDashboardRedirect} from '@/config/homeDashboard'
 import { applyXunzhiJfRouterMap } from '@/xunzhiJf/registerRoutes'
+import { xunzhiJfVizRouteBeforeEnter } from '@/xunzhiJf/projectContext'
 
 // 路由组件注册
 const routerMap = {
@@ -1178,6 +1179,7 @@ applyXunzhiJfRouterMap(routerMap)
 routerMap.XunzhiJfVizPlaneAlias = {
   path: '/xunzhi/jf/viz/plane',
   name: 'XunzhiJfVizPlaneAlias',
+  beforeEnter: xunzhiJfVizRouteBeforeEnter,
   meta: {
     invisible: true,
     authority: { role: ['Admin', 'Operator', 'User'] },
@@ -1187,6 +1189,7 @@ routerMap.XunzhiJfVizPlaneAlias = {
 routerMap.XunzhiJfVizDashboardAlias = {
   path: '/xunzhi/jf/viz/dashboard',
   name: 'XunzhiJfVizDashboardAlias',
+  beforeEnter: xunzhiJfVizRouteBeforeEnter,
   meta: {
     invisible: true,
     authority: { role: ['Admin', 'Operator', 'User'] },
