@@ -40,6 +40,19 @@
 
 | 现象 | 处理 |
 |------|------|
+| 登录 **code 1003**（用户不存在） | 先确认 **`ism_server` 实际连的库**（`ism_server_user/conf/app.conf` 的 **`dbtype`** + 工作目录）。双口本机多为 **`dbtype=1`** → `ism_server_user/data/db/ism.db`（须在 `ism_server_user` 下启动，相对路径才正确）。**勿**只改 `ism.db` 而进程仍连 OceanBase（`dbtype=4`）空库。然后：`python3 scripts/xunzhi_jf_seed_admin.py --dbtype 1`（或按 conf 自动）→ 可选 `--verify-login` + `BASE_URL=http://127.0.0.1:8082`。仍 1003 时 `sqlite3 ism_server_user/data/db/ism.db "SELECT id,username,deleted_at FROM user WHERE username='admin';"`。`ProjectDel`/重导**不删** `user` 表。 |
 | TH ~5xxx / 61℃ | 多为 **`DataFormat=CDAB`**（改 **ABCD** 后重导 + 重启 ism）；或 Mock 非 **1503** |
 | 菜单无「循智·机房环境」 | **退出重新登录** |
 | 组织总览仍叠层 | 查 iframe query 是否带 `pageName` / `noRunTree=1`；硬刷新 |
+
+### admin 种子（1003 复测）
+
+```bash
+# 双口 SQLite（与 app.conf dbtype=1 一致时）
+python3 scripts/xunzhi_jf_seed_admin.py --dbtype 1
+
+# 种子 + 直连后端登录（8082）
+BASE_URL=http://127.0.0.1:8082 python3 scripts/xunzhi_jf_seed_admin.py --dbtype 1 --verify-login
+```
+
+账号 **`admin` / `123456`**（前端发 MD5：`e10adc3949ba59abbe56e057f20f883e`）。空库首次启动 `ism_server` 也会写 admin，但历史上 `db.go` 的 `errors.Is` 误判会导致**有表无 admin**；种子脚本与已修启动逻辑均写入 `bcrypt(MD5(123456))` 同款哈希。
