@@ -1,0 +1,169 @@
+import BlankView from '@/layouts/BlankView'
+import {
+  XUNZHI_JF_MENU_FLAT,
+  menuCodeToRouterKey,
+  XUNZHI_JF_SECTION_ROUTER,
+} from '@/xunzhiJf/menuFlat'
+import { XUNZHI_JF_ENV_PLANE_PAGE, XUNZHI_JF_NAV_25D_PAGE } from '@/xunzhiJf/resolveDisplayPage'
+
+const GROUP_ICON = {
+  'jf.monitor': 'dashboard',
+  'jf.alarm': 'bell',
+  'jf.viz': 'picture',
+  'jf.asset': 'database',
+  'jf.capacity': 'pie-chart',
+  'jf.workorder': 'solution',
+  'jf.energy': 'thunderbolt',
+  'jf.security': 'safety',
+  'jf.report': 'file-text',
+  'jf.system': 'setting',
+}
+
+const WIRED = new Set([
+  'jf.home',
+  'jf.monitor.overview',
+  'jf.alarm.active',
+  'jf.alarm.history',
+  'jf.viz.plane',
+  'jf.viz.dashboard',
+  'jf.viz.nav25d',
+])
+
+function firstLeafRoute(menuCode) {
+  const child = XUNZHI_JF_MENU_FLAT
+    .filter(r => r.parent_code === menuCode && r.route_or_page && r.route_or_page !== '—')
+    .sort((a, b) => a.sort - b.sort)[0]
+  if (!child) return ''
+  if (child.route_or_page.startsWith('page:')) {
+    if (child.menu_code === 'jf.viz.plane') return '/xunzhi/jf/viz/plane'
+    if (child.menu_code === 'jf.viz.nav25d') return '/xunzhi/jf/viz/nav25d'
+    return '/xunzhi/jf/viz/plane'
+  }
+  return child.route_or_page
+}
+
+function groupPathFromCode(menuCode) {
+  const suffix = menuCode.replace(/^jf\./, '').replace(/\./g, '/')
+  return `/xunzhi/jf/${suffix}`
+}
+
+function routePathForRow(row) {
+  if (row.route_or_page && row.route_or_page !== '—') {
+    if (row.route_or_page.startsWith('page:')) {
+      if (row.menu_code === 'jf.viz.plane') return '/xunzhi/jf/viz/plane'
+      if (row.menu_code === 'jf.viz.nav25d') return '/xunzhi/jf/viz/nav25d'
+      return groupPathFromCode(row.menu_code)
+    }
+    return row.route_or_page
+  }
+  return groupPathFromCode(row.menu_code)
+}
+
+function skeletonMeta(row) {
+  return {
+    title: row.title,
+    menuCode: row.menu_code,
+    moduleId: row.module_id,
+    perm: row.perm,
+    routePath: row.route_or_page.startsWith('/') ? row.route_or_page : '',
+    sliceHint: row.sort < 500 ? 'S0/S1' : row.sort < 700 ? 'S2–S4' : 'S5/S6',
+  }
+}
+
+function componentForRow(row) {
+  switch (row.menu_code) {
+    case 'jf.home':
+      return () => import('@/xunzhiJf/pages/HomeWorkbench.vue')
+    case 'jf.monitor.overview':
+      return () => import('@/xunzhiJf/pages/MonitorOverview.vue')
+    case 'jf.alarm.active':
+      return () => import('@/xunzhiJf/pages/AlarmActiveHost.vue')
+    case 'jf.alarm.history':
+      return () => import('@/pages/reporting/alarmReport/alarmHistory')
+    case 'jf.viz.plane':
+      return () => import('@/xunzhiJf/pages/VizPlanePage.vue')
+    case 'jf.viz.dashboard':
+      return () => import('@/xunzhiJf/pages/VizDashboardPage.vue')
+    case 'jf.viz.nav25d':
+      return () => import('@/xunzhiJf/pages/VizNav25dPage.vue')
+    default:
+      return () => import('@/xunzhiJf/pages/SkeletonPage.vue')
+  }
+}
+
+export function buildXunzhiJfRouterMap() {
+  const map = {}
+
+  map[XUNZHI_JF_SECTION_ROUTER] = {
+    path: '/xunzhi/jf',
+    name: '循智·机房环境',
+    redirect: '/xunzhi/jf/home',
+    meta: {
+      icon: 'cloud-server',
+      menuCode: 'jf.section',
+      moduleId: 'envmon',
+      authority: { role: ['Admin', 'Operator', 'User'] },
+    },
+    component: BlankView,
+  }
+
+  XUNZHI_JF_MENU_FLAT.forEach(row => {
+    const key = menuCodeToRouterKey(row.menu_code)
+    const isGroup = row.route_or_page === '—'
+    const path = routePathForRow(row)
+    const entry = {
+      path,
+      name: row.title,
+      meta: {
+        icon: GROUP_ICON[row.menu_code] || 'file',
+        menuCode: row.menu_code,
+        moduleId: row.module_id,
+        xunzhiPerm: row.perm,
+        authority: { role: ['Admin', 'Operator', 'User'] },
+      },
+    }
+    if (isGroup) {
+      entry.component = BlankView
+      const redirect = firstLeafRoute(row.menu_code)
+      if (redirect) entry.redirect = redirect
+    } else {
+      entry.component = componentForRow(row)
+      if (!WIRED.has(row.menu_code)) {
+        entry.meta.skeletonProps = skeletonMeta(row)
+      }
+    }
+    map[key] = entry
+  })
+
+  return map
+}
+
+export function applyXunzhiJfRouterMap(routerMap) {
+  Object.assign(routerMap, buildXunzhiJfRouterMap())
+}
+
+export function buildXunzhiJfMenuConfigChildren() {
+  const byParent = new Map()
+  XUNZHI_JF_MENU_FLAT.forEach(row => {
+    const p = row.parent_code
+    if (!byParent.has(p)) byParent.set(p, [])
+    byParent.get(p).push(row)
+  })
+  byParent.forEach(list => list.sort((a, b) => a.sort - b.sort))
+
+  function build(parentCode) {
+    return (byParent.get(parentCode) || []).map(row => {
+      const node = { router: menuCodeToRouterKey(row.menu_code) }
+      const kids = build(row.menu_code)
+      if (kids.length) node.children = kids
+      return node
+    })
+  }
+
+  return {
+    router: XUNZHI_JF_SECTION_ROUTER,
+    name: '循智·机房环境',
+    icon: 'cloud-server',
+    children: build('(root)'),
+  }
+}

@@ -1,64 +1,238 @@
 [
-  {
-    "router": "root",
-    "children": [
-      {
-        "router": "dashboard"
-      },
-      {
-        "router": "DataWarehouse"
-      },
-      {
-        "router": "DeviceLibraryConfig"
-      },
-      {
-        "router": "RealTimeAlarm"
-      },
-      {
-        "router": "TaskPlan"
-      },
-      {
-        "router": "Reporting",
+    {
+        "router": "root",
         "children": [
-          {
-            "router": "AlarmHistory"
-          },
-          {
-            "router": "DataHistory"
-          },
-          {
-            "router": "DataHistoryReport"
-          },
-          {
-            "router": "SqlReportTemplate"
-          },
-          {
-            "router": "DiyReport"
-          },
-          {
-            "router": "DiyReportTemplete"
-          },
-          {
-            "router": "ReportTempleteContent"
-          }
+            {
+                "router": "dashboard"
+            },
+            {
+                "router": "XunzhiJfSection",
+                "name": "循智·机房环境",
+                "icon": "cloud-server",
+                "children": [
+                    {
+                        "router": "XunzhiJf_jf_home"
+                    },
+                    {
+                        "router": "XunzhiJf_jf_monitor",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_monitor_overview"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_monitor_power"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_monitor_env"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_monitor_battery"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_monitor_mm"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_monitor_points"
+                            }
+                        ]
+                    },
+                    {
+                        "router": "XunzhiJf_jf_alarm",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_alarm_active"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_alarm_history"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_alarm_policy"
+                            }
+                        ]
+                    },
+                    {
+                        "router": "XunzhiJf_jf_viz",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_viz_plane"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_viz_dashboard"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_viz_nav25d"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_viz_editor"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_viz_charts"
+                            }
+                        ]
+                    },
+                    {
+                        "router": "XunzhiJf_jf_asset",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_asset_overview"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_asset_tree"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_asset_u"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_asset_lifecycle"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_asset_retire"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_asset_multi"
+                            }
+                        ]
+                    },
+                    {
+                        "router": "XunzhiJf_jf_capacity",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_capacity_overview"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_capacity_reserve"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_capacity_suggest"
+                            }
+                        ]
+                    },
+                    {
+                        "router": "XunzhiJf_jf_workorder",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_workorder_list"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_workorder_todo"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_workorder_kb"
+                            }
+                        ]
+                    },
+                    {
+                        "router": "XunzhiJf_jf_energy",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_energy_power"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_energy_pue"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_energy_carbon"
+                            }
+                        ]
+                    },
+                    {
+                        "router": "XunzhiJf_jf_security",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_security_video"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_security_access"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_security_fire"
+                            }
+                        ]
+                    },
+                    {
+                        "router": "XunzhiJf_jf_report",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_report_ops"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_report_custom"
+                            }
+                        ]
+                    },
+                    {
+                        "router": "XunzhiJf_jf_system",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_system_users"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_system_scope"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_system_north"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_system_audit"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "router": "DataWarehouse"
+            },
+            {
+                "router": "DeviceLibraryConfig"
+            },
+            {
+                "router": "RealTimeAlarm"
+            },
+            {
+                "router": "TaskPlan"
+            },
+            {
+                "router": "Reporting",
+                "children": [
+                    {
+                        "router": "AlarmHistory"
+                    },
+                    {
+                        "router": "DataHistory"
+                    },
+                    {
+                        "router": "DataHistoryReport"
+                    },
+                    {
+                        "router": "SqlReportTemplate"
+                    },
+                    {
+                        "router": "DiyReport"
+                    },
+                    {
+                        "router": "DiyReportTemplete"
+                    },
+                    {
+                        "router": "ReportTempleteContent"
+                    }
+                ]
+            },
+            {
+                "router": "Setting",
+                "children": [
+                    {
+                        "router": "Account"
+                    }
+                ]
+            },
+            {
+                "router": "Journal",
+                "children": [
+                    {
+                        "router": "OperationJournal"
+                    }
+                ]
+            }
         ]
-      },
-      {
-        "router": "Setting",
-        "children": [
-          {
-            "router": "Account"
-          }
-        ]
-      },
-      {
-        "router": "Journal",
-        "children": [
-          {
-            "router": "OperationJournal"
-          }
-        ]
-      }
-    ]
-  }
+    }
 ]

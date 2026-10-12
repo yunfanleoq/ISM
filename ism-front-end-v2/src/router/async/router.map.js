@@ -8,6 +8,7 @@ import TabsView from '@/layouts/tabs/TabsView'
 // import PageView from '@/layouts/PageView'
 import BlankView from '@/layouts/BlankView'
 import {createHomeDashboardRedirect} from '@/config/homeDashboard'
+import { applyXunzhiJfRouterMap } from '@/xunzhiJf/registerRoutes'
 
 // 路由组件注册
 const routerMap = {
@@ -1171,4 +1172,6 @@ const routerMap = {
   component: () => import('@/pages/Setting/SystemAuth')
 },
 }
+applyXunzhiJfRouterMap(routerMap)
+
 export default routerMap
