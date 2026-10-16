@@ -62,36 +62,37 @@ export default {
       this._renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true })
       this._renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2))
       this._renderer.setSize(w, h, false)
-      this._renderer.setClearColor(0x0a1628, 1)
+      const sky = 0x1a3a5c
+      this._renderer.setClearColor(sky, 1)
 
       this._scene = new THREE.Scene()
-      this._scene.fog = new THREE.Fog(0x0a1628, 18, 42)
+      this._scene.fog = new THREE.Fog(sky, 22, 50)
 
-      this._camera = new THREE.PerspectiveCamera(42, w / h, 0.1, 200)
-      this._camera.position.set(10, 9, 12)
+      this._camera = new THREE.PerspectiveCamera(48, w / h, 0.1, 200)
+      this._camera.position.set(5.5, 5.2, 6.5)
 
       this._controls = new OrbitControls(this._camera, canvas)
       this._controls.enableDamping = true
       this._controls.dampingFactor = 0.06
       this._controls.target.set(0, 0.8, 0)
       this._controls.maxPolarAngle = Math.PI * 0.48
-      this._controls.minDistance = 4
-      this._controls.maxDistance = 28
+      this._controls.minDistance = 2.5
+      this._controls.maxDistance = 22
       this._controls.update()
 
-      const amb = new THREE.AmbientLight(0x8eb4ff, 0.55)
+      const amb = new THREE.AmbientLight(0xf0f4ff, 0.92)
       this._scene.add(amb)
-      const dir = new THREE.DirectionalLight(0xffffff, 0.85)
+      const dir = new THREE.DirectionalLight(0xffffff, 1.2)
       dir.position.set(6, 14, 8)
       this._scene.add(dir)
-      const fill = new THREE.DirectionalLight(0x4488ff, 0.25)
+      const fill = new THREE.DirectionalLight(0x88b8ff, 0.42)
       fill.position.set(-8, 6, -6)
       this._scene.add(fill)
 
       const floorMat = new THREE.MeshStandardMaterial({
-        color: 0x1a2a44,
-        metalness: 0.2,
-        roughness: 0.85,
+        color: 0x3a5a7a,
+        metalness: 0.18,
+        roughness: 0.78,
       })
       const floorGeo = new THREE.PlaneGeometry(24, 18)
       const floor = new THREE.Mesh(floorGeo, floorMat)
@@ -99,7 +100,7 @@ export default {
       floor.position.y = -0.01
       this._scene.add(floor)
 
-      const grid = new THREE.GridHelper(22, 22, 0x2a5080, 0x1e3a5f)
+      const grid = new THREE.GridHelper(22, 22, 0x5a8ab8, 0x3a6088)
       grid.position.y = 0.002
       this._scene.add(grid)
 
@@ -116,19 +117,19 @@ export default {
       const group = new THREE.Group()
       group.visible = false
       const cabBodyMat = new THREE.MeshStandardMaterial({
-        color: 0x2c3e50,
-        metalness: 0.45,
-        roughness: 0.55,
+        color: 0x4a6580,
+        metalness: 0.4,
+        roughness: 0.5,
       })
       const cabEdgeMat = new THREE.MeshStandardMaterial({
-        color: 0x4a6fa5,
-        metalness: 0.6,
-        roughness: 0.4,
+        color: 0x6a90c0,
+        metalness: 0.55,
+        roughness: 0.38,
       })
       const alarmMat = new THREE.MeshStandardMaterial({
-        color: 0xff3344,
-        emissive: 0xff1122,
-        emissiveIntensity: 0.85,
+        color: 0xff4455,
+        emissive: 0xff2233,
+        emissiveIntensity: 1.05,
         metalness: 0.1,
         roughness: 0.3,
       })
@@ -240,7 +241,7 @@ export default {
   width: 100%;
   height: 100%;
   min-height: 420px;
-  background: #0a1628;
+  background: #1a3a5c;
   border-radius: 4px;
   overflow: hidden;
 }
@@ -256,7 +257,7 @@ export default {
   display: flex;
   gap: 16px;
   font-size: 12px;
-  color: rgba(200, 220, 255, 0.75);
+  color: rgba(230, 240, 255, 0.88);
   pointer-events: none;
 }
 .xunzhi-jf-viz25d__alarm {
