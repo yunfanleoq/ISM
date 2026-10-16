@@ -1196,5 +1196,15 @@ routerMap.XunzhiJfVizDashboardAlias = {
   },
   component: () => import('@/xunzhiJf/pages/VizDashboardPage.vue'),
 }
+routerMap.XunzhiJfVizNav25dAlias = {
+  path: '/xunzhi/jf/viz/nav25d',
+  name: 'XunzhiJfVizNav25dAlias',
+  beforeEnter: xunzhiJfVizRouteBeforeEnter,
+  meta: {
+    invisible: true,
+    authority: { role: ['Admin', 'Operator', 'User'] },
+  },
+  component: () => import('@/xunzhiJf/pages/VizNav25dPage.vue'),
+}
 
 export default routerMap

@@ -19,6 +19,7 @@ const routesConfig = [
   'AppRun',
   'XunzhiJfVizPlaneAlias',
   'XunzhiJfVizDashboardAlias',
+  'XunzhiJfVizNav25dAlias',
   'DisPlayRunApp',
   'ShareApp',
   'AppLogin',

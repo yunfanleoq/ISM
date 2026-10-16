@@ -6,7 +6,7 @@
 
 1. 登录 ISM，进入项目 **寻智机房环境-xunzhi-jf**（若直链无效，请先走一次侧栏首页以对齐 `ProjectUuid`）。
 2. 侧栏：**可视化** → **2.5D 导航**。
-3. 浏览器地址：`/#/xunzhi/jf/viz/nav25d`。
+3. 浏览器地址：`/#/xunzhi/jf/viz/nav25d`（直链依赖静态别名 `XunzhiJfVizNav25dAlias`，机制同 `viz/plane`）。
 
 ## 页面说明
 
