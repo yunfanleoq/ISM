@@ -2,7 +2,9 @@
 # 依赖和构建产物
 # ============================================
 node_modules/
-dist/
+dist/*
+!dist/xunzhi-jf/
+!dist/xunzhi-jf/**
 
 # ============================================
 # Python 缓存
@@ -26,6 +28,13 @@ ism_server_user/ISMServer*
 patches/**/ism_server
 patches/ism-server-kylin-glibc228/
 releases/
+
+# 寻智 S2 Mock 运行态（由 xunzhi_jf_asset_store.py 生成）
+data/xunzhi-jf/dcim_asset_store.json
+data/xunzhi-jf/dcim_capacity_store.json
+data/xunzhi-jf/dcim_workorder_store.json
+data/xunzhi-jf/dcim_energy_store.json
+data/xunzhi-jf/security_event_store.json
 
 # ============================================
 # 数据库备份

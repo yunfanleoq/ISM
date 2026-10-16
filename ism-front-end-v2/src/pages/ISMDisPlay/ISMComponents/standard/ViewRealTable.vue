@@ -496,7 +496,8 @@ export default {
           const rowCellData = this.cellData[rowIndex];
           let cellValue = '-';
           if (rowCellData && rowCellData[colIndex] !== undefined && rowCellData[colIndex] !== null) {
-            cellValue = formatPointDisplayValue(rowData.rowName, rowCellData[colIndex]);
+            const colLabel = (this.columnHeaders && this.columnHeaders[colIndex]) || ''
+            cellValue = formatPointDisplayValue(colLabel || rowData.rowName, rowCellData[colIndex]);
           }
           rowData[`col_${colIndex}`] = cellValue;
         });

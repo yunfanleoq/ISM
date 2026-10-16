@@ -1,6 +1,7 @@
 <template>
   <!-- 折叠态：仅一个竖向把手；展开态：完整树 -->
   <div
+    v-if="!noRunTreeSuppressed"
     class="ism-runtree"
     :class="{ collapsed }"
     :style="panelStyle"
@@ -164,6 +165,10 @@ export default {
     },
   },
   computed: {
+    noRunTreeSuppressed() {
+      const { isNoRunTreeMode } = require('@/xunzhiJf/appRunEmbed')
+      return isNoRunTreeMode(this.$route, this.$store)
+    },
     isXunanDash() {
       // 循安大屏已改用 build_ncc_dashboard 动态 page_id，需启用 uuid5 钻探
       return false

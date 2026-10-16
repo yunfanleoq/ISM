@@ -1,6 +1,6 @@
 <template>
   <div xmlns="http://www.w3.org/1999/xhtml"
-       v-show="(detail.style.visible==1||isStart) && !isRetiredOverviewHint && !isOverviewAlarmBackdrop"
+       v-show="(detail.style.visible==1||isStart) && !isRetiredOverviewHint && !isOverviewAlarmBackdrop && !hideForEnvPlaneNoRunTree"
        @mousedown="onTextMouseDown"
        @click="onTextClick"
        :title="pagerInfoTitle || (isEnergyOverviewMode ? energyOverviewCoverageTitle : (labelRole === 'deviceBreadcrumb' ? displayText : null))"
@@ -278,6 +278,12 @@ export default {
       isOverviewAlarmBackdrop() {
         const name = String((this.detail && this.detail.name) || '')
         return /stat-alarm-(?:glow|fill|val)$/.test(name)
+      },
+      hideForEnvPlaneNoRunTree() {
+        const { isNoRunTreeMode } = require('@/xunzhiJf/appRunEmbed')
+        const { isEmbeddedMonitorTreeCell } = require('@/xunzhiJf/envPlaneNoRunTreeLayout')
+        if (!isNoRunTreeMode(this.$route, this.$store)) return false
+        return isEmbeddedMonitorTreeCell(this.detail)
       },
       /** 按文本/尺寸/链接自动识别大屏标签角色（不改模板 DB 也能图形化） */
       labelRole() {

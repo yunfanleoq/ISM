@@ -15,7 +15,7 @@
             <a-row>
               <div v-if="projects.length>0">
                 <a-col :xl="12"  :key="i" v-for="(item, i) in projects" style="padding-left: 10px;padding-right: 10px;" >
-                  <a-card  @click="GoProject(item.ProjectInfo.uuid)" :hoverable="true" :bordered="true"  class="project-card">
+                  <a-card  @click="GoProject(item.ProjectInfo.uuid, item.ProjectInfo)" :hoverable="true" :bordered="true"  class="project-card">
                     <a-card-meta >
                       <div slot="title" class="projectTitle">
                         <p>{{item.ProjectInfo.name}}</p>
@@ -283,9 +283,13 @@ export default {
     ImportProject(){
 
     },
-    GoProject(uuid){
+    GoProject(uuid, item){
       // 进入所选项目的管理后台；并刷新该项目的默认「监控大屏」配置
       setAuthorization({token: uuid},AUTH_TYPE.AUTH1)
+      try {
+        const { rememberProjectSelection } = require('@/xunzhiJf/projectContext')
+        rememberProjectSelection(uuid, item && (item.name || item.Name))
+      } catch (e) { /* ignore */ }
       const goDashboard = () => { this.$router.push('/dashboard') }
       this.$store.dispatch('setting/fetchSystemHomeDashboard')
         .then(goDashboard)

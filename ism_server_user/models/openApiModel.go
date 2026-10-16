@@ -10,6 +10,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -177,6 +178,7 @@ type ProjectPackagePointData struct {
 	Unit                 string `json:"unit"`
 	ConversionExpression string `json:"conversionExpression"`
 	Alarm                int    `json:"alarm"`
+	AlarmOnValue         int    `json:"alarmOnValue"`
 	AlarmLevel           int    `json:"alarmLevel"`
 	AlarmMessage         string `json:"AlarmMessage"`
 	AlarmClearMessage    string `json:"AlarmClearMessage"`
@@ -265,6 +267,25 @@ type ImportResultWithTree struct {
 	AlarmCount     int    `json:"alarm_count"`
 	TreeCount      int    `json:"tree_count"`
 	DashboardUrl   string `json:"dashboard_url"`
+}
+
+// remapImportPackageUUIDs 将组态 JSON 中导出包固定 UUID 替换为本次导入生成的新 UUID（deviceSN/dataID 等绑定）。
+func remapImportPackageUUIDs(jsonText string, uuidMap map[string]string) string {
+	if jsonText == "" || len(uuidMap) == 0 {
+		return jsonText
+	}
+	keys := make([]string, 0, len(uuidMap))
+	for old := range uuidMap {
+		if old != "" && uuidMap[old] != "" {
+			keys = append(keys, old)
+		}
+	}
+	sort.Slice(keys, func(i, j int) bool { return len(keys[i]) > len(keys[j]) })
+	out := jsonText
+	for _, old := range keys {
+		out = strings.ReplaceAll(out, old, uuidMap[old])
+	}
+	return out
 }
 
 // ImportCreateProjectFromPackage 从完整项目包JSON创建项目（数据库直接导入）
@@ -375,6 +396,15 @@ func ImportCreateProjectFromPackage(pkg *ImportProjectPackage, creatorName, crea
 			newGroupUuid = pt.RegisterGroupUuid
 		}
 
+		alarmOnValue := 0
+		if pt.Alarm == 1 {
+			// 导入包未写 alarmOnValue 时 JSON 反序列化为 0，会误配为「值=0 才告警」；竖切 DI 统一按 1 触发
+			alarmOnValue = 1
+			if pt.AlarmOnValue == 1 {
+				alarmOnValue = 1
+			}
+		}
+
 		dataPoint := ModbusDevicesDataModel{
 			Uuid:                 newPointId,
 			Muid:                 newMuid,
@@ -388,6 +418,7 @@ func ImportCreateProjectFromPackage(pkg *ImportProjectPackage, creatorName, crea
 			DataUnit:             pt.Unit,
 			ConversionExpression: normalizeConversionExpr(pt.ConversionExpression),
 			IsAlarm:              pt.Alarm,
+			AlarmOnValue:         alarmOnValue,
 			AlarmLevel:           pt.AlarmLevel,
 			AlarmMessage:         pt.AlarmMessage,
 			AlarmClearMessage:    pt.AlarmClearMessage,
@@ -511,6 +542,7 @@ func ImportCreateProjectFromPackage(pkg *ImportProjectPackage, creatorName, crea
 				ConversionExpression: mp.ConversionExpression,
 				DataUnit:             mp.DataUnit,
 				IsAlarm:              mp.IsAlarm,
+				AlarmOnValue:         mp.AlarmOnValue,
 				AlarmLevel:           mp.AlarmLevel,
 				AlarmMessage:         mp.AlarmMessage,
 				AlarmClearMessage:    mp.AlarmClearMessage,
@@ -535,6 +567,10 @@ func ImportCreateProjectFromPackage(pkg *ImportProjectPackage, creatorName, crea
 		if newModelUuid == "" {
 			newModelUuid = trig.TriggerDeviceModelUuid
 		}
+		newModelDataUuid := uuidMap[trig.TriggerModelDataUuid]
+		if newModelDataUuid == "" {
+			newModelDataUuid = trig.TriggerModelDataUuid
+		}
 
 		alarmTrigger := AlarmTrigger{
 			Uuid:                       newTriggerUuid,
@@ -545,7 +581,7 @@ func ImportCreateProjectFromPackage(pkg *ImportProjectPackage, creatorName, crea
 			TriggerDataUuid:            "",
 			TriggerDeviceType:          trig.TriggerDeviceType,
 			TriggerDeviceModelUuid:     newModelUuid,
-			TriggerModelDataUuid:       "",
+			TriggerModelDataUuid:       newModelDataUuid,
 			TriggerAlarmHideText:       trig.TriggerAlarmHideText,
 			TriggerAlarmShowText:       trig.TriggerAlarmShowText,
 			TriggerCondition:           trig.TriggerCondition,
@@ -585,9 +621,11 @@ func ImportCreateProjectFromPackage(pkg *ImportProjectPackage, creatorName, crea
 		if dashCode == errmsg.DISPLAY_MODEL_ADD_SUCCSE {
 			result.DashboardUid = newDashUid
 
-			// 构建图层信息
+			// 构建图层信息（包内 deviceSN/dataID 等为导出 UUID，须映射为本次导入后的库内 UUID）
 			layerBytes, _ := json.Marshal(pkg.DisplayLayer.Layer)
 			componentsBytes, _ := json.Marshal(pkg.DisplayLayer.Components)
+			layerStr := remapImportPackageUUIDs(string(layerBytes), uuidMap)
+			componentsStr := remapImportPackageUUIDs(string(componentsBytes), uuidMap)
 
 			page := DisplayModelLayer{
 				ModelId:    newDashUid,
@@ -596,8 +634,8 @@ func ImportCreateProjectFromPackage(pkg *ImportProjectPackage, creatorName, crea
 				IsHome:     pkg.DisplayLayer.IsHome,
 				IsLogin:    pkg.DisplayLayer.IsLogin,
 				PageType:   pkg.DisplayLayer.PageType,
-				Layer:      base64.StdEncoding.EncodeToString(layerBytes),
-				Components: base64.StdEncoding.EncodeToString(componentsBytes),
+				Layer:      base64.StdEncoding.EncodeToString([]byte(layerStr)),
+				Components: base64.StdEncoding.EncodeToString([]byte(componentsStr)),
 			}
 			Db.Create(&page)
 

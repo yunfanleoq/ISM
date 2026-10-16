@@ -1,333 +1,556 @@
 [
-  {
-    "router": "root",
-    "children": [
-      {
-        "router": "dashboard"
-      },
-      {
-        "router": "DataWarehouse"
-      },
-      {
-        "router": "DeviceLibraryConfig"
-      },
-      {
-        "router": "DeviceModel",
+    {
+        "router": "root",
         "children": [
-          {
-            "router": "SnmpModel"
-          },
-          {
-            "router": "SnmpAdd"
-          },
-          {
-            "router": "SnmpDetail"
-          },
-          {
-            "router": "ModbusModel"
-          },
-          {
-            "router": "ModbusAdd"
-          },
-          {
-            "router": "ModbusRegister"
-          },
-          {
-            "router": "ModbusDetail"
-          },
-          {
-            "router": "DLT645Model"
-          },
-          {
-            "router": "DLT645ModelAdd"
-          },
-          {
-            "router": "DLT645ModelData"
-          },
-          {
-            "router": "DLT645ModelDetail"
-          },
-          {
-            "router": "CJT188Model"
-          },
-          {
-            "router": "CJT188ModelAdd"
-          },
-          {
-            "router": "CJT188ModelData"
-          },
-          {
-            "router": "CJT188ModelDetail"
-          },
-          {
-            "router": "OPCUAModel"
-          },
-          {
-            "router": "OpcuaAdd"
-          },
-          {
-            "router": "OpcuaNodeid"
-          },
-          {
-            "router": "OpcuaDetail"
-          },
-          {
-            "router": "MqttModel"
-          },
-          {
-            "router": "MqttAdd"
-          },
-          {
-            "router": "MqttNodeid"
-          },
-          {
-            "router": "MqttDetail"
-          },
-          {
-            "router": "SiemensS7Model"
-          },
-          {
-            "router": "SimS7Add"
-          },
-          {
-            "router": "S7DataList"
-          },
-          {
-            "router": "SimS7Detail"
-          },
-          {
-            "router": "IEC104Model"
-          },
-          {
-            "router": "IEC104ModelAdd"
-          },
-          {
-            "router": "IEC104ModelData"
-          },
-          {
-            "router": "IEC104ModelDetail"
-          },
-          {
-            "router": "IEC61850Model"
-          },
-          {
-            "router": "IEC61850Add"
-          },
-          {
-            "router": "IEC61850Nodeid"
-          },
-          {
-            "router": "IEC61850Detail"
-          },
-          {
-            "router": "BACnetModel"
-          },
-          {
-            "router": "BACnetAdd"
-          },
-          {
-            "router": "BACnetNodeid"
-          },
-          {
-            "router": "BACnetDetail"
-          },
-          {
-            "router": "RestFulModel"
-          },
-          {
-            "router": "RestFulData"
-          },
-          {
-            "router": "HJ212Model"
-          },
-          {
-            "router": "HJ212Add"
-          },
-          {
-            "router": "HJ212Nodeid"
-          },
-          {
-            "router": "HJ212Detail"
-          },
-          {
-            "router": "VirtualDevice"
-          },
-          {
-            "router": "VirtualDeviceData"
-          },
-          {
-            "router": "DeviceCustomData"
-          },
-          {
-            "router": "SystemData"
-          },
-          {
-            "router": "StaticDataAdd"
-          },
-          {
-            "router": "StaticDataDetail"
-          }
+            {
+                "router": "dashboard"
+            },
+            {
+                "router": "XunzhiJfSection",
+                "name": "循智·机房环境",
+                "icon": "cloud-server",
+                "children": [
+                    {
+                        "router": "XunzhiJf_jf_home",
+                        "name": "工作台"
+                    },
+                    {
+                        "router": "XunzhiJf_jf_monitor",
+                        "name": "场地监测",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_monitor_overview",
+                                "name": "实时总览"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_monitor_power",
+                                "name": "动力监测"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_monitor_env",
+                                "name": "环境监测"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_monitor_battery",
+                                "name": "蓄电池监测"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_monitor_mm",
+                                "name": "微模块监测"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_monitor_points",
+                                "name": "测点/点表"
+                            }
+                        ]
+                    },
+                    {
+                        "router": "XunzhiJf_jf_alarm",
+                        "name": "告警中心",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_alarm_active",
+                                "name": "活动告警"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_alarm_history",
+                                "name": "历史告警"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_alarm_policy",
+                                "name": "告警策略"
+                            }
+                        ]
+                    },
+                    {
+                        "router": "XunzhiJf_jf_viz",
+                        "name": "可视化",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_viz_plane",
+                                "name": "环境平面大屏"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_viz_dashboard",
+                                "name": "平面组态大屏"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_viz_nav25d",
+                                "name": "2.5D 导航"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_viz_editor",
+                                "name": "组态编辑"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_viz_charts",
+                                "name": "图表模板库"
+                            }
+                        ]
+                    },
+                    {
+                        "router": "XunzhiJf_jf_asset",
+                        "name": "资产管理",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_asset_overview",
+                                "name": "资产总览"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_asset_tree",
+                                "name": "空间树"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_asset_u",
+                                "name": "U位管理"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_asset_lifecycle",
+                                "name": "入库上架变更"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_asset_retire",
+                                "name": "下架报废"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_asset_multi",
+                                "name": "机房2/3纳管"
+                            }
+                        ]
+                    },
+                    {
+                        "router": "XunzhiJf_jf_capacity",
+                        "name": "容量管理",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_capacity_overview",
+                                "name": "容量水位"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_capacity_reserve",
+                                "name": "预占管理"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_capacity_suggest",
+                                "name": "推荐上架"
+                            }
+                        ]
+                    },
+                    {
+                        "router": "XunzhiJf_jf_workorder",
+                        "name": "运维工单",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_workorder_list",
+                                "name": "工单列表"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_workorder_todo",
+                                "name": "我的待办"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_workorder_kb",
+                                "name": "知识库"
+                            }
+                        ]
+                    },
+                    {
+                        "router": "XunzhiJf_jf_energy",
+                        "name": "能耗管理",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_energy_power",
+                                "name": "用电功率分项"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_energy_pue",
+                                "name": "PUE分析"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_energy_carbon",
+                                "name": "碳排放"
+                            }
+                        ]
+                    },
+                    {
+                        "router": "XunzhiJf_jf_security",
+                        "name": "安防消防",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_security_video",
+                                "name": "视频点位"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_security_access",
+                                "name": "门禁入侵"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_security_fire",
+                                "name": "消防联动"
+                            }
+                        ]
+                    },
+                    {
+                        "router": "XunzhiJf_jf_report",
+                        "name": "报表中心",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_report_ops",
+                                "name": "运行报表"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_report_custom",
+                                "name": "自定义报表"
+                            }
+                        ]
+                    },
+                    {
+                        "router": "XunzhiJf_jf_system",
+                        "name": "系统管理",
+                        "children": [
+                            {
+                                "router": "XunzhiJf_jf_system_users",
+                                "name": "用户与角色"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_system_scope",
+                                "name": "数据范围"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_system_north",
+                                "name": "北向接口"
+                            },
+                            {
+                                "router": "XunzhiJf_jf_system_audit",
+                                "name": "审计日志"
+                            }
+                        ]
+                    }
+                ]
+            },
+            {
+                "router": "DataWarehouse"
+            },
+            {
+                "router": "DeviceLibraryConfig"
+            },
+            {
+                "router": "DeviceModel",
+                "children": [
+                    {
+                        "router": "SnmpModel"
+                    },
+                    {
+                        "router": "SnmpAdd"
+                    },
+                    {
+                        "router": "SnmpDetail"
+                    },
+                    {
+                        "router": "ModbusModel"
+                    },
+                    {
+                        "router": "ModbusAdd"
+                    },
+                    {
+                        "router": "ModbusRegister"
+                    },
+                    {
+                        "router": "ModbusDetail"
+                    },
+                    {
+                        "router": "DLT645Model"
+                    },
+                    {
+                        "router": "DLT645ModelAdd"
+                    },
+                    {
+                        "router": "DLT645ModelData"
+                    },
+                    {
+                        "router": "DLT645ModelDetail"
+                    },
+                    {
+                        "router": "CJT188Model"
+                    },
+                    {
+                        "router": "CJT188ModelAdd"
+                    },
+                    {
+                        "router": "CJT188ModelData"
+                    },
+                    {
+                        "router": "CJT188ModelDetail"
+                    },
+                    {
+                        "router": "OPCUAModel"
+                    },
+                    {
+                        "router": "OpcuaAdd"
+                    },
+                    {
+                        "router": "OpcuaNodeid"
+                    },
+                    {
+                        "router": "OpcuaDetail"
+                    },
+                    {
+                        "router": "MqttModel"
+                    },
+                    {
+                        "router": "MqttAdd"
+                    },
+                    {
+                        "router": "MqttNodeid"
+                    },
+                    {
+                        "router": "MqttDetail"
+                    },
+                    {
+                        "router": "SiemensS7Model"
+                    },
+                    {
+                        "router": "SimS7Add"
+                    },
+                    {
+                        "router": "S7DataList"
+                    },
+                    {
+                        "router": "SimS7Detail"
+                    },
+                    {
+                        "router": "IEC104Model"
+                    },
+                    {
+                        "router": "IEC104ModelAdd"
+                    },
+                    {
+                        "router": "IEC104ModelData"
+                    },
+                    {
+                        "router": "IEC104ModelDetail"
+                    },
+                    {
+                        "router": "IEC61850Model"
+                    },
+                    {
+                        "router": "IEC61850Add"
+                    },
+                    {
+                        "router": "IEC61850Nodeid"
+                    },
+                    {
+                        "router": "IEC61850Detail"
+                    },
+                    {
+                        "router": "BACnetModel"
+                    },
+                    {
+                        "router": "BACnetAdd"
+                    },
+                    {
+                        "router": "BACnetNodeid"
+                    },
+                    {
+                        "router": "BACnetDetail"
+                    },
+                    {
+                        "router": "RestFulModel"
+                    },
+                    {
+                        "router": "RestFulData"
+                    },
+                    {
+                        "router": "HJ212Model"
+                    },
+                    {
+                        "router": "HJ212Add"
+                    },
+                    {
+                        "router": "HJ212Nodeid"
+                    },
+                    {
+                        "router": "HJ212Detail"
+                    },
+                    {
+                        "router": "VirtualDevice"
+                    },
+                    {
+                        "router": "VirtualDeviceData"
+                    },
+                    {
+                        "router": "DeviceCustomData"
+                    },
+                    {
+                        "router": "SystemData"
+                    },
+                    {
+                        "router": "StaticDataAdd"
+                    },
+                    {
+                        "router": "StaticDataDetail"
+                    }
+                ]
+            },
+            {
+                "router": "Application"
+            },
+            {
+                "router": "TemplateMarket"
+            },
+            {
+                "router": "SCADAMonitor"
+            },
+            {
+                "router": "AIProjectGenerator"
+            },
+            {
+                "router": "VideoManager",
+                "children": [
+                    {
+                        "router": "videoScreen"
+                    },
+                    {
+                        "router": "videoList"
+                    },
+                    {
+                        "router": "GB28281List"
+                    }
+                ]
+            },
+            {
+                "router": "RealTimeAlarm"
+            },
+            {
+                "router": "AlarmStrategy",
+                "children": [
+                    {
+                        "router": "ModelTrigger"
+                    },
+                    {
+                        "router": "AlarmRestoreMask"
+                    }
+                ]
+            },
+            {
+                "router": "TaskPlan"
+            },
+            {
+                "router": "ISMScripts"
+            },
+            {
+                "router": "DataPush",
+                "children": [
+                    {
+                        "router": "DataTemplete"
+                    },
+                    {
+                        "router": "IEC104DataTemplete"
+                    },
+                    {
+                        "router": "IEC104TempleteData"
+                    },
+                    {
+                        "router": "ModbusDataTemplete"
+                    },
+                    {
+                        "router": "ModbusTempleteData"
+                    },
+                    {
+                        "router": "DataInterface"
+                    }
+                ]
+            },
+            {
+                "router": "Reporting",
+                "children": [
+                    {
+                        "router": "AlarmHistory"
+                    },
+                    {
+                        "router": "DataHistory"
+                    },
+                    {
+                        "router": "DataHistoryReport"
+                    },
+                    {
+                        "router": "SqlReportTemplate"
+                    },
+                    {
+                        "router": "DiyReport"
+                    },
+                    {
+                        "router": "DiyReportTemplete"
+                    },
+                    {
+                        "router": "ReportTempleteContent"
+                    }
+                ]
+            },
+            {
+                "router": "Network",
+                "children": [
+                    {
+                        "router": "SystemNetwork"
+                    },
+                    {
+                        "router": "ISMNetwork"
+                    }
+                ]
+            },
+            {
+                "router": "DataBase",
+                "children": [
+                    {
+                        "router": "DbManager"
+                    },
+                    {
+                        "router": "HistoryManager"
+                    }
+                ]
+            },
+            {
+                "router": "Setting",
+                "children": [
+                    {
+                        "router": "Account"
+                    },
+                    {
+                        "router": "UserAdd"
+                    },
+                    {
+                        "router": "UserManager"
+                    },
+                    {
+                        "router": "AlarmTipsSetting"
+                    },
+                    {
+                        "router": "SystemParams"
+                    },
+                    {
+                        "router": "AccessToken"
+                    }
+                ]
+            },
+            {
+                "router": "Journal",
+                "children": [
+                    {
+                        "router": "OperationJournal"
+                    }
+                ]
+            },
+            {
+                "router": "Help",
+                "children": [
+                    {
+                        "router": "AboutSystem"
+                    },
+                    {
+                        "router": "SystemAuth"
+                    }
+                ]
+            }
         ]
-      },
-      {
-        "router": "Application"
-      },
-      {
-        "router": "TemplateMarket"
-      },
-      {
-        "router": "SCADAMonitor"
-      },
-      {
-        "router": "AIProjectGenerator"
-      },
-      {
-        "router": "VideoManager",
-        "children": [
-          {
-            "router": "videoScreen"
-          },
-          {
-            "router": "videoList"
-          },
-          {
-            "router": "GB28281List"
-          }
-        ]
-      },
-      {
-        "router": "RealTimeAlarm"
-      },
-      {
-        "router": "AlarmStrategy",
-        "children": [
-          {
-            "router": "ModelTrigger"
-          },
-          {
-            "router": "AlarmRestoreMask"
-          }
-        ]
-      },
-      {
-        "router": "TaskPlan"
-      },
-      {
-        "router": "ISMScripts"
-      },
-      {
-        "router": "DataPush",
-        "children": [
-          {
-            "router": "DataTemplete"
-          },
-          {
-            "router": "IEC104DataTemplete"
-          },
-          {
-            "router": "IEC104TempleteData"
-          },
-          {
-            "router": "ModbusDataTemplete"
-          },
-          {
-            "router": "ModbusTempleteData"
-          },
-          {
-            "router": "DataInterface"
-          }
-        ]
-      },
-      {
-        "router": "Reporting",
-        "children": [
-          {
-            "router": "AlarmHistory"
-          },
-          {
-            "router": "DataHistory"
-          },
-          {
-            "router": "DataHistoryReport"
-          },
-          {
-            "router": "SqlReportTemplate"
-          },
-          {
-            "router": "DiyReport"
-          },
-          {
-            "router": "DiyReportTemplete"
-          },
-          {
-            "router": "ReportTempleteContent"
-          }
-        ]
-      },
-      {
-        "router": "Network",
-        "children": [
-          {
-            "router": "SystemNetwork"
-          },
-          {
-            "router": "ISMNetwork"
-          }
-        ]
-      },
-      {
-        "router": "DataBase",
-        "children": [
-          {
-            "router": "DbManager"
-          },
-          {
-            "router": "HistoryManager"
-          }
-        ]
-      },
-      {
-        "router": "Setting",
-        "children": [
-          {
-            "router": "Account"
-          },
-          {
-            "router": "UserAdd"
-          },
-          {
-            "router": "UserManager"
-          },
-          {
-            "router": "AlarmTipsSetting"
-          },
-          {
-            "router": "SystemParams"
-          },
-          {
-            "router": "AccessToken"
-          }
-        ]
-      },
-      {
-        "router": "Journal",
-        "children": [
-          {
-            "router": "OperationJournal"
-          }
-        ]
-      },
-      {
-        "router": "Help",
-        "children": [
-          {
-            "router": "AboutSystem"
-          },
-          {
-            "router": "SystemAuth"
-          }
-        ]
-      }
-    ]
-  }
+    }
 ]

@@ -1,5 +1,10 @@
 // 项目默认监控大屏：唯一来源是 GET /SystemHomeDashboard（按当前 ProjectUuid 隔离），禁止绑定某套种子数据 UUID。
 import { AUTH_TYPE, setAuthorization } from '@/utils/request'
+import {
+  buildEnvPlaneAppRunQuery,
+  isNoRunTreeMode,
+} from '@/xunzhiJf/appRunEmbed'
+import { isXunzhiJfActiveProject } from '@/xunzhiJf/projectContext'
 
 export const HOME_DASHBOARD_UUID = ''
 export const HOME_PROJECT_UUID = ''
@@ -49,9 +54,18 @@ export function isConfiguredHomeDashboard(uid, store) {
   return !!configured && uid === configured
 }
 
+/** 寻智动环平面页；noRunTree=1 时隐藏旁路 RunTree 与组态内嵌机房监视树 */
+export const XUNZHI_JF_ENV_PLANE_PAGE = 'xunzhi-jf-env-plane'
+
+/** 当前 AppRun 是否为寻智平面 noRunTree 模式（旁路树 + 内嵌监视树均隐藏） */
+export function isXunzhiJfEnvPlaneAppRun(route, store) {
+  return isNoRunTreeMode(route, store)
+}
+
 /** AppRun 是否显示左侧设备导航树（避免 AppRunShell 引用 xunanDashboardPages 引发循环依赖） */
-export function shouldShowRunTreeNav(modelId, store) {
+export function shouldShowRunTreeNav(modelId, store, route) {
   if (!modelId) return false
+  if (route && isXunzhiJfEnvPlaneAppRun(route, store)) return false
   return isConfiguredHomeDashboard(modelId, store)
 }
 
@@ -62,13 +76,32 @@ export function resolveHomeProjectUuid(dashboardUid, store) {
   return ''
 }
 
-export function createHomeDashboardRedirect() {
-  return () => {
-    const store = require('@/store').default
-    // 未配置当前项目默认大屏时，回到项目管理页，勿跳到别的项目大屏
-    if (!getHomeDashboardUuid(store)) {
-      return '/dashboard'
-    }
-    return getHomeDashboardPath(store)
+function shouldUseXunzhiJfVizEmbed(store) {
+  if (isXunzhiJfActiveProject()) return true
+  const name = getHomeDashboardConfig(store).dashboardName || ''
+  return /寻智|xunzhi-jf|平面监视|env-plane/i.test(name)
+}
+
+/** 侧栏「监控大屏」/ SCADAMonitor：寻智平面走 embed；否则 AppRun 带 noRunTree */
+export function resolveScadaMonitorRoute() {
+  const store = require('@/store').default
+  const uid = getHomeDashboardUuid(store)
+  if (!uid) {
+    return '/dashboard'
   }
+  if (shouldUseXunzhiJfVizEmbed(store)) {
+    return '/xunzhi/jf/viz/plane'
+  }
+  const name = getHomeDashboardConfig(store).dashboardName || ''
+  if (/平面|env-plane|寻智|xunzhi/i.test(name)) {
+    return {
+      path: `/AppRun/${uid}`,
+      query: buildEnvPlaneAppRunQuery(),
+    }
+  }
+  return `/AppRun/${uid}`
+}
+
+export function createHomeDashboardRedirect() {
+  return () => resolveScadaMonitorRoute()
 }

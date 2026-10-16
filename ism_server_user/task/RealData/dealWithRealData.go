@@ -21,6 +21,10 @@ import (
 
 const OnceWriteNumber = 100
 
+// liveRealFlushInterval snapshots in-memory live values into device_real_data.
+// Change-driven writers still update immediately; this pass covers values that stay steady.
+const liveRealFlushInterval = 10 * time.Second
+
 func WriteRealDataFunc(WriteData protocol_common.PushRealDataWebData) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -61,27 +65,27 @@ func WriteRealDataFunc(WriteData protocol_common.PushRealDataWebData) {
 	uuidString.Reset()
 }
 
-func DealWithRealData() {
-
-	realdatasyncdelay, err := config.Int("realdatasyncdelay")
-	if err != nil {
-		realdatasyncdelay = 100
+func flushLiveRealValues() {
+	rows := protocol_common.CollectLiveRealUpdates()
+	if len(rows) == 0 || models.Db == nil {
+		return
 	}
+	timeNow := time.Now().Format("2006-01-02 15:04:05")
+	for _, statement := range protocol_common.BuildLiveRealUpdateSQL(rows, timeNow) {
+		if err := models.Db.Exec(statement).Error; err != nil {
+			logs.Error("flush live real data: %v", err)
+		}
+	}
+}
+
+func DealWithRealData() {
 	for {
-		DbType, _ := config.Int("dbtype")
-		if DbType == 1 {
+		dbType, _ := config.Int("dbtype")
+		if dbType == 1 {
 			time.Sleep(time.Second * 60)
 			continue
 		}
-		protocol_common.DeviceRealDataMap.Range(func(k, v interface{}) bool {
-			data := strings.Split(k.(string), "->")
-			if len(data) != 2 {
-				return false
-			}
-			models.Db.Model(&models.DeviceRealData{}).Where("device_name = ? and name = ? ", data[0], data[1]).Update("value", v.(string))
-			time.Sleep(time.Millisecond * time.Duration(realdatasyncdelay))
-			return true
-		})
-		time.Sleep(time.Millisecond * time.Duration(realdatasyncdelay))
+		flushLiveRealValues()
+		time.Sleep(liveRealFlushInterval)
 	}
 }

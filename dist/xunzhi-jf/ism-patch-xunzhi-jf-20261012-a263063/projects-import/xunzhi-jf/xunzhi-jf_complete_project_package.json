@@ -1,0 +1,535 @@
+{
+  "_meta": {
+    "format": "ImportProjectPackage",
+    "probe": "P-COL-01",
+    "project_slug": "xunzhi-jf",
+    "gather_interval_ms_default": 5000
+  },
+  "project": {
+    "name": "寻智机房环境-xunzhi-jf",
+    "gateway": {
+      "ip": "127.0.0.1",
+      "port": 1502
+    }
+  },
+  "deviceModels": [
+    {
+      "uuid": "d4e5f6a7b8c94a0a1111111111111111",
+      "name": "xunzhi-jf-温湿度传感器",
+      "dec": "寻智竖切：温度/湿度/传感器故障",
+      "type": 2,
+      "modbusConnectType": "TCPClient",
+      "modbusConnectMode": "TCP/IP",
+      "DataFormat": "CDAB",
+      "timeout": 3000,
+      "port": 1502,
+      "gatherNumber": 30,
+      "gather_interval_ms": 5000
+    },
+    {
+      "uuid": "e5f6a7b8c9d04b0b2222222222222222",
+      "name": "xunzhi-jf-漏水控制器",
+      "dec": "寻智竖切：漏水信号/位置米数/控制器故障",
+      "type": 2,
+      "modbusConnectType": "TCPClient",
+      "modbusConnectMode": "TCP/IP",
+      "DataFormat": "CDAB",
+      "timeout": 3000,
+      "port": 1502,
+      "gatherNumber": 30,
+      "gather_interval_ms": 5000
+    }
+  ],
+  "registerGroups": [
+    {
+      "uuid": "f6a7b8c9d0e14c1c3333333333333333",
+      "muid": "d4e5f6a7b8c94a0a1111111111111111",
+      "name": "AI数据",
+      "function": 3,
+      "registerStart": 0,
+      "registerCount": 4
+    },
+    {
+      "uuid": "a7b8c9d0e1f24d2d4444444444444444",
+      "muid": "d4e5f6a7b8c94a0a1111111111111111",
+      "name": "DI数据",
+      "function": 2,
+      "registerStart": 0,
+      "registerCount": 2
+    },
+    {
+      "uuid": "b8c9d0e1f2a34e3e5555555555555555",
+      "muid": "e5f6a7b8c9d04b0b2222222222222222",
+      "name": "AI数据",
+      "function": 3,
+      "registerStart": 0,
+      "registerCount": 4
+    },
+    {
+      "uuid": "c9d0e1f2a3b44f4f6666666666666666",
+      "muid": "e5f6a7b8c9d04b0b2222222222222222",
+      "name": "DI数据",
+      "function": 2,
+      "registerStart": 0,
+      "registerCount": 4
+    }
+  ],
+  "registerPoints": [
+    {
+      "uuid": "11111111111111111111111111111111",
+      "muid": "d4e5f6a7b8c94a0a1111111111111111",
+      "name": "温度",
+      "registerAddress": 0,
+      "registerGroupUuid": "f6a7b8c9d0e14c1c3333333333333333",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "CDAB",
+      "modeltype": 2,
+      "unit": "℃",
+      "conversionExpression": "{val}*0.1",
+      "alarm": 0,
+      "alarmLevel": 0,
+      "AlarmMessage": "",
+      "AlarmClearMessage": "",
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "RecordDataCharge": "",
+      "RecordDataTimely": "",
+      "FloatAccuracy": "2",
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "22222222222222222222222222222222",
+      "muid": "d4e5f6a7b8c94a0a1111111111111111",
+      "name": "湿度",
+      "registerAddress": 1,
+      "registerGroupUuid": "f6a7b8c9d0e14c1c3333333333333333",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "CDAB",
+      "modeltype": 2,
+      "unit": "%RH",
+      "conversionExpression": "{val}*0.1",
+      "alarm": 0,
+      "alarmLevel": 0,
+      "AlarmMessage": "",
+      "AlarmClearMessage": "",
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "RecordDataCharge": "",
+      "RecordDataTimely": "",
+      "FloatAccuracy": "2",
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "33333333333333333333333333333333",
+      "muid": "d4e5f6a7b8c94a0a1111111111111111",
+      "name": "传感器故障",
+      "registerAddress": 0,
+      "registerGroupUuid": "a7b8c9d0e1f24d2d4444444444444444",
+      "auth": "ReadOnly",
+      "type": "Bool",
+      "ByteOrder": "CDAB",
+      "modeltype": 2,
+      "unit": "",
+      "conversionExpression": "{val}*1",
+      "alarm": 1,
+      "alarmLevel": 2,
+      "AlarmMessage": "温湿度传感器故障",
+      "AlarmClearMessage": "温湿度传感器故障恢复",
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "RecordDataCharge": "",
+      "RecordDataTimely": "",
+      "FloatAccuracy": "2",
+      "gather_interval_ms": 5000,
+      "signal_type": "DI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "44444444444444444444444444444444",
+      "muid": "e5f6a7b8c9d04b0b2222222222222222",
+      "name": "漏水信号",
+      "registerAddress": 0,
+      "registerGroupUuid": "c9d0e1f2a3b44f4f6666666666666666",
+      "auth": "ReadOnly",
+      "type": "Bool",
+      "ByteOrder": "CDAB",
+      "modeltype": 2,
+      "unit": "",
+      "conversionExpression": "{val}*1",
+      "alarm": 1,
+      "alarmLevel": 1,
+      "AlarmMessage": "漏水报警",
+      "AlarmClearMessage": "漏水报警恢复",
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "RecordDataCharge": "",
+      "RecordDataTimely": "",
+      "FloatAccuracy": "2",
+      "gather_interval_ms": 5000,
+      "signal_type": "DI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "55555555555555555555555555555555",
+      "muid": "e5f6a7b8c9d04b0b2222222222222222",
+      "name": "漏水位置米数",
+      "registerAddress": 0,
+      "registerGroupUuid": "b8c9d0e1f2a34e3e5555555555555555",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "CDAB",
+      "modeltype": 2,
+      "unit": "m",
+      "conversionExpression": "{val}*0.1",
+      "alarm": 0,
+      "alarmLevel": 0,
+      "AlarmMessage": "",
+      "AlarmClearMessage": "",
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "RecordDataCharge": "",
+      "RecordDataTimely": "",
+      "FloatAccuracy": "2",
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "66666666666666666666666666666666",
+      "muid": "e5f6a7b8c9d04b0b2222222222222222",
+      "name": "控制器故障",
+      "registerAddress": 1,
+      "registerGroupUuid": "c9d0e1f2a3b44f4f6666666666666666",
+      "auth": "ReadOnly",
+      "type": "Bool",
+      "ByteOrder": "CDAB",
+      "modeltype": 2,
+      "unit": "",
+      "conversionExpression": "{val}*1",
+      "alarm": 1,
+      "alarmLevel": 2,
+      "AlarmMessage": "漏水控制器故障",
+      "AlarmClearMessage": "漏水控制器故障恢复",
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "RecordDataCharge": "",
+      "RecordDataTimely": "",
+      "FloatAccuracy": "2",
+      "gather_interval_ms": 5000,
+      "signal_type": "DI",
+      "protocol": "modbus"
+    }
+  ],
+  "monitorTree": [
+    {
+      "uuid": "77777777777777777777777777777777",
+      "sid": 1000,
+      "pid": 0,
+      "name": "寻智机房环境-xunzhi-jf",
+      "type": 0,
+      "timeout": 5,
+      "IsEnable": 1,
+      "interval": 5000,
+      "failedTimes": 5,
+      "description": "寻智机房环境监测竖切根节点",
+      "offlineClear": 0,
+      "offlineDefaultValue": "0",
+      "deviceType": 0,
+      "muid": "",
+      "configUid": "a1b2c3d4e5f6478990abcdef12345678",
+      "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
+      "extra": "",
+      "Status": 0
+    },
+    {
+      "uuid": "88888888888888888888888888888888",
+      "sid": 1001,
+      "pid": 1000,
+      "name": "F3-模块机房-01",
+      "type": 0,
+      "timeout": 5,
+      "IsEnable": 1,
+      "interval": 5000,
+      "failedTimes": 5,
+      "description": "竖切样例机房节点",
+      "offlineClear": 0,
+      "offlineDefaultValue": "0",
+      "deviceType": 0,
+      "muid": "",
+      "configUid": "a1b2c3d4e5f6478990abcdef12345678",
+      "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
+      "extra": "",
+      "Status": 0
+    },
+    {
+      "uuid": "99999999999999999999999999999999",
+      "sid": 1002,
+      "pid": 1001,
+      "name": "xunzhi-jf-TH-01",
+      "type": 1,
+      "timeout": 5,
+      "IsEnable": 1,
+      "interval": 5000,
+      "failedTimes": 5,
+      "description": "温湿度传感器#01",
+      "offlineClear": 0,
+      "offlineDefaultValue": "0",
+      "deviceType": 2,
+      "muid": "d4e5f6a7b8c94a0a1111111111111111",
+      "configUid": "a1b2c3d4e5f6478990abcdef12345678",
+      "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1502,\"slaveId\":1,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "Status": 2
+    },
+    {
+      "uuid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sid": 1003,
+      "pid": 1001,
+      "name": "xunzhi-jf-LEAK-01",
+      "type": 1,
+      "timeout": 5,
+      "IsEnable": 1,
+      "interval": 5000,
+      "failedTimes": 5,
+      "description": "漏水控制器#01",
+      "offlineClear": 0,
+      "offlineDefaultValue": "0",
+      "deviceType": 2,
+      "muid": "e5f6a7b8c9d04b0b2222222222222222",
+      "configUid": "a1b2c3d4e5f6478990abcdef12345678",
+      "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1502,\"slaveId\":2,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "Status": 2
+    }
+  ],
+  "alarmTriggers": [],
+  "displayModel": {
+    "uuid": "c3d4e5f6a7b84990abcdef1234567890",
+    "name": "寻智机房环境平面监视-xunzhi-jf",
+    "displayUid": "a1b2c3d4e5f6478990abcdef12345678",
+    "description": "W1 竖切：温湿度+漏水实时表",
+    "DisplayType": 1
+  },
+  "displayLayer": {
+    "modelId": "a1b2c3d4e5f6478990abcdef12345678",
+    "pageName": "xunzhi-jf-env-plane",
+    "pageId": "b2c3d4e5f6a7488990abcdef123456789",
+    "isHome": 1,
+    "isLogin": 0,
+    "pageType": 1,
+    "layer": {
+      "backColor": "#0a1628",
+      "backgroundImage": "",
+      "widthHeightRatio": "16:9",
+      "width": 1920,
+      "height": 1080
+    },
+    "components": {
+      "cells": [
+        {
+          "shape": "view-svg-text",
+          "id": "db3864cc79a94e50a8100ee8e6989997",
+          "x": 60,
+          "y": 40,
+          "width": 1200,
+          "height": 56,
+          "zIndex": 1,
+          "visible": true,
+          "position": {
+            "x": 60,
+            "y": 40
+          },
+          "size": {
+            "width": 1200,
+            "height": 56
+          },
+          "data": {
+            "detail": {
+              "type": "view-svg-text",
+              "name": "标题",
+              "identifier": "007928f3b7644b4aac041a69c199c0a6",
+              "style": {
+                "position": {
+                  "x": 60,
+                  "y": 40,
+                  "w": 1200,
+                  "h": 56
+                },
+                "text": "寻智机房环境监测 · 温湿度 + 漏水（xunzhi-jf 竖切）",
+                "visible": 1,
+                "fontSize": 26,
+                "fontWeight": "bold",
+                "foreColor": "#00e5ff",
+                "diy": []
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "move": {
+                  "x": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  },
+                  "y": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "shape": "ism-view-real-table",
+          "id": "a4ef2c022c384c16ab51d7b8f8b7db07",
+          "x": 80,
+          "y": 160,
+          "width": 1760,
+          "height": 520,
+          "zIndex": 5,
+          "visible": true,
+          "position": {
+            "x": 80,
+            "y": 160
+          },
+          "size": {
+            "width": 1760,
+            "height": 520
+          },
+          "data": {
+            "detail": {
+              "type": "ism-view-real-table",
+              "identifier": "a4ef2c022c384c16ab51d7b8f8b7db07",
+              "name": "动环实时表",
+              "style": {
+                "position": {
+                  "x": 80,
+                  "y": 160,
+                  "w": 1760,
+                  "h": 520
+                },
+                "text": "",
+                "visible": 1,
+                "fontSize": 14,
+                "foreColor": "#e5eefc",
+                "diy": [
+                  {
+                    "name": "configComponent.viewRealTable.columnHeaders",
+                    "type": 9,
+                    "value": "温度, 湿度, 传感器故障, 漏水信号, 漏水位置米数, 控制器故障",
+                    "key": "columnHeaders"
+                  },
+                  {
+                    "name": "configComponent.viewRealTable.rowDeviceNames",
+                    "type": 9,
+                    "value": "温湿度-01\n漏水-01",
+                    "key": "rowDeviceNames"
+                  },
+                  {
+                    "name": "configComponent.viewRealTable.rowDeviceCodes",
+                    "type": 9,
+                    "value": "xunzhi-jf-TH-01\nxunzhi-jf-LEAK-01",
+                    "key": "rowDeviceCodes"
+                  },
+                  {
+                    "name": "configComponent.viewRealTable.rowBindings",
+                    "type": 9,
+                    "value": "xunzhi-jf-TH-01->温度,xunzhi-jf-TH-01->湿度,xunzhi-jf-TH-01->传感器故障,,,;,,,xunzhi-jf-LEAK-01->漏水信号,xunzhi-jf-LEAK-01->漏水位置米数,xunzhi-jf-LEAK-01->控制器故障",
+                    "key": "rowBindings"
+                  },
+                  {
+                    "name": "configComponent.AlarmList.waitTime",
+                    "type": 7,
+                    "value": 2000,
+                    "min": 100,
+                    "max": 10000,
+                    "key": "waitTime"
+                  },
+                  {
+                    "name": "主题风格",
+                    "type": 6,
+                    "value": "dark",
+                    "enumList": [
+                      {
+                        "value": "dark",
+                        "option": "深空夜幕"
+                      }
+                    ],
+                    "key": "themeName"
+                  }
+                ]
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "move": {
+                  "x": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  },
+                  "y": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  }
+                }
+              },
+              "action": [],
+              "active": [],
+              "dataBind": []
+            }
+          }
+        }
+      ]
+    }
+  }
+}

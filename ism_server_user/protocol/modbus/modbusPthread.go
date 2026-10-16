@@ -1365,9 +1365,12 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 									var getValueFloat32 float32
 									var getValueFloat64 float64
 									var isIntType byte = 0
+									var exprConverted float64
+									var exprConvertedOk bool
 									var dataFlasg int = 0
 									var iAdvance int = 0 // 记录多字节类型需要额外跳过的寄存器数
 									for _, data := range readDataList {
+										exprConvertedOk = false
 										if data.RegisterGroupUuid == group.Uuid && data.RegisterAddress == registerAddress {
 
 											var signleAlarm protocol_common.PushAlarm
@@ -1633,10 +1636,16 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 																	_, ok := result.(float64)
 																	if ok {
 																		getValue = int32(result.(float64))
+																		exprConvertedOk = true
+																		exprConverted = result.(float64)
 																	}
 																}
 															}
 														}
+													}
+
+													if exprConvertedOk {
+														updateValue = exprConverted
 													}
 
 													if isIntType == 1 {
@@ -2075,6 +2084,7 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 
 		} else {
 			c.rwMutex.Lock()
+			cycleStart := time.Now()
 			var tempPushData protocol_common.PushRealDataWebData
 
 			tempPushData.DeviceUuid = device.Uuid
@@ -2210,9 +2220,12 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 							var getValueFloat32 float32
 							var getValueFloat64 float64
 							var isIntType byte = 0
+							var exprConverted float64
+							var exprConvertedOk bool
 							var dataFlasg int = 0
 							var iAdvance int = 0
 							for _, data := range readDataList {
+								exprConvertedOk = false
 								if data.RegisterGroupUuid == group.Uuid && data.RegisterAddress == registerAddress {
 
 									var signleAlarm protocol_common.PushAlarm
@@ -2473,10 +2486,16 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 															_, ok := result.(float64)
 															if ok {
 																getValue = int32(result.(float64))
+																exprConvertedOk = true
+																exprConverted = result.(float64)
 															}
 														}
 													}
 												}
+											}
+
+											if exprConvertedOk {
+												updateValue = exprConverted
 											}
 
 											if isIntType == 1 {
@@ -2898,6 +2917,10 @@ func (c *ModbusCtl) GatherModbusDeviceData() {
 				protocol_common.ErrorThrottled("modbus:reconn:"+device.Uuid, "设备:%s,连接断开,%d毫秒后尝试重连", device.Name, device.Interval)
 			}
 			if len(tempPushData.Data) > 0 {
+				protocol_common.CycleLogThLeak(
+					device.Name, device.ProjectUuid, device.Interval,
+					time.Since(cycleStart).Milliseconds(), len(tempPushData.Data),
+				)
 				// QueuePush 只写库；WSSend 单入口推前端（合并窗）。勿在队列出口再推 WS。
 				protocol_common.GGatherDataQueue.QueuePush(tempPushData)
 				go ismWebsocket.WSSend(tempPushData, tempPushData.ProjectUuid, 2)

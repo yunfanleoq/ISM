@@ -8,6 +8,8 @@ import TabsView from '@/layouts/tabs/TabsView'
 // import PageView from '@/layouts/PageView'
 import BlankView from '@/layouts/BlankView'
 import {createHomeDashboardRedirect} from '@/config/homeDashboard'
+import { applyXunzhiJfRouterMap } from '@/xunzhiJf/registerRoutes'
+import { xunzhiJfVizRouteBeforeEnter } from '@/xunzhiJf/projectContext'
 
 // 路由组件注册
 const routerMap = {
@@ -1171,4 +1173,38 @@ const routerMap = {
   component: () => import('@/pages/Setting/SystemAuth')
 },
 }
+applyXunzhiJfRouterMap(routerMap)
+
+// 静态别名：避免仅 loadRoutes 后嵌套未挂载时 /xunzhi/jf/viz/plane 404（missPlane）
+routerMap.XunzhiJfVizPlaneAlias = {
+  path: '/xunzhi/jf/viz/plane',
+  name: 'XunzhiJfVizPlaneAlias',
+  beforeEnter: xunzhiJfVizRouteBeforeEnter,
+  meta: {
+    invisible: true,
+    authority: { role: ['Admin', 'Operator', 'User'] },
+  },
+  component: () => import('@/xunzhiJf/pages/VizPlanePage.vue'),
+}
+routerMap.XunzhiJfVizDashboardAlias = {
+  path: '/xunzhi/jf/viz/dashboard',
+  name: 'XunzhiJfVizDashboardAlias',
+  beforeEnter: xunzhiJfVizRouteBeforeEnter,
+  meta: {
+    invisible: true,
+    authority: { role: ['Admin', 'Operator', 'User'] },
+  },
+  component: () => import('@/xunzhiJf/pages/VizDashboardPage.vue'),
+}
+routerMap.XunzhiJfVizNav25dAlias = {
+  path: '/xunzhi/jf/viz/nav25d',
+  name: 'XunzhiJfVizNav25dAlias',
+  beforeEnter: xunzhiJfVizRouteBeforeEnter,
+  meta: {
+    invisible: true,
+    authority: { role: ['Admin', 'Operator', 'User'] },
+  },
+  component: () => import('@/xunzhiJf/pages/VizNav25dPage.vue'),
+}
+
 export default routerMap

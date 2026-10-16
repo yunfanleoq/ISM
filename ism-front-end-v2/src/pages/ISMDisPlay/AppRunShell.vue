@@ -1,5 +1,5 @@
 <template>
-  <div class="ism-pageview">
+  <div class="ism-pageview" :class="{ 'ism-pageview--no-runtree': suppressRunTreeChrome }">
     <ISMRenderLoader :show-uuid="dashboardUuid" />
     <ScadaOrgOverview
       v-if="showRunTree"
@@ -36,6 +36,7 @@ import {
   resolveHomeProjectUuid,
   shouldShowRunTreeNav,
 } from '@/config/homeDashboard.js'
+import { isNoRunTreeMode, markEnvPlaneAppRunSession } from '@/xunzhiJf/appRunEmbed'
 import { AUTH_TYPE, getAuthorization } from '@/utils/request'
 
 export default {
@@ -52,13 +53,22 @@ export default {
     uid: { type: String, required: true },
   },
   created() {
-    if (shouldShowRunTreeNav(this.uid, this.$store)) applyHomeProjectAuth(this.$store)
+    if (isNoRunTreeMode(this.$route, this.$store)) {
+      markEnvPlaneAppRunSession()
+    }
+    if (shouldShowRunTreeNav(this.uid, this.$store, this.$route)) applyHomeProjectAuth(this.$store)
   },
   watch: {
     projectUuid(value) {
-      if (value && shouldShowRunTreeNav(this.uid, this.$store)) {
+      if (value && shouldShowRunTreeNav(this.uid, this.$store, this.$route)) {
         applyHomeProjectAuth(this.$store)
       }
+    },
+    '$route.query': {
+      handler() {
+        this.$forceUpdate()
+      },
+      deep: true,
     },
   },
   computed: {
@@ -66,11 +76,14 @@ export default {
       return this.uid
     },
     showRunTree() {
-      return shouldShowRunTreeNav(this.dashboardUuid, this.$store)
+      return shouldShowRunTreeNav(this.dashboardUuid, this.$store, this.$route)
+    },
+    suppressRunTreeChrome() {
+      return isNoRunTreeMode(this.$route, this.$store) || !this.showRunTree
     },
     projectUuid() {
       const uid = this.dashboardUuid
-      if (shouldShowRunTreeNav(uid, this.$store)) {
+      if (shouldShowRunTreeNav(uid, this.$store, this.$route)) {
         return resolveHomeProjectUuid(uid, this.$store) || HOME_PROJECT_UUID
       }
       const resolved = resolveHomeProjectUuid(uid, this.$store)
@@ -125,5 +138,14 @@ export default {
   14%  { opacity: 0.3; }
   84%  { opacity: 0.3; }
   100% { background-position: 160% 160%; opacity: 0; }
+}
+
+/* 寻智平面页：强制隐藏旁路 RunTree / 组织层级总览（防止 v-if 竞态或旧 chunk 残留） */
+.ism-pageview--no-runtree .org-overview,
+.ism-pageview--no-runtree .ism-runtree,
+.ism-pageview--no-runtree .scada-alarm-root {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 </style>

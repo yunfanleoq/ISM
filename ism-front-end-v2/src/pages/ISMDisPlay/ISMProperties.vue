@@ -372,6 +372,7 @@
             <div v-if="isImageHotspotComponent">
               <a-form-item label="悬停/点击测点">
                 <div v-for="(bind, bindIndex) in imageDataBind" :key="'img-bind-'+bindIndex" style="margin-bottom:6px;display:flex;align-items:center;">
+                  <a-input :value="bind.section || ''" size="small" placeholder="分组" style="width:88px;margin-right:4px;flex:0 0 88px;" @change="setBindSection(bindIndex, $event.target.value)"/>
                   <a-input :value="bindDisplayName(bind)" readOnly size="small">
                     <a-tooltip slot="addonAfter" title="选择测点">
                       <icon-font @click="ShowDeviceDataModel(bindIndex,'data')" type="icon-xuanzeshuju" />
@@ -380,7 +381,7 @@
                   <a-icon type="delete" @click="removeImageDataBind(bindIndex)" style="margin-left:6px;cursor:pointer;color:#eb2f96"/>
                 </div>
                 <a-button size="small" icon="plus" @click="addImageDataBind">添加测点</a-button>
-                <div style="color:#888;font-size:12px;margin-top:4px;">运行态点击或悬停图片，弹出已绑定测点实时值</div>
+                <div style="color:#888;font-size:12px;margin-top:4px;">同一分组会显示在一张卡片里。悬停或点击弹出实时值、近24小时曲线和设备档案，点击钉住。</div>
               </a-form-item>
             </div>
 
@@ -2510,6 +2511,13 @@ export default {
       if (bind.DeviceName && bind.dataName) return bind.DeviceName + ' / ' + bind.dataName
       return bind.dataName || bind.DeviceName || ''
     },
+    setBindSection(index, value) {
+      if (!this.configObject || !Array.isArray(this.configObject.dataBind)) return
+      const bind = this.configObject.dataBind[index]
+      if (!bind) return
+      this.$set(bind, 'section', value || '')
+      this.UpdateNodeData()
+    },
     addImageDataBind() {
       if (!this.configObject) return
       if (!Array.isArray(this.configObject.dataBind)) {
@@ -2520,7 +2528,8 @@ export default {
         isBandDevice: false,
         deviceSN: '',
         dataName: '',
-        dataID: ''
+        dataID: '',
+        section: ''
       })
       this.ShowDeviceDataModel(this.configObject.dataBind.length - 1, 'data')
     },

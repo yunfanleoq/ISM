@@ -36,7 +36,6 @@
   </g>
 </svg>
     </div>
-    <bound-points-popup ref="boundPointsPopup"></bound-points-popup>
   </div>
 
 </template>
