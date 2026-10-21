@@ -1,0 +1,56 @@
+/* =========================================================
+   数据中心动环管理系统 · 设计令牌
+   与 Ardot 设计稿 1:1 对齐，全站唯一色值来源
+   ========================================================= */
+:root {
+  /* —— 背景 —— */
+  --bg-top: #050D24;
+  --bg-mid: #081430;
+  --bg-bottom: #050A1F;
+  --nav-bg: #071228;
+  --panel-bg: rgba(10, 30, 74, 0.34);
+
+  /* —— 卡片 —— */
+  --card-bg: rgba(10, 30, 74, 0.6);
+  --card-line: rgba(28, 90, 158, 0.8);
+  --card-glow: rgba(0, 184, 255, 0.12);
+  --card-radius: 6px;
+
+  /* —— 主色 —— */
+  --cyan: #00D8FF;
+  --cyan-light: #7FE9FF;
+  --cyan-dim: rgba(0, 216, 255, 0.18);
+  --green: #00E39A;
+  --orange: #FFA24D;
+  --blue: #2E9CF6;
+  --blue-deep: #2E7CF6;
+  --purple: #A46BFF;
+
+  /* —— 文字 —— */
+  --t-title: #E6F3FF;
+  --t-sub: #B8D4F5;
+  --t-soft: #9FC3E8;
+  --t-label: #7FA8D9;
+  --t-muted: #5E7FA8;
+  --t-dev: #CFE6FF;
+
+  /* —— 告警等级 —— */
+  --lv1: #FF4D5E;
+  --lv2: #FF7849;
+  --lv3: #FFA24D;
+  --lv4: #FFD24D;
+  --lv5: #00D8FF;
+  --lv-ok: #00E39A;
+
+  /* —— 网格线 / 描边 —— */
+  --grid: #12305E;
+  --axis: #1B4076;
+
+  /* —— 字体 —— */
+  --num: "D-DIN", "DIN Alternate", "Bahnschrift", "Helvetica Neue", Arial, sans-serif;
+  --cn: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", sans-serif;
+
+  /* —— 间距节奏 —— */
+  --gap: 16px;
+  --pad: 16px;
+}

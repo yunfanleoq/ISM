@@ -6,13 +6,12 @@
     @mouseenter="onEnter"
     @mouseleave="onLeave"
     @mousedown.stop
-    @click.stop="onCardClick"
   >
     <div class="bpp-title">
       <span class="bpp-title-text">{{ cardTitle }}</span>
       <span class="bpp-actions">
-        <span class="bpp-title-hint">{{ pinned ? '已钉住' : '点击钉住' }}</span>
-        <button type="button" class="bpp-close" title="关闭" @click.stop="hide(true)">×</button>
+        <button type="button" class="bpp-title-hint" @click.stop="onTitleAction">{{ pinned ? '点击关闭' : '点击钉住' }}</button>
+        <button type="button" class="bpp-close" title="关闭" @click.stop="closeNow">×</button>
       </span>
     </div>
     <div class="bpp-body">
@@ -91,7 +90,10 @@ export default {
       posY: 0,
       reqSeq: 0,
       hideTimer: null,
-      currentKey: ''
+      suppressTimer: null,
+      currentKey: '',
+      ownerKey: '',
+      suppressKey: ''
     }
   },
   computed: {
@@ -126,8 +128,15 @@ export default {
       }
     }
   },
+  mounted() {
+    document.addEventListener('mousedown', this.onDocPointer, true)
+    document.addEventListener('keydown', this.onKeydown)
+  },
   beforeDestroy() {
     if (this.hideTimer) clearTimeout(this.hideTimer)
+    if (this.suppressTimer) clearTimeout(this.suppressTimer)
+    document.removeEventListener('mousedown', this.onDocPointer, true)
+    document.removeEventListener('keydown', this.onKeydown)
   },
   methods: {
     bindKey(binds) {
@@ -138,7 +147,12 @@ export default {
         return
       }
       const key = this.bindKey(payload.binds)
+      const ownerKey = payload.ownerKey || key
       const force = !!(options && options.force)
+      if (!force && this.suppressKey && ownerKey === this.suppressKey) {
+        return
+      }
+      if (force) this.clearSuppress(ownerKey)
       if (this.pinned && this.visible && key !== this.currentKey && !force) {
         return
       }
@@ -146,6 +160,7 @@ export default {
         clearTimeout(this.hideTimer)
         this.hideTimer = null
       }
+      this.ownerKey = ownerKey
       const same = this.visible && key && key === this.currentKey
       if (!same) {
         this.computePosition(payload.clientX, payload.clientY)
@@ -154,30 +169,76 @@ export default {
       }
       this.visible = true
     },
+    closeNow() {
+      if (this.hideTimer) {
+        clearTimeout(this.hideTimer)
+        this.hideTimer = null
+      }
+      if (this.ownerKey) this.suppressKey = this.ownerKey
+      this.armSuppressFallback()
+      this.pinned = false
+      this.visible = false
+      this.currentKey = ''
+    },
+    armSuppressFallback() {
+      if (this.suppressTimer) clearTimeout(this.suppressTimer)
+      this.suppressTimer = setTimeout(() => {
+        this.suppressTimer = null
+        this.suppressKey = ''
+      }, 500)
+    },
+    clearSuppress(ownerKey) {
+      if (this.suppressKey && ownerKey && ownerKey !== this.suppressKey) return
+      this.suppressKey = ''
+      if (this.suppressTimer) {
+        clearTimeout(this.suppressTimer)
+        this.suppressTimer = null
+      }
+    },
     togglePin(payload) {
       const key = this.bindKey(payload && payload.binds)
       if (this.pinned && this.visible && key === this.currentKey) {
-        this.pinned = false
-        this.hide(true)
+        this.closeNow()
         return
       }
       this.pinned = true
       this.show(payload, { force: true })
     },
-    onCardClick() {
+    onTitleAction() {
+      if (this.pinned) {
+        this.closeNow()
+        return
+      }
       this.pinned = true
+      this.clearSuppress(this.ownerKey)
+    },
+    onDocPointer(evt) {
+      if (!this.pinned || !this.visible) return
+      const el = this.$el
+      if (el && evt.target && el.contains(evt.target)) return
+      this.closeNow()
+    },
+    onKeydown(evt) {
+      if (!this.visible) return
+      if (evt.key === 'Escape' || evt.key === 'Esc') this.closeNow()
     },
     move() {
       // 卡片停在出现位置。跟着鼠标走时，点不到「钉住」和「关闭」。
     },
     hide(force) {
-      if (this.pinned && !force) return
+      if (force) {
+        this.closeNow()
+        return
+      }
+      if (this.pinned) return
       if (this.hideTimer) clearTimeout(this.hideTimer)
       this.hideTimer = setTimeout(() => {
-        this.visible = false
-        this.pinned = false
         this.hideTimer = null
-      }, force ? 0 : HIDE_DELAY)
+        if (this.pinned) return
+        this.pinned = false
+        this.visible = false
+        this.currentKey = ''
+      }, HIDE_DELAY)
     },
     onEnter() {
       if (this.hideTimer) {
@@ -186,7 +247,8 @@ export default {
       }
     },
     onLeave() {
-      this.hide(false)
+      if (this.pinned) return
+      this.closeNow()
     },
     loadData(binds) {
       const list = Array.isArray(binds) ? binds : []
@@ -432,8 +494,13 @@ export default {
 }
 .bpp-title-hint {
   flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  color: #fff;
   font-size: 12px;
-  opacity: 0.9;
+  opacity: 0.95;
+  cursor: pointer;
+  padding: 0;
 }
 .bpp-close {
   margin-left: 8px;

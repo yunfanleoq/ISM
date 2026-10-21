@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""生成寻智机房环境 W1 竖切 ImportProject 包（温湿度 + 漏水，Modbus TCP）。"""
+"""生成循智元晟 W1 竖切 ImportProject 包（温湿度 + 漏水，Modbus TCP）。"""
 
 import json
 import os
@@ -7,7 +7,7 @@ import uuid
 from pathlib import Path
 
 OUT_DIR = Path(__file__).resolve().parent
-PROJECT_NAME = "寻智机房环境-xunzhi-jf"
+PROJECT_NAME = "循智元晟"
 GATEWAY_IP = "127.0.0.1"
 GATEWAY_PORT = int(os.environ.get("XUNZHI_MOCK_PORT", "1503"))
 GATHER_INTERVAL_MS = 5000
@@ -255,7 +255,7 @@ def build_package():
             {
                 "uuid": MUID_TH,
                 "name": "xunzhi-jf-温湿度传感器",
-                "dec": "寻智竖切：温度/湿度/传感器故障",
+                "dec": "循智元晟竖切：温度/湿度/传感器故障",
                 "type": 2,
                 "modbusConnectType": "TCPClient",
                 "modbusConnectMode": "TCP/IP",
@@ -268,7 +268,7 @@ def build_package():
             {
                 "uuid": MUID_LEAK,
                 "name": "xunzhi-jf-漏水控制器",
-                "dec": "寻智竖切：漏水信号/位置米数/控制器故障",
+                "dec": "循智元晟竖切：漏水信号/位置米数/控制器故障",
                 "type": 2,
                 "modbusConnectType": "TCPClient",
                 "modbusConnectMode": "TCP/IP",
@@ -304,7 +304,7 @@ def build_package():
                 "IsEnable": 1,
                 "interval": GATHER_INTERVAL_MS,
                 "failedTimes": 5,
-                "description": "寻智机房环境监测竖切根节点",
+                "description": "循智元晟监测竖切根节点",
                 "offlineClear": 0,
                 "offlineDefaultValue": "0",
                 "deviceType": 0,
@@ -378,7 +378,7 @@ def build_package():
         "alarmTriggers": make_alarm_triggers(),
         "displayModel": {
             "uuid": PROJECT_PKG_UUID,
-            "name": "寻智机房环境平面监视-xunzhi-jf",
+            "name": "循智元晟平面监视-xunzhi-jf",
             "displayUid": DISPLAY_UID,
             "description": "W1 竖切：温湿度+漏水实时表",
             "DisplayType": 1,
@@ -417,7 +417,7 @@ def build_package():
                                 "identifier": uuid.uuid4().hex,
                                 "style": {
                                     "position": {"x": 60, "y": 40, "w": 1200, "h": 56},
-                                    "text": "寻智机房环境监测 · 温湿度 + 漏水（xunzhi-jf 竖切）",
+                                    "text": "循智元晟监测 · 温湿度 + 漏水（xunzhi-jf 竖切）",
                                     "visible": 1,
                                     "fontSize": 26,
                                     "fontWeight": "bold",

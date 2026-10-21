@@ -16,7 +16,8 @@ import uuid as uuidlib
 from datetime import datetime, timezone
 from pathlib import Path
 
-PROJECT_NAME = "寻智机房环境-xunzhi-jf"
+PROJECT_NAME = "循智元晟"
+PROJECT_NAME_LEGACY = "寻智机房环境-xunzhi-jf"
 LEAK_DEVICE = "xunzhi-jf-LEAK-01"
 LEAK_POINT = "漏水信号"
 LEAK_TRIGGER = "漏水信号告警"
@@ -102,7 +103,7 @@ def project_uuid(token: str) -> str | None:
     d = curl_json("/ProjectList", {}, token)
     for p in d.get("list", []):
         pi = p.get("ProjectInfo", p)
-        if pi.get("name") == PROJECT_NAME:
+        if pi.get("name") in (PROJECT_NAME, PROJECT_NAME_LEGACY):
             return pi.get("uuid")
     return None
 

@@ -9,7 +9,8 @@ import {
 } from '@/xunzhiJf/projectContext'
 import { getHomeDashboardConfig } from '@/config/homeDashboard'
 
-export const XUNZHI_JF_PROJECT_NAME_HINT = '寻智机房环境-xunzhi-jf'
+export const XUNZHI_JF_PROJECT_NAME_HINT = '循智元晟'
+export const XUNZHI_JF_PROJECT_NAME_LEGACY = '寻智机房环境-xunzhi-jf'
 export const XUNZHI_JF_ENV_PLANE_PAGE = 'xunzhi-jf-env-plane'
 export const XUNZHI_JF_NAV_25D_PAGE = 'xunzhi-jf-25d-shell'
 

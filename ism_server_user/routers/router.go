@@ -511,6 +511,33 @@ func init() {
 	beego.Router("/xunzhi-jf/workorder/from-alarm", &controllers.XunzhiJfWorkorderController{}, "post:CreateFromAlarm")
 	// ===== end 寻智 dcim-workorder Mock =====
 
+	// ===== 公安局动环 =====
+	beego.Router("/bjga/bootstrap", &controllers.BjgaController{}, "get:Bootstrap")
+	beego.Router("/bjga/assets/flow", &controllers.BjgaController{}, "post:AssetFlow")
+	beego.Router("/bjga/stocktake", &controllers.BjgaController{}, "get:StocktakeList;post:StocktakeAct")
+	beego.Router("/bjga/stock-bill", &controllers.BjgaController{}, "get:StockBills;post:StockBillCreate")
+	beego.Router("/bjga/assets/maint", &controllers.BjgaController{}, "get:MaintList")
+	beego.Router("/bjga/capacity/recalc", &controllers.BjgaController{}, "post:CapacityRecalc")
+	beego.Router("/bjga/power/settings", &controllers.BjgaController{}, "*:PowerSettings")
+	beego.Router("/bjga/power/quality", &controllers.BjgaController{}, "get:PowerQuality")
+	beego.Router("/bjga/power/comtrade", &controllers.BjgaController{}, "*:PowerComtrade")
+	beego.Router("/bjga/power/tickets", &controllers.BjgaController{}, "*:PowerTickets")
+	beego.Router("/bjga/power/sim", &controllers.BjgaController{}, "*:PowerSim")
+	beego.Router("/bjga/energy/pue", &controllers.BjgaController{}, "get:EnergyPUE")
+	beego.Router("/bjga/energy/meters", &controllers.BjgaController{}, "post:EnergyMeter")
+	beego.Router("/bjga/energy/airflow", &controllers.BjgaController{}, "get:EnergyAirflow")
+	beego.Router("/bjga/energy/cooling", &controllers.BjgaController{}, "get:EnergyCooling")
+	beego.Router("/bjga/energy/carbon", &controllers.BjgaController{}, "get:EnergyCarbon")
+	beego.Router("/bjga/ops", &controllers.BjgaController{}, "get:OpsBundle")
+	beego.Router("/bjga/ops/ha/switch", &controllers.BjgaController{}, "post:OpsHaSwitch")
+	beego.Router("/bjga/ops/peace", &controllers.BjgaController{}, "post:OpsPeace")
+	beego.Router("/bjga/ops/change", &controllers.BjgaController{}, "post:OpsChange")
+	beego.Router("/bjga/audit", &controllers.BjgaController{}, "get:AuditList")
+	beego.Router("/bjga/audit/policy", &controllers.BjgaController{}, "*:AuditPolicy")
+	beego.Router("/bjga/govern", &controllers.BjgaController{}, "get:GovernList")
+	beego.Router("/bjga/site", &controllers.BjgaController{}, "get:SiteList")
+	// ===== end 公安局动环 =====
+
 	// 验证用户是否已经登录
 	beego.InsertFilter("/*", beego.BeforeExec, FilterUser)
 

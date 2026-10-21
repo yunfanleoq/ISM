@@ -1,6 +1,6 @@
 {
   "schema": "dcim-asset-mock-v1",
-  "project": "寻智机房环境-xunzhi-jf",
+  "project": "循智元晟",
   "monitorList": {
     "rack_node_uuid": "88888888888888888888888888888888",
     "rack_node_name": "F3-模块机房-01",

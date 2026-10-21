@@ -155,6 +155,16 @@ func CheckAllTables() {
 	); energyErr != nil {
 		gormlog.Info(energyErr)
 	}
+	if bjgaErr := BjgaAutoMigrate(); bjgaErr != nil {
+		gormlog.Info(bjgaErr)
+	}
+	if seedErr := BjgaEnsureSeed(); seedErr != nil {
+		gormlog.Info("bjga seed: %v", seedErr)
+	}
+	if fillErr := BjgaEnsureOpsContent(); fillErr != nil {
+		gormlog.Info("bjga ops fill: %v", fillErr)
+	}
+	EnsureBjgaDisplayModel()
 	dbtype, _ := config.Int("dbtype")
 	if dbtype == 4 && !Db.Migrator().HasIndex(&DisplayModelLayer{}, "idx_dml_model_deleted") {
 		if err := Db.Exec("CREATE INDEX idx_dml_model_deleted ON display_model_layer(model_id, deleted_at)").Error; err != nil {

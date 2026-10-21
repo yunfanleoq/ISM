@@ -11,6 +11,10 @@ export default {
     }
   },
   methods: {
+    boundPointsOwnerKey() {
+      const detail = this.detail || {}
+      return String(detail.identifier || detail.id || detail.uuid || this._uid)
+    },
     onBoundPointsEnter(evt) {
       if (!this.canShowBoundPoints) return
       const popup = getBoundPointsPopup(this)
@@ -18,7 +22,8 @@ export default {
       popup.show({
         binds: this.boundPointList,
         clientX: evt.clientX,
-        clientY: evt.clientY
+        clientY: evt.clientY,
+        ownerKey: this.boundPointsOwnerKey()
       })
     },
     onBoundPointsMove() {
@@ -27,6 +32,7 @@ export default {
     onBoundPointsLeave() {
       const popup = getBoundPointsPopup(this, false)
       if (!popup) return
+      popup.clearSuppress(this.boundPointsOwnerKey())
       popup.hide(false)
     },
     onBoundPointsClick(evt) {
@@ -36,7 +42,8 @@ export default {
       popup.togglePin({
         binds: this.boundPointList,
         clientX: evt && evt.clientX,
-        clientY: evt && evt.clientY
+        clientY: evt && evt.clientY,
+        ownerKey: this.boundPointsOwnerKey()
       })
     }
   }

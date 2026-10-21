@@ -1,4 +1,4 @@
-# 寻智机房环境 · xunzhi-jf（S0 竖切 + W2/W3 扩展）
+# 循智元晟 · xunzhi-jf（S0 竖切 + W2/W3 扩展）
 
 Modbus TCP：**温湿度 + 漏水**（W1）+ **列头柜 + UPS**（W2）+ **精密空调 + 氢气**（W3），默认 **`gather_interval_ms=5000`**（≤10s 契约）。
 
@@ -74,7 +74,7 @@ S6 安防/消防事件桩：`bash scripts/xunzhi_jf_security_demo.sh`（见 `doc
 
 Mock：`scripts/xunzhi_jf_modbus_mock.py`（slave 1–7）。周期日志：`P-COL-01` 温湿度/漏水 · `P-COL-02` PWR/UPS · `P-COL-03` AC/H2。
 
-组态：**寻智机房环境平面监视-xunzhi-jf** / 页 **`xunzhi-jf-env-plane`**
+组态：**循智元晟平面监视-xunzhi-jf** / 页 **`xunzhi-jf-env-plane`**
 
 ## 账号与端口
 

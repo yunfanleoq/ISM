@@ -1,7 +1,7 @@
 import Cookie from 'js-cookie'
 import { ProjectList } from '@/services/project'
 import { AUTH_TYPE, setAuthorization } from '@/utils/request'
-import { XUNZHI_JF_PROJECT_NAME_HINT } from '@/xunzhiJf/resolveDisplayPage'
+import { XUNZHI_JF_PROJECT_NAME_HINT, XUNZHI_JF_PROJECT_NAME_LEGACY } from '@/xunzhiJf/resolveDisplayPage'
 
 const CACHE_UUID = 'xunzhiJf.projectUuid'
 const CACHE_NAME = 'xunzhiJf.projectName'
@@ -19,11 +19,12 @@ export function isOnXunzhiJfRoute() {
   const hash = window.location.hash || ''
   const path = window.location.pathname || ''
   return hash.indexOf('/xunzhi/jf') >= 0 || path.indexOf('/xunzhi/jf') >= 0
+    || hash.indexOf('/xunzhi-jf') >= 0 || path.indexOf('/xunzhi-jf') >= 0
 }
 
 export function isXunzhiJfDashboardName(name) {
   const n = String(name || '')
-  return /寻智|xunzhi-jf|平面监视|env-plane|机房环境/i.test(n)
+  return /循智元晟|寻智|xunzhi-jf|平面监视|env-plane|机房环境/i.test(n)
 }
 
 export function syncXunzhiJfProjectToClient(uuid, name) {
@@ -46,10 +47,12 @@ export function invalidateXunzhiJfProjectCache() {
 
 function pickXunzhiJfFromList(list) {
   if (!Array.isArray(list) || !list.length) return null
-  let hit = list.find(p => (p.name || p.Name) === XUNZHI_JF_PROJECT_NAME_HINT)
+  const names = [XUNZHI_JF_PROJECT_NAME_HINT, XUNZHI_JF_PROJECT_NAME_LEGACY]
+  let hit = list.find(p => names.indexOf(p.name || p.Name) !== -1)
   if (!hit) {
     hit = list.find(
       p => (p.name || '').indexOf('xunzhi-jf') !== -1
+        || (p.name || '').indexOf('循智元晟') !== -1
         || (p.name || '').indexOf('寻智机房环境') !== -1
     )
   }
@@ -136,7 +139,7 @@ export function xunzhiJfVizRouteBeforeEnter(to, from, next) {
 export function isXunzhiJfActiveProject() {
   try {
     const name = sessionStorage.getItem(CACHE_NAME) || ''
-    if (name === XUNZHI_JF_PROJECT_NAME_HINT || name.indexOf('xunzhi-jf') !== -1) {
+    if (name === XUNZHI_JF_PROJECT_NAME_HINT || name === XUNZHI_JF_PROJECT_NAME_LEGACY || name.indexOf('xunzhi-jf') !== -1 || name.indexOf('循智元晟') !== -1) {
       return true
     }
     const active = getActiveProjectUuid()

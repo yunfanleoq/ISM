@@ -174,7 +174,7 @@ def main():
     new_cells = [
         make_text(
             "plane-title",
-            "寻智机房环境平面图 · W1 动环 + W2 配电/UPS + 告警（演示收口）",
+            "循智元晟平面图 · W1 动环 + W2 配电/UPS + 告警（演示收口）",
             24,
             16,
             1872,

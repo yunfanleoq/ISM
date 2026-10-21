@@ -4,7 +4,7 @@
     <template v-else-if="error">
       <a-alert type="error" show-icon :message="error" />
       <p style="margin-top: 12px">
-        请确认已导入项目 <code>寻智机房环境-xunzhi-jf</code>，且存在 pageName
+        请确认已导入项目 <code>循智元晟</code>，且存在 pageName
         <code>{{ pageName }}</code>。亦可从「数据中台」进入组态大屏。
       </p>
     </template>
@@ -35,10 +35,11 @@ export default {
   },
   async mounted() {
     try {
-      await primeXunzhiJfRouteContext(this.$store)
+      const projectUuid = await primeXunzhiJfRouteContext(this.$store)
       const resolved = await resolveDisplayPageByName(this.pageName)
       if (!resolved) {
-        this.error = `missPlane: 未找到组态页 ${this.pageName}（请确认已登录 code1000、ProjectDel 重导；ProjectUuid 以 project_lists「寻智机房环境-xunzhi-jf」当前 uuid 为准，勿用历史 Cookie）`
+        const used = projectUuid || '空'
+        this.error = `missPlane: 未找到组态页 ${this.pageName}（本次 ProjectUuid: ${used}。请确认已登录 code1000、ProjectDel 重导；ProjectUuid 以 project_lists「循智元晟」当前 uuid 为准，勿用历史 Cookie）`
         return
       }
       if (this.pageName === XUNZHI_JF_ENV_PLANE_PAGE) {

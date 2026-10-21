@@ -79,6 +79,10 @@
                                 "name": "2.5D 导航"
                             },
                             {
+                                "router": "XunzhiJf_jf_viz_bjga",
+                                "name": "公安局动环"
+                            },
+                            {
                                 "router": "XunzhiJf_jf_viz_editor",
                                 "name": "组态编辑"
                             },

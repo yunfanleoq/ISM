@@ -1,23 +1,29 @@
 <template>
-  <div class="ism-pageview" :class="{ 'ism-pageview--no-runtree': suppressRunTreeChrome }">
-    <ISMRenderLoader :show-uuid="dashboardUuid" />
-    <ScadaOrgOverview
-      v-if="showRunTree"
-      :model-id="dashboardUuid"
-      :project-uuid="projectUuid"
-    />
-    <RunTreeNavLoader
-      v-if="showRunTree"
-      :model-id="dashboardUuid"
-      :project-uuid="projectUuid"
-    />
-    <ScadaAlarmPanel
-      v-if="showRunTree"
-      :model-id="dashboardUuid"
-      :project-uuid="projectUuid"
-    />
-    <BackToAdminButton :project-uuid="projectUuid" />
-    <PreviewWatermark />
+  <div class="ism-pageview" :class="pageClass">
+    <template v-if="isBjga">
+      <BjgaScreenPage fullscreen />
+      <BackToAdminButton :project-uuid="bjgaProjectUuid" />
+    </template>
+    <template v-else>
+      <ISMRenderLoader :show-uuid="dashboardUuid" />
+      <ScadaOrgOverview
+        v-if="showRunTree"
+        :model-id="dashboardUuid"
+        :project-uuid="projectUuid"
+      />
+      <RunTreeNavLoader
+        v-if="showRunTree"
+        :model-id="dashboardUuid"
+        :project-uuid="projectUuid"
+      />
+      <ScadaAlarmPanel
+        v-if="showRunTree"
+        :model-id="dashboardUuid"
+        :project-uuid="projectUuid"
+      />
+      <BackToAdminButton :project-uuid="projectUuid" />
+      <PreviewWatermark />
+    </template>
   </div>
 </template>
 
@@ -39,6 +45,10 @@ import {
 import { isNoRunTreeMode, markEnvPlaneAppRunSession } from '@/xunzhiJf/appRunEmbed'
 import { AUTH_TYPE, getAuthorization } from '@/utils/request'
 
+const BJGA_APP_UID = 'a7b91292-dc10-4f00-8000-0000000000b1'
+const BJGA_PROJECT_UUID = 'd96005d5-dd28-3ad2-bc4d-983316c3f218'
+const BjgaScreenPage = () => import(/* webpackChunkName: "bjga-screen" */ '@/xunzhiJf/pages/BjgaScreenPage.vue')
+
 export default {
   name: 'AppRunShell',
   components: {
@@ -48,6 +58,7 @@ export default {
     RunTreeNavLoader,
     ScadaAlarmPanel,
     BackToAdminButton,
+    BjgaScreenPage,
   },
   props: {
     uid: { type: String, required: true },
@@ -75,6 +86,18 @@ export default {
     dashboardUuid() {
       return this.uid
     },
+    isBjga() {
+      return this.uid === BJGA_APP_UID
+    },
+    bjgaProjectUuid() {
+      return BJGA_PROJECT_UUID
+    },
+    pageClass() {
+      return {
+        'ism-pageview--no-runtree': this.suppressRunTreeChrome,
+        'ism-pageview--bjga': this.isBjga,
+      }
+    },
     showRunTree() {
       return shouldShowRunTreeNav(this.dashboardUuid, this.$store, this.$route)
     },
@@ -100,6 +123,13 @@ export default {
   width: 100%;
   position: relative;
   overflow: hidden;
+}
+
+.ism-pageview--bjga::before,
+.ism-pageview--bjga::after {
+  content: none;
+  display: none;
+  animation: none;
 }
 
 .ism-pageview::before {

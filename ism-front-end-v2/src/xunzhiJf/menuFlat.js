@@ -19,6 +19,8 @@ export const XUNZHI_JF_MENU_FLAT = [
   { sort: 410, menu_code: 'jf.viz.plane', title: '环境平面大屏', parent_code: 'jf.viz', module_id: 'envmon-viz', route_or_page: 'page:xunzhi-jf-env-plane', perm: 'viz:read' },
   { sort: 420, menu_code: 'jf.viz.dashboard', title: '平面组态大屏', parent_code: 'jf.viz', module_id: 'envmon-viz', route_or_page: '/xunzhi/jf/viz/dashboard', perm: 'viz:read' },
   { sort: 430, menu_code: 'jf.viz.nav25d', title: '2.5D 导航', parent_code: 'jf.viz', module_id: 'envmon-viz', route_or_page: '/xunzhi/jf/viz/nav25d', perm: 'viz:read' },
+  { sort: 432, menu_code: 'jf.viz.bjga', title: '公安局动环', parent_code: 'jf.viz', module_id: 'envmon-viz', route_or_page: '/xunzhi/jf/viz/bjga', perm: 'viz:read' },
+  { sort: 435, menu_code: 'jf.viz.show', title: '动环演示大屏', parent_code: 'jf.viz', module_id: 'envmon-viz', route_or_page: '/xunzhi/jf/viz/show', perm: 'viz:read' },
   { sort: 440, menu_code: 'jf.viz.editor', title: '组态编辑', parent_code: 'jf.viz', module_id: 'envmon-viz', route_or_page: '/xunzhi/jf/viz/editor', perm: 'viz:edit' },
   { sort: 450, menu_code: 'jf.viz.charts', title: '图表模板库', parent_code: 'jf.viz', module_id: 'envmon-viz', route_or_page: '/xunzhi/jf/viz/charts', perm: 'viz:read' },
   { sort: 500, menu_code: 'jf.asset', title: '资产管理', parent_code: '(root)', module_id: 'dcim-asset', route_or_page: '—', perm: 'asset:read' },

@@ -79,7 +79,7 @@ export function resolveHomeProjectUuid(dashboardUid, store) {
 function shouldUseXunzhiJfVizEmbed(store) {
   if (isXunzhiJfActiveProject()) return true
   const name = getHomeDashboardConfig(store).dashboardName || ''
-  return /寻智|xunzhi-jf|平面监视|env-plane/i.test(name)
+  return /循智元晟|寻智|xunzhi-jf|平面监视|env-plane/i.test(name)
 }
 
 /** 侧栏「监控大屏」/ SCADAMonitor：寻智平面走 embed；否则 AppRun 带 noRunTree */
@@ -93,7 +93,7 @@ export function resolveScadaMonitorRoute() {
     return '/xunzhi/jf/viz/plane'
   }
   const name = getHomeDashboardConfig(store).dashboardName || ''
-  if (/平面|env-plane|寻智|xunzhi/i.test(name)) {
+  if (/平面|env-plane|循智元晟|寻智|xunzhi/i.test(name)) {
     return {
       path: `/AppRun/${uid}`,
       query: buildEnvPlaneAppRunQuery(),

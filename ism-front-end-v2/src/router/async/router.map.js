@@ -1206,5 +1206,26 @@ routerMap.XunzhiJfVizNav25dAlias = {
   },
   component: () => import('@/xunzhiJf/pages/VizNav25dPage.vue'),
 }
+routerMap.XunzhiJfVizShowAlias = {
+  path: '/xunzhi/jf/viz/show',
+  name: 'XunzhiJfVizShowAlias',
+  meta: {
+    invisible: true,
+    title: '动环演示大屏',
+    authority: { role: ['Admin', 'Operator', 'User'] },
+  },
+  component: () => import('@/xunzhiJf/pages/DemoShowPage.vue'),
+}
+routerMap.BjgaScreen = {
+  path: '/bjga',
+  name: 'BjgaScreenAlias',
+  meta: {
+    invisible: true,
+    title: '公安局动环',
+    bjgaHash: 'dashboard',
+    authority: { role: ['Admin', 'Operator', 'User'] },
+  },
+  component: () => import('@/xunzhiJf/pages/BjgaScreenPage.vue'),
+}
 
 export default routerMap

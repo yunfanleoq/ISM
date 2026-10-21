@@ -1,6 +1,6 @@
 <template>
   <div class="xunzhi-home">
-    <a-alert type="info" show-icon message="循智·机房环境工作台（演示骨架）" description="KPI 卡片占位；非正式验收。" />
+    <a-alert type="info" show-icon message="循智元晟工作台（演示骨架）" description="KPI 卡片占位；非正式验收。" />
     <a-row :gutter="16" style="margin-top: 16px">
       <a-col :span="6"><a-card title="活动告警">—</a-card></a-col>
       <a-col :span="6"><a-card title="测点在线">—</a-card></a-col>

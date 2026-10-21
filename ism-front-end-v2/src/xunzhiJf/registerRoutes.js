@@ -27,7 +27,37 @@ const WIRED = new Set([
   'jf.viz.plane',
   'jf.viz.dashboard',
   'jf.viz.nav25d',
+  'jf.viz.show',
+  'jf.viz.bjga',
 ])
+
+const BJGA_HASH = {
+  'jf.viz.bjga': 'dashboard',
+  'jf.asset.overview': 'assetmgr',
+  'jf.asset.tree': 'building',
+  'jf.asset.u': 'assetmgr/cabinet',
+  'jf.asset.lifecycle': 'assetmgr/flow',
+  'jf.asset.retire': 'assetmgr/inout',
+  'jf.asset.multi': 'building',
+  'jf.capacity.overview': 'capacity',
+  'jf.capacity.reserve': 'capacity',
+  'jf.capacity.suggest': 'capacity',
+  'jf.workorder.list': 'ops',
+  'jf.workorder.todo': 'ops/duty',
+  'jf.workorder.kb': 'ops/kb',
+  'jf.energy.power': 'energy/pue',
+  'jf.energy.pue': 'energy/pue',
+  'jf.energy.carbon': 'energy/carbon',
+  'jf.security.video': 'facility/video',
+  'jf.security.access': 'facility/door',
+  'jf.security.fire': 'facility/fire',
+  'jf.report.ops': 'report',
+  'jf.report.custom': 'report',
+  'jf.system.users': 'admin',
+  'jf.system.scope': 'audit/policy',
+  'jf.system.north': 'govern',
+  'jf.system.audit': 'audit',
+}
 
 /** 菜单嵌套下的单段相对 path（禁止 leading `/`，否则脱离 root/TabsView） */
 export function routeSegmentForRow(row) {
@@ -84,6 +114,9 @@ function skeletonMeta(row) {
 }
 
 function componentForRow(row) {
+  if (BJGA_HASH[row.menu_code]) {
+    return () => import('@/xunzhiJf/pages/BjgaScreenPage.vue')
+  }
   switch (row.menu_code) {
     case 'jf.home':
       return () => import('@/xunzhiJf/pages/HomeWorkbench.vue')
@@ -99,6 +132,8 @@ function componentForRow(row) {
       return () => import('@/xunzhiJf/pages/VizDashboardPage.vue')
     case 'jf.viz.nav25d':
       return () => import('@/xunzhiJf/pages/VizNav25dPage.vue')
+    case 'jf.viz.show':
+      return () => import('@/xunzhiJf/pages/DemoShowPage.vue')
     default:
       return () => import('@/xunzhiJf/pages/SkeletonPage.vue')
   }
@@ -113,7 +148,7 @@ export function buildXunzhiJfRouterMap() {
     redirect: 'home',
     meta: {
       icon: 'cloud-server',
-      title: '循智·机房环境',
+      title: '循智元晟',
       menuCode: 'jf.section',
       moduleId: 'envmon',
       authority: { role: ['Admin', 'Operator', 'User'] },
@@ -142,10 +177,13 @@ export function buildXunzhiJfRouterMap() {
       if (seg) entry.redirect = seg
     } else {
       entry.component = componentForRow(row)
+      if (BJGA_HASH[row.menu_code]) {
+        entry.meta.bjgaHash = BJGA_HASH[row.menu_code]
+      }
       if (row.menu_code === 'jf.viz.plane' || row.menu_code === 'jf.viz.dashboard') {
         entry.beforeEnter = xunzhiJfVizRouteBeforeEnter
       }
-      if (!WIRED.has(row.menu_code)) {
+      if (!WIRED.has(row.menu_code) && !BJGA_HASH[row.menu_code]) {
         entry.meta.skeletonProps = skeletonMeta(row)
       }
     }
@@ -182,7 +220,7 @@ export function buildXunzhiJfMenuConfigChildren() {
 
   return {
     router: XUNZHI_JF_SECTION_ROUTER,
-    name: '循智·机房环境',
+    name: '循智元晟',
     icon: 'cloud-server',
     children: build('(root)'),
   }

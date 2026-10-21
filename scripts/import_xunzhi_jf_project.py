@@ -16,7 +16,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PKG = ROOT / "projects-import/xunzhi-jf/xunzhi-jf_complete_project_package.json"
-PROJECT_NAME = "寻智机房环境-xunzhi-jf"
+PROJECT_NAME = "循智元晟"
+PROJECT_NAME_LEGACY = "寻智机房环境-xunzhi-jf"
 _HTTP_PORT = os.environ.get("ISM_HTTP_PORT", "8081")
 BASE = os.environ.get("BASE_URL", f"http://127.0.0.1:{_HTTP_PORT}").rstrip("/")
 
@@ -45,7 +46,7 @@ def find_project_uuid(token: str) -> str:
     data = curl_json("/ProjectList", {}, token)
     for p in data.get("list") or []:
         pi = p.get("ProjectInfo", p)
-        if pi.get("name") == PROJECT_NAME:
+        if pi.get("name") in (PROJECT_NAME, PROJECT_NAME_LEGACY):
             return pi.get("uuid", "") or ""
     return ""
 

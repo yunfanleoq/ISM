@@ -1,6 +1,6 @@
 {
   "schema": "dcim-workorder-mock-v1",
-  "project": "寻智机房环境-xunzhi-jf",
+  "project": "循智元晟",
   "alarms": [
     {
       "alarm_id": "alm-xz-leak-01",

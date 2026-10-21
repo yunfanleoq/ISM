@@ -1840,7 +1840,7 @@ export default {
     },
     isImageHotspotComponent () {
       const type = this.configObject && this.configObject.type
-      return type === 'ism-view-png-image' || type === 'image' || type === 'view-svg-image'
+      return type === 'ism-view-png-image' || type === 'image' || type === 'view-svg-image' || type === 'view-svg-text' || type === 'ism-view-svg-text'
     },
     imageDataBind () {
       if (!this.configObject || !Array.isArray(this.configObject.dataBind)) {
