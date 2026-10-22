@@ -1,4 +1,5 @@
 import Vue from 'vue'
+import '@/utils/alarmVoice'
 import App from './App.vue'
 import {initRouter} from './router'
 import './theme/index.less'
@@ -9,6 +10,7 @@ import 'animate.css/source/animate.css'
 import Plugins from '@/plugins'
 import {initI18n} from '@/utils/i18n'
 import bootstrap from '@/bootstrap'
+import XiaoAn from '@/xunzhiJf/xiaoan/XiaoAn.vue'
 import DisableDevtool from 'disable-devtool';
 import 'moment/locale/zh-cn'
 import dataV from '@jiaminghi/data-view'
@@ -63,5 +65,13 @@ async function startApp() {
     i18n,
     render: h => h(App),
   }).$mount('#app')
+  const xiaoanHost = document.createElement('div')
+  document.body.appendChild(xiaoanHost)
+  new Vue({
+    router,
+    store,
+    i18n,
+    render: h => h(XiaoAn),
+  }).$mount(xiaoanHost)
 }
 startApp()

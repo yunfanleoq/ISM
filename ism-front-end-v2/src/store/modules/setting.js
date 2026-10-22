@@ -3,6 +3,7 @@ import {ADMIN} from '@/config/default'
 import {
   getHomeDashboardConfig,
   getHomeDashboardPath,
+  hideRetiredHomeMenu,
 } from '@/config/homeDashboard'
 import {formatFullPath} from '@/utils/i18n'
 import {filterMenu} from '@/utils/authority-utils'
@@ -113,7 +114,7 @@ export default {
       state.pageMinHeight += minHeight
     },
     setMenuData(state, menuData) {
-      state.menuData = menuData
+      state.menuData = hideRetiredHomeMenu(menuData)
     },
     setAsyncRoutes(state, asyncRoutes) {
       state.asyncRoutes = asyncRoutes

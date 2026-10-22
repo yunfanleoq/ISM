@@ -227,6 +227,7 @@ func init() {
 
 	//授权页面
 	beego.Router("/checkLicense", &controllers.AuthLicenseController{}, "*:GetLicense")
+	beego.Router("/alarmVoice", &controllers.AlarmVoiceController{}, "*:Speak")
 	beego.Router("/saveLicense", &controllers.AuthLicenseController{}, "*:SaveLicense")
 
 	//告警报告
@@ -509,6 +510,17 @@ func init() {
 	// ===== 寻智 dcim-workorder Mock（S4 骨架）=====
 	beego.Router("/xunzhi-jf/workorder/:woId", &controllers.XunzhiJfWorkorderController{}, "get:GetWorkorder")
 	beego.Router("/xunzhi-jf/workorder/from-alarm", &controllers.XunzhiJfWorkorderController{}, "post:CreateFromAlarm")
+
+	beego.Router("/ontology/schema", &controllers.OntologyController{}, "get:Schema")
+	beego.Router("/ontology/compile", &controllers.OntologyController{}, "post:Compile")
+	beego.Router("/ontology/graph", &controllers.OntologyController{}, "get:Graph")
+	beego.Router("/ontology/live", &controllers.OntologyController{}, "get:Live")
+	beego.Router("/ontology/lint", &controllers.OntologyController{}, "get:Lint")
+	beego.Router("/ontology/actions/:actionId", &controllers.OntologyController{}, "post:Action")
+	beego.Router("/agent/catalog", &controllers.AgentRunController{}, "get:Catalog")
+	beego.Router("/agent/talk", &controllers.AgentRunController{}, "post:Talk")
+	beego.Router("/agent/runs", &controllers.AgentRunController{}, "post:Start")
+	beego.Router("/agent/runs/:id", &controllers.AgentRunController{}, "get:Get")
 	// ===== end 寻智 dcim-workorder Mock =====
 
 	// ===== 公安局动环 =====
@@ -621,6 +633,7 @@ var FilterUser = func(ctx *context.Context) {
 				!strings.Contains(ctx.Request.RequestURI, "/displayImageUpload") &&
 				!strings.Contains(ctx.Request.RequestURI, "/GetAuthLicenseInfo") &&
 				!strings.Contains(ctx.Request.RequestURI, "/SSEPushData") &&
+				!strings.Contains(ctx.Request.RequestURI, "/alarmVoice") &&
 				ctx.Request.RequestURI != "/login" &&
 				ctx.Request.RequestURI != "/snmpmodelimportxml" &&
 				ctx.Request.RequestURI != "/snmpmodelimport" &&
@@ -672,6 +685,7 @@ var FilterUser = func(ctx *context.Context) {
 				!strings.Contains(ctx.Request.RequestURI, "/displayImageUpload") &&
 				!strings.Contains(ctx.Request.RequestURI, "/GetAuthLicenseInfo") &&
 				!strings.Contains(ctx.Request.RequestURI, "/SSEPushData") &&
+				!strings.Contains(ctx.Request.RequestURI, "/alarmVoice") &&
 				result != errmsg.SUCCSE &&
 				ctx.Request.RequestURI != "/snmpmodelimportxml" &&
 				ctx.Request.RequestURI != "/snmpmodelimport" &&

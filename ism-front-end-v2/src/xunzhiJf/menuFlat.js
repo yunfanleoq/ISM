@@ -54,6 +54,8 @@ export const XUNZHI_JF_MENU_FLAT = [
   { sort: 1120, menu_code: 'jf.system.scope', title: '数据范围', parent_code: 'jf.system', module_id: 'envmon-iam', route_or_page: '/xunzhi/jf/system/scope', perm: 'iam:scope' },
   { sort: 1130, menu_code: 'jf.system.north', title: '北向接口', parent_code: 'jf.system', module_id: 'envmon-north', route_or_page: '/xunzhi/jf/system/north', perm: 'collect:config' },
   { sort: 1140, menu_code: 'jf.system.audit', title: '审计日志', parent_code: 'jf.system', module_id: 'envmon-iam', route_or_page: '/xunzhi/jf/system/audit', perm: 'iam:user' },
+  { sort: 1200, menu_code: 'jf.ontology', title: '本体中心', parent_code: '(root)', module_id: 'envmon-viz', route_or_page: '/xunzhi/jf/ontology', perm: 'viz:read' },
+  { sort: 1210, menu_code: 'jf.agent', title: '智能体', parent_code: '(root)', module_id: 'envmon-viz', route_or_page: '/xunzhi/jf/agent', perm: 'viz:read' },
 ]
 
 export function menuCodeToRouterKey(menuCode) {

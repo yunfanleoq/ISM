@@ -21,6 +21,8 @@ const routesConfig = [
   'XunzhiJfVizDashboardAlias',
   'XunzhiJfVizNav25dAlias',
   'XunzhiJfVizShowAlias',
+  'XunzhiJfOntologyAlias',
+  'XunzhiJfAgentAlias',
   'BjgaScreen',
   'DisPlayRunApp',
   'ShareApp',

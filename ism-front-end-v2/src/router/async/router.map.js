@@ -7,7 +7,7 @@ const view = {
 import TabsView from '@/layouts/tabs/TabsView'
 // import PageView from '@/layouts/PageView'
 import BlankView from '@/layouts/BlankView'
-import {createHomeDashboardRedirect} from '@/config/homeDashboard'
+import {createHomeDashboardRedirect, HOME_DASHBOARD_PATH} from '@/config/homeDashboard'
 import { applyXunzhiJfRouterMap } from '@/xunzhiJf/registerRoutes'
 import { xunzhiJfVizRouteBeforeEnter } from '@/xunzhiJf/projectContext'
 
@@ -1179,12 +1179,11 @@ applyXunzhiJfRouterMap(routerMap)
 routerMap.XunzhiJfVizPlaneAlias = {
   path: '/xunzhi/jf/viz/plane',
   name: 'XunzhiJfVizPlaneAlias',
-  beforeEnter: xunzhiJfVizRouteBeforeEnter,
+  redirect: () => ({ path: HOME_DASHBOARD_PATH }),
   meta: {
     invisible: true,
     authority: { role: ['Admin', 'Operator', 'User'] },
   },
-  component: () => import('@/xunzhiJf/pages/VizPlanePage.vue'),
 }
 routerMap.XunzhiJfVizDashboardAlias = {
   path: '/xunzhi/jf/viz/dashboard',
@@ -1215,6 +1214,26 @@ routerMap.XunzhiJfVizShowAlias = {
     authority: { role: ['Admin', 'Operator', 'User'] },
   },
   component: () => import('@/xunzhiJf/pages/DemoShowPage.vue'),
+}
+routerMap.XunzhiJfOntologyAlias = {
+  path: '/xunzhi/jf/ontology',
+  name: 'XunzhiJfOntologyAlias',
+  meta: {
+    invisible: true,
+    title: '本体中心',
+    authority: { role: ['Admin', 'Operator', 'User'] },
+  },
+  component: () => import('@/xunzhiJf/pages/OntologyCenter.vue'),
+}
+routerMap.XunzhiJfAgentAlias = {
+  path: '/xunzhi/jf/agent',
+  name: 'XunzhiJfAgentAlias',
+  meta: {
+    invisible: true,
+    title: '智能体',
+    authority: { role: ['Admin', 'Operator', 'User'] },
+  },
+  component: () => import('@/xunzhiJf/pages/AgentCenter.vue'),
 }
 routerMap.BjgaScreen = {
   path: '/bjga',

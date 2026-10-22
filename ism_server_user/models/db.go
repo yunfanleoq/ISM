@@ -9,6 +9,7 @@
 package models
 
 import (
+	"ISMServer/ontology"
 	protocol_common "ISMServer/protocol/common"
 	ISMNetwork "ISMServer/task/network"
 	"errors"
@@ -157,6 +158,9 @@ func CheckAllTables() {
 	}
 	if bjgaErr := BjgaAutoMigrate(); bjgaErr != nil {
 		gormlog.Info(bjgaErr)
+	}
+	if ontErr := ontology.AutoMigrate(Db); ontErr != nil {
+		gormlog.Info(ontErr)
 	}
 	if seedErr := BjgaEnsureSeed(); seedErr != nil {
 		gormlog.Info("bjga seed: %v", seedErr)

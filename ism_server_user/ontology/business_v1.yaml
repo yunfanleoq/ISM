@@ -1,0 +1,70 @@
+version: v1
+domain: dcim
+layer: business
+description: 业务对象与七条工作流的状态。动作白名单写在这里。
+entity_types:
+  - {type: AlarmPolicy, label: 告警策略, layer: business, maturity: live, source: alarm_trigger}
+  - {type: Alarm, label: 告警, layer: business, maturity: live, source: devices_alarm_list}
+  - {type: NotifyAttempt, label: 通知, layer: business, maturity: planned, source: 通知记录未单独落库}
+  - {type: WorkOrder, label: 工单, layer: business, maturity: mock, source: dcim_workorder_store.json}
+  - {type: WorkOrderEvent, label: 工单事件, layer: business, maturity: mock, source: dcim_workorder_store.json events}
+  - {type: KnowledgeItem, label: 知识条目, layer: business, maturity: planned, source: 无知识库}
+  - {type: AssetTicket, label: 资产票据, layer: business, maturity: planned, source: 上下架目前直接改 U 位 JSON}
+  - {type: CapacityAccount, label: 容量账, layer: business, maturity: mock, source: dcim_capacity_store.json}
+  - {type: Reservation, label: 预占, layer: business, maturity: mock, source: dcim_capacity_store.json reservations}
+  - {type: PlacementAdvice, label: 推荐上架, layer: business, maturity: planned, source: 无推荐结果}
+  - {type: EnergyLedger, label: 能耗账, layer: business, maturity: mock, source: dcim_energy_store.json}
+  - {type: ManualEnergyEntry, label: 能耗补录, layer: business, maturity: mock, source: dcim_energy_store.json manual_entries}
+  - {type: PueSnapshot, label: PUE快照, layer: business, maturity: mock, source: dcim_energy_store.json 计算}
+  - {type: CarbonFactor, label: 碳因子, layer: business, maturity: mock, source: dcim_energy_store.json carbon_factors}
+  - {type: CarbonSnapshot, label: 碳排放, layer: business, maturity: mock, source: dcim_energy_store.json 计算}
+  - {type: AccessEvent, label: 门禁事件, layer: business, maturity: mock, source: security_event_store.json}
+  - {type: IntrusionEvent, label: 入侵事件, layer: business, maturity: mock, source: security_event_store.json}
+  - {type: FireEvent, label: 消防事件, layer: business, maturity: mock, source: security_event_store.json}
+  - {type: LinkageState, label: 联动状态, layer: business, maturity: planned, source: 只记录不自动下发}
+  - {type: ControlRequest, label: 远程控制申请, layer: business, maturity: planned, source: 仍走 /setData，本体不执行}
+  - {type: ReportDefinition, label: 报表定义, layer: business, maturity: planned, source: 菜单有报表中心，无本体存储器}
+  - {type: ReportRun, label: 报表运行, layer: business, maturity: planned, source: 无}
+  - {type: Decision, label: 人工决定, layer: business, maturity: live, source: ont_decision}
+  - {type: Hypothesis, label: 根因假设, layer: business, maturity: planned, source: 智能体提议，默认隔离}
+  - {type: Gap, label: 缺口, layer: business, maturity: live, source: 编译器}
+relation_types:
+  - {relation: raised_by, label: 由设备产生, layer: bridge, from: ["*"], to: ["*"]}
+  - {relation: about_point, label: 关于测点, layer: bridge, from: ["*"], to: ["*"]}
+  - {relation: tracks, label: 跟踪, layer: bridge, from: ["*"], to: ["*"]}
+  - {relation: binds, label: 绑定, layer: bridge, from: ["*"], to: ["*"]}
+  - {relation: accounts_for, label: 核算, layer: bridge, from: ["*"], to: ["*"]}
+  - {relation: of_room, label: 属于机房, layer: bridge, from: ["*"], to: ["*"]}
+  - {relation: about, label: 关于, layer: bridge, from: ["*"], to: ["*"]}
+  - {relation: decides, label: 决定, layer: bridge, from: ["*"], to: ["*"]}
+  - {relation: hypothesizes, label: 假设, layer: bridge, from: ["*"], to: ["*"]}
+  - {relation: causes, label: 导致, layer: bridge, from: ["*"], to: ["*"]}
+axioms:
+  - {id: alarm_has_device, severity: error, label: 活动告警没有设备, layer: business, blocks_export: true}
+  - {id: alarm_point_on_device, severity: error, label: 告警测点不属于该设备, layer: business, blocks_export: true}
+  - {id: stale_alarm_without_action, severity: warning, label: 超时未处置, layer: business}
+  - {id: workorder_tracks_alarm, severity: warning, label: 工单没有跟踪告警, layer: business}
+  - {id: duplicate_open_workorder, severity: error, label: 同一告警多张未归档工单, layer: business, blocks_export: true}
+  - {id: capacity_free_negative, severity: error, label: 容量预占超出剩余, layer: business, blocks_export: true}
+  - {id: capacity_nc_missing, severity: warning, label: 网络或制冷容量无正式账本, layer: business}
+  - {id: pue_it_missing, severity: warning, label: PUE 的 IT 功率缺失, layer: business}
+  - {id: agent_control_forbidden, severity: error, label: 智能体不得指向控制, layer: business, blocks_export: true}
+action_types:
+  - {id: VerifyEdge, label: 确认边, implemented: true, workflow: alarm_lifecycle, allowed_interfaces: [OntologyCenter]}
+  - {id: AckAlarm, label: 确认告警, implemented: true, workflow: alarm_lifecycle, allowed_interfaces: [OntologyCenter]}
+  - {id: CreateWorkOrder, label: 由告警建单, implemented: true, workflow: workorder_close, allowed_interfaces: [OntologyCenter]}
+  - {id: TransitWorkOrder, label: 流转工单, implemented: true, workflow: workorder_close, allowed_interfaces: [OntologyCenter]}
+  - {id: MountAsset, label: 上架占U, implemented: true, workflow: asset_lifecycle, allowed_interfaces: [OntologyCenter]}
+  - {id: UnmountAsset, label: 下架, implemented: true, workflow: asset_lifecycle, allowed_interfaces: [OntologyCenter]}
+  - {id: ReserveCapacity, label: 容量预占, implemented: true, workflow: capacity_reserve, allowed_interfaces: [OntologyCenter]}
+  - {id: AddManualEnergy, label: 能耗补录, implemented: true, workflow: energy_pue, allowed_interfaces: [OntologyCenter]}
+  - {id: PublishKnowledge, label: 沉淀知识, implemented: false, workflow: workorder_close, allowed_interfaces: [OntologyCenter]}
+  - {id: RecommendPlacement, label: 推荐上架, implemented: false, workflow: capacity_reserve, allowed_interfaces: [OntologyCenter]}
+  - {id: IngestSecurityEvent, label: 安防事件入列, implemented: false, workflow: security_fire_ingest, allowed_interfaces: [OntologyCenter]}
+  - {id: ApproveControl, label: 批准远程控制, implemented: false, workflow: remote_control, allowed_interfaces: []}
+function_types:
+  - {id: derive_pue, label: 计算PUE, kind: derived, input_types: [EnergyLedger], output_props: [pue]}
+  - {id: ui_ack, label: 确认告警按钮, kind: ui, triggers_action: AckAlarm}
+interface_types:
+  - {id: OntologyCenter, label: 本体中心, surface: /xunzhi/jf/ontology, allowed_actions: [VerifyEdge, AckAlarm, CreateWorkOrder, TransitWorkOrder, MountAsset, UnmountAsset, ReserveCapacity, AddManualEnergy], write_json_direct: false}
+  - {id: AgentRuntime, label: 智能体运行器, surface: agent, allowed_actions: [], write_json_direct: false}

@@ -2584,9 +2584,9 @@ func (c *ISMSystem) RebootISMSystem() {
 // applyXunanBranding 覆盖授权文件中的「零界X / zerobound」等非正式品牌为循安现场口径。
 // Logo 使用 static/branding/logo-xunan-hexagon.png（自问题文档提取）。
 func applyXunanBranding(result map[string]interface{}) {
-	result["systemName"] = "循安电力监控平台"
-	result["SystemAPPName"] = "循安"
-	result["systemCompany"] = "北京循安科技有限公司"
+	result["systemName"] = "数据中心动环监控平台"
+	result["SystemAPPName"] = "数据中心动环监控平台"
+	result["systemCompany"] = ""
 	result["systemUrl"] = "xunan"
 	result["SystemLogo"] = "/static/branding/logo-xunan-hexagon.png"
 }

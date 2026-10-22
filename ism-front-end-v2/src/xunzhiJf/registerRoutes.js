@@ -1,4 +1,5 @@
 import BlankView from '@/layouts/BlankView'
+import { HOME_DASHBOARD_PATH } from '@/config/homeDashboard'
 import { xunzhiJfVizRouteBeforeEnter } from '@/xunzhiJf/projectContext'
 import {
   XUNZHI_JF_MENU_FLAT,
@@ -10,6 +11,8 @@ const GROUP_ICON = {
   'jf.monitor': 'dashboard',
   'jf.alarm': 'bell',
   'jf.viz': 'picture',
+  'jf.ontology': 'apartment',
+  'jf.agent': 'team',
   'jf.asset': 'database',
   'jf.capacity': 'pie-chart',
   'jf.workorder': 'solution',
@@ -29,6 +32,8 @@ const WIRED = new Set([
   'jf.viz.nav25d',
   'jf.viz.show',
   'jf.viz.bjga',
+  'jf.ontology',
+  'jf.agent',
 ])
 
 const BJGA_HASH = {
@@ -96,7 +101,7 @@ export function fullPathForRow(row) {
 
 function firstLeafSegment(menuCode) {
   const child = XUNZHI_JF_MENU_FLAT
-    .filter(r => r.parent_code === menuCode && r.route_or_page && r.route_or_page !== '—')
+    .filter(r => r.parent_code === menuCode && r.route_or_page && r.route_or_page !== '—' && r.menu_code !== 'jf.viz.plane')
     .sort((a, b) => a.sort - b.sort)[0]
   if (!child) return ''
   return routeSegmentForRow(child)
@@ -134,6 +139,10 @@ function componentForRow(row) {
       return () => import('@/xunzhiJf/pages/VizNav25dPage.vue')
     case 'jf.viz.show':
       return () => import('@/xunzhiJf/pages/DemoShowPage.vue')
+    case 'jf.ontology':
+      return () => import('@/xunzhiJf/pages/OntologyCenter.vue')
+    case 'jf.agent':
+      return () => import('@/xunzhiJf/pages/AgentCenter.vue')
     default:
       return () => import('@/xunzhiJf/pages/SkeletonPage.vue')
   }
@@ -180,8 +189,12 @@ export function buildXunzhiJfRouterMap() {
       if (BJGA_HASH[row.menu_code]) {
         entry.meta.bjgaHash = BJGA_HASH[row.menu_code]
       }
-      if (row.menu_code === 'jf.viz.plane' || row.menu_code === 'jf.viz.dashboard') {
+      if (row.menu_code === 'jf.viz.dashboard') {
         entry.beforeEnter = xunzhiJfVizRouteBeforeEnter
+      }
+      if (row.menu_code === 'jf.viz.plane') {
+        entry.meta.invisible = true
+        entry.redirect = () => ({ path: HOME_DASHBOARD_PATH })
       }
       if (!WIRED.has(row.menu_code) && !BJGA_HASH[row.menu_code]) {
         entry.meta.skeletonProps = skeletonMeta(row)
@@ -207,7 +220,7 @@ export function buildXunzhiJfMenuConfigChildren() {
   byParent.forEach(list => list.sort((a, b) => a.sort - b.sort))
 
   function build(parentCode) {
-    return (byParent.get(parentCode) || []).map(row => {
+    return (byParent.get(parentCode) || []).filter(row => row.menu_code !== 'jf.viz.plane').map(row => {
       const node = {
         router: menuCodeToRouterKey(row.menu_code),
         name: row.title,
@@ -220,7 +233,7 @@ export function buildXunzhiJfMenuConfigChildren() {
 
   return {
     router: XUNZHI_JF_SECTION_ROUTER,
-    name: '循智元晟',
+    name: '机房环境',
     icon: 'cloud-server',
     children: build('(root)'),
   }

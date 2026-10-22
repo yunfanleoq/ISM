@@ -1,6 +1,6 @@
 <template>
   <div class="xunzhi-home">
-    <a-alert type="info" show-icon message="循智元晟工作台（演示骨架）" description="KPI 卡片占位；非正式验收。" />
+    <a-alert type="info" show-icon message="机房环境工作台（演示骨架）" description="KPI 卡片占位；非正式验收。" />
     <a-row :gutter="16" style="margin-top: 16px">
       <a-col :span="6"><a-card title="活动告警">—</a-card></a-col>
       <a-col :span="6"><a-card title="测点在线">—</a-card></a-col>
@@ -11,6 +11,8 @@
       <a-button type="primary" @click="$router.push('/xunzhi/jf/monitor/overview')">实时总览</a-button>
       <a-button style="margin-left: 8px" @click="$router.push('/xunzhi/jf/viz/plane')">环境平面大屏</a-button>
       <a-button style="margin-left: 8px" @click="$router.push('/xunzhi/jf/alarm/active')">活动告警</a-button>
+      <a-button style="margin-left: 8px" @click="$router.push('/xunzhi/jf/ontology')">本体中心</a-button>
+      <a-button style="margin-left: 8px" @click="$router.push('/xunzhi/jf/agent')">智能体</a-button>
     </a-card>
   </div>
 </template>

@@ -2,8 +2,8 @@
   <common-layout>
     <div class="top">
       <div class="header">
-        <img alt="循安" class="logo" :src="systemLogo" />
-        <div class="phone-brand-title">循安科技电力监控平台</div>
+        <img alt="数据中心动环监控平台" class="logo" :src="systemLogo" />
+        <div class="phone-brand-title">数据中心动环监控平台</div>
       </div>
     </div>
     <div class="login">

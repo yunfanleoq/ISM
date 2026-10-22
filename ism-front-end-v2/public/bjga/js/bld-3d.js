@@ -158,9 +158,12 @@
     /* plate：贴在这个面上的文字（名称/编号）。跟面一起画、一起裁切，
        不进 pickLbl，点字等于点这块面板，不会另起一层抢走点击。 */
     this.plate = opt.plate || null;
+    this.skin = opt.skin || null;
     this.cab = opt.cab || null;
     this.ax = opt.ax; this.ay = opt.ay; this.az = opt.az;
     this.frame = opt.frame || 0;
+    /* quiet：细节面（网孔、色条、底座）仍可点中，但悬停时不各描一圈白边。 */
+    this.quiet = opt.quiet ? 1 : 0;
     this.sv = [];                     /* 复用：屏幕点 */
   }
   /* 立方体六面：col 必须传原色，明暗由 k 分配 —— 预先 shade 会二次压暗成一团黑 */
@@ -173,11 +176,11 @@
       L = opt.leftK == null ? 0.64 : opt.leftK,
       Bk = opt.backK == null ? 0.56 : opt.backK,
       Bt = opt.bottomK == null ? 0.42 : opt.bottomK;
-    function mk(p, k) { out.push(new F(p, col, { k: k, o: o, stroke: o.stroke, sw: o.sw, op: o.op, obj: o.obj, lay: opt.lay == null ? 1 : opt.lay, fade: opt.fade })); }
+    function mk(p, k) { out.push(new F(p, col, { k: k, o: o, stroke: o.stroke, sw: o.sw, op: o.op, obj: o.obj, lay: opt.lay == null ? 1 : opt.lay, fade: opt.fade, quiet: opt.quiet })); }
     mk([[x, y, z + h], [x + w, y, z + h], [x + w, y + d, z + h], [x, y + d, z + h]], T);   /* 顶 +z */
     mk([[x, y, z], [x, y + d, z], [x + w, y + d, z], [x + w, y, z]], Bt);               /* 底 -z */
-    mk([[x + w, y, z], [x + w, y + d, z], [x + w, y + d, z + h], [x + w, y, z + h]], R); /* 右 +x */
-    mk([[x, y, z], [x, y, z + h], [x, y + d, z + h], [x, y + d, z]], L);               /* 左 -x */
+    if (!opt.skipRight) mk([[x + w, y, z], [x + w, y + d, z], [x + w, y + d, z + h], [x + w, y, z + h]], R); /* 右 +x */
+    if (!opt.skipLeft) mk([[x, y, z], [x, y, z + h], [x, y + d, z + h], [x, y + d, z]], L);               /* 左 -x */
     mk([[x, y + d, z], [x, y + d, z + h], [x + w, y + d, z + h], [x + w, y + d, z]], Fr); /* 前 +y */
     mk([[x, y, z], [x + w, y, z], [x + w, y, z + h], [x, y, z + h]], Bk);               /* 后 -y */
     return out;
@@ -189,7 +192,7 @@
     var o = opt.o || {};
     out.push(new F([[x, y, z], [x + w, y, z], [x + w, y + d, z], [x, y + d, z]], col, {
       k: opt.k == null ? 1 : opt.k, o: o, stroke: o.stroke, sw: o.sw, op: o.op, obj: o.obj,
-      blend: o.blend, noFog: o.noFog, lay: opt.lay == null ? 0 : opt.lay
+      blend: o.blend, noFog: o.noFog, lay: opt.lay == null ? 0 : opt.lay, quiet: opt.quiet
     }));
     return out;
   }
@@ -454,21 +457,92 @@
     box(faces, -1.2, -1.8, -0.06, 0.22, Dp + 2.2, WH, C.wall, wopt);
     box(faces, W + 1.0, -1.8, -0.06, 0.22, Dp + 2.2, WH, C.wall, wopt);
 
+    /* 俯视机柜：深灰柜体。台账没写门型；本屏机柜按高开孔率网孔门（进柜门贴图同结构）。
+       冷通道前门、热通道尾门都是黑框黑网，顶上留一条负载色。列头柜仍是实心门。
+       doorSign>0 冷通道在 +x。 */
+    function makeAisleMesh() {
+      var cnv = document.createElement('canvas');
+      var W = 160, Hn = 520;
+      cnv.width = W; cnv.height = Hn;
+      var g = cnv.getContext('2d');
+      g.fillStyle = '#0C1016';
+      g.fillRect(0, 0, W, Hn);
+      g.fillStyle = '#3A424C';
+      g.fillRect(16, 18, W - 32, Hn - 36);
+      g.fillStyle = '#05070A';
+      var gap = 16, hw = 11, hh = 8, row = 0, yy, xx;
+      for (yy = 24; yy < Hn - 24; yy += gap) {
+        var shift = (row++ % 2) ? gap * 0.5 : 0;
+        for (xx = 20 + shift; xx < W - 22; xx += gap) g.fillRect(xx, yy, hw, hh);
+      }
+      g.fillStyle = '#10141A';
+      g.fillRect(0, 0, 16, Hn);
+      g.fillRect(W - 16, 0, 16, Hn);
+      g.fillRect(0, 0, W, 18);
+      g.fillRect(0, Hn - 18, W, 18);
+      g.strokeStyle = '#5C6772';
+      g.lineWidth = 2;
+      g.strokeRect(8, 9, W - 16, Hn - 18);
+      return cnv;
+    }
+    function aisleSkin(kind) {
+      if (!aisleSkin.cache) aisleSkin.cache = { mesh: makeAisleMesh() };
+      return aisleSkin.cache[kind] || null;
+    }
+    function aisleCold(i) {
+      var right = i < colKeys.length - 1 ? ((lay.aisles || [])[i] || { t: i % 2 === 0 ? 'cold' : 'hot' }) : null;
+      var left = i > 0 ? ((lay.aisles || [])[i - 1] || { t: (i - 1) % 2 === 0 ? 'cold' : 'hot' }) : null;
+      if (right && right.t === 'cold') return 1;
+      if (left && left.t === 'cold') return -1;
+      return right ? 1 : -1;
+    }
+    function drawAisleRack(x, y, depth, width, h, tint, id, doorSign, solid) {
+      var o = { obj: id };
+      var mesh = !solid;
+      box(faces, x - 0.018, y - 0.014, 0, depth + 0.036, width + 0.028, 0.05, '#121820', {
+        topK: 1.05, rightK: 0.7, frontK: 0.6, leftK: 0.48, backK: 0.42, o: o, quiet: 1
+      });
+      box(faces, x, y, 0.045, depth, width, h - 0.045, '#2A3442', {
+        topK: 1.7, rightK: 0.86, frontK: 0.78, leftK: 0.58, backK: 0.46, o: o,
+        skipRight: mesh || doorSign > 0, skipLeft: mesh || doorSign < 0
+      });
+      plate(faces, x + 0.07, y + 0.055, h + 0.016, depth - 0.14, width - 0.11, tint, {
+        k: 1.2, lay: 1, o: o
+      });
+      plate(faces, x + depth * 0.34, y + width * 0.34, h + 0.03, depth * 0.28, width * 0.28, '#0B1016', {
+        k: 0.8, lay: 1, quiet: 1, o: o
+      });
+      var doorY = y + 0.035, doorD = width - 0.07, doorZ = 0.11, doorH = h - 0.2;
+      function doorFace(px, yy, zz, dd, hh, col, k, sign, skin) {
+        /* 下左、上左、上右、下右，和铭牌同一套贴图坐标；法线朝柜外。 */
+        var p = sign > 0
+          ? [[px, yy + dd, zz], [px, yy + dd, zz + hh], [px, yy, zz + hh], [px, yy, zz]]
+          : [[px, yy, zz], [px, yy, zz + hh], [px, yy + dd, zz + hh], [px, yy + dd, zz]];
+        faces.push(new F(p, col, { k: k, obj: id, lay: 1, quiet: 1, skin: skin || null }));
+      }
+      function oneDoor(sign, useMesh) {
+        var dx = sign > 0 ? x + depth : x;
+        var hx = sign > 0 ? dx + 0.016 : dx - 0.016;
+        doorFace(dx, doorY, doorZ, doorD, doorH, useMesh ? '#10141A' : '#3A3428', 1.05, sign, useMesh ? 'mesh' : null);
+        doorFace(hx, doorY + 0.012, doorZ + doorH - 0.055, doorD - 0.024, 0.04, tint, 1.2, sign, null);
+        if (!useMesh) {
+          doorFace(hx, doorY + 0.02, doorZ + doorH * 0.42, doorD - 0.04, 0.05, '#E4D2A2', 1.15, sign, null);
+        }
+      }
+      oneDoor(doorSign, mesh);
+      if (mesh) oneDoor(-doorSign, true);
+    }
+
     /* 列 / 机柜 / 通道 */
     colKeys.forEach(function (key, i) {
       var list = colsMap[key].slice().sort(function (a, b) { return a.seq - b.seq; });
       var x = i * (CD + AW);
       var y0 = 1.0;
+      var doorSign = aisleCold(i);
 
       list.forEach(function (c, j) {
         var y = y0 + j * (CW + GAP);
-        var col = lvColor(c);
-        var o = { obj: 'cab:' + c.name };
-        box(faces, x, y, 0, CD, CW, H, col, { topK: 1.5, rightK: 0.86, frontK: 0.66, o: o });
-        /* 正面使用率色带：越高越满，和 2D 平面同一套读法 */
-        var fh = Math.max(0.12, H * Math.min(1, (c.comp || 0) / 100));
-        if (c.dev) face(faces, y + CW + 0.002, x + 0.12, 0, CD - 0.24, fh, shade(col, 1.55),
-          { o: { op: 0.6, obj: 'cab:' + c.name } });
+        drawAisleRack(x, y, CD, CW, H, lvColor(c), 'cab:' + c.name, doorSign, false);
         objs['cab:' + c.name] = {
           kind: 'cab', name: c.name, drill: c.name,
           focus: [x + CD / 2, y + CW / 2, 1],
@@ -483,8 +557,8 @@
           { size: 9, col: '#7FA6C6', align: 'middle', lay: 2, obj: 'cab:' + c.name, dim: 1 });
       });
 
-      /* 列头柜 */
-      box(faces, x, y0 - 1.0, 0, CD, 0.72, H, C.lhd, { topK: 1.4, rightK: 0.8, frontK: 0.6, o: { obj: roomId } });
+      /* 列头柜：同样是深灰柜体，金色只留在柜顶，用来和设备柜分开。 */
+      drawAisleRack(x, y0 - 1.0, CD, 0.72, H, C.lhd, roomId, doorSign, true);
       /* 列标是纯说明，不参与拾取：它挂在列头柜上方，投影后可能压到机柜，
          点了会得到"机房"而不是机柜 */
       T(labels, x + CD / 2, y0 - 1.05, H + 0.6, 'L' + key,
@@ -544,7 +618,7 @@
        整排压成一条线；再高柜列缩到画面中间一条带、四边大片留白。
        yaw 0.85 让通道斜着走，5 列在屏幕上横向铺开而不是叠在一起。 */
     return {
-      faces: faces, lines: lines, labels: labels,
+      faces: faces, lines: lines, labels: labels, shellSkin: aisleSkin,
       sub: colKeys.length + ' 列 × ' + maxPer + ' 柜 · ' + r.cabCount + ' 架',
       bb: { x0: -1.3, y0: -1.9, z0: -0.06, x1: W + 1.3, y1: Dp + 0.5, z1: 3.5 },
       /* 取景只算柜列本体（不含 3.3m 高的墙和远处地板）：
@@ -571,7 +645,7 @@
       posePoint(pose, lx + w, ly, lz)
     ], col, {
       k: opt.k == null ? 1 : opt.k, obj: o.obj || null, op: o.op, lay: 1,
-      noFog: o.noFog, dyn: o.dyn, plate: o.plate || null, stroke: o.stroke, sw: o.sw,
+      noFog: o.noFog, dyn: o.dyn, plate: o.plate || null, skin: o.skin || null, stroke: o.stroke, sw: o.sw,
       frame: o.frame || 0,
       cab: pose && pose.cab && pose.cab.name, ax: pose && pose.cx, ay: pose && pose.cy, az: 1
     }));
@@ -595,7 +669,7 @@
     mk([P(lx, ly, lz), P(lx, ly + d, lz), P(lx + w, ly + d, lz), P(lx + w, ly, lz)], 0.34);
     mk([P(lx + w, ly, lz), P(lx + w, ly + d, lz), P(lx + w, ly + d, lz + h), P(lx + w, ly, lz + h)], Rk);
     mk([P(lx, ly, lz), P(lx, ly, lz + h), P(lx, ly + d, lz + h), P(lx, ly + d, lz)], Lk);
-    mk([P(lx, ly + d, lz), P(lx, ly + d, lz + h), P(lx + w, ly + d, lz + h), P(lx + w, ly + d, lz)], Fk);
+    if (!opt.skipFront) mk([P(lx, ly + d, lz), P(lx, ly + d, lz + h), P(lx + w, ly + d, lz + h), P(lx + w, ly + d, lz)], Fk);
     mk([P(lx, ly, lz), P(lx + w, ly, lz), P(lx + w, ly, lz + h), P(lx, ly, lz + h)], Bk);
   }
   function devPlate(a) {
@@ -712,6 +786,122 @@
       }
     });
 
+    /* 高端 42U 外壳：参照 NetShelter SX / Rittal TS IT 这类机柜的共同结构
+       （单扇高开孔率前门、左铰链右旋锁、底座调平脚、顶盖走线口、开门后的 19 英寸立柱）。
+       不贴厂商商标。网孔和 U 位刻度是各画一次的贴图，再贴到面上。 */
+    function shellSkin(kind) {
+      if (!shellSkin.cache) {
+        shellSkin.cache = { door: makeDoorSkin(), rail: makeRailSkin() };
+      }
+      return shellSkin.cache[kind] || null;
+    }
+    function makeDoorSkin() {
+      var cnv = document.createElement('canvas');
+      cnv.width = 420;
+      cnv.height = 1280;
+      var g = cnv.getContext('2d');
+      g.fillStyle = '#14181E';
+      g.fillRect(0, 0, 420, 1280);
+      g.fillStyle = '#2C343E';
+      g.fillRect(0, 0, 34, 1280);
+      g.fillRect(386, 0, 34, 1280);
+      g.fillRect(0, 0, 420, 42);
+      g.fillRect(0, 1238, 420, 42);
+      var mx = 48, my = 58, mw = 324, mh = 1164;
+      var grd = g.createLinearGradient(mx, 0, mx + mw, 0);
+      grd.addColorStop(0, '#12181E');
+      grd.addColorStop(0.38, '#5A6672');
+      grd.addColorStop(0.7, '#2A323C');
+      grd.addColorStop(1, '#161C22');
+      g.fillStyle = grd;
+      g.fillRect(mx, my, mw, mh);
+      g.fillStyle = '#030508';
+      var gapX = 22, gapY = 16, hw = 13, hh = 8, y, x, row = 0;
+      for (y = my + 8; y < my + mh - 8; y += gapY) {
+        var shift = (row++ % 2) ? gapX * 0.5 : 0;
+        for (x = mx + 6 + shift; x < mx + mw - 14; x += gapX) g.fillRect(x, y, hw, hh);
+      }
+      g.strokeStyle = 'rgba(180,196,210,.45)';
+      g.lineWidth = 2;
+      g.strokeRect(mx + 1, my + 1, mw - 2, mh - 2);
+      g.fillStyle = '#D5DEE8';
+      var hy, hinges = [210, 620, 1040];
+      for (hy = 0; hy < hinges.length; hy++) {
+        g.fillRect(8, hinges[hy], 16, 52);
+        g.fillStyle = '#6E7A88';
+        g.fillRect(12, hinges[hy] + 10, 8, 32);
+        g.fillStyle = '#D5DEE8';
+      }
+      g.fillStyle = '#E4EAF0';
+      g.fillRect(392, 520, 14, 168);
+      g.fillStyle = '#1A2028';
+      g.fillRect(396, 568, 6, 78);
+      g.beginPath();
+      g.arc(399, 500, 6, 0, Math.PI * 2);
+      g.fillStyle = '#F2F6FA';
+      g.fill();
+      g.fillStyle = '#8EA0B0';
+      g.fillRect(168, 16, 84, 5);
+      return cnv;
+    }
+    function makeRailSkin() {
+      var U = 42, rowH = 36, W = 72, Hn = U * rowH;
+      var cnv = document.createElement('canvas');
+      cnv.width = W;
+      cnv.height = Hn;
+      var g = cnv.getContext('2d');
+      g.fillStyle = '#C5CED6';
+      g.fillRect(0, 0, W, Hn);
+      g.fillStyle = '#8E99A4';
+      g.fillRect(0, 0, 6, Hn);
+      g.font = '600 18px sans-serif';
+      g.textBaseline = 'middle';
+      g.textAlign = 'right';
+      var i, u, y;
+      for (i = 0; i < U; i++) {
+        u = U - i;
+        y = i * rowH;
+        g.fillStyle = (u % 2) ? '#B7C2CC' : '#D5DEE6';
+        g.fillRect(6, y + 1, W - 8, rowH - 2);
+        g.fillStyle = '#1A1E24';
+        g.fillRect(W - 28, y + 8, 16, 18);
+        g.fillStyle = '#1C2834';
+        g.fillText(String(u), W - 34, y + rowH / 2);
+      }
+      return cnv;
+    }
+    function addPremiumShell(pose, id) {
+      var CW = width, CD = depth, post = 0.032;
+      /* 内衬只留侧壁和背板。正面若画成一整块，质心在视高附近，画家算法会把它排到
+         低 U 设备前面，服务器面板就被这块近黑盖住。设备面和空位盲板已经封住开口。 */
+      posedBox(faces, post, 0.04, 0.02, CW - post * 2, CD - 0.1, H - 0.04, '#12161C', {
+        topK: 0.55, frontK: 0.38, rightK: 0.62, leftK: 0.4, skipFront: true, o: { obj: id }
+      }, pose);
+      posedBox(faces, 0, 0, 0, post, CD, H, '#2C343C', {
+        topK: 1.4, rightK: 0.86, frontK: 1.05, o: { obj: id }
+      }, pose);
+      posedBox(faces, CW - post, 0, 0, post, CD, H, '#262E36', {
+        topK: 1.32, leftK: 0.48, frontK: 0.9, o: { obj: id }
+      }, pose);
+      posedBox(faces, -0.016, -0.014, -0.072, CW + 0.032, CD + 0.022, 0.072, '#0E1218', {
+        topK: 1.08, frontK: 0.72, o: { obj: id }
+      }, pose);
+      var foot = [[0.046, 0.05], [CW - 0.08, 0.05], [0.046, CD - 0.09], [CW - 0.08, CD - 0.09]];
+      var fi;
+      for (fi = 0; fi < foot.length; fi++) {
+        posedBox(faces, foot[fi][0], foot[fi][1], -0.104, 0.034, 0.03, 0.034, '#D7E0E8', {
+          topK: 1.65, frontK: 1.15
+        }, pose);
+      }
+      posedBox(faces, -0.008, -0.008, H, CW + 0.016, CD + 0.014, 0.034, '#3A424C', {
+        topK: 1.62, frontK: 0.95, o: { obj: id }
+      }, pose);
+      posedBox(faces, CW * 0.3, CD * 0.28, H + 0.03, CW * 0.4, CD * 0.3, 0.016, '#10161C', {
+        topK: 0.75, o: { obj: id }
+      }, pose);
+      posedFace(faces, CD + 0.006, 0.004, 0.05, 0.006, H - 0.08, '#A8B4C0', {}, pose);
+      posedFace(faces, CD + 0.006, CW - 0.01, 0.05, 0.006, H - 0.08, '#46525C', {}, pose);
+    }
     function addCabFrame(pose) {
       posedFace(faces, depth + 0.018, -0.016, -0.04, width + 0.032, H + 0.1, '#FFFFFF', {
         o: { op: 0, frame: 1 }
@@ -721,17 +911,17 @@
     function drawDetail(pose) {
       var c = pose.cab;
       var idRack = 'rack:' + c.name;
-      var post = 0.026, CW = width, CD = depth;
+      var CW = width, CD = depth;
       objs[idRack] = {
         kind: 'rack', name: c.name, drill: null,
         focus: posePoint(pose, CW / 2, CD, H * 0.5),
         hint: c.name + ' · 当前机柜'
       };
-      posedBox(faces, 0, 0, -0.05, CW, CD, 0.05, '#2C3846', { topK: 1.15, o: { obj: idRack } }, pose);
-      posedBox(faces, 0, 0, H, CW, CD, 0.055, '#343E4C', { topK: 1.25, o: { obj: idRack } }, pose);
-      posedBox(faces, 0, 0, 0, post, CD, H, '#2A3542', { topK: 1.2, rightK: 0.7, o: { obj: idRack } }, pose);
-      posedBox(faces, CW - post, 0, 0, post, CD, H, '#2A3542', { topK: 1.2, leftK: 0.55, o: { obj: idRack } }, pose);
-      posedBox(faces, post, 0.03, 0, CW - post * 2, 0.035, H, '#10161E', { frontK: 0.7 }, pose);
+      addPremiumShell(pose, idRack);
+      posedBox(faces, 0.04, 0.04, 0.02, CW - 0.08, 0.03, H - 0.04, '#0C1016', { frontK: 0.45 }, pose);
+      /* 打开后不画门。19 英寸立柱留在门口两侧，U 位从下往上数，1 在最底。 */
+      posedFace(faces, CD + 0.012, 0.028, 0.04, 0.03, H - 0.08, '#C5CED6', { o: { skin: 'rail' } }, pose);
+      posedFace(faces, CD + 0.012, CW - 0.058, 0.04, 0.03, H - 0.08, '#C5CED6', { o: { skin: 'rail' } }, pose);
 
       var items = (byCab[c.name] || []).slice().sort(function (a, b) { return a.uStart - b.uStart; });
       var used = {};
@@ -739,7 +929,7 @@
         var uH = a.uH || (a.uEnd ? a.uEnd - a.uStart + 1 : 1);
         for (var u = a.uStart; u < a.uStart + uH && u <= 42; u++) used[u] = 1;
       });
-      var x0 = post + 0.004, fw = CW - post * 2 - 0.008;
+      var x0 = 0.058, fw = CW - 0.116;
       function blank(uStart, n) {
         var z0 = (uStart - 1) * HU + 0.0015, hh = n * HU - 0.003;
         posedFace(faces, CD + 0.004, x0, z0, fw, hh, '#121820', { o: { obj: idRack } }, pose);
@@ -805,31 +995,21 @@
       var c = pose.cab;
       var cid = 'cab:' + c.name;
       var CW = width, CD = depth;
-      var post = 0.03;
       var nDev = c.dev || (byCab[c.name] ? byCab[c.name].length : 0);
       objs[cid] = {
         kind: 'cab', name: c.name, drill: null,
         focus: posePoint(pose, CW / 2, CD, H * 0.5),
         hint: c.name + ' · ' + nDev + ' 台 · 综合 ' + Math.round(c.comp || 0) + '%'
       };
-      posedBox(faces, 0, 0, -0.04, CW, CD, 0.06, '#141C26', { topK: 1.05, o: { obj: cid } }, pose);
-      posedBox(faces, post, 0.02, 0.02, CW - post * 2, CD - 0.06, H - 0.06, '#1A222C', {
-        topK: 0.7, frontK: 0.45, o: { obj: cid }
+      addPremiumShell(pose, cid);
+      /* 单扇网孔门：铰链在左、旋锁在右，贴图跟门面一起透视。 */
+      var doorZ = 0.04, doorH = H - 0.1, doorX = 0.04, doorW = CW - 0.08;
+      posedBox(faces, doorX, CD - 0.018, doorZ, doorW, 0.02, doorH, '#1A2028', {
+        frontK: 0.8, topK: 1.1, skipFront: true, o: { obj: cid }
       }, pose);
-      posedBox(faces, 0, 0, 0, post, CD, H, '#3A4654', { topK: 1.25, rightK: 0.7, o: { obj: cid } }, pose);
-      posedBox(faces, CW - post, 0, 0, post, CD, H, '#3A4654', { topK: 1.25, leftK: 0.55, o: { obj: cid } }, pose);
-      posedBox(faces, 0, 0, H - 0.045, CW, CD, 0.05, '#465466', { topK: 1.35, o: { obj: cid } }, pose);
-      var doorZ = 0.055, doorH = H - 0.12;
-      var leaf = (CW - post * 2) * 0.5 - 0.008;
-      posedBox(faces, post, CD - 0.028, doorZ, leaf, 0.03, doorH, '#323C4A', {
-        frontK: 1.02, topK: 1.15, o: { obj: cid }
+      posedFace(faces, CD + 0.01, doorX + 0.002, doorZ + 0.012, doorW - 0.004, doorH - 0.02, '#14181E', {
+        o: { obj: cid, skin: 'door' }
       }, pose);
-      posedBox(faces, post + leaf + 0.012, CD - 0.028, doorZ, leaf, 0.03, doorH, '#2C3644', {
-        frontK: 0.92, topK: 1.1, o: { obj: cid }
-      }, pose);
-      posedFace(faces, CD + 0.008, CW / 2 - 0.005, doorZ + 0.01, 0.01, doorH - 0.02, '#0C1218', {}, pose);
-      posedBox(faces, post + leaf - 0.02, CD - 0.01, H * 0.48, 0.012, 0.012, 0.11, '#8EA0B4', { topK: 1.3 }, pose);
-      posedBox(faces, post + leaf + 0.02, CD - 0.01, H * 0.48, 0.012, 0.012, 0.11, '#8EA0B4', { topK: 1.3 }, pose);
       var items = byCab[c.name] || [];
       items.forEach(function (a) {
         if (a.uStart > 42) return;
@@ -842,28 +1022,32 @@
     }
 
     poses.forEach(function (pose) {
+      /* 只挡柜体。打开的门不占通道，人可以左右、前后挪到正对设备。 */
       blocks.push({ x0: pose.gx, y0: pose.gy, x1: pose.gx + depth, y1: pose.gy + width });
       if (inside && pose.cab.name === cabName) drawDetail(pose);
       else drawSimple(pose);
     });
 
-    var stand = 0.82;
+    /* 通道宽 1.7 米。站得太近（原先 0.82 米）一进画面就切掉柜顶和柜底。
+       默认退到约 1.38 米，整柜落在画面里。 */
+    var stand = 1.38;
     var px = focus.fx + focus.nx * stand;
     var py = focus.cy;
     var spawnYaw = Math.atan2(-focus.nx, -focus.ny || 0);
-    /* 视高约 1.6 米，平视略俯，人站在通道中间看柜门。 */
-    var eyeZ = 1.62;
-    var pit = -0.10;
+    /* 设备一般先占下半柜，视高从 1.62 降到 1.18，并略向下看。 */
+    var eyeZ = 1.18;
+    var pit = -0.16;
+    var zoom0 = 0.76;
     var devN = (byCab[cabName] || []).length;
     return {
-      faces: faces, lines: lines, labels: labels,
+      faces: faces, lines: lines, labels: labels, shellSkin: shellSkin,
       sub: devN + ' 台 · 通道走动',
       bb: { x0: -1.2, y0: -0.6, z0: -0.05, x1: Wroom + 1.8, y1: Dp + 0.4, z1: H + 0.4 },
       fitBB: { x0: px - 0.4, y0: py - 0.4, z0: 0, x1: px + 0.4, y1: py + 0.4, z1: 2 },
       cam: { yaw: spawnYaw, pitch: pit, dist: 6, tx: px, ty: py, tz: eyeZ },
       objs: objs, parts: [], kind: 'rack',
       walk: {
-        x: px, y: py, yaw: spawnYaw, pitch: pit, eye: eyeZ,
+        x: px, y: py, yaw: spawnYaw, pitch: pit, eye: eyeZ, zoom: zoom0,
         stand: stand,
         bounds: { x0: -1.1, y0: -0.5, x1: Wroom + 1.7, y1: Dp + 0.5 },
         blocks: blocks,
@@ -921,7 +1105,7 @@
     this._fpsT = this.t0;
     this._fpsN = 0;
 
-    var sc = S[kind](key);
+    var sc = kind === 'rack' ? S.rack(key, { inside: true }) : S[kind](key);
     if (!sc) { this.dead = true; return; }
     this.sc = sc;
     var c = sc.cam;
@@ -934,14 +1118,15 @@
     if (sc.walk) {
       this.walk = true;
       this.player = { x: sc.walk.x, y: sc.walk.y };
-      this.eyeZ = sc.walk.eye || 1.0;
-      this.zoom = 1;
+      this.eyeZ = sc.walk.eye || 1.18;
+      this.zoom = sc.walk.zoom || 0.76;
       this.to.yaw = this.cur.yaw = sc.walk.yaw;
       this.to.pitch = this.cur.pitch = sc.walk.pitch;
       this.orbit = false;
       this.selCab = key;
-      this.insideView = false;
-      this._sceneInside = false;
+      /* 进来就打开目标柜的门，人仍站在通道里看全貌。 */
+      this.insideView = true;
+      this._sceneInside = true;
     }
 
     this.buildDom();
@@ -963,6 +1148,7 @@
     this._lastW = 0;
     this.loop = function (t) { self.frame(t); };
     this.raf = requestAnimationFrame(this.loop);
+    if (this.walk) this.syncInsideBtn();
   }
 
   /* ---------- DOM / HUD ---------- */
@@ -1006,7 +1192,7 @@
       var tr = host.querySelector('.v3-tr');
       if (tr) tr.style.display = 'none';
       var bl = host.querySelector('.v3-bl');
-      bl.innerHTML = '<b>单击</b> 打开面板 · <b>双击</b> 正对 · <b>WASD</b> 走动 · <b>拖动</b> 转头';
+      bl.innerHTML = '柜门已打开 · <b>WASD</b> 前后左右、<b>Q/E</b> 蹲起、<b>拖动</b> 转头，滚轮可再拉远或靠近';
       bl.style.maxWidth = 'calc(100% - 24px)';
       bl.style.whiteSpace = 'normal';
       bl.style.overflow = 'visible';
@@ -1236,7 +1422,8 @@
             /* 第一人称转头：右拖看向右侧，上拖抬头。超过 6px 不算点击。
                拖过阈值后尝试指针锁定；浏览器拒绝时仍靠按住拖动。 */
             self.to.yaw += dx * 0.0052;
-            self.to.pitch = clamp(self.to.pitch - dy * 0.0046, -1.05, 0.75);
+            /* 下拖低头、上拖抬头。俯仰为 0 时视线水平，和眼前这一排 U 位正对。 */
+            self.to.pitch = clamp(self.to.pitch - dy * 0.007, -1.25, 0.85);
             if (!self._plNo && !self.drag.asked && self.drag.moved > 8 && cv.requestPointerLock) {
               self.drag.asked = 1;
               var rq = cv.requestPointerLock();
@@ -1375,7 +1562,7 @@
           e.preventDefault();
           return;
         }
-        if (k === 'w' || k === 'a' || k === 's' || k === 'd' ||
+        if (k === 'w' || k === 'a' || k === 's' || k === 'd' || k === 'q' || k === 'e' ||
             k === 'arrowup' || k === 'arrowdown' || k === 'arrowleft' || k === 'arrowright') {
           self.keys[k] = 1;
           e.preventDefault();
@@ -1388,6 +1575,7 @@
             var w0 = self.sc.walk;
             self.player.x = w0.x; self.player.y = w0.y;
             self.to.yaw = w0.yaw; self.to.pitch = w0.pitch;
+            self.eyeZ = w0.eye || 1.62;
             self.zoom = 1;
             self.needDraw = 1;
           }
@@ -1523,10 +1711,6 @@
     var d = this.sc.objs[o];
     if (!d) { this.sel = o; return; }
     if (this.walk && (d.kind === 'cab' || d.kind === 'rack')) {
-      if (d.kind === 'rack' && this.insideView && d.name === this.key) {
-        this.sel = o;
-        return;
-      }
       this.armSelect(d.name);
       return;
     }
@@ -1548,7 +1732,8 @@
     if (!name || !this.walk) return;
     var now = this.now();
     if (this._clk && this._clk.name === name && now - this._clk.t < 420) {
-      this._clk.dbl = 1;
+      this._clk = null;
+      this.enterInside(name);
       return;
     }
     this._clk = { name: name, t: now, dbl: 0 };
@@ -1586,6 +1771,7 @@
   /* 双击：平滑推到柜门前，再换成内部面板。人仍在门外，只是这一台改画内部。 */
   Viewer.prototype.enterInside = function (name) {
     if (!name || !this.walk || !this.player) return;
+    if (this.slide && this.slide.mode === 'in' && this.slide.name === name) return;
     if (this._clk) this._clk.dbl = 1;
     clearTimeout(this._clkTimer);
     var c = this.cabByName(name);
@@ -1597,7 +1783,7 @@
         sel: this.selCab
       };
     }
-    var stand = 0.48;
+    var stand = (this.sc.walk && this.sc.walk.stand) || 1.38;
     var yaw = Math.atan2(-c.nx, -(c.ny || 0));
     this.selCab = name;
     this._pickHold = this.now() + 8000;
@@ -1607,8 +1793,8 @@
       x0: this.player.x, y0: this.player.y,
       x1: c.fx + c.nx * stand, y1: c.fy,
       yaw0: this.to.yaw, yaw1: yaw,
-      pitch0: this.to.pitch, pitch1: 0,
-      zoom0: this.zoom || 1, zoom1: 1.12,
+      pitch0: this.to.pitch, pitch1: (this.sc.walk && this.sc.walk.pitch) || -0.16,
+      zoom0: this.zoom || 1, zoom1: (this.sc.walk && this.sc.walk.zoom) || 0.76,
       t0: this.now(), dur: 640, name: name, swapped: false
     };
     this.needDraw = 1;
@@ -1732,7 +1918,8 @@
     var fx = Math.sin(yaw), fy = Math.cos(yaw);
     var dx = (fx * f + fy * s) * spd;
     var dy = (fy * f - fx * s) * spd;
-    var nx = this.player.x + dx, ny = this.player.y + dy, rad = 0.32;
+    /* 开门后要能贴近柜门左右挪。半径小一点，柜体本身仍挡着，走不进去。 */
+    var nx = this.player.x + dx, ny = this.player.y + dy, rad = this.insideView ? 0.16 : 0.28;
     if (!this.hitsBlock(nx, this.player.y, rad)) this.player.x = nx;
     if (!this.hitsBlock(this.player.x, ny, rad)) this.player.y = ny;
     this.keepOutside();
@@ -1743,6 +1930,19 @@
     }
     this.to.tx = this.player.x;
     this.to.ty = this.player.y;
+    this.needDraw = 1;
+    this.lastInput = t;
+  };
+  /* Q 降低视高，E 升高。最低约 0.22 米，可平视最底下的 U 位；最高约 1.9 米。 */
+  Viewer.prototype.stepEye = function (t) {
+    var kk = this.keys || {};
+    var dir = (kk.e ? 1 : 0) - (kk.q ? 1 : 0);
+    if (!dir) return;
+    var dt = Math.min(0.05, Math.max(0.001, (t - (this._et || t)) / 1000));
+    this._et = t;
+    var next = clamp((this.eyeZ || 1.62) + dir * 1.05 * dt, 0.22, 1.9);
+    if (Math.abs(next - this.eyeZ) < 1e-4) return;
+    this.eyeZ = next;
     this.needDraw = 1;
     this.lastInput = t;
   };
@@ -1821,6 +2021,7 @@
     if (this.walk && this.player) {
       if (this.slide) this.stepSlide(t);
       this.stepWalk(t);
+      this.stepEye(t);
     }
 
     /* 静止判定：相机落位后降低重绘频率（呼吸/粒子仍有生命感），
@@ -1866,7 +2067,9 @@
     if (this.walk) {
       var nm = this.selCab || this.key || '';
       var tag = this.insideView ? '内部' : '走道';
-      this.rd.textContent = tag + ' · ' + nm + ' · 缩放 ' + (this.zoom || 1).toFixed(2) + ' · ' + this.fps + 'fps';
+      var pit = this.cur ? Math.round(this.cur.pitch * 180 / Math.PI) : 0;
+      this.rd.textContent = tag + ' · ' + nm + ' · 视高 ' + (this.eyeZ || 1.62).toFixed(2) +
+        'm · 俯仰 ' + pit + '° · ' + this.fps + 'fps';
       return;
     }
     var c = this.cur;
@@ -1914,6 +2117,7 @@
       var fitTan = 0.70;
       scale = (H / 2) / (fitTan / clamp(this.zoom || 1, 0.7, 3.8));
     }
+    this._scrScale = scale;
     /* 雾按层级配系数：机柜/机房近距离要看清面板，楼层俯视全景不该发糊 */
     var fg = this.kind === 'rack' ? [1.4, 5.0] : this.kind === 'room' ? [1.2, 4.0] : [2.2, 6.5];
     var fogN = this.walk ? 8.0 : c.dist * fg[0], fogF = this.walk ? 16 : c.dist * fg[1];
@@ -1956,7 +2160,7 @@
     }
     var q = this.q; q.length = 0;
     var bxs = this.sc.faces, bxl = this.sc.lines, bxt = this.sc.labels;
-    var i, j, f, p, n, cx2, cy2, cz2, vx, vy, vz, dep, dot, k, sx, sy, ar, ok;
+    var i, j, f, p, n, cx2, cy2, cz2, vx, vy, vz, dep, dot, k, sx, sy, ar, ok, plateCam;
 
     /* ---- 面 ---- */
     for (i = 0; i < bxs.length; i++) {
@@ -1989,6 +2193,14 @@
         vz = (qx - ex) * fx + (qy - ey) * fy + (qz - ez) * fz;
         if (vz < 0.06) { anyNear = true; }
         sxA.push(vx); syA.push(vy); vzA.push(vz);
+      }
+      /* 铭牌要贴在这块面上。留下裁剪前的相机坐标，后面按透视把字印上去。 */
+      plateCam = null;
+      if ((f.plate || f.skin) && n === 4 && !anyNear) {
+        plateCam = [
+          sxA[0], syA[0], vzA[0], sxA[1], syA[1], vzA[1],
+          sxA[2], syA[2], vzA[2], sxA[3], syA[3], vzA[3]
+        ];
       }
       if (anyNear) {
         /*  Sutherland–Hodgman 裁 vz >= 0.06 */
@@ -2043,7 +2255,7 @@
          低角度看机柜就不会被齐腰的墙切掉一截。判定用面心到相机的
          距离与到场景中心的距离比较，与具体朝向无关，四个方向都成立。 */
       var faceOp = f.op == null ? 1 : f.op;
-      var noStroke2 = huge;
+      var noStroke2 = huge || !!f.quiet;
       if (f.fade) {
         var dcx = f.c[0] - ex, dcy = f.c[1] - ey, dcz = f.c[2] - ez;
         var dFace = dcx * dcx + dcy * dcy + dcz * dcz;
@@ -2064,7 +2276,7 @@
          "远处柜正面"，鼠标指着远处柜却命中近处柜 */
       this.q.push({ k: 0, lay: f.lay, op: faceOp, noStroke: noStroke2,
         poly: px.length === 4 ? [px[0], py[0], px[1], py[1], px[2], py[2], px[3], py[3]] : [px[0], py[0], px[1], py[1], px[2], py[2]],
-        n: n, dep: dep, col: col, sw: f.sw, st: f.stroke, blend: f.blend, obj: f.obj, plate: f.plate, ar: ar,
+        n: n, dep: dep, col: col, sw: f.sw, st: f.stroke, blend: f.blend, obj: f.obj, plate: f.plate, skin: f.skin, ar: ar,
         emph: emph, frame: f.frame || 0,
         hover: f.obj != null && this.hover === f.obj,
         sel: f.obj != null && this.sel === f.obj,
@@ -2073,7 +2285,7 @@
            "面挨着面"的贴合关系），让设备赢 —— 否则用户明明点在设备
            面板上，命中的却是背后的柜体，观感就是"鼠标和选中的东西对不上" */
         pickPri: f.obj ? (String(f.obj).indexOf('dev:') === 0 ? 1 : 0) : 0,
-        pickPoly: this.pickPts(px, py, vzA), pickDep: dep });
+        pickPoly: this.pickPts(px, py, vzA), pickDep: dep, plateCam: plateCam });
     }
 
     /* ---- 线 ---- */
@@ -2209,6 +2421,13 @@
     ctx.globalAlpha = d.op == null ? 1 : d.op;
     ctx.fillStyle = d.col;
     ctx.fill();
+    if (d.skin && d.plateCam) this.drawSkin(ctx, d);
+    /* 贴图会改掉当前路径。不重画的话，悬停描边会沿贴图用的三角形走，门上就多出一个白三角。 */
+    ctx.beginPath();
+    ctx.moveTo(d.poly[0], d.poly[1]);
+    if (n === 4) { ctx.lineTo(d.poly[2], d.poly[3]); ctx.lineTo(d.poly[4], d.poly[5]); ctx.lineTo(d.poly[6], d.poly[7]); }
+    else { ctx.lineTo(d.poly[2], d.poly[3]); ctx.lineTo(d.poly[4], d.poly[5]); }
+    ctx.closePath();
     /* 悬停 / 选中：先叠一层提亮再描边。
        柜体底色有青、黄、红三种，1~2px 的细描边落在同色系柜顶上很难辨认，
        用户盯着看也确认不了"指着的到底是不是这台"。提亮整面 + 描边双管齐下，
@@ -2251,66 +2470,119 @@
     while (s.length > 1 && ctx.measureText(s + '…').width > maxW) s = s.slice(0, -1);
     return s + '…';
   }
-  /* 设备铭牌裁在自己的面片里。字号按这条面的边长，不按倾斜后的包围盒，避免斜看时串到隔壁 U。 */
+  Viewer.prototype.drawSkin = function (ctx, d) {
+    var fn = this.sc && this.sc.shellSkin;
+    var img = fn ? fn(d.skin) : null;
+    if (!img || !d.plateCam) return;
+    this.paintOnPlate(ctx, img, d.plateCam);
+  };
+  /* 铭牌先画成一张平面图，再按这块面板的四个角做透视，字跟面板是一体的。 */
   Viewer.prototype.drawPlate = function (ctx, d) {
     var lines = d.plate && d.plate.lines;
-    if (!lines || !lines.length || d.n !== 4) return;
-    var poly = d.poly;
-    function seg(ax, ay, bx, by) {
-      var dx = bx - ax, dy = by - ay;
-      return Math.sqrt(dx * dx + dy * dy);
+    if (!lines || !lines.length || !d.plateCam) return;
+    var img = this.plateStamp(d.plate);
+    if (!img) return;
+    this.paintOnPlate(ctx, img, d.plateCam);
+  };
+  Viewer.prototype.plateStamp = function (plate) {
+    var lines = plate.lines || [];
+    var key = lines.map(function (ln) { return (ln.t || '') + '|' + (ln.col || ''); }).join('\n');
+    if (!this._plateStamp) this._plateStamp = {};
+    if (this._plateStamp[key]) return this._plateStamp[key];
+    var cnv = document.createElement('canvas');
+    var W = 640, n = Math.min(lines.length, 3);
+    var H = n >= 3 ? 220 : n === 2 ? 168 : 112;
+    cnv.width = W; cnv.height = H;
+    var g = cnv.getContext('2d');
+    var sizes = n >= 3 ? [54, 38, 32] : n === 2 ? [58, 40] : [64];
+    var weights = ['600', '500', '400'];
+    var block = 0, i, texts = [];
+    var maxW = W - 56;
+    for (i = 0; i < n; i++) {
+      g.font = (weights[i] || '500') + ' ' + sizes[i] + 'px ' + FONT;
+      texts.push(ellipsize(g, lines[i].t || '', maxW));
+      block += sizes[i];
     }
-    var x0 = poly[0], y0p = poly[1], x1 = poly[2], y1 = poly[3];
-    var x2 = poly[4], y2 = poly[5], x3 = poly[6], y3 = poly[7];
-    var faceH = (seg(x0, y0p, x1, y1) + seg(x3, y3, x2, y2)) * 0.5;
-    var faceW = (seg(x1, y1, x2, y2) + seg(x0, y0p, x3, y3)) * 0.5;
-    if (faceW < 18 || faceH < 8) return;
-    if (faceW < faceH * 0.28) return;
-    var emph = d.emph || 0;
-    var isTitle = !!(d.plate && d.plate.title);
-    var nLines = lines.length;
-    if (faceH < 18) nLines = 1;
-    else if (faceH < 32 && nLines > 2) nLines = 2;
+    block += (n - 1) * 10;
+    var y = (H - block) / 2;
+    g.textAlign = 'center';
+    g.textBaseline = 'top';
+    for (i = 0; i < n; i++) {
+      g.font = (weights[i] || '500') + ' ' + sizes[i] + 'px ' + FONT;
+      g.fillStyle = lines[i].col || '#EAF6FF';
+      g.fillText(texts[i], W / 2, y);
+      y += sizes[i] + 10;
+    }
+    this._plateStamp[key] = cnv;
+    return cnv;
+  };
+  Viewer.prototype.paintOnPlate = function (ctx, img, cam) {
+    var self = this;
+    function at(u, v) {
+      var topx = cam[3] + (cam[6] - cam[3]) * u;
+      var topy = cam[4] + (cam[7] - cam[4]) * u;
+      var topz = cam[5] + (cam[8] - cam[5]) * u;
+      var botx = cam[0] + (cam[9] - cam[0]) * u;
+      var boty = cam[1] + (cam[10] - cam[1]) * u;
+      var botz = cam[2] + (cam[11] - cam[2]) * u;
+      var x = topx + (botx - topx) * v;
+      var y = topy + (boty - topy) * v;
+      var z = topz + (botz - topz) * v;
+      if (z < 0.06) return null;
+      var inv = (self._scrScale || self.scale) / z;
+      return [self.cx + x * inv, self.cy - y * inv];
+    }
+    var p00 = at(0, 0), p10 = at(1, 0), p01 = at(0, 1), p11 = at(1, 1);
+    if (!p00 || !p10 || !p01 || !p11) return;
+    var spanW = Math.hypot(p10[0] - p00[0], p10[1] - p00[1]);
+    var spanH = Math.hypot(p01[0] - p00[0], p01[1] - p00[1]);
+    if (spanW < 16 || spanH < 8) return;
+    function bands(za, zb) {
+      var r = Math.max(za, zb) / Math.max(0.06, Math.min(za, zb));
+      if (r < 1.05) return 1;
+      return Math.min(6, Math.ceil((r - 1) * 16));
+    }
+    var cols = Math.max(2, bands((cam[2] + cam[5]) * 0.5, (cam[11] + cam[8]) * 0.5));
+    var rows = Math.max(3, bands((cam[5] + cam[8]) * 0.5, (cam[2] + cam[11]) * 0.5));
+    var iw = img.width, ih = img.height;
+    function tri(s0, s1, s2, d0, d1, d2) {
+      var x0 = s0[0], y0 = s0[1], x1 = s1[0], y1 = s1[1], x2 = s2[0], y2 = s2[1];
+      var u0 = d0[0], v0 = d0[1], u1 = d1[0], v1 = d1[1], u2 = d2[0], v2 = d2[1];
+      var det = x0 * (y1 - y2) + x1 * (y2 - y0) + x2 * (y0 - y1);
+      if (Math.abs(det) < 1e-4) return;
+      var a = (u0 * (y1 - y2) + u1 * (y2 - y0) + u2 * (y0 - y1)) / det;
+      var c = (u0 * (x2 - x1) + u1 * (x0 - x2) + u2 * (x1 - x0)) / det;
+      var e = (u0 * (x1 * y2 - x2 * y1) + u1 * (x2 * y0 - x0 * y2) + u2 * (x0 * y1 - x1 * y0)) / det;
+      var b = (v0 * (y1 - y2) + v1 * (y2 - y0) + v2 * (y0 - y1)) / det;
+      var d = (v0 * (x2 - x1) + v1 * (x0 - x2) + v2 * (x1 - x0)) / det;
+      var f = (v0 * (x1 * y2 - x2 * y1) + v1 * (x2 * y0 - x0 * y2) + v2 * (x0 * y1 - x1 * y0)) / det;
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(d0[0], d0[1]); ctx.lineTo(d1[0], d1[1]); ctx.lineTo(d2[0], d2[1]);
+      ctx.closePath();
+      ctx.clip();
+      var k = self.dpr || 1;
+      ctx.setTransform(a * k, b * k, c * k, d * k, e * k, f * k);
+      ctx.drawImage(img, 0, 0, iw, ih);
+      ctx.restore();
+    }
+    var r, c, u0, u1, v0, v1, q00, q10, q01, q11;
     ctx.save();
     ctx.beginPath();
-    ctx.moveTo(x0, y0p);
-    ctx.lineTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.lineTo(x3, y3);
+    ctx.moveTo(p00[0], p00[1]); ctx.lineTo(p10[0], p10[1]); ctx.lineTo(p11[0], p11[1]); ctx.lineTo(p01[0], p01[1]);
     ctx.closePath();
     ctx.clip();
-    var gap = Math.min(2, faceH * 0.05);
-    var lh = Math.min(isTitle ? 18 : 14, Math.max(7, (faceH * 0.72) / nLines));
-    function mixByte(a, b, t) { return Math.round(a + (b - a) * t); }
-    var titleCol = 'rgb(' + mixByte(244, 255, emph) + ',' + mixByte(248, 209, emph) + ',' + mixByte(255, 90, emph) + ')';
-    var total = lh * nLines + gap * (nLines - 1);
-    var cx = (x0 + x1 + x2 + x3) / 4;
-    var cy = (y0p + y1 + y2 + y3) / 4;
-    var yBase = cy - total / 2 + lh * 0.76;
-    var maxW = Math.max(8, faceW * 0.84);
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'alphabetic';
-    var i;
-    for (i = 0; i < nLines; i++) {
-      var ln = (nLines === 1 && d.plate.one) ? { t: d.plate.one, col: lines[0].col, weight: '600' } : lines[i];
-      if (isTitle) ln = { t: ln.t, col: titleCol, weight: '700' };
-      ctx.font = (ln.weight || '500') + ' ' + lh.toFixed(1) + 'px ' + FONT;
-      var text = ln.t;
-      var guardN = 0;
-      var floorPx = (d.plate && d.plate.short) ? 8 : 7;
-      while (text && ctx.measureText(text).width > maxW && lh > floorPx && guardN++ < 10) {
-        lh = Math.max(floorPx, lh - 1);
-        ctx.font = (ln.weight || '500') + ' ' + lh.toFixed(1) + 'px ' + FONT;
+    for (r = 0; r < rows; r++) {
+      v0 = r / rows; v1 = (r + 1) / rows;
+      for (c = 0; c < cols; c++) {
+        u0 = c / cols; u1 = (c + 1) / cols;
+        q00 = at(u0, v0); q10 = at(u1, v0); q01 = at(u0, v1); q11 = at(u1, v1);
+        if (!q00 || !q10 || !q01 || !q11) continue;
+        /* 面的 +x 投到屏幕上是反的，图片左右对调后铭牌和 U 位才正读。 */
+        var x0 = (1 - u0) * iw, x1 = (1 - u1) * iw;
+        tri([x0, v0 * ih], [x1, v0 * ih], [x1, v1 * ih], q00, q10, q11);
+        tri([x0, v0 * ih], [x1, v1 * ih], [x0, v1 * ih], q00, q11, q01);
       }
-      var tooWide = ctx.measureText(text).width > maxW;
-      if (tooWide && d.plate && d.plate.short) text = ellipsize(ctx, text, maxW);
-      else if (tooWide && !(d.plate && d.plate.keep)) text = ellipsize(ctx, text, maxW);
-      var y = yBase + i * (lh + gap);
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'rgba(4,10,18,.9)';
-      ctx.strokeText(text, cx, y);
-      ctx.fillStyle = ln.col || '#E8F6FF';
-      ctx.fillText(text, cx, y);
     }
     ctx.restore();
   };
@@ -2378,14 +2650,16 @@
     ctx.globalAlpha = 1;
   };
 
-  /* 柜名锚在该柜顶外沿。只留镜头前方左右各近处 3 台，最多 6 个；叠住就丢掉更远的。 */
+  /* 柜名贴在该柜顶前缘上，字的走向跟这条柜顶边在画面里的走向一致。
+     只画镜头前方、顶边还落在画面里的近处柜子，左右各 3、最多 6；叠住丢掉更远的。 */
   Viewer.prototype.paintCabNames = function (ctx, ex, ey, ez, rx, ry, rz, ux, uy, uz, fx, fy, fz, scale) {
     if (!this.walk || !this.sc.walk || !this.sc.walk.cabs) return;
     var W = this.W, H = this.H;
     var cabs = this.sc.walk.cabs;
     var emphMap = this._emph || {};
     var sel = this.selCab || this.key;
-    var items = [], i, c, p, dx, dy, ahead, lat;
+    var items = [], i, c, dx, dy, ahead, lat, half, pL, pR, edge, ang, mx, my;
+    var zTop = 2.0;
     for (i = 0; i < cabs.length; i++) {
       c = cabs[i];
       dx = c.fx - ex; dy = c.fy - ey;
@@ -2394,12 +2668,22 @@
       if (ahead < 0.35) continue;
       if (ahead > 5.4 && c.name !== sel) continue;
       if (ahead > 7.2) continue;
-      p = this.proj([c.fx, c.fy, 2.08], ex, ey, ez, rx, ry, rz, ux, uy, uz, fx, fy, fz, scale);
-      if (!p) continue;
-      if (p[0] < 4 || p[0] > W - 4 || p[1] < -30 || p[1] > H - 8) continue;
+      half = c.halfW || 0.32;
+      pL = this.proj([c.fx - c.rx * half, c.fy - c.ry * half, zTop], ex, ey, ez, rx, ry, rz, ux, uy, uz, fx, fy, fz, scale);
+      pR = this.proj([c.fx + c.rx * half, c.fy + c.ry * half, zTop], ex, ey, ez, rx, ry, rz, ux, uy, uz, fx, fy, fz, scale);
+      if (!pL || !pR) continue;
+      edge = Math.hypot(pR[0] - pL[0], pR[1] - pL[1]);
+      if (edge < 28) continue;
+      if (edge < 42 && c.name !== sel) continue;
+      mx = (pL[0] + pR[0]) / 2;
+      my = (pL[1] + pR[1]) / 2;
+      if (mx < 8 || mx > W - 8 || my < 10 || my > H - 10) continue;
+      ang = Math.atan2(pR[1] - pL[1], pR[0] - pL[0]);
+      if (ang > Math.PI / 2) ang -= Math.PI;
+      else if (ang < -Math.PI / 2) ang += Math.PI;
       items.push({
         name: c.name, title: c.title || c.name,
-        x: p[0], y: p[1], ahead: ahead, lat: lat,
+        x: mx, y: my, ang: ang, edge: edge, ahead: ahead, lat: lat,
         emph: emphMap[c.name] || 0, sel: c.name === sel
       });
     }
@@ -2446,36 +2730,54 @@
     var placed = [];
     ctx.save();
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'alphabetic';
+    ctx.textBaseline = 'bottom';
     for (i = 0; i < picked.length; i++) {
       var it = picked[i];
       var em = it.sel ? 1 : 0;
-      var sz = clamp(15 + (4.2 - it.ahead) * 1.1, 12, 18);
-      if (em) sz += 2;
+      var sz = clamp(it.edge / 7.2, 11, 16);
+      if (em) sz = Math.min(18, sz + 2);
       var text = it.title;
       ctx.font = '700 ' + sz.toFixed(1) + 'px ' + FONT;
-      var tw = ctx.measureText(text).width;
-      var x = it.x;
-      if (it.y < 12 || it.y > H - 10) continue;
-      var y = it.y - 2;
-      var box = { x0: x - tw / 2 - 4, y0: y - sz - 1, x1: x + tw / 2 + 4, y1: y + 4 };
+      var guard = 0, tw;
+      while (guard++ < 6 && sz > 11 && ctx.measureText(text).width > it.edge * 0.92) {
+        sz -= 1;
+        ctx.font = '700 ' + sz.toFixed(1) + 'px ' + FONT;
+      }
+      tw = ctx.measureText(text).width;
+      if (tw > it.edge * 1.08) continue;
+      var cth = Math.cos(it.ang), sth = Math.sin(it.ang);
+      var hw = tw / 2, hh = sz;
+      function corner(lx, ly) {
+        return [it.x + lx * cth - ly * sth, it.y + lx * sth + ly * cth];
+      }
+      var cs = [corner(-hw, -hh), corner(hw, -hh), corner(hw, 0), corner(-hw, 0)];
+      var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, ci, pt;
+      for (ci = 0; ci < cs.length; ci++) {
+        pt = cs[ci];
+        if (pt[0] < x0) x0 = pt[0];
+        if (pt[1] < y0) y0 = pt[1];
+        if (pt[0] > x1) x1 = pt[0];
+        if (pt[1] > y1) y1 = pt[1];
+      }
+      if (x1 < 4 || x0 > W - 4 || y1 < 4 || y0 > H - 4) continue;
+      var box = { x0: x0 - 2, y0: y0 - 2, x1: x1 + 2, y1: y1 + 2 };
       if (!it.sel && overlaps(box, placed)) continue;
       placed.push(box);
       var col = 'rgb(' + mixByte(244, 255, em) + ',' + mixByte(248, 209, em) + ',' + mixByte(255, 90, em) + ')';
+      ctx.save();
+      ctx.translate(it.x, it.y);
+      ctx.rotate(it.ang);
+      ctx.font = '700 ' + sz.toFixed(1) + 'px ' + FONT;
       if (em) {
-        ctx.save();
         ctx.shadowColor = 'rgba(255, 196, 48, .9)';
         ctx.shadowBlur = 16;
-        ctx.fillStyle = col;
-        ctx.fillText(text, x, y);
-        ctx.restore();
-        ctx.font = '700 ' + sz.toFixed(1) + 'px ' + FONT;
       }
       ctx.lineWidth = 3;
       ctx.strokeStyle = em ? 'rgba(90, 48, 0, .8)' : 'rgba(4, 10, 18, .88)';
-      ctx.strokeText(text, x, y);
+      ctx.strokeText(text, 0, -1);
       ctx.fillStyle = col;
-      ctx.fillText(text, x, y);
+      ctx.fillText(text, 0, -1);
+      ctx.restore();
     }
     ctx.restore();
   };

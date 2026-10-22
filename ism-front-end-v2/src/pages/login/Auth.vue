@@ -1,477 +1,241 @@
 <template>
-      <div class="boxer" :style="styleVar">
-        <div class="header">
-          <div class="inner-header flex">
-            <div class="box1">
-              <div class="middle1">
-                <div class="middle_left">
-                  <img :src="systemLoginBg"  style="width: 670px;height: 600px;">
-                </div>
-                <div class="middle_right">
-                  <div class="mr_box">
-                    <div>
-                      <div>
-                        <img :src="systemLogo" alt="logo">
-                      </div>
-                      <h2>授权</h2>
-                    </div>
-                    <a-form @submit="onSubmit" :form="form">
-                      <a-alert type="error" :closable="true" v-show="error" :message="error" showIcon style="margin-bottom: 24px;" />
-                      <a-form-item label="机器码">
-                        <a-input
-                            :value="ProtectedID"
-                            class="form-control"
-                            autocomplete="autocomplete"
-                            size="large">
-                          <a-icon slot="prefix" type="code" style="position: absolute;top: -5px;right:-15px;color: #13c2c2;font-size: 20px;"/>
-                        </a-input>
-                      </a-form-item>
-                      <a-form-item style="margin-bottom: 5px;"
-                                   label="授权码">
-                        <a-textarea
-                            class="form-control"
-                            size="large"
-                            :auto-size="{ minRows: 3, maxRows: 5 }"
-                            autocomplete="autocomplete"
-                            v-decorator="['license', {rules: [{ required: true, message: '请输入授权码', whitespace: true}]}]"
-                        >
-                          <a-icon slot="prefix" type="lock" size="large" style="position: absolute;top: -5px;right:-15px;color: #13c2c2;font-size: 20px;"/>
-                        </a-textarea>
-                      </a-form-item>
-                      <a-form-item>
-                        <a-button :loading="logging" class="login" style="width: 100%;margin-top: 2px" size="large" htmlType="submit" type="primary">授权</a-button>
-                      </a-form-item>
-                    </a-form>
-                  </div>
-                </div>
-              </div>
-            </div>
+  <div class="boxer xunan-status">
+    <div class="box1">
+      <div class="middle1">
+        <div class="middle_left">
+          <div class="brand-panel">
+            <img class="brand-logo" src="/static/branding/logo-xunan-hexagon.png" alt="数据中心动环监控平台">
+            <h1 class="brand-title">数据中心动环监控平台</h1>
+            <p class="brand-subtitle">POWER MONITORING &amp; INTELLIGENT MANAGEMENT</p>
+            <ul class="brand-features">
+              <li>实时数据采集与监控</li>
+              <li>智能告警与故障预警</li>
+              <li>能耗分析与报表统计</li>
+            </ul>
           </div>
-          <!--Waves Container-->
-          <div>
-            <svg class="waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
-              <defs>
-                <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
-              </defs>
-              <g class="parallax">
-                <use xlink:href="#gentle-wave" x="48" y="0" fill="rgba(255,255,255,0.7" />
-                <use xlink:href="#gentle-wave" x="48" y="3" fill="rgba(255,255,255,0.5)" />
-                <use xlink:href="#gentle-wave" x="48" y="5" fill="rgba(255,255,255,0.3)" />
-                <use xlink:href="#gentle-wave" x="48" y="7" fill="#fff" />
-              </g>
-            </svg>
+        </div>
+        <div class="middle_right">
+          <div class="mr_box">
+            <div class="status-badge">{{ view.badge }}</div>
+            <h2 class="status-title">{{ view.title }}</h2>
+            <p class="status-lead">{{ view.lead }}</p>
+            <p class="status-detail">{{ view.detail }}</p>
+            <p v-if="extra" class="status-extra">{{ extra }}</p>
+            <button class="status-btn" type="button" :disabled="checking" @click="retry">
+              {{ checking ? '正在检查…' : '重新检查' }}
+            </button>
           </div>
-          <!--Waves end-->
+          <div class="login-footer">© 数据中心动环监控平台</div>
         </div>
       </div>
+    </div>
+  </div>
 </template>
 
 <script>
-import CommonLayout from '@/layouts/CommonLayout'
-import {login, getRoutesConfig} from '@/services/user'
-import {AUTH_TYPE, setAuthorization} from '@/utils/request'
-import {loadRoutes} from '@/utils/routerUtil'
-import {mapState, mapMutations} from 'vuex'
-import md5 from 'js-md5';
-import {GetSystemAuthInfo,WriteSystemCode} from "@/services/system";
+import { GetSystemCodeCheck } from '@/services/system'
+
+const REASONS = {
+  backend: {
+    badge: '服务状态',
+    title: '后端没有连上',
+    lead: '后端没有启动。',
+    detail: '当前页面访问不到本机服务。请先启动本机后端（端口 8082），确认进程在监听后再重新检查。这不是授权页面。'
+  },
+  license: {
+    badge: '授权状态',
+    title: '授权信息读不到',
+    lead: '后端已经连上，但授权文件没有生效。',
+    detail: '请联系管理员检查授权文件。这里不再进入厂商授权页。'
+  },
+  expired: {
+    badge: '授权状态',
+    title: '授权已过期',
+    lead: '后端已经连上，软件授权期限已到。',
+    detail: '请联系管理员续期。'
+  }
+}
+
 export default {
-  name: 'Login',
-  components: {},
-  i18n: require('../../i18n/language'),
+  name: 'Auth',
   data () {
     return {
-      logging: false,
-      error: '',
-      form: this.$form.createForm(this)
+      checking: false,
+      extra: ''
     }
   },
   computed: {
-    ...mapState('setting', ['langList','isMobile','lang',]),
-    systemName () {
-      return this.$store.state.setting.systemName
-    },
-    systemLogo () {
-      return this.$store.state.setting.SystemLogo
-    },
-    ProtectedID () {
-      return this.$store.state.setting.ProtectedID
-    },
-    systemLoginBg () {
-      return this.$store.state.setting.systemLoginBg
-    },
-    styleVar() {
-      return {
-        '--bgImage':`url('${this.$store.state.setting.systemBg}')`,
-      };
-    },
+    view () {
+      const key = this.$route.query.reason
+      return REASONS[key] || REASONS.backend
+    }
   },
-  mounted() {
-  },
-  created(){
-
+  watch: {
+    '$route.query.reason' () {
+      this.extra = ''
+    }
   },
   methods: {
-    ...mapMutations('setting', ['setLang']),
-    ...mapMutations('account', ['setUser', 'setPermissions', 'setRoles']),
-    onSubmit (e) {
-      e.preventDefault()
-      this.form.validateFields((err) => {
-        if (!err) {
-          this.logging = true
-          let _t = this
-          let params={
-            authCode:this.form.getFieldValue('license')
-          }
-          WriteSystemCode(params).then(function (res){
-            _t.logging = false
-            if(res.data.code==0)
-            {
-              _t.$router.push('/login')
-            }
-            else if(res.data.code==-5){
-              _t.$message.error("写入授权文件失败，请见检查 安装目录下面的data/auth目录是否可写。", 3)
-            }
-            else {
-              _t.$message.error("授权码错误，请联系管理员。", 3)
-            }
-          }).catch(function(){
-            _t.logging = false
-            _t.$message.error(_t.$t('loginPage.serverError'), 3)
-          })
+    retry () {
+      const _t = this
+      this.checking = true
+      this.extra = ''
+      GetSystemCodeCheck().then(function (res) {
+        const code = Number(res && res.data ? res.data.code : NaN)
+        if (code === 0) {
+          _t.$router.replace('/login')
+          return
         }
+        const reason = code === -3 ? 'expired' : 'license'
+        _t.$router.replace({ path: '/auth', query: { reason: reason } }).catch(function () {})
+      }).catch(function () {
+        _t.extra = '刚刚又检查了一次，后端仍然没有连上。'
+        if (_t.$route.query.reason !== 'backend') {
+          _t.$router.replace({ path: '/auth', query: { reason: 'backend' } }).catch(function () {})
+        }
+      }).finally(function () {
+        _t.checking = false
       })
-    },
+    }
   }
 }
 </script>
 
 <style lang="less" scoped>
-.header {
-  position:relative;
-  text-align:center;
-  height: 90%;
-  background-size: 100% 100%;
-  //background: linear-gradient(120deg, rgba(84,58,183,1) 0%, rgba(0,172,193,1) 100%);
-  color:white;
+.boxer {
+  background-image: linear-gradient(135deg, #0a1a3a 0%, #0d2b55 45%, #0a3d5c 100%);
+  height: 100%;
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
 }
-
-.inner-header {
-  height:100%;
-  width:100%;
-  margin: 0;
-  padding: 0;
+.box1 {
+  width: 1080px;
+  max-width: calc(100% - 48px);
+  margin: 6vh auto 0;
+  overflow: hidden;
+  box-shadow: 0 0 24px 8px rgba(0, 40, 80, 0.35);
+  border-radius: 12px;
+  background: rgba(8, 28, 58, 0.55);
+  border: 1px solid rgba(19, 194, 194, 0.25);
 }
-
-.flex { /*Flexbox for containers*/
+.middle1 {
   display: flex;
-  justify-content: center;
+  min-height: 560px;
+}
+.middle_left {
+  flex: 0 0 52%;
+  display: flex;
   align-items: center;
-  text-align: center;
+  background: radial-gradient(ellipse at 30% 20%, rgba(19, 194, 194, 0.18), transparent 55%),
+    linear-gradient(160deg, rgba(10, 40, 80, 0.9), rgba(8, 24, 50, 0.95));
 }
-
-.waves {
-  position:relative;
+.brand-panel {
+  padding: 40px 48px;
+  color: #e8f7f7;
+}
+.brand-logo {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+  margin-bottom: 20px;
+}
+.brand-title {
+  margin: 0 0 10px;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: #fff;
+  line-height: 1.3;
+}
+.brand-subtitle {
+  margin: 0 0 28px;
+  font-size: 12px;
+  letter-spacing: 1.5px;
+  color: rgba(160, 220, 230, 0.85);
+}
+.brand-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.brand-features li {
+  margin: 12px 0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  background: rgba(12, 40, 72, 0.65);
+  border: 1px solid rgba(19, 194, 194, 0.35);
+  color: #d7f3f3;
+  font-size: 15px;
+}
+.middle_right {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.96);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+.mr_box {
   width: 100%;
-  height:15vh;
-  margin-bottom:-7px; /*Fix for safari gap*/
-  min-height:100px;
-  max-height:150px;
+  max-width: 420px;
+  margin: auto;
+  padding: 48px 36px 72px;
+  box-sizing: border-box;
 }
-
-.content {
-  position:relative;
-  height:20vh;
-  text-align:center;
-  background-color: white;
+.status-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(19, 194, 194, 0.12);
+  color: #0e7490;
+  font-size: 13px;
+  letter-spacing: 1px;
 }
-
-/* Animation */
-
-.parallax > use {
-  animation: move-forever 25s cubic-bezier(.55,.5,.45,.5)     infinite;
+.status-title {
+  margin: 18px 0 12px;
+  font-size: 32px;
+  line-height: 1.25;
+  color: #0f2744;
 }
-.parallax > use:nth-child(1) {
-  animation-delay: -2s;
-  animation-duration: 7s;
+.status-lead {
+  margin: 0 0 12px;
+  font-size: 18px;
+  line-height: 1.6;
+  color: #1f3b57;
 }
-.parallax > use:nth-child(2) {
-  animation-delay: -3s;
-  animation-duration: 10s;
+.status-detail,
+.status-extra {
+  margin: 0 0 12px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #4b6478;
 }
-.parallax > use:nth-child(3) {
-  animation-delay: -4s;
-  animation-duration: 13s;
+.status-extra {
+  color: #b45309;
 }
-.parallax > use:nth-child(4) {
-  animation-delay: -5s;
-  animation-duration: 20s;
+.status-btn {
+  margin-top: 18px;
+  min-width: 160px;
+  height: 44px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #0e7490, #13c2c2);
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
 }
-@keyframes move-forever {
-  0% {
-    transform: translate3d(-90px,0,0);
-  }
-  100% {
-    transform: translate3d(85px,0,0);
-  }
+.status-btn:disabled {
+  opacity: 0.7;
+  cursor: wait;
 }
-/*Shrinking for mobile*/
-@media (max-width: 768px) {
-  .waves {
-    height:40px;
-    min-height:40px;
-  }
-  .content {
-    height:30vh;
-  }
-  h1 {
-    font-size:24px;
-  }
+.login-footer {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 28px;
+  text-align: center;
+  color: #7d93a6;
+  font-size: 13px;
 }
-  /*APP安卓下载*/
-  .logo{
-    position: absolute;
-    top:10px;
-    left: 10px;
-  }
-  .logo img{
-    width: 70px;
-  }
-  .boxer {
-    background-image:var(--bgImage);
-    height: 100%;
-    position: relative;
-    overflow: hidden;
-    background-repeat: no-repeat;
-    background-size: cover;
-  }
-  .box1 {
-    width: 1156px;
-    margin:6% auto 0;
-    overflow: hidden;
-    box-shadow: 0px 0px 13px 5px rgba(14,25,80,.2);
-    border-radius: 10px;
-  }
-  .middle1 {
-    overflow: hidden;
-  }
-  .middle_left {
-    float: left;
-    width: 500px;
-  }
-  .middle_left img {
-
-  }
-  .middle_right {
-    width: 500px;
-    height: 600px;
-    float: right;
-    background: #ffffff;
-  }
-  .mr_box {
-    width: 318px;
-    margin: 0 auto;
-    margin-top: 50px;
-  }
-  .mr_box form{
-    text-align: center;
-  }
-  .mr_box h2 {
-    letter-spacing: 2px;
-    margin-bottom: 50px;
-    display: block;
-    text-align: center;
-    color: #13c2c2;
-    font-size: 30px;
-  }
-  input::-webkit-input-placeholder {
-    color: #c1c1c1;
-  }
-  .form-group {
-    margin-bottom: 44px;
-    position: relative;
-  }
-  .mar_b {
-    margin-bottom:20px;
-  }
-  .form-control {
-    height: 30px;
-    width: 320px;
-  }
-  .login {
-    height: 50px;
-    line-height: 50px;
-    width: 82%;
-    border: none;
-    border-radius: 60px;
-    background: #13c2c2;
-    color: #fff;
-    font-size: 18px;
-    letter-spacing: 2px;
-    cursor: pointer;
-    transition: .3s all linear;
-    margin-top: 40px;
-  }
-  .login:hover {
-    background: #035757;
-    transition: .3s all linear;
-  }
-  /* 记住密码 */
-  .f_pass{
-    height: 40px;
-    line-height: 40px;
-    padding: 0 8px;
-    margin: 6px 0;
-  }
-  .font-s {
-    position: relative;
-  }
-  .custom-control {
-    position: relative;
-    display: block;
-    min-height: 1.5rem;
-    padding-left: 1.5rem;
-  }
-  .small, small {
-    font-size: 80%;
-    font-weight: 400;
-    text-align: right;
-  }
-  input[type=checkbox], input[type=radio] {
-    -webkit-box-sizing: border-box;
-    box-sizing: border-box;
-    padding: 0;
-  }
-  .custom-control-input {
-    position: absolute;
-    z-index: -1;
-    opacity: 0;
-  }
-  .custom-control-label{
-    font-size: 15px;
-  }
-  .custom-control-input:not(:disabled):active~.custom-control-label::before {
-    color: #fff;
-    background-color: #e5ebfa;
-    border-color: #e5ebfa;
-  }
-  .custom-control-input:focus:not(:checked)~.custom-control-label::before {
-    border-color: #bac8f3;
-  }
-  .custom-control-input:focus~.custom-control-label::before {
-    -webkit-box-shadow: 0 0 0 0.2rem rgba(78,115,223,.25);
-    box-shadow: 0 0 0 0.2rem rgba(78,115,223,.25);
-  }
-  .custom-control-input:checked~.custom-control-label::before {
-    color: #fff;
-    border-color: #059df6;
-    background-color: #059df6;
-  }
-  .custom-checkbox .custom-control-label::before {
-    border-radius:4px;
-  }
-  .custom-control-label::before, .custom-file-label, .custom-select {
-    -webkit-transition: background-color .15s ease-in-out,border-color .15s ease-in-out,-webkit-box-shadow .15s ease-in-out;
-    transition: background-color .15s ease-in-out,border-color .15s ease-in-out,-webkit-box-shadow .15s ease-in-out;
-    transition: background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out;
-    transition: background-color .15s ease-in-out,border-color .15s ease-in-out,box-shadow .15s ease-in-out,-webkit-box-shadow .15s ease-in-out;
-  }
-  .custom-control-label::before {
-    position: absolute;
-    top:1px;
-    right: 64px;
-    display: block;
-    width:16px;
-    height: 16px;
-    pointer-events: none;
-    content: "";
-    background-color: #fff;
-    border: #b7b9cc solid 1px;
-  }
-  .custom-checkbox .custom-control-input:checked~.custom-control-label::after {
-    background:url('../../assets/images/duigou.png') no-repeat;
-  }
-  .custom-control-label::after {
-    position: absolute;
-    top:5px;
-    right: 62px;
-    display: block;
-    width: 16px;
-    height: 16px;
-    content: "";
-    background: no-repeat 50%/50% 50%;
-  }
-  /* 密码错误 */
-  .f_pass_n{
-
-  }
-  .f_pass i{
-    margin:11px  6px 0 0;
-  }
-  .f_pass p{
-    color: #dc0a0a;
-    text-align: left;
-  }
-  @media screen and (min-width: 960px) and (max-width:1200px){
-    .box1 {
-      margin-top: 144px;
-      width: 960px;;
-    }
-    .mr_box{
-      margin-top: 40px;
-    }
-    .mr_box h2 {
-      margin-bottom: 26px;
-    }
-    .middle_left {
-      width: 560px;
-    }
-    .middle_left img {
-      width: 100%;
-      height: 470px;
-    }
-    .middle1 {
-      overflow: hidden;
-      height: 470px;
-    }
-    .middle_right {
-      width: 400px;
-      overflow: hidden;
-      height: 470px;
-    }
-    .login {
-      margin-top: 20px;
-    }
-    .form-group {
-      margin-bottom: 36px;
-    }
-  }
-  @media screen and (max-width: 960px) {
-    .box1 {
-      margin-top: 80px;
-      width: 418px;
-    }
-    .mr_box{
-      margin-top: 40px;
-    }
-    .mr_box h2 {
-      margin-bottom: 34px;
-    }
-    .middle_left {
-      display: none;
-      float: none;
-    }
-    .middle_right {
-      float: none;
-      margin: 0 auto;
-      overflow: hidden;
-      height: 470px;
-      width: 418px;
-    }
-    .login {
-      margin-top: 18px;
-    }
-    .form-group {
-      margin-bottom: 28px;
-    }
-  }
 </style>

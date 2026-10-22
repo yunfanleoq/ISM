@@ -183,8 +183,19 @@ window.App = window.App || {};
     { id: 'govern',  name: '数据治理' },
     { id: 'config',  name: '工程配置' },
     { id: 'selfmon', name: '自监控' },
-    { id: 'admin',   name: '系统管理' }
+    { id: 'admin',   name: '系统管理' },
+    { id: 'ontology', name: '本体中心', href: '/#/xunzhi/jf/ontology' },
+    { id: 'backend', name: '进入后台', href: '/#/Project' }
   ];
+
+  A.leaveTo = function (href) {
+    try {
+      if (window.parent && window.parent !== window) window.parent.location.href = href;
+      else window.location.href = href;
+    } catch (e) {
+      window.open(href, '_top');
+    }
+  };
 
   A.go = function (id) {
     var top = String(id || '').split('/')[0];
@@ -240,11 +251,14 @@ window.App = window.App || {};
     }).join('') +
       '<div class="tab-more"><button class="tab" type="button">更多</button><div class="tab-more-pop">' +
       A.MORE.map(function (n) {
-        return '<button class="tab" type="button" data-id="' + n.id + '">' + n.name + '</button>';
+        return '<button class="tab" type="button" data-id="' + (n.id || '') + '" data-href="' + (n.href || '') + '">' + n.name + '</button>';
       }).join('') + '</div></div>';
     tabs.addEventListener('click', function (e) {
       var b = e.target.closest('.tab');
-      if (b) A.go(b.getAttribute('data-id'));
+      if (!b) return;
+      var href = b.getAttribute('data-href');
+      if (href) { A.leaveTo(href); return; }
+      A.go(b.getAttribute('data-id'));
     });
     A.fit();
     A.render();

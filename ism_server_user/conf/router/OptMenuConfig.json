@@ -7,12 +7,20 @@
             },
             {
                 "router": "XunzhiJfSection",
-                "name": "循智·机房环境",
+                "name": "机房环境",
                 "icon": "cloud-server",
                 "children": [
                     {
                         "router": "XunzhiJf_jf_home",
                         "name": "工作台"
+                    },
+                    {
+                        "router": "XunzhiJf_jf_ontology",
+                        "name": "本体中心"
+                    },
+                    {
+                        "router": "XunzhiJf_jf_agent",
+                        "name": "智能体"
                     },
                     {
                         "router": "XunzhiJf_jf_monitor",

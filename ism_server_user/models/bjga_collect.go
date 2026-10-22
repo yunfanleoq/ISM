@@ -152,11 +152,21 @@ func BjgaCollectLive(project string) ([]bjgaCollectDevice, []map[string]interfac
 		Muid       string
 	}
 	var rows []row
-	Db.Model(&DeviceRealData{}).
-		Select("device_name, name, value, data_unit, muid").
-		Where("project_uuid = ?", project).
-		Order("device_name, id").
-		Find(&rows)
+	// 停用设备不进大屏。is_enable=0 的温湿度只有演示初值，没有南向，
+	// 灌进来会把 bjga_th_device 的 98 条曲线整表换掉。
+	var enabled []string
+	if err := Db.Model(&MonitorList{}).
+		Where("project_uuid = ? AND type = 1 AND is_enable = 1", project).
+		Pluck("uuid", &enabled).Error; err != nil {
+		gormlog.Info("bjga collect enable: %v", err)
+	}
+	if len(enabled) > 0 {
+		Db.Model(&DeviceRealData{}).
+			Select("device_name, name, value, data_unit, muid").
+			Where("project_uuid = ? AND device_uuid IN ?", project, enabled).
+			Order("device_name, id").
+			Find(&rows)
+	}
 
 	modelName := map[string]string{}
 	if len(rows) > 0 {
