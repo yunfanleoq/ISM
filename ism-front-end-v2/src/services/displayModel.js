@@ -5,7 +5,7 @@ import {
   DISPLAYMODELPAGESETHOME,GETUSERDISPLAYLIST,DISPLAYMODELPAGECOPY,GETDISPLAYMODELLAYERDATABYTOKEN,MODELADDUSER,MODELDELUSER,GETMODELUSERS,
   DISPLAYMODELPAGEBINDTEMPLATE,DISPLAYMODELTEMPLATEMAP
 } from '@/services/api'
-import {request, METHOD} from '@/utils/request'
+import {request, METHOD, AUTH_TYPE, getAuthorization} from '@/utils/request'
 
 /**
  * 模型添加
@@ -78,12 +78,11 @@ function isRetryableDisplayLayerError(error) {
   return typeof navigator === 'undefined' || navigator.onLine
 }
 
-async function requestDisplayLayer(url, params, timeout) {
+async function requestDisplayLayer(url, params, timeout, extraConfig) {
+  const config = Object.assign({ timeout: timeout }, extraConfig || {})
   for (let attempt = 0; ; attempt += 1) {
     try {
-      return await request(url, METHOD.POST, params, {
-        timeout
-      })
+      return await request(url, METHOD.POST, params, config)
     } catch (error) {
       if (attempt >= DISPLAY_LAYER_RETRY_DELAYS.length ||
         !isRetryableDisplayLayerError(error)) {
@@ -104,7 +103,9 @@ export async function getDisplayModelLayerData(params) {
   const timeout = params && params.metaOnly === true
     ? DISPLAY_META_TIMEOUT
     : DISPLAY_FULL_TIMEOUT
-  return requestDisplayLayer(GETDISPLAYMODELLAYERDATA, params, timeout)
+  const projectUuid = getAuthorization(AUTH_TYPE.AUTH1)
+  const extra = projectUuid ? { headers: { ProjectUuid: projectUuid } } : null
+  return requestDisplayLayer(GETDISPLAYMODELLAYERDATA, params, timeout, extra)
 }
 /**
  * 模型图层数据

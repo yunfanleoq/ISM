@@ -80,6 +80,9 @@ func (c *AlarmNoticeController) UpdateAlarmNoticeParams() {
 		} else {
 			code = models.AlarmNoticeUpdate(getParams["type"].(string), ProjectUuid, getParams["params"].(string))
 			alarmTask.UpdateAlarmNoticeConfig(ProjectUuid)
+			if getParams["type"].(string) == "StartupAlarmDelay" {
+				alarmTask.ReconfigureStartupAlarmWindows()
+			}
 			WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "更新告警参数"+getParams["params"].(string), errmsg.JournalLevelInfo, c.Ctx.Input)
 		}
 

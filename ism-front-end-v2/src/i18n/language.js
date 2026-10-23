@@ -803,6 +803,8 @@ module.exports = {
           Mercury:"泵",
           Blender:"搅拌机",
           Electric:"电力",
+          DcEnv:"机房动环",
+          Sld:"配电一次图",
           Model3D:{
             title:"3D模型"
           },
@@ -1084,6 +1086,57 @@ module.exports = {
           BreakerStatus:"断路器状态",
           CloseColor:"合闸颜色",
           BreakerSwitch:"隔离开关"
+        },
+        Power:{
+          state:"状态",
+          open:"分闸",
+          closed:"合闸",
+          sourceA:"常用电源",
+          sourceB:"备用电源"
+        },
+        DcEnv:{
+          utility:"市电进线",
+          transformer:"变压器",
+          lvPanel:"低压配电柜",
+          ats:"ATS",
+          ups:"UPS",
+          battery:"蓄电池组",
+          rpp:"列头柜",
+          pdu:"PDU",
+          generator:"柴油发电机",
+          busway:"母线槽",
+          crac:"精密空调",
+          inrow:"列间空调",
+          thSensor:"温湿度",
+          leak:"漏水检测",
+          smoke:"烟感",
+          access:"门禁",
+          camera:"摄像头",
+          freshAir:"新风机",
+          rack:"机柜",
+          coldAisle:"冷通道",
+          tray:"电缆桥架",
+          meter:"电表"
+        },
+        Sld:{
+          busbar:"母线",
+          breaker:"断路器",
+          disconnector:"隔离开关",
+          loadSwitch:"负荷开关",
+          earth:"接地",
+          transformer:"变压器",
+          ct:"电流互感器",
+          vt:"电压互感器",
+          arrester:"避雷器",
+          fuse:"熔断器",
+          generator:"发电机",
+          ups:"UPS",
+          battery:"蓄电池",
+          ats:"ATS",
+          feederIn:"进线",
+          feederOut:"出线",
+          capacitor:"电容器",
+          motor:"电动机"
         },
         public:{
           "ParamsConfigError":"组件参数配置错误",
@@ -2084,7 +2137,8 @@ module.exports = {
           },
           UserList:{
             "RoleOperator":"操作员",
-            "RoleUser":"普通用户"
+            "RoleUser":"普通用户",
+            "RoleLeader":"领导"
           },
           roleManager:{
             "addRole":"新增角色",
@@ -4024,6 +4078,8 @@ module.exports = {
           Mercury:"Mercury",
           Blender:"Blender",
           Electric:"Electric",
+          DcEnv:"Data Center",
+          Sld:"Single Line",
           Model3D:{
             title:"3D model"
           },
@@ -4304,6 +4360,57 @@ module.exports = {
           BreakerStatus:"Breaker status",
           CloseColor:"Closed color",
           BreakerSwitch:"Isolator switch"
+        },
+        Power:{
+          state:"State",
+          open:"Open",
+          closed:"Closed",
+          sourceA:"Source A",
+          sourceB:"Source B"
+        },
+        DcEnv:{
+          utility:"Utility incomer",
+          transformer:"Transformer",
+          lvPanel:"LV panel",
+          ats:"ATS",
+          ups:"UPS",
+          battery:"Battery bank",
+          rpp:"Row PDU",
+          pdu:"PDU",
+          generator:"Diesel generator",
+          busway:"Busway",
+          crac:"CRAC",
+          inrow:"In-row cooling",
+          thSensor:"Temp and humidity",
+          leak:"Leak detection",
+          smoke:"Smoke detector",
+          access:"Access control",
+          camera:"Camera",
+          freshAir:"Fresh air unit",
+          rack:"Server rack",
+          coldAisle:"Cold aisle",
+          tray:"Cable tray",
+          meter:"Power meter"
+        },
+        Sld:{
+          busbar:"Busbar",
+          breaker:"Circuit breaker",
+          disconnector:"Disconnector",
+          loadSwitch:"Load switch",
+          earth:"Earth",
+          transformer:"Transformer",
+          ct:"Current transformer",
+          vt:"Voltage transformer",
+          arrester:"Surge arrester",
+          fuse:"Fuse",
+          generator:"Generator",
+          ups:"UPS",
+          battery:"Battery",
+          ats:"ATS",
+          feederIn:"Incoming",
+          feederOut:"Outgoing",
+          capacitor:"Capacitor",
+          motor:"Motor"
         },
         public:{
           "ParamsConfigError":"Component parameter configuration error",
@@ -5255,7 +5362,8 @@ module.exports = {
           },
           UserList:{
             "RoleOperator":"Operator",
-            "RoleUser":"OrdinaryUsers"
+            "RoleUser":"OrdinaryUsers",
+            "RoleLeader":"Leader"
           },
           roleManager:{
             "addRole":"Add Role",
@@ -7164,6 +7272,8 @@ module.exports = {
           Mercury:"泵",
           Blender:"攪拌機",
           Electric:"電力",
+          DcEnv:"機房動環",
+          Sld:"配電一次圖",
           Model3D:{
             title:"3D模型"
           },
@@ -7443,6 +7553,57 @@ module.exports = {
           BreakerStatus:"斷路器狀態",
           CloseColor:"合閘顏色",
           BreakerSwitch:"隔離開關"
+        },
+        Power:{
+          state:"狀態",
+          open:"分閘",
+          closed:"合閘",
+          sourceA:"常用電源",
+          sourceB:"備用電源"
+        },
+        DcEnv:{
+          utility:"市電進線",
+          transformer:"變壓器",
+          lvPanel:"低壓配電櫃",
+          ats:"ATS",
+          ups:"UPS",
+          battery:"蓄電池組",
+          rpp:"列頭櫃",
+          pdu:"PDU",
+          generator:"柴油發電機",
+          busway:"母線槽",
+          crac:"精密空調",
+          inrow:"列間空調",
+          thSensor:"溫濕度",
+          leak:"漏水檢測",
+          smoke:"煙感",
+          access:"門禁",
+          camera:"攝像頭",
+          freshAir:"新風機",
+          rack:"機櫃",
+          coldAisle:"冷通道",
+          tray:"電纜橋架",
+          meter:"電表"
+        },
+        Sld:{
+          busbar:"母線",
+          breaker:"斷路器",
+          disconnector:"隔離開關",
+          loadSwitch:"負荷開關",
+          earth:"接地",
+          transformer:"變壓器",
+          ct:"電流互感器",
+          vt:"電壓互感器",
+          arrester:"避雷器",
+          fuse:"熔斷器",
+          generator:"發電機",
+          ups:"UPS",
+          battery:"蓄電池",
+          ats:"ATS",
+          feederIn:"進線",
+          feederOut:"出線",
+          capacitor:"電容器",
+          motor:"電動機"
         },
         public:{
           "ParamsConfigError":"組件參數配寘錯誤",
@@ -8394,7 +8555,8 @@ module.exports = {
           },
           UserList:{
             "RoleOperator":"操作員",
-            "RoleUser":"普通用戶"
+            "RoleUser":"普通用戶",
+            "RoleLeader":"領導"
           },
           roleManager:{
             "addRole":"新增角色",

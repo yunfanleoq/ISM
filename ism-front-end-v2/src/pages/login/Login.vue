@@ -7,9 +7,9 @@
                 <div class="middle_left">
                   <div class="brand-panel">
                     <a-skeleton :loading="skeletonLoading" active>
-                      <img :src="systemLogo" alt="循安" class="brand-logo" />
+                      <img :src="systemLogo" alt="数据中心动环监控平台" class="brand-logo" />
                     </a-skeleton>
-                    <h1 class="brand-title">循安科技电力监控平台</h1>
+                    <h1 class="brand-title">数据中心动环监控平台</h1>
                     <p class="brand-subtitle">POWER MONITORING &amp; INTELLIGENT MANAGEMENT</p>
                     <ul class="brand-features">
                       <li>实时数据采集与监控</li>
@@ -89,7 +89,7 @@
         </div>
         <!-- 整页底部居中，对齐登录参考图；勿放在登录卡片内 -->
         <div class="xunan-footer">
-          © 北京循安科技有限公司 - 循安科技电力监控平台
+          © 数据中心动环监控平台
         </div>
       </div>
 </template>
@@ -491,7 +491,7 @@ export default {
       height: 470px;
     }
     .middle_right {
-      width: 400px;
+      width: calc(100% - 560px);
       overflow: hidden;
       height: 470px;
     }

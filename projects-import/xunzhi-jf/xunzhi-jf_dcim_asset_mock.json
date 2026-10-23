@@ -1,0 +1,29 @@
+{
+  "schema": "dcim-asset-mock-v1",
+  "project": "循智元晟",
+  "monitorList": {
+    "rack_node_uuid": "88888888888888888888888888888888",
+    "rack_node_name": "F3-模块机房-01",
+    "room_sid": 1001,
+    "note": "rack_id 与 ImportProject monitorTree 节点 uuid 对齐，供 U 位图挂接"
+  },
+  "rack": {
+    "rack_id": "88888888888888888888888888888888",
+    "label": "机柜-A01-Mock",
+    "u_count": 42,
+    "rated_power_kw": 6.0
+  },
+  "assets": [
+    {
+      "asset_id": "as-xz-0001",
+      "asset_tag": "XZ-PDU-01",
+      "type": "pdu",
+      "model": "Mock-PDU",
+      "status": "in_stock",
+      "rack_id": "",
+      "u_start": 0,
+      "u_height": 2
+    }
+  ],
+  "u_positions": []
+}

@@ -1,0 +1,2066 @@
+{
+  "_meta": {
+    "format": "ImportProjectPackage",
+    "probe": "P-COL-01,P-COL-02,P-COL-03",
+    "project_slug": "xunzhi-jf",
+    "gather_interval_ms_default": 5000,
+    "w2": "power+ups appended",
+    "s1": "envmon-alarm+envmon-viz",
+    "w3": "ac+h2 appended",
+    "s1_chart_thicken_v1": true,
+    "s1_chart_shapes_on_plane": [
+      "ism-view-chart-gauge-0",
+      "ism-view-real-table",
+      "view-device-alarm-list",
+      "view-svg-text"
+    ],
+    "s1_chart_shape_count": 4,
+    "s1_gauge_plus_v1": true,
+    "s1_gauge_dashboard_instance_count": 10,
+    "s1_gauge_dashboard_shapes": [
+      "ism-view-chart-category-1",
+      "ism-view-chart-gauge-0",
+      "ism-view-chart-gauge-1",
+      "ism-view-chart-gauge-2",
+      "ism-view-chart-gauge-3",
+      "ism-view-chart-gauge-4",
+      "ism-view-chart-gauge-5",
+      "ism-view-chart-gauge-7",
+      "ism-view-chart-gauge-diy",
+      "ism-view-measuring"
+    ],
+    "w4_battery_sample_v1": true,
+    "s6_25d_nav_shell_v1": true,
+    "s6_25d_page_id": "c3d4e5f6a7b84990abcdef25d000001",
+    "s6_chart_catalog_push_v1": true,
+    "s6_chart_shape_count_on_plane": 52,
+    "s6_gauge_dashboard_instance_count": 28,
+    "s6_contract_note": "同窗≥50/≥20未全达标时以本字段为准，勿虚报",
+    "env_plane_demo_layout_v1": true,
+    "env_plane_demo_layout": {
+      "page": "xunzhi-jf-env-plane",
+      "canvas": "1920x1080",
+      "cells": 11,
+      "removed_s1_chart_gallery": true,
+      "w2_power_viz_cells": 3
+    },
+    "w2_power_viz_v1": true,
+    "w2_power_viz": {
+      "devices": [
+        "xunzhi-jf-PWR-01",
+        "xunzhi-jf-UPS-01"
+      ],
+      "mock_slaves": [
+        3,
+        4
+      ],
+      "data_format": "ABCD"
+    }
+  },
+  "project": {
+    "name": "循智元晟",
+    "gateway": {
+      "ip": "127.0.0.1",
+      "port": 1503
+    }
+  },
+  "deviceModels": [
+    {
+      "uuid": "d4e5f6a7b8c94a0a1111111111111111",
+      "name": "xunzhi-jf-温湿度传感器",
+      "dec": "循智元晟竖切：温度/湿度/传感器故障",
+      "type": 2,
+      "modbusConnectType": "TCPClient",
+      "modbusConnectMode": "TCP/IP",
+      "DataFormat": "ABCD",
+      "timeout": 3000,
+      "port": 1503,
+      "gatherNumber": 30,
+      "gather_interval_ms": 5000
+    },
+    {
+      "uuid": "e5f6a7b8c9d04b0b2222222222222222",
+      "name": "xunzhi-jf-漏水控制器",
+      "dec": "循智元晟竖切：漏水信号/位置米数/控制器故障",
+      "type": 2,
+      "modbusConnectType": "TCPClient",
+      "modbusConnectMode": "TCP/IP",
+      "DataFormat": "ABCD",
+      "timeout": 3000,
+      "port": 1503,
+      "gatherNumber": 30,
+      "gather_interval_ms": 5000
+    },
+    {
+      "uuid": "b1b1b1b1b1b14c0c000000000000001",
+      "name": "xunzhi-jf-列头柜",
+      "dec": "W2 配电样例：电压/电流/有功",
+      "type": 2,
+      "modbusConnectType": "TCPClient",
+      "modbusConnectMode": "TCP/IP",
+      "DataFormat": "ABCD",
+      "timeout": 3000,
+      "port": 1503,
+      "gatherNumber": 30,
+      "gather_interval_ms": 5000
+    },
+    {
+      "uuid": "c2c2c2c2c2c24d0d000000000000002",
+      "name": "xunzhi-jf-UPS",
+      "dec": "W2 UPS 样例：输出电压/电流/电池电压",
+      "type": 2,
+      "modbusConnectType": "TCPClient",
+      "modbusConnectMode": "TCP/IP",
+      "DataFormat": "ABCD",
+      "timeout": 3000,
+      "port": 1503,
+      "gatherNumber": 30,
+      "gather_interval_ms": 5000
+    },
+    {
+      "uuid": "c3c3c3c3c3c34c0c00000000000000003",
+      "name": "xunzhi-jf-精密空调",
+      "dec": "W3 空调：回送风温/设定温/运行状态",
+      "type": 2,
+      "modbusConnectType": "TCPClient",
+      "modbusConnectMode": "TCP/IP",
+      "DataFormat": "ABCD",
+      "timeout": 3000,
+      "port": 1503,
+      "gatherNumber": 30,
+      "gather_interval_ms": 5000
+    },
+    {
+      "uuid": "d4d4d4d4d4d44d0d00000000000000004",
+      "name": "xunzhi-jf-氢气检测",
+      "dec": "W3 氢气：浓度 ppm + 高报 DI",
+      "type": 2,
+      "modbusConnectType": "TCPClient",
+      "modbusConnectMode": "TCP/IP",
+      "DataFormat": "ABCD",
+      "timeout": 3000,
+      "port": 1503,
+      "gatherNumber": 30,
+      "gather_interval_ms": 5000
+    },
+    {
+      "uuid": "d7d7d7d7d7d74d7d00000000000000007",
+      "name": "xunzhi-jf-电池组-抽样",
+      "dec": "电池 1920 专项抽样（3 点：总压/SOC/温度）",
+      "type": 2,
+      "modbusConnectType": "TCPClient",
+      "modbusConnectMode": "TCP/IP",
+      "DataFormat": "ABCD",
+      "timeout": 3000,
+      "port": 1503,
+      "gatherNumber": 30,
+      "gather_interval_ms": 5000
+    }
+  ],
+  "registerGroups": [
+    {
+      "uuid": "f6a7b8c9d0e14c1c3333333333333333",
+      "muid": "d4e5f6a7b8c94a0a1111111111111111",
+      "name": "AI数据",
+      "function": 3,
+      "registerStart": 0,
+      "registerCount": 4
+    },
+    {
+      "uuid": "a7b8c9d0e1f24d2d4444444444444444",
+      "muid": "d4e5f6a7b8c94a0a1111111111111111",
+      "name": "DI数据",
+      "function": 2,
+      "registerStart": 0,
+      "registerCount": 2
+    },
+    {
+      "uuid": "b8c9d0e1f2a34e3e5555555555555555",
+      "muid": "e5f6a7b8c9d04b0b2222222222222222",
+      "name": "AI数据",
+      "function": 3,
+      "registerStart": 0,
+      "registerCount": 4
+    },
+    {
+      "uuid": "c9d0e1f2a3b44f4f6666666666666666",
+      "muid": "e5f6a7b8c9d04b0b2222222222222222",
+      "name": "DI数据",
+      "function": 2,
+      "registerStart": 0,
+      "registerCount": 4
+    },
+    {
+      "uuid": "d3d3d3d3d3d34e0e000000000000003",
+      "muid": "b1b1b1b1b1b14c0c000000000000001",
+      "name": "AI数据",
+      "function": 3,
+      "registerStart": 0,
+      "registerCount": 8
+    },
+    {
+      "uuid": "e4e4e4e4e4e44f0f000000000000004",
+      "muid": "c2c2c2c2c2c24d0d000000000000002",
+      "name": "AI数据",
+      "function": 3,
+      "registerStart": 0,
+      "registerCount": 8
+    },
+    {
+      "uuid": "e5e5e5e5e5e54e0e00000000000000005",
+      "muid": "c3c3c3c3c3c34c0c00000000000000003",
+      "name": "AI数据",
+      "function": 3,
+      "registerStart": 0,
+      "registerCount": 8
+    },
+    {
+      "uuid": "f6f6f6f6f6f64f0f00000000000000006",
+      "muid": "c3c3c3c3c3c34c0c00000000000000003",
+      "name": "DI数据",
+      "function": 2,
+      "registerStart": 0,
+      "registerCount": 4
+    },
+    {
+      "uuid": "a7a7a7a7a7a74a0a00000000000000007",
+      "muid": "d4d4d4d4d4d44d0d00000000000000004",
+      "name": "AI数据",
+      "function": 3,
+      "registerStart": 0,
+      "registerCount": 4
+    },
+    {
+      "uuid": "b8b8b8b8b8b84b0b00000000000000008",
+      "muid": "d4d4d4d4d4d44d0d00000000000000004",
+      "name": "DI数据",
+      "function": 2,
+      "registerStart": 0,
+      "registerCount": 4
+    },
+    {
+      "uuid": "e8e8e8e8e8e84e8e00000000000000008",
+      "muid": "d7d7d7d7d7d74d7d00000000000000007",
+      "name": "AI数据",
+      "function": 3,
+      "registerStart": 0,
+      "registerCount": 8
+    }
+  ],
+  "registerPoints": [
+    {
+      "uuid": "11111111111111111111111111111111",
+      "muid": "d4e5f6a7b8c94a0a1111111111111111",
+      "name": "温度",
+      "registerAddress": 0,
+      "registerGroupUuid": "f6a7b8c9d0e14c1c3333333333333333",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "℃",
+      "conversionExpression": "{val}*0.1",
+      "alarm": 0,
+      "alarmLevel": 0,
+      "AlarmMessage": "",
+      "AlarmClearMessage": "",
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "RecordDataCharge": "",
+      "RecordDataTimely": "",
+      "FloatAccuracy": "2",
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "22222222222222222222222222222222",
+      "muid": "d4e5f6a7b8c94a0a1111111111111111",
+      "name": "湿度",
+      "registerAddress": 1,
+      "registerGroupUuid": "f6a7b8c9d0e14c1c3333333333333333",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "%RH",
+      "conversionExpression": "{val}*0.1",
+      "alarm": 0,
+      "alarmLevel": 0,
+      "AlarmMessage": "",
+      "AlarmClearMessage": "",
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "RecordDataCharge": "",
+      "RecordDataTimely": "",
+      "FloatAccuracy": "2",
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "33333333333333333333333333333333",
+      "muid": "d4e5f6a7b8c94a0a1111111111111111",
+      "name": "传感器故障",
+      "registerAddress": 0,
+      "registerGroupUuid": "a7b8c9d0e1f24d2d4444444444444444",
+      "auth": "ReadOnly",
+      "type": "Bool",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "",
+      "conversionExpression": "{val}*1",
+      "alarm": 1,
+      "alarmLevel": 2,
+      "AlarmMessage": "温湿度传感器故障",
+      "AlarmClearMessage": "温湿度传感器故障恢复",
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "RecordDataCharge": "",
+      "RecordDataTimely": "",
+      "FloatAccuracy": "2",
+      "gather_interval_ms": 5000,
+      "signal_type": "DI",
+      "protocol": "modbus",
+      "alarmOnValue": 1
+    },
+    {
+      "uuid": "44444444444444444444444444444444",
+      "muid": "e5f6a7b8c9d04b0b2222222222222222",
+      "name": "漏水信号",
+      "registerAddress": 0,
+      "registerGroupUuid": "c9d0e1f2a3b44f4f6666666666666666",
+      "auth": "ReadOnly",
+      "type": "Bool",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "",
+      "conversionExpression": "{val}*1",
+      "alarm": 1,
+      "alarmLevel": 1,
+      "AlarmMessage": "漏水报警",
+      "AlarmClearMessage": "漏水报警恢复",
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "RecordDataCharge": "",
+      "RecordDataTimely": "",
+      "FloatAccuracy": "2",
+      "gather_interval_ms": 5000,
+      "signal_type": "DI",
+      "protocol": "modbus",
+      "alarmOnValue": 1
+    },
+    {
+      "uuid": "55555555555555555555555555555555",
+      "muid": "e5f6a7b8c9d04b0b2222222222222222",
+      "name": "漏水位置米数",
+      "registerAddress": 0,
+      "registerGroupUuid": "b8c9d0e1f2a34e3e5555555555555555",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "m",
+      "conversionExpression": "{val}*0.1",
+      "alarm": 0,
+      "alarmLevel": 0,
+      "AlarmMessage": "",
+      "AlarmClearMessage": "",
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "RecordDataCharge": "",
+      "RecordDataTimely": "",
+      "FloatAccuracy": "2",
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "66666666666666666666666666666666",
+      "muid": "e5f6a7b8c9d04b0b2222222222222222",
+      "name": "控制器故障",
+      "registerAddress": 1,
+      "registerGroupUuid": "c9d0e1f2a3b44f4f6666666666666666",
+      "auth": "ReadOnly",
+      "type": "Bool",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "",
+      "conversionExpression": "{val}*1",
+      "alarm": 1,
+      "alarmLevel": 2,
+      "AlarmMessage": "漏水控制器故障",
+      "AlarmClearMessage": "漏水控制器故障恢复",
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "RecordDataCharge": "",
+      "RecordDataTimely": "",
+      "FloatAccuracy": "2",
+      "gather_interval_ms": 5000,
+      "signal_type": "DI",
+      "protocol": "modbus",
+      "alarmOnValue": 1
+    },
+    {
+      "uuid": "p111111111111111111111111111111",
+      "muid": "b1b1b1b1b1b14c0c000000000000001",
+      "name": "AB线电压",
+      "registerAddress": 0,
+      "registerGroupUuid": "d3d3d3d3d3d34e0e000000000000003",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "V",
+      "conversionExpression": "{val}*0.1",
+      "alarm": 0,
+      "alarmLevel": 0,
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "p222222222222222222222222222222",
+      "muid": "b1b1b1b1b1b14c0c000000000000001",
+      "name": "A相电流",
+      "registerAddress": 1,
+      "registerGroupUuid": "d3d3d3d3d3d34e0e000000000000003",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "A",
+      "conversionExpression": "{val}*0.01",
+      "alarm": 0,
+      "alarmLevel": 0,
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "p333333333333333333333333333333",
+      "muid": "b1b1b1b1b1b14c0c000000000000001",
+      "name": "总有功功率",
+      "registerAddress": 2,
+      "registerGroupUuid": "d3d3d3d3d3d34e0e000000000000003",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "kW",
+      "conversionExpression": "{val}*0.1",
+      "alarm": 0,
+      "alarmLevel": 0,
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "u111111111111111111111111111111",
+      "muid": "c2c2c2c2c2c24d0d000000000000002",
+      "name": "输出AB线电压",
+      "registerAddress": 0,
+      "registerGroupUuid": "e4e4e4e4e4e44f0f000000000000004",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "V",
+      "conversionExpression": "{val}*0.1",
+      "alarm": 0,
+      "alarmLevel": 0,
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "u222222222222222222222222222222",
+      "muid": "c2c2c2c2c2c24d0d000000000000002",
+      "name": "输出A相电流",
+      "registerAddress": 1,
+      "registerGroupUuid": "e4e4e4e4e4e44f0f000000000000004",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "A",
+      "conversionExpression": "{val}*0.01",
+      "alarm": 0,
+      "alarmLevel": 0,
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "u333333333333333333333333333333",
+      "muid": "c2c2c2c2c2c24d0d000000000000002",
+      "name": "电池电压",
+      "registerAddress": 2,
+      "registerGroupUuid": "e4e4e4e4e4e44f0f000000000000004",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "V",
+      "conversionExpression": "{val}*0.1",
+      "alarm": 0,
+      "alarmLevel": 0,
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "ac111111111111111111111111111111",
+      "muid": "c3c3c3c3c3c34c0c00000000000000003",
+      "name": "回风温度",
+      "registerAddress": 0,
+      "registerGroupUuid": "e5e5e5e5e5e54e0e00000000000000005",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "℃",
+      "conversionExpression": "{val}*0.1",
+      "alarm": 0,
+      "alarmLevel": 0,
+      "AlarmMessage": "",
+      "AlarmClearMessage": "",
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "ac222222222222222222222222222222",
+      "muid": "c3c3c3c3c3c34c0c00000000000000003",
+      "name": "送风温度",
+      "registerAddress": 1,
+      "registerGroupUuid": "e5e5e5e5e5e54e0e00000000000000005",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "℃",
+      "conversionExpression": "{val}*0.1",
+      "alarm": 0,
+      "alarmLevel": 0,
+      "AlarmMessage": "",
+      "AlarmClearMessage": "",
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "ac333333333333333333333333333333",
+      "muid": "c3c3c3c3c3c34c0c00000000000000003",
+      "name": "设定温度",
+      "registerAddress": 2,
+      "registerGroupUuid": "e5e5e5e5e5e54e0e00000000000000005",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "℃",
+      "conversionExpression": "{val}*0.1",
+      "alarm": 0,
+      "alarmLevel": 0,
+      "AlarmMessage": "",
+      "AlarmClearMessage": "",
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "ac444444444444444444444444444444",
+      "muid": "c3c3c3c3c3c34c0c00000000000000003",
+      "name": "压缩机运行",
+      "registerAddress": 0,
+      "registerGroupUuid": "f6f6f6f6f6f64f0f00000000000000006",
+      "auth": "ReadOnly",
+      "type": "Bool",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "",
+      "conversionExpression": "{val}*1",
+      "alarm": 0,
+      "alarmLevel": 0,
+      "AlarmMessage": "",
+      "AlarmClearMessage": "",
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "gather_interval_ms": 5000,
+      "signal_type": "DI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "h211111111111111111111111111111",
+      "muid": "d4d4d4d4d4d44d0d00000000000000004",
+      "name": "氢气浓度",
+      "registerAddress": 0,
+      "registerGroupUuid": "a7a7a7a7a7a74a0a00000000000000007",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "ppm",
+      "conversionExpression": "{val}*1",
+      "alarm": 1,
+      "alarmLevel": 3,
+      "AlarmMessage": "",
+      "AlarmClearMessage": "",
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus",
+      "alarmOnValue": 1
+    },
+    {
+      "uuid": "h222222222222222222222222222222",
+      "muid": "d4d4d4d4d4d44d0d00000000000000004",
+      "name": "氢气高报",
+      "registerAddress": 0,
+      "registerGroupUuid": "b8b8b8b8b8b84b0b00000000000000008",
+      "auth": "ReadOnly",
+      "type": "Bool",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "",
+      "conversionExpression": "{val}*1",
+      "alarm": 1,
+      "alarmLevel": 3,
+      "AlarmMessage": "氢气浓度高报",
+      "AlarmClearMessage": "氢气高报恢复",
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "gather_interval_ms": 5000,
+      "signal_type": "DI",
+      "protocol": "modbus",
+      "alarmOnValue": 1
+    },
+    {
+      "uuid": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "muid": "d7d7d7d7d7d74d7d00000000000000007",
+      "name": "电池组总压",
+      "registerAddress": 0,
+      "registerGroupUuid": "e8e8e8e8e8e84e8e00000000000000008",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "V",
+      "conversionExpression": "{val}*0.1",
+      "alarm": 0,
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "cccccccccccccccccccccccccccccccc",
+      "muid": "d7d7d7d7d7d74d7d00000000000000007",
+      "name": "SOC",
+      "registerAddress": 1,
+      "registerGroupUuid": "e8e8e8e8e8e84e8e00000000000000008",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "%",
+      "conversionExpression": "{val}*0.1",
+      "alarm": 0,
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus"
+    },
+    {
+      "uuid": "dddddddddddddddddddddddddddddddd",
+      "muid": "d7d7d7d7d7d74d7d00000000000000007",
+      "name": "电池温度",
+      "registerAddress": 2,
+      "registerGroupUuid": "e8e8e8e8e8e84e8e00000000000000008",
+      "auth": "ReadOnly",
+      "type": "Unsigned short",
+      "ByteOrder": "ABCD",
+      "modeltype": 2,
+      "unit": "℃",
+      "conversionExpression": "{val}*0.1",
+      "alarm": 0,
+      "record": 1,
+      "RecordType": 1,
+      "recordInterval": 60,
+      "gather_interval_ms": 5000,
+      "signal_type": "AI",
+      "protocol": "modbus"
+    }
+  ],
+  "monitorTree": [
+    {
+      "uuid": "77777777777777777777777777777777",
+      "sid": 1000,
+      "pid": 0,
+      "name": "循智元晟",
+      "type": 0,
+      "timeout": 5,
+      "IsEnable": 1,
+      "interval": 5000,
+      "failedTimes": 5,
+      "description": "循智元晟监测竖切根节点",
+      "offlineClear": 0,
+      "offlineDefaultValue": "0",
+      "deviceType": 0,
+      "muid": "",
+      "configUid": "a1b2c3d4e5f6478990abcdef12345678",
+      "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
+      "extra": "",
+      "Status": 0
+    },
+    {
+      "uuid": "88888888888888888888888888888888",
+      "sid": 1001,
+      "pid": 1000,
+      "name": "F3-模块机房-01",
+      "type": 0,
+      "timeout": 5,
+      "IsEnable": 1,
+      "interval": 5000,
+      "failedTimes": 5,
+      "description": "竖切样例机房节点",
+      "offlineClear": 0,
+      "offlineDefaultValue": "0",
+      "deviceType": 0,
+      "muid": "",
+      "configUid": "a1b2c3d4e5f6478990abcdef12345678",
+      "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
+      "extra": "",
+      "Status": 0
+    },
+    {
+      "uuid": "99999999999999999999999999999999",
+      "sid": 1002,
+      "pid": 1001,
+      "name": "xunzhi-jf-TH-01",
+      "type": 1,
+      "timeout": 5,
+      "IsEnable": 1,
+      "interval": 5000,
+      "failedTimes": 5,
+      "description": "温湿度传感器#01",
+      "offlineClear": 0,
+      "offlineDefaultValue": "0",
+      "deviceType": 2,
+      "muid": "d4e5f6a7b8c94a0a1111111111111111",
+      "configUid": "a1b2c3d4e5f6478990abcdef12345678",
+      "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1503,\"slaveId\":1,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "Status": 2
+    },
+    {
+      "uuid": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "sid": 1003,
+      "pid": 1001,
+      "name": "xunzhi-jf-LEAK-01",
+      "type": 1,
+      "timeout": 5,
+      "IsEnable": 1,
+      "interval": 5000,
+      "failedTimes": 5,
+      "description": "漏水控制器#01",
+      "offlineClear": 0,
+      "offlineDefaultValue": "0",
+      "deviceType": 2,
+      "muid": "e5f6a7b8c9d04b0b2222222222222222",
+      "configUid": "a1b2c3d4e5f6478990abcdef12345678",
+      "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1503,\"slaveId\":2,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "Status": 2
+    },
+    {
+      "uuid": "f5f5f5f5f5f54010500000000000005",
+      "sid": 1004,
+      "pid": 1001,
+      "name": "xunzhi-jf-PWR-01",
+      "type": 1,
+      "timeout": 5,
+      "IsEnable": 1,
+      "interval": 5000,
+      "failedTimes": 5,
+      "description": "列头柜样例",
+      "offlineClear": 0,
+      "offlineDefaultValue": "0",
+      "deviceType": 2,
+      "muid": "b1b1b1b1b1b14c0c000000000000001",
+      "configUid": "a1b2c3d4e5f6478990abcdef12345678",
+      "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1503,\"slaveId\":3,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "Status": 2
+    },
+    {
+      "uuid": "a6a6a6a6a6a64110600000000000006",
+      "sid": 1005,
+      "pid": 1001,
+      "name": "xunzhi-jf-UPS-01",
+      "type": 1,
+      "timeout": 5,
+      "IsEnable": 1,
+      "interval": 5000,
+      "failedTimes": 5,
+      "description": "UPS 样例",
+      "offlineClear": 0,
+      "offlineDefaultValue": "0",
+      "deviceType": 2,
+      "muid": "c2c2c2c2c2c24d0d000000000000002",
+      "configUid": "a1b2c3d4e5f6478990abcdef12345678",
+      "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1503,\"slaveId\":4,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "Status": 2
+    },
+    {
+      "uuid": "b0b0b0b0b0b04b0b00000000000000001",
+      "sid": 1006,
+      "pid": 1000,
+      "name": "F3-模块机房-02-Mock",
+      "type": 0,
+      "timeout": 5,
+      "IsEnable": 1,
+      "interval": 5000,
+      "failedTimes": 5,
+      "description": "S1 envmon-viz 第二机房树节点草稿（Mock，无设备）",
+      "offlineClear": 0,
+      "offlineDefaultValue": "0",
+      "deviceType": 0,
+      "muid": "",
+      "configUid": "a1b2c3d4e5f6478990abcdef12345678",
+      "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
+      "extra": "",
+      "Status": 0
+    },
+    {
+      "uuid": "b1b1b1b1b1b14b1b00000000000000002",
+      "sid": 1007,
+      "pid": 1006,
+      "name": "xunzhi-jf-TH-02-Mock",
+      "type": 1,
+      "timeout": 5,
+      "IsEnable": 0,
+      "interval": 5000,
+      "failedTimes": 5,
+      "description": "第二机房占位设备（未启用，仅树形演示）",
+      "offlineClear": 0,
+      "offlineDefaultValue": "0",
+      "deviceType": 2,
+      "muid": "d4e5f6a7b8c94a0a1111111111111111",
+      "configUid": "a1b2c3d4e5f6478990abcdef12345678",
+      "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1503,\"slaveId\":1,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "Status": 2
+    },
+    {
+      "uuid": "c9c9c9c9c9c94c1c00000000000000009",
+      "sid": 1008,
+      "pid": 1001,
+      "name": "xunzhi-jf-AC-01",
+      "type": 1,
+      "timeout": 5,
+      "IsEnable": 1,
+      "interval": 5000,
+      "failedTimes": 5,
+      "description": "精密空调样例",
+      "offlineClear": 0,
+      "offlineDefaultValue": "0",
+      "deviceType": 2,
+      "muid": "c3c3c3c3c3c34c0c00000000000000003",
+      "configUid": "a1b2c3d4e5f6478990abcdef12345678",
+      "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1503,\"slaveId\":5,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "Status": 2
+    },
+    {
+      "uuid": "dadadadadada4d1d00000000000000010",
+      "sid": 1009,
+      "pid": 1001,
+      "name": "xunzhi-jf-H2-01",
+      "type": 1,
+      "timeout": 5,
+      "IsEnable": 1,
+      "interval": 5000,
+      "failedTimes": 5,
+      "description": "氢气检测样例",
+      "offlineClear": 0,
+      "offlineDefaultValue": "0",
+      "deviceType": 2,
+      "muid": "d4d4d4d4d4d44d0d00000000000000004",
+      "configUid": "a1b2c3d4e5f6478990abcdef12345678",
+      "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1503,\"slaveId\":6,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "Status": 2
+    },
+    {
+      "uuid": "f9f9f9f9f9f94f9f00000000000000009",
+      "sid": 1010,
+      "pid": 1001,
+      "name": "xunzhi-jf-BAT-01-Sample",
+      "type": 1,
+      "timeout": 5,
+      "IsEnable": 1,
+      "interval": 5000,
+      "failedTimes": 5,
+      "description": "电池抽样#01（slave 7，非1920全覆盖）",
+      "offlineClear": 0,
+      "offlineDefaultValue": "0",
+      "deviceType": 2,
+      "muid": "d7d7d7d7d7d74d7d00000000000000007",
+      "configUid": "a1b2c3d4e5f6478990abcdef12345678",
+      "PageUUID": "b2c3d4e5f6a7488990abcdef123456789",
+      "extra": "{\"modbusIP\":\"127.0.0.1\",\"modbusPort\":1503,\"slaveId\":7,\"packTime\":5000,\"gather_interval_ms\":5000}",
+      "Status": 2
+    }
+  ],
+  "alarmTriggers": [
+    {
+      "Uuid": "a0a0a0a0a0a04a0a00000000000000001",
+      "TriggerName": "漏水信号告警",
+      "TriggerDeviceUuid": "",
+      "TriggerDeviceName": "",
+      "TriggerDataUuid": "",
+      "TriggerDeviceType": 2,
+      "TriggerDeviceModelUuid": "e5f6a7b8c9d04b0b2222222222222222",
+      "TriggerModelDataUuid": "44444444444444444444444444444444",
+      "TriggerAlarmHideText": "漏水报警恢复",
+      "TriggerAlarmShowText": "漏水报警",
+      "TriggerCondition": "=",
+      "TriggerXValue": "1",
+      "TriggerYValue": "",
+      "TriggerAlarmLevel": 1,
+      "TriggerKeepTime": 0,
+      "TriggerLinkDeviceType": 0,
+      "TriggerLinkdeviceModelUuid": "",
+      "TriggerLinkModelDataUuid": "",
+      "TriggerLinkageAlarmValue": "",
+      "TriggerLinkageAlarmClearValue": "",
+      "TriggerType": 0
+    },
+    {
+      "Uuid": "a0a0a0a0a0a04a0a00000000000000002",
+      "TriggerName": "温度过高告警",
+      "TriggerDeviceUuid": "",
+      "TriggerDeviceName": "",
+      "TriggerDataUuid": "",
+      "TriggerDeviceType": 2,
+      "TriggerDeviceModelUuid": "d4e5f6a7b8c94a0a1111111111111111",
+      "TriggerModelDataUuid": "11111111111111111111111111111111",
+      "TriggerAlarmHideText": "温度恢复正常",
+      "TriggerAlarmShowText": "温度超过35℃",
+      "TriggerCondition": ">",
+      "TriggerXValue": "35",
+      "TriggerYValue": "",
+      "TriggerAlarmLevel": 2,
+      "TriggerKeepTime": 5,
+      "TriggerLinkDeviceType": 0,
+      "TriggerLinkdeviceModelUuid": "",
+      "TriggerLinkModelDataUuid": "",
+      "TriggerLinkageAlarmValue": "",
+      "TriggerLinkageAlarmClearValue": "",
+      "TriggerType": 0
+    }
+  ],
+  "displayModel": {
+    "uuid": "c3d4e5f6a7b84990abcdef1234567890",
+    "name": "循智元晟平面监视-xunzhi-jf",
+    "displayUid": "a1b2c3d4e5f6478990abcdef12345678",
+    "description": "W1 竖切：温湿度+漏水实时表",
+    "DisplayType": 1
+  },
+  "displayLayer": {
+    "modelId": "a1b2c3d4e5f6478990abcdef12345678",
+    "pageName": "xunzhi-jf-env-plane",
+    "pageId": "b2c3d4e5f6a7488990abcdef123456789",
+    "isHome": 1,
+    "isLogin": 0,
+    "pageType": 1,
+    "layer": {
+      "backColor": "#0a1628",
+      "backgroundImage": "",
+      "widthHeightRatio": "16:9",
+      "width": 1920,
+      "height": 1080
+    },
+    "components": {
+      "cells": [
+        {
+          "shape": "view-svg-text",
+          "id": "890036627e3349ec846a972f4db0e748",
+          "x": 24,
+          "y": 16,
+          "width": 1872,
+          "height": 44,
+          "zIndex": 1,
+          "visible": true,
+          "position": {
+            "x": 24,
+            "y": 16
+          },
+          "size": {
+            "width": 1872,
+            "height": 44
+          },
+          "data": {
+            "detail": {
+              "type": "view-svg-text",
+              "name": "plane-title",
+              "identifier": "11c5235b002141e3a0f18db1e5823e20",
+              "style": {
+                "position": {
+                  "x": 24,
+                  "y": 16,
+                  "w": 1872,
+                  "h": 44
+                },
+                "text": "循智元晟平面图 · W1 动环 + W2 配电/UPS + 告警（演示收口）",
+                "visible": 1,
+                "fontSize": 22,
+                "foreColor": "#00e5ff",
+                "diy": [],
+                "fontWeight": "bold"
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "isExpression": false,
+                "animateList": [],
+                "move": {
+                  "x": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  },
+                  "y": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "shape": "view-svg-text",
+          "id": "695976dd680e498698d697e0e1a00bd0",
+          "x": 24,
+          "y": 72,
+          "width": 320,
+          "height": 28,
+          "zIndex": 2,
+          "visible": true,
+          "position": {
+            "x": 24,
+            "y": 72
+          },
+          "size": {
+            "width": 320,
+            "height": 28
+          },
+          "data": {
+            "detail": {
+              "type": "view-svg-text",
+              "name": "plane-sec-tree",
+              "identifier": "7c83ac07d3bb4571ac2b380a98edc26d",
+              "style": {
+                "position": {
+                  "x": 24,
+                  "y": 72,
+                  "w": 320,
+                  "h": 28
+                },
+                "text": "① 机房监视树",
+                "visible": 1,
+                "fontSize": 15,
+                "foreColor": "#81d4fa",
+                "diy": [],
+                "fontWeight": "bold"
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "isExpression": false,
+                "animateList": [],
+                "move": {
+                  "x": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  },
+                  "y": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "shape": "view-svg-text",
+          "id": "e99665cca32446c5b2980e902bbdde19",
+          "x": 24,
+          "y": 108,
+          "width": 320,
+          "height": 260,
+          "zIndex": 3,
+          "visible": true,
+          "position": {
+            "x": 24,
+            "y": 108
+          },
+          "size": {
+            "width": 320,
+            "height": 260
+          },
+          "data": {
+            "detail": {
+              "type": "view-svg-text",
+              "name": "plane-monitor-tree",
+              "identifier": "495c563c709d4cc1a7c116750b04bb55",
+              "style": {
+                "position": {
+                  "x": 24,
+                  "y": 108,
+                  "w": 320,
+                  "h": 260
+                },
+                "text": "▸ 循智元晟 (区域)\n▸ F3-模块机房-01 (区域)\n▸ F3-模块机房-02-Mock (区域)\n  ▸ xunzhi-jf-TH-01 (设备)\n  ▸ xunzhi-jf-LEAK-01 (设备)\n  ▸ xunzhi-jf-PWR-01 (设备)\n  ▸ xunzhi-jf-UPS-01 (设备)\n  ▸ xunzhi-jf-AC-01 (设备)\n  ▸ xunzhi-jf-H2-01 (设备)\n  ▸ xunzhi-jf-BAT-01-Sample (设备)\n  ▸ xunzhi-jf-TH-02-Mock (设备) [未启用]\n\n温湿度工程量纲：℃ / %RH（×0.1 换算）\n左侧运行态树与 monitortree 同源",
+                "visible": 1,
+                "fontSize": 13,
+                "foreColor": "#cfd8dc",
+                "diy": []
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "isExpression": false,
+                "animateList": [],
+                "move": {
+                  "x": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  },
+                  "y": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "shape": "view-svg-text",
+          "id": "44896548520845be925bb311403bbe1e",
+          "x": 368,
+          "y": 72,
+          "width": 1528,
+          "height": 28,
+          "zIndex": 2,
+          "visible": true,
+          "position": {
+            "x": 368,
+            "y": 72
+          },
+          "size": {
+            "width": 1528,
+            "height": 28
+          },
+          "data": {
+            "detail": {
+              "type": "view-svg-text",
+              "name": "plane-sec-table",
+              "identifier": "92b7cfaae2274481bb2fa8ce1efbb89d",
+              "style": {
+                "position": {
+                  "x": 368,
+                  "y": 72,
+                  "w": 1528,
+                  "h": 28
+                },
+                "text": "② 动环实时表（W1 · 工程量纲）",
+                "visible": 1,
+                "fontSize": 15,
+                "foreColor": "#81d4fa",
+                "diy": [],
+                "fontWeight": "bold"
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "isExpression": false,
+                "animateList": [],
+                "move": {
+                  "x": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  },
+                  "y": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "shape": "ism-view-real-table",
+          "id": "8011fe860a8f47799cb959b419521c8e",
+          "x": 368,
+          "y": 108,
+          "width": 1528,
+          "height": 260,
+          "zIndex": 5,
+          "visible": true,
+          "position": {
+            "x": 368,
+            "y": 108
+          },
+          "size": {
+            "width": 1528,
+            "height": 260
+          },
+          "data": {
+            "detail": {
+              "type": "ism-view-real-table",
+              "identifier": "8011fe860a8f47799cb959b419521c8e",
+              "name": "动环实时表",
+              "style": {
+                "position": {
+                  "x": 368,
+                  "y": 108,
+                  "w": 1528,
+                  "h": 260
+                },
+                "text": "",
+                "visible": 1,
+                "fontSize": 14,
+                "foreColor": "#e5eefc",
+                "diy": [
+                  {
+                    "name": "configComponent.viewRealTable.columnHeaders",
+                    "type": 9,
+                    "value": "温度(℃), 湿度(%RH), 传感器故障, 漏水信号, 漏水位置(m), 控制器故障",
+                    "key": "columnHeaders"
+                  },
+                  {
+                    "name": "configComponent.viewRealTable.rowDeviceNames",
+                    "type": 9,
+                    "value": "温湿度-01\n漏水-01",
+                    "key": "rowDeviceNames"
+                  },
+                  {
+                    "name": "configComponent.viewRealTable.rowDeviceCodes",
+                    "type": 9,
+                    "value": "xunzhi-jf-TH-01\nxunzhi-jf-LEAK-01",
+                    "key": "rowDeviceCodes"
+                  },
+                  {
+                    "name": "configComponent.viewRealTable.rowBindings",
+                    "type": 9,
+                    "value": "xunzhi-jf-TH-01->温度,xunzhi-jf-TH-01->湿度,xunzhi-jf-TH-01->传感器故障,,,;,,,xunzhi-jf-LEAK-01->漏水信号,xunzhi-jf-LEAK-01->漏水位置米数,xunzhi-jf-LEAK-01->控制器故障",
+                    "key": "rowBindings"
+                  },
+                  {
+                    "name": "configComponent.AlarmList.waitTime",
+                    "type": 7,
+                    "value": 2000,
+                    "min": 100,
+                    "max": 10000,
+                    "key": "waitTime"
+                  },
+                  {
+                    "name": "主题风格",
+                    "type": 6,
+                    "value": "dark",
+                    "enumList": [
+                      {
+                        "value": "dark",
+                        "option": "深空夜幕"
+                      }
+                    ],
+                    "key": "themeName"
+                  }
+                ]
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "move": {
+                  "x": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  },
+                  "y": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  }
+                }
+              },
+              "action": [],
+              "active": [],
+              "dataBind": []
+            }
+          }
+        },
+        {
+          "shape": "view-svg-text",
+          "id": "8135f96a91c942b08f33198a6d90615e",
+          "x": 368,
+          "y": 376,
+          "width": 1200,
+          "height": 28,
+          "zIndex": 4,
+          "visible": true,
+          "position": {
+            "x": 368,
+            "y": 376
+          },
+          "size": {
+            "width": 1200,
+            "height": 28
+          },
+          "data": {
+            "detail": {
+              "type": "view-svg-text",
+              "name": "plane-sec-w2",
+              "identifier": "66987eceeb5f4dfbb05d3a8187c4421e",
+              "style": {
+                "position": {
+                  "x": 368,
+                  "y": 376,
+                  "w": 1200,
+                  "h": 28
+                },
+                "text": "③ W2 配电/UPS（Mock slave 3/4 · 1503 · ABCD）",
+                "visible": 1,
+                "fontSize": 15,
+                "foreColor": "#ffb74d",
+                "diy": [],
+                "fontWeight": "bold"
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "isExpression": false,
+                "animateList": [],
+                "move": {
+                  "x": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  },
+                  "y": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "shape": "ism-view-real-table",
+          "id": "f765228144ca4cf49095c52d0f80e62d",
+          "x": 368,
+          "y": 404,
+          "width": 1000,
+          "height": 120,
+          "zIndex": 6,
+          "visible": true,
+          "position": {
+            "x": 368,
+            "y": 404
+          },
+          "size": {
+            "width": 1000,
+            "height": 120
+          },
+          "data": {
+            "detail": {
+              "type": "ism-view-real-table",
+              "identifier": "f765228144ca4cf49095c52d0f80e62d",
+              "name": "w2-power-real-table",
+              "style": {
+                "position": {
+                  "x": 368,
+                  "y": 404,
+                  "w": 1000,
+                  "h": 120
+                },
+                "text": "",
+                "visible": 1,
+                "fontSize": 14,
+                "foreColor": "#e5eefc",
+                "diy": [
+                  {
+                    "name": "configComponent.viewRealTable.columnHeaders",
+                    "type": 9,
+                    "value": "AB线电压(V), A相电流(A), 有功/电池(V或kW)",
+                    "key": "columnHeaders"
+                  },
+                  {
+                    "name": "configComponent.viewRealTable.rowDeviceNames",
+                    "type": 9,
+                    "value": "配电-01\nUPS-01",
+                    "key": "rowDeviceNames"
+                  },
+                  {
+                    "name": "configComponent.viewRealTable.rowDeviceCodes",
+                    "type": 9,
+                    "value": "xunzhi-jf-PWR-01\nxunzhi-jf-UPS-01",
+                    "key": "rowDeviceCodes"
+                  },
+                  {
+                    "name": "configComponent.viewRealTable.rowBindings",
+                    "type": 9,
+                    "value": "xunzhi-jf-PWR-01->AB线电压,xunzhi-jf-PWR-01->A相电流,xunzhi-jf-PWR-01->总有功功率;xunzhi-jf-UPS-01->输出AB线电压,xunzhi-jf-UPS-01->输出A相电流,xunzhi-jf-UPS-01->电池电压",
+                    "key": "rowBindings"
+                  },
+                  {
+                    "name": "configComponent.AlarmList.waitTime",
+                    "type": 7,
+                    "value": 2000,
+                    "min": 100,
+                    "max": 10000,
+                    "key": "waitTime"
+                  },
+                  {
+                    "name": "主题风格",
+                    "type": 6,
+                    "value": "dark",
+                    "enumList": [
+                      {
+                        "value": "dark",
+                        "option": "深空夜幕"
+                      }
+                    ],
+                    "key": "themeName"
+                  }
+                ]
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "isExpression": false,
+                "animateList": []
+              },
+              "action": [],
+              "active": [],
+              "dataBind": []
+            }
+          }
+        },
+        {
+          "shape": "ism-view-chart-gauge-0",
+          "id": "68c31b74edb34098b29babfed1f3b6c7",
+          "x": 1400,
+          "y": 404,
+          "width": 220,
+          "height": 120,
+          "zIndex": 6,
+          "visible": true,
+          "position": {
+            "x": 1400,
+            "y": 404
+          },
+          "size": {
+            "width": 220,
+            "height": 120
+          },
+          "data": {
+            "detail": {
+              "type": "ism-view-chart-gauge-0",
+              "name": "w2-pwr-kw-gauge",
+              "identifier": "68c31b74edb34098b29babfed1f3b6c7",
+              "style": {
+                "position": {
+                  "x": 1400,
+                  "y": 404,
+                  "w": 220,
+                  "h": 120
+                },
+                "text": "总有功功率",
+                "visible": 1,
+                "backColor": "transparent",
+                "foreColor": "#e5eefc",
+                "fontSize": 12,
+                "diy": [
+                  {
+                    "name": "configComponent.ChartPublic.ChartTitle",
+                    "type": 4,
+                    "value": "总有功功率",
+                    "key": "ChartTitle"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.ChartUnit",
+                    "type": 4,
+                    "value": "kW",
+                    "key": "ChartUnit"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.ChartMinValue",
+                    "type": 7,
+                    "value": 0,
+                    "key": "ChartMinValue"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.ChartMaxValue",
+                    "type": 7,
+                    "value": 200,
+                    "key": "ChartMaxValue"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.splitNumber",
+                    "type": 1,
+                    "value": 8,
+                    "key": "splitNumber"
+                  }
+                ]
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "isExpression": false,
+                "animateList": []
+              },
+              "action": [],
+              "active": [
+                {
+                  "id": "ShowData",
+                  "name": "configComponent.ChartPublic.ShowData",
+                  "result": "",
+                  "isExpression": false,
+                  "condition": {
+                    "deviceSN": "f5f5f5f5f5f54010500000000000005",
+                    "DeviceName": "xunzhi-jf-PWR-01",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "p333333333333333333333333333333",
+                    "dataName": "总有功功率",
+                    "operator": "",
+                    "OperatorValue": "",
+                    "OperatorMaxValue": ""
+                  }
+                }
+              ],
+              "dataBind": []
+            }
+          }
+        },
+        {
+          "shape": "ism-view-chart-gauge-0",
+          "id": "f842807c4de449bab3ba0cf7c74e2328",
+          "x": 1640,
+          "y": 404,
+          "width": 220,
+          "height": 120,
+          "zIndex": 6,
+          "visible": true,
+          "position": {
+            "x": 1640,
+            "y": 404
+          },
+          "size": {
+            "width": 220,
+            "height": 120
+          },
+          "data": {
+            "detail": {
+              "type": "ism-view-chart-gauge-0",
+              "name": "w2-ups-batt-gauge",
+              "identifier": "f842807c4de449bab3ba0cf7c74e2328",
+              "style": {
+                "position": {
+                  "x": 1640,
+                  "y": 404,
+                  "w": 220,
+                  "h": 120
+                },
+                "text": "电池电压",
+                "visible": 1,
+                "backColor": "transparent",
+                "foreColor": "#e5eefc",
+                "fontSize": 12,
+                "diy": [
+                  {
+                    "name": "configComponent.ChartPublic.ChartTitle",
+                    "type": 4,
+                    "value": "电池电压",
+                    "key": "ChartTitle"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.ChartUnit",
+                    "type": 4,
+                    "value": "V",
+                    "key": "ChartUnit"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.ChartMinValue",
+                    "type": 7,
+                    "value": 400,
+                    "key": "ChartMinValue"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.ChartMaxValue",
+                    "type": 7,
+                    "value": 600,
+                    "key": "ChartMaxValue"
+                  },
+                  {
+                    "name": "configComponent.ChartPublic.splitNumber",
+                    "type": 1,
+                    "value": 8,
+                    "key": "splitNumber"
+                  }
+                ]
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "isExpression": false,
+                "animateList": []
+              },
+              "action": [],
+              "active": [
+                {
+                  "id": "ShowData",
+                  "name": "configComponent.ChartPublic.ShowData",
+                  "result": "",
+                  "isExpression": false,
+                  "condition": {
+                    "deviceSN": "a6a6a6a6a6a64110600000000000006",
+                    "DeviceName": "xunzhi-jf-UPS-01",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "u333333333333333333333333333333",
+                    "dataName": "电池电压",
+                    "operator": "",
+                    "OperatorValue": "",
+                    "OperatorMaxValue": ""
+                  }
+                }
+              ],
+              "dataBind": []
+            }
+          }
+        },
+        {
+          "shape": "view-svg-text",
+          "id": "9fef2c30f26a405fac2cbf3481b5017f",
+          "x": 24,
+          "y": 524,
+          "width": 600,
+          "height": 28,
+          "zIndex": 7,
+          "visible": true,
+          "position": {
+            "x": 24,
+            "y": 524
+          },
+          "size": {
+            "width": 600,
+            "height": 28
+          },
+          "data": {
+            "detail": {
+              "type": "view-svg-text",
+              "name": "plane-sec-alarm",
+              "identifier": "d02975e7ba044ad1b5686468b5d637d8",
+              "style": {
+                "position": {
+                  "x": 24,
+                  "y": 524,
+                  "w": 600,
+                  "h": 28
+                },
+                "text": "④ 实时告警面板",
+                "visible": 1,
+                "fontSize": 15,
+                "foreColor": "#81d4fa",
+                "diy": [],
+                "fontWeight": "bold"
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "isExpression": false,
+                "animateList": [],
+                "move": {
+                  "x": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  },
+                  "y": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": ""
+                  }
+                }
+              }
+            }
+          }
+        },
+        {
+          "shape": "view-device-alarm-list",
+          "id": "ad8a2a017958447b843e79e20b13e61d",
+          "x": 24,
+          "y": 560,
+          "width": 1872,
+          "height": 500,
+          "zIndex": 8,
+          "visible": true,
+          "position": {
+            "x": 24,
+            "y": 560
+          },
+          "size": {
+            "width": 1872,
+            "height": 500
+          },
+          "data": {
+            "detail": {
+              "type": "view-device-alarm-list",
+              "name": "envmon-alarm",
+              "identifier": "b3ee50217e864fd8bf66f25b7ed8b797",
+              "style": {
+                "position": {
+                  "x": 24,
+                  "y": 560,
+                  "w": 1872,
+                  "h": 500
+                },
+                "text": "",
+                "visible": 1,
+                "backColor": "#0a1628",
+                "foreColor": "#e5eefc",
+                "fontSize": 14,
+                "diy": [
+                  {
+                    "name": "configComponent.AlarmList.rowNum",
+                    "type": 1,
+                    "value": 6,
+                    "min": 5,
+                    "max": 100,
+                    "key": "rowNum"
+                  },
+                  {
+                    "name": "configComponent.AlarmList.headerBGC",
+                    "type": 2,
+                    "value": "#0d47a1",
+                    "key": "headerBGC"
+                  },
+                  {
+                    "name": "configComponent.AlarmList.oddRowBGC",
+                    "type": 2,
+                    "value": "#0a2732",
+                    "key": "oddRowBGC"
+                  },
+                  {
+                    "name": "configComponent.AlarmList.evenRowBGC",
+                    "type": 2,
+                    "value": "#003b51",
+                    "key": "evenRowBGC"
+                  },
+                  {
+                    "name": "configComponent.AlarmList.waitTime",
+                    "type": 7,
+                    "value": 3000,
+                    "min": 100,
+                    "max": 10000,
+                    "key": "waitTime"
+                  }
+                ]
+              },
+              "animate": {
+                "selected": [],
+                "animateElement": [],
+                "condition": {
+                  "deviceSN": "",
+                  "selectVideoType": 0,
+                  "isBandDevice": false,
+                  "bandType": 1,
+                  "dataID": "",
+                  "dataName": "",
+                  "operator": "",
+                  "OperatorValue": "",
+                  "OperatorMaxValue": ""
+                },
+                "isExpression": false,
+                "animateList": []
+              },
+              "action": [],
+              "active": [],
+              "dataBind": []
+            }
+          }
+        }
+      ]
+    }
+  },
+  "draftPages": {
+    "xunzhi-jf-25d-shell": {
+      "pageId": "c3d4e5f6a7b84990abcdef25d000001",
+      "pageName": "xunzhi-jf-25d-shell",
+      "route_hint": "/ism/display/render/{displayUid}?page=xunzhi-jf-25d-shell",
+      "layer": {
+        "width": 1920,
+        "height": 1080,
+        "backColor": "#0d1117"
+      },
+      "components": {
+        "cells": [
+          {
+            "shape": "view-svg-text",
+            "data": {
+              "detail": {
+                "type": "view-svg-text",
+                "name": "25d-placeholder",
+                "style": {
+                  "position": {
+                    "x": 120,
+                    "y": 200,
+                    "w": 1680,
+                    "h": 120
+                  },
+                  "text": "2.5D 场景占位 · 现场图/引擎未接入 · 请使用平面组态 xunzhi-jf-env-plane 兜底监视",
+                  "visible": 1,
+                  "fontSize": 22,
+                  "foreColor": "#90caf9",
+                  "diy": []
+                },
+                "animate": {
+                  "selected": [],
+                  "animateElement": [],
+                  "condition": {
+                    "deviceSN": "",
+                    "selectVideoType": 0,
+                    "isBandDevice": false,
+                    "bandType": 1,
+                    "dataID": "",
+                    "dataName": "",
+                    "operator": "",
+                    "OperatorValue": "",
+                    "OperatorMaxValue": ""
+                  },
+                  "isExpression": false,
+                  "animateList": []
+                }
+              }
+            }
+          }
+        ]
+      },
+      "import_note": "ImportProject 当前仅写入单页 displayLayer；本页需组态编辑器手工创建或后续多页导入扩展。"
+    }
+  }
+}

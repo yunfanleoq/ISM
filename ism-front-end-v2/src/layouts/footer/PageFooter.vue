@@ -6,7 +6,7 @@
       </a>
     </div>
     <div class="copyright">
-      {{ $t('copyright.Version') }}:{{version}} · {{systemCompany}}
+      {{ $t('copyright.Version') }}:{{version}}<span v-if="systemCompany"> · {{systemCompany}}</span>
     </div>
     <div class="copyright">
       Copyright<a-icon type="copyright" />{{copyright}}

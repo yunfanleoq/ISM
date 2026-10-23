@@ -1,0 +1,10 @@
+{
+  "schema": "security-fire-event-mock-v1",
+  "project": "寻智机房环境-xunzhi-jf",
+  "room": {
+    "room_id": "88888888888888888888888888888888",
+    "name": "F3-模块机房-01"
+  },
+  "event_queue": [],
+  "processed": []
+}

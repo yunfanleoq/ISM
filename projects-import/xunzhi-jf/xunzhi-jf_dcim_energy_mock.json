@@ -1,0 +1,30 @@
+{
+  "schema": "dcim-energy-mock-v1",
+  "project": "循智元晟",
+  "room": {
+    "room_id": "88888888888888888888888888888888",
+    "name": "F3-模块机房-01",
+    "monitor_list_node_uuid": "88888888888888888888888888888888"
+  },
+  "baseline": {
+    "period": "2026-10",
+    "it_power_kw": 50.0,
+    "facility_power_kw": 75.0,
+    "hours_in_period": 720,
+    "note": "IT/总功耗为样例；正式版读 W2 列头柜 RealData + 手工补录表 dcim_pue_manual_entry"
+  },
+  "manual_entries": [],
+  "carbon_factors": [
+    {
+      "factor_id": "cf-grid-cn-2026",
+      "energy_type": "grid",
+      "factor_kg_per_kwh": 0.5703,
+      "effective_from": "2026-01-01"
+    }
+  ],
+  "demo_expect": {
+    "pue_before_manual": 1.5,
+    "manual_facility_delta_kw": 5.0,
+    "pue_after_manual": 1.6
+  }
+}

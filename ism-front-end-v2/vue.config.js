@@ -42,7 +42,7 @@ module.exports = {
   devServer: {
     // 0.0.0.0 允许局域网访问页面；sockHost 强制 HMR 走本机回环，避免用 10.x IP 连 sockjs 超时
     host: '0.0.0.0',
-    port: 7080,
+    port: 7081,
     public: '127.0.0.1:7080',
     sockHost: '127.0.0.1',
     sockPort: 7080,
@@ -61,7 +61,7 @@ module.exports = {
     },
     proxy: {
       '/api': { //此处要与 /services/api.js 中的 API_PROXY_PREFIX 值保持一致
-        target: "http://127.0.0.1:8081/",
+        target: "http://127.0.0.1:8082/",
         changeOrigin: true,
         pathRewrite: {
           '^/api': ''
@@ -69,7 +69,7 @@ module.exports = {
       },
       // App.vue EventSource 使用同源 /SSEPushData（不走 /api）；开发态需单独代理到后端
       '/SSEPushData': {
-        target: 'http://127.0.0.1:8081',
+        target: 'http://127.0.0.1:8082',
         changeOrigin: true,
         ws: true,
       }

@@ -1,0 +1,21 @@
+{
+  "device": "xunzhi-jf-BAT-01-Sample",
+  "slave": 7,
+  "points": [
+    {
+      "name": "电池组总压",
+      "hr": 0,
+      "demo_v": 52.8
+    },
+    {
+      "name": "SOC",
+      "hr": 1,
+      "demo_pct": 85.0
+    },
+    {
+      "name": "电池温度",
+      "hr": 2,
+      "demo_c": 28.5
+    }
+  ]
+}

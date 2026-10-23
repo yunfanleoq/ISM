@@ -3,12 +3,14 @@ import {ADMIN} from '@/config/default'
 import {
   getHomeDashboardConfig,
   getHomeDashboardPath,
+  hideRetiredHomeMenu,
 } from '@/config/homeDashboard'
 import {formatFullPath} from '@/utils/i18n'
 import {filterMenu} from '@/utils/authority-utils'
 import {getLocalSetting} from '@/utils/themeUtil'
 import deepClone from 'lodash.clonedeep'
 import {GetSystemHomeDashboard, SetSystemHomeDashboard} from '@/services/system'
+import { alignHomeDashboardProjectUuidAsync } from '@/xunzhiJf/projectContext'
 
 const localSetting = getLocalSetting(true)
 const customTitlesStr = sessionStorage.getItem(process.env.VUE_APP_TBAS_TITLES_KEY)
@@ -112,7 +114,7 @@ export default {
       state.pageMinHeight += minHeight
     },
     setMenuData(state, menuData) {
-      state.menuData = menuData
+      state.menuData = hideRetiredHomeMenu(menuData)
     },
     setAsyncRoutes(state, asyncRoutes) {
       state.asyncRoutes = asyncRoutes
@@ -158,11 +160,15 @@ export default {
   },
   actions: {
     fetchSystemHomeDashboard({commit}) {
-      return GetSystemHomeDashboard().then(res => {
+      return GetSystemHomeDashboard().then(async res => {
         if (res.data && res.data.code === 0) {
+          const projectUuid = await alignHomeDashboardProjectUuidAsync(
+            res.data.projectUuid || '',
+            res.data.dashboardName || ''
+          )
           commit('setSystemHomeDashboard', {
             dashboardUuid: res.data.dashboardUuid || '',
-            projectUuid: res.data.projectUuid || '',
+            projectUuid,
             dashboardName: res.data.dashboardName || '',
           })
           // 侧栏固定「监控大屏」，不按应用名覆盖

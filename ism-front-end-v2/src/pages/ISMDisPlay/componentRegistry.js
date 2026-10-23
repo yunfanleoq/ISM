@@ -40,6 +40,8 @@ addContext(require.context('./ISMComponents/charts/', true, /\.vue$/), 'displayC
 addContext(require.context('./ISMComponents/bigScreen/', true, /\.vue$/), 'displayConfig.ToolBox.bigScreen.Container')
 addContext(require.context('./ISMComponents/svg/arrows/', true, /\.vue$/), 'displayConfig.ToolBox.Arrows')
 addContext(require.context('./ISMComponents/ComponentClassification/electric/', true, /\.vue$/), 'displayConfig.ToolBox.Electric')
+addContext(require.context('./ISMComponents/ComponentClassification/dcenv/', true, /\.vue$/), 'displayConfig.ToolBox.DcEnv')
+addContext(require.context('./ISMComponents/ComponentClassification/sld/', true, /\.vue$/), 'displayConfig.ToolBox.Sld')
 addContext(require.context('./ISMComponents/Images/', true, /\.vue$/), 'configComponent.image.Text')
 addContext(require.context('./ISMComponents/device/', true, /\.vue$/), 'displayConfig.ToolBox.device.Container')
 addContext(require.context('./ISMComponents/map/', true, /\.vue$/), 'displayConfig.ToolBox.Map')

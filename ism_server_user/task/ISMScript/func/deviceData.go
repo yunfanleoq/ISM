@@ -43,6 +43,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/Knetic/govaluate"
 	"github.com/shiena/ansicolor"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -138,6 +139,126 @@ func ExecCommand(name string, args ...string) {
 	}
 }
 
+func roundEnvmonDisplay(v float64) float64 {
+	out, _ := strconv.ParseFloat(strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.2f", v), "0"), "."), 64)
+	return out
+}
+
+// 寻智动环温湿度：Mock HR=工程值×10；迭代回拉到工程区间（含 ~5xxx 错读/半换算）
+func finalizeEnvmonEngineering(pointName string, v float64) float64 {
+	name := strings.TrimSpace(pointName)
+	switch name {
+	case "温度":
+		lo, hi := 10.0, 45.0
+		for i := 0; i < 8; i++ {
+			if v >= lo && v <= hi {
+				return roundEnvmonDisplay(v)
+			}
+			if v >= 500 {
+				v = v * (220.0 / 5220.0)
+				continue
+			}
+			if v >= 150 {
+				v = v * 0.1
+				continue
+			}
+			if v > hi && v < 150 {
+				v = v * (220.0 / 614.0)
+				continue
+			}
+			break
+		}
+	case "湿度":
+		lo, hi := 15.0, 95.0
+		for i := 0; i < 8; i++ {
+			if v >= lo && v <= hi {
+				return roundEnvmonDisplay(v)
+			}
+			if v >= 500 {
+				v = v * (48.0 / 5280.0)
+				continue
+			}
+			if v >= 150 {
+				v = v * 0.1
+				continue
+			}
+			if v > 25 && v < 150 {
+				v = v * (480.0 / 307.0)
+				continue
+			}
+			break
+		}
+	case "漏水位置米数":
+		if v >= 0 && v <= 200 {
+			return v
+		}
+		for i := 0; i < 4 && v >= 150; i++ {
+			v = v * 0.1
+			if v >= 0 && v <= 200 {
+				return roundEnvmonDisplay(v)
+			}
+		}
+	}
+	return v
+}
+
+func formatDisplayWithConversion(raw string, conversionExpr string) string {
+	raw = strings.TrimSpace(raw)
+	conversionExpr = strings.TrimSpace(conversionExpr)
+	if raw == "" || conversionExpr == "" || !strings.Contains(conversionExpr, "{val}") {
+		return raw
+	}
+	fv, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		return raw
+	}
+	// 已写入工程值时勿在表达式层二次换算（终态由 finalizeEnvmonEngineering 收口）
+	if strings.Contains(conversionExpr, "*0.1") && fv >= -40 && fv <= 149 {
+		return raw
+	}
+	replaced := strings.ReplaceAll(conversionExpr, "{val}", raw)
+	expression, err := govaluate.NewEvaluableExpressionWithFunctions(replaced, protocol_common.DataFloatNumberFunc)
+	if err != nil || expression == nil {
+		return raw
+	}
+	result, err := expression.Evaluate(nil)
+	if err != nil {
+		return raw
+	}
+	out, ok := result.(float64)
+	if !ok {
+		return raw
+	}
+	return strings.TrimRight(strings.TrimRight(fmt.Sprintf("%.4f", out), "0"), ".")
+}
+
+func loadConversionExpression(deviceName, pointName string) string {
+	var row models.DeviceRealData
+	err := models.Db.Model(&models.DeviceRealData{}).
+		Select("conversion_expression", "model_data_uuid").
+		Where("device_name = ? and name = ?", deviceName, pointName).
+		First(&row).Error
+	if err != nil {
+		return ""
+	}
+	expr := strings.TrimSpace(row.ConversionExpression)
+	if expr != "" {
+		return expr
+	}
+	if strings.TrimSpace(row.ModelDataUuid) == "" {
+		return ""
+	}
+	var modbus models.ModbusDevicesDataModel
+	err = models.Db.Model(&models.ModbusDevicesDataModel{}).
+		Select("conversion_expression").
+		Where("uuid = ?", row.ModelDataUuid).
+		First(&modbus).Error
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(modbus.ConversionExpression)
+}
+
 func GetDeviceData(deviceData string) interface{} {
 	data := strings.Split(deviceData, "->")
 	if len(data) != 2 {
@@ -145,10 +266,21 @@ func GetDeviceData(deviceData string) interface{} {
 	}
 	getValue, exists := loadDeviceValue(data[0], data[1])
 	if exists {
+		expr := loadConversionExpression(data[0], data[1])
+		if expr == "" {
+			switch strings.TrimSpace(data[1]) {
+			case "温度", "湿度", "漏水位置米数":
+				if fv, err := strconv.ParseFloat(strings.TrimSpace(getValue), 64); err == nil && fv > 199 {
+					expr = "{val}*0.1"
+				}
+			}
+		}
+		getValue = formatDisplayWithConversion(getValue, expr)
 		t, convError := strconv.ParseFloat(getValue, 64)
 		if convError != nil {
 			return getValue
 		}
+		t = finalizeEnvmonEngineering(data[1], t)
 		if t != math.Trunc(t) {
 			value, _ := strconv.ParseFloat(fmt.Sprintf("%.5f", t), 64)
 			return value
@@ -239,6 +371,7 @@ func GetModuleDeviceList(moduleName string) []moduleDeviceStu {
 	models.Db.Raw("SELECT monitor_list.project_uuid,monitor_list.uuid,monitor_list.name, monitor_list.muid  FROM monitor_list, devices_model WHERE monitor_list.muid = devices_model.uuid and devices_model.name=?", moduleName).Scan(&results)
 	return results
 }
+
 func SetDeviceData(deviceData string, floatValue interface{}) int {
 	return setDeviceDataEx(deviceData, floatValue, false)
 }
@@ -328,6 +461,7 @@ func setDeviceDataEx(deviceData string, floatValue interface{}, skipAlarm bool) 
 			signleAlarm.DataName = getRealData.Name
 			signleAlarm.DeviceName = getRealData.DeviceName
 			signleAlarm.HappenTime = time.Now()
+			protocol_common.BindAlarmOnValue(&signleAlarm, getRealData.AlarmOnValue)
 			if !skipAlarm {
 				protocol_common.GAlarmQueue.QueuePush(signleAlarm)
 			}
@@ -447,6 +581,7 @@ func setDeviceDataEx(deviceData string, floatValue interface{}, skipAlarm bool) 
 					signleAlarm.DataName = readData.Name
 					signleAlarm.DeviceName = readData.DeviceName
 					signleAlarm.HappenTime = time.Now()
+					protocol_common.BindAlarmOnValue(&signleAlarm, readData.AlarmOnValue)
 					if !skipAlarm {
 						protocol_common.GAlarmQueue.QueuePush(signleAlarm)
 					}

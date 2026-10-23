@@ -1,0 +1,17 @@
+{
+  "schema": "dcim-workorder-mock-v1",
+  "project": "循智元晟",
+  "alarms": [
+    {
+      "alarm_id": "alm-xz-leak-01",
+      "alarm_code": "LEAK_SIG",
+      "title": "漏水报警",
+      "device_name": "xunzhi-jf-LEAK-01",
+      "level": 1,
+      "state": "active",
+      "trigger_ref": "a0a0a0a0a0a04a0a00000000000000001"
+    }
+  ],
+  "workorders": [],
+  "events": []
+}

@@ -9,6 +9,7 @@
 package models
 
 import (
+	"ISMServer/ontology"
 	protocol_common "ISMServer/protocol/common"
 	ISMNetwork "ISMServer/task/network"
 	"errors"
@@ -155,6 +156,19 @@ func CheckAllTables() {
 	); energyErr != nil {
 		gormlog.Info(energyErr)
 	}
+	if bjgaErr := BjgaAutoMigrate(); bjgaErr != nil {
+		gormlog.Info(bjgaErr)
+	}
+	if ontErr := ontology.AutoMigrate(Db); ontErr != nil {
+		gormlog.Info(ontErr)
+	}
+	if seedErr := BjgaEnsureSeed(); seedErr != nil {
+		gormlog.Info("bjga seed: %v", seedErr)
+	}
+	if fillErr := BjgaEnsureOpsContent(); fillErr != nil {
+		gormlog.Info("bjga ops fill: %v", fillErr)
+	}
+	EnsureBjgaDisplayModel()
 	dbtype, _ := config.Int("dbtype")
 	if dbtype == 4 && !Db.Migrator().HasIndex(&DisplayModelLayer{}, "idx_dml_model_deleted") {
 		if err := Db.Exec("CREATE INDEX idx_dml_model_deleted ON display_model_layer(model_id, deleted_at)").Error; err != nil {
@@ -345,6 +359,16 @@ func ReconnectDbServer() {
 		insertrole[2].Permission = "view"
 
 		Db.Model(&RolesList{}).CreateInBatches(&insertrole, 3) // 通过数据的指针来创建
+	}
+
+	var leaderRole RolesList
+	leaderMissing := Db.Model(&RolesList{}).Where("role_id = ?", "Leader").First(&leaderRole)
+	if errors.Is(leaderMissing.Error, gorm.ErrRecordNotFound) {
+		Db.Model(&RolesList{}).Create(&RolesList{
+			RoleName:   "领导",
+			RoleId:     "Leader",
+			Permission: "view",
+		})
 	}
 
 	var supportDeviceListCount int64

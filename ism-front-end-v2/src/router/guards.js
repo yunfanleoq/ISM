@@ -1,6 +1,7 @@
 import {hasAuthority} from '@/utils/authority-utils'
 import {loginIgnore} from '@/router/index'
 import {checkAuthorization} from '@/utils/request'
+import { HOME_DASHBOARD_PATH, isRetiredW1Target } from '@/config/homeDashboard'
 import NProgress from 'nprogress'
 
 NProgress.configure({ showSpinner: false })
@@ -66,6 +67,15 @@ const authorityGuard = (to, from, next, options) => {
   }
 }
 
+/** 寻智 W1 平面已停用：直接打开旧地址或环境平面菜单时改去公安局动环 */
+const retiredW1Guard = (to, from, next) => {
+  if (!isRetiredW1Target(to) || to.path === HOME_DASHBOARD_PATH) {
+    next()
+    return
+  }
+  next({ path: HOME_DASHBOARD_PATH, replace: true })
+}
+
 /**
  * 混合导航模式下一级菜单跳转重定向
  * @param to
@@ -109,6 +119,6 @@ const progressDone = () => {
 }
 
 export default {
-  beforeEach: [progressStart, loginGuard, authorityGuard, redirectGuard],
+  beforeEach: [progressStart, retiredW1Guard, loginGuard, authorityGuard, redirectGuard],
   afterEach: [progressDone]
 }

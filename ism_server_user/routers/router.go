@@ -56,6 +56,7 @@ func init() {
 	beego.Router("/ping", &controllers.DeviceLibraryController{}, "*:Ping")
 	beego.Router("/getRealData", &controllers.DeviceLibraryController{}, "*:GetRealData")
 	beego.Router("/getRealDataByUuid", &controllers.DeviceLibraryController{}, "*:GetRealDataByUuid")
+	beego.Router("/getDeviceArchive", &controllers.DeviceLibraryController{}, "*:GetDeviceArchive")
 	beego.Router("/setData", &controllers.DeviceLibraryController{}, "*:SetRealData")
 	beego.Router("/SetDeviceStartOrStop", &controllers.DeviceLibraryController{}, "*:SetDeviceStartOrStop")
 
@@ -226,6 +227,7 @@ func init() {
 
 	//授权页面
 	beego.Router("/checkLicense", &controllers.AuthLicenseController{}, "*:GetLicense")
+	beego.Router("/alarmVoice", &controllers.AlarmVoiceController{}, "*:Speak")
 	beego.Router("/saveLicense", &controllers.AuthLicenseController{}, "*:SaveLicense")
 
 	//告警报告
@@ -499,6 +501,55 @@ func init() {
 	beego.Router("/autoGen/templateGet", &controllers.AutoGenController{}, "*:TemplateGet")
 	// ===== end 自动化批量导入 API =====
 
+	// ===== 寻智 dcim-asset Mock（S2 骨架 · JSON 存储）=====
+	beego.Router("/xunzhi-jf/asset/rack/:rackId/u-positions", &controllers.XunzhiJfAssetController{}, "get:RackUPositions")
+	beego.Router("/xunzhi-jf/asset/u-position/bind", &controllers.XunzhiJfAssetController{}, "post:UPositionBind")
+	beego.Router("/xunzhi-jf/asset/u-position/unbind", &controllers.XunzhiJfAssetController{}, "post:UPositionUnbind")
+	// ===== end 寻智 dcim-asset Mock =====
+
+	// ===== 寻智 dcim-workorder Mock（S4 骨架）=====
+	beego.Router("/xunzhi-jf/workorder/:woId", &controllers.XunzhiJfWorkorderController{}, "get:GetWorkorder")
+	beego.Router("/xunzhi-jf/workorder/from-alarm", &controllers.XunzhiJfWorkorderController{}, "post:CreateFromAlarm")
+
+	beego.Router("/ontology/schema", &controllers.OntologyController{}, "get:Schema")
+	beego.Router("/ontology/compile", &controllers.OntologyController{}, "post:Compile")
+	beego.Router("/ontology/graph", &controllers.OntologyController{}, "get:Graph")
+	beego.Router("/ontology/live", &controllers.OntologyController{}, "get:Live")
+	beego.Router("/ontology/lint", &controllers.OntologyController{}, "get:Lint")
+	beego.Router("/ontology/actions/:actionId", &controllers.OntologyController{}, "post:Action")
+	beego.Router("/agent/catalog", &controllers.AgentRunController{}, "get:Catalog")
+	beego.Router("/agent/talk", &controllers.AgentRunController{}, "post:Talk")
+	beego.Router("/agent/runs", &controllers.AgentRunController{}, "post:Start")
+	beego.Router("/agent/runs/:id", &controllers.AgentRunController{}, "get:Get")
+	// ===== end 寻智 dcim-workorder Mock =====
+
+	// ===== 公安局动环 =====
+	beego.Router("/bjga/bootstrap", &controllers.BjgaController{}, "get:Bootstrap")
+	beego.Router("/bjga/assets/flow", &controllers.BjgaController{}, "post:AssetFlow")
+	beego.Router("/bjga/stocktake", &controllers.BjgaController{}, "get:StocktakeList;post:StocktakeAct")
+	beego.Router("/bjga/stock-bill", &controllers.BjgaController{}, "get:StockBills;post:StockBillCreate")
+	beego.Router("/bjga/assets/maint", &controllers.BjgaController{}, "get:MaintList")
+	beego.Router("/bjga/capacity/recalc", &controllers.BjgaController{}, "post:CapacityRecalc")
+	beego.Router("/bjga/power/settings", &controllers.BjgaController{}, "*:PowerSettings")
+	beego.Router("/bjga/power/quality", &controllers.BjgaController{}, "get:PowerQuality")
+	beego.Router("/bjga/power/comtrade", &controllers.BjgaController{}, "*:PowerComtrade")
+	beego.Router("/bjga/power/tickets", &controllers.BjgaController{}, "*:PowerTickets")
+	beego.Router("/bjga/power/sim", &controllers.BjgaController{}, "*:PowerSim")
+	beego.Router("/bjga/energy/pue", &controllers.BjgaController{}, "get:EnergyPUE")
+	beego.Router("/bjga/energy/meters", &controllers.BjgaController{}, "post:EnergyMeter")
+	beego.Router("/bjga/energy/airflow", &controllers.BjgaController{}, "get:EnergyAirflow")
+	beego.Router("/bjga/energy/cooling", &controllers.BjgaController{}, "get:EnergyCooling")
+	beego.Router("/bjga/energy/carbon", &controllers.BjgaController{}, "get:EnergyCarbon")
+	beego.Router("/bjga/ops", &controllers.BjgaController{}, "get:OpsBundle")
+	beego.Router("/bjga/ops/ha/switch", &controllers.BjgaController{}, "post:OpsHaSwitch")
+	beego.Router("/bjga/ops/peace", &controllers.BjgaController{}, "post:OpsPeace")
+	beego.Router("/bjga/ops/change", &controllers.BjgaController{}, "post:OpsChange")
+	beego.Router("/bjga/audit", &controllers.BjgaController{}, "get:AuditList")
+	beego.Router("/bjga/audit/policy", &controllers.BjgaController{}, "*:AuditPolicy")
+	beego.Router("/bjga/govern", &controllers.BjgaController{}, "get:GovernList")
+	beego.Router("/bjga/site", &controllers.BjgaController{}, "get:SiteList")
+	// ===== end 公安局动环 =====
+
 	// 验证用户是否已经登录
 	beego.InsertFilter("/*", beego.BeforeExec, FilterUser)
 
@@ -582,6 +633,7 @@ var FilterUser = func(ctx *context.Context) {
 				!strings.Contains(ctx.Request.RequestURI, "/displayImageUpload") &&
 				!strings.Contains(ctx.Request.RequestURI, "/GetAuthLicenseInfo") &&
 				!strings.Contains(ctx.Request.RequestURI, "/SSEPushData") &&
+				!strings.Contains(ctx.Request.RequestURI, "/alarmVoice") &&
 				ctx.Request.RequestURI != "/login" &&
 				ctx.Request.RequestURI != "/snmpmodelimportxml" &&
 				ctx.Request.RequestURI != "/snmpmodelimport" &&
@@ -633,6 +685,7 @@ var FilterUser = func(ctx *context.Context) {
 				!strings.Contains(ctx.Request.RequestURI, "/displayImageUpload") &&
 				!strings.Contains(ctx.Request.RequestURI, "/GetAuthLicenseInfo") &&
 				!strings.Contains(ctx.Request.RequestURI, "/SSEPushData") &&
+				!strings.Contains(ctx.Request.RequestURI, "/alarmVoice") &&
 				result != errmsg.SUCCSE &&
 				ctx.Request.RequestURI != "/snmpmodelimportxml" &&
 				ctx.Request.RequestURI != "/snmpmodelimport" &&

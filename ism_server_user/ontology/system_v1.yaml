@@ -1,0 +1,37 @@
+version: v1
+domain: dcim
+layer: system
+description: DCM 软件本身。模块、页面、协议、组态、身份，以及工作流五元。
+entity_types:
+  - {type: Module, label: 子模块, layer: system, maturity: live, source: ontology/catalog.go}
+  - {type: Page, label: 页面, layer: system, maturity: live, source: menuFlat.js}
+  - {type: ProtocolDriver, label: 协议驱动, layer: system, maturity: live, source: ism_server_user/protocol 与 DeviceModel}
+  - {type: SouthChannel, label: 南向通道, layer: system, maturity: live, source: monitor_list 设备行}
+  - {type: NorthInterface, label: 北向接口, layer: system, maturity: planned, source: 契约预留，无实现}
+  - {type: RealtimeBus, label: 实时通道, layer: system, maturity: live, source: 现有实时推送}
+  - {type: HistoryStore, label: 历史库, layer: system, maturity: live, source: 现有历史表}
+  - {type: CollectorTask, label: 采集任务, layer: system, maturity: live, source: monitor_list 周期字段}
+  - {type: DisplayModel, label: 组态模型, layer: system, maturity: live, source: display_models}
+  - {type: DisplayPage, label: 组态页, layer: system, maturity: live, source: monitor_list.page_uuid}
+  - {type: DisplayComponent, label: 组态组件, layer: system, maturity: planned, source: 不拆组件实例}
+  - {type: User, label: 用户, layer: system, maturity: live, source: user 表，不含密码}
+  - {type: Role, label: 角色, layer: system, maturity: live, source: roles_list}
+  - {type: Permission, label: 权限码, layer: system, maturity: live, source: 菜单 perm}
+  - {type: DataScope, label: 数据范围, layer: system, maturity: planned, source: 无独立范围表}
+  - {type: Workflow, label: 工作流, layer: system, maturity: live, source: ontology/catalog.go}
+  - {type: Phase, label: 阶段, layer: system, maturity: live, source: ontology/catalog.go}
+  - {type: Agent, label: 智能体, layer: system, maturity: live, source: ontology/catalog.go}
+  - {type: Skill, label: 技能, layer: system, maturity: live, source: agent_skill}
+  - {type: Tool, label: 工具, layer: system, maturity: live, source: 只读白名单}
+relation_types:
+  - {relation: exposes, label: 暴露页面, layer: bridge, from: ["*"], to: ["*"]}
+  - {relation: samples, label: 采样, layer: bridge, from: ["*"], to: ["*"]}
+  - {relation: renders, label: 渲染, layer: bridge, from: ["*"], to: ["*"]}
+  - {relation: guards, label: 授权, layer: bridge, from: ["*"], to: ["*"]}
+  - {relation: has_phase, label: 拥有阶段, layer: system, from: ["*"], to: ["*"]}
+  - {relation: has_step, label: 拥有步骤, layer: system, from: ["*"], to: ["*"]}
+  - {relation: uses_skill, label: 使用技能, layer: system, from: ["*"], to: ["*"]}
+  - {relation: exposes_tool, label: 暴露工具, layer: system, from: ["*"], to: ["*"]}
+axioms:
+  - {id: page_route_unwired, severity: warning, label: 有契约无实装入口, layer: system}
+  - {id: module_without_page, severity: warning, label: 模块没有页面, layer: system}

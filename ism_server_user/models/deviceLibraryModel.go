@@ -1404,12 +1404,20 @@ func GetRealDataByUuid(uuid, devices []string) ([]DeviceRealData, int) {
 	if len(uuid) > maxBatch {
 		uuid = uuid[:maxBatch]
 	}
-	if len(uuid) == 0 || len(devices) == 0 {
+	if len(uuid) == 0 {
 		return []DeviceRealData{}, errmsg.SUCCSECODE
 	}
 
 	var readDataList []DeviceRealData
-	err := Db.Model(&DeviceRealData{}).Select("model_data_uuid,device_uuid,uuid,project_uuid,value").Where("model_data_uuid in ? and device_uuid in ?", uuid, devices).Find(&readDataList).Error
+	// 组态绑点的 dataID 可能是模型测点 mduid，也可能是实时点 uuid。
+	// 带设备时按设备收窄；没带设备时只按实时点 uuid 查，避免同一个 mduid 打出全部设备。
+	q := Db.Model(&DeviceRealData{}).Select("name,device_name,model_data_uuid,device_uuid,uuid,project_uuid,value,data_unit,is_record")
+	var err error
+	if len(devices) > 0 {
+		err = q.Where("(model_data_uuid in ? or uuid in ?) and device_uuid in ?", uuid, uuid, devices).Find(&readDataList).Error
+	} else {
+		err = q.Where("uuid in ?", uuid).Find(&readDataList).Error
+	}
 	if err != nil {
 		return nil, errmsg.ERROR
 	}

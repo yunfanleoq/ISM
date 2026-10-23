@@ -1,0 +1,26 @@
+{
+  "project": "寻智机房环境-xunzhi-jf",
+  "gather_interval_ms": 5000,
+  "devices": [
+    {
+      "name": "xunzhi-jf-PWR-01",
+      "model": "xunzhi-jf-列头柜",
+      "slave_id": 3,
+      "points": [
+        "AB线电压",
+        "A相电流",
+        "总有功功率"
+      ]
+    },
+    {
+      "name": "xunzhi-jf-UPS-01",
+      "model": "xunzhi-jf-UPS",
+      "slave_id": 4,
+      "points": [
+        "输出AB线电压",
+        "输出A相电流",
+        "电池电压"
+      ]
+    }
+  ]
+}

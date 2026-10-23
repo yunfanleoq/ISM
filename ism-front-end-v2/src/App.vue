@@ -319,23 +319,27 @@ export default {
     popContainer() {
       return document.getElementById("popContainer")
     },
+    openServiceStatus(reason) {
+      if (this.$route.path === '/auth' && this.$route.query.reason === reason) {
+        return
+      }
+      this.$router.replace({ path: '/auth', query: { reason: reason } }).catch(function () {})
+    },
     CheckPhysicalCode(){
       let _t = this
       GetSystemCodeCheck().then(function (res) {
-        _t.$store.state.setting.ProtectedID = res.data.id
-        if(res.data.code==-1)
-        {
-          _t.$message.error("授权信息丢失，请联系管理员获取.", 6)
-          _t.$router.push('/auth')
+        const data = (res && res.data) || {}
+        _t.$store.state.setting.ProtectedID = data.id
+        const code = Number(data.code)
+        if (code === 0) {
+          if (_t.$route.path === '/auth') {
+            _t.$router.replace('/login').catch(function () {})
+          }
+          return
         }
-        else if(res.data.code==-3)
-        {
-          _t.$message.error("您的软件授权已过期，请联系管理员续费或更新授权!", 6)
-          _t.$router.push('/auth')
-        }
-      }).catch(function(e){
-        _t.$message.error("授权信息丢失了，请联系管理员重新获取.", 6)
-        _t.$router.push('/auth')
+        _t.openServiceStatus(code === -3 ? 'expired' : 'license')
+      }).catch(function () {
+        _t.openServiceStatus('backend')
       })
     },
     GetSystemAuthInfo(){
@@ -343,31 +347,34 @@ export default {
       _t.$store.state.setting.skeletonLoading = true
       GetSystemAuthInfo().then(function (res) {
         let auth = res.data || {}
-        // 循安现场品牌：后端 applyXunanBranding 为准；前端再兜底去掉「零界/zerobound」
+        // 显示名固定为数据中心动环监控平台；授权里的旧品牌字样不展示
         const xunanLogo = '/static/branding/logo-xunan-hexagon.png'
-        const looksLegacy = /零界|zerobound|临界|ai\s*$/i.test(
+        const looksLegacy = /零界|zerobound|临界|循安|巡安|循智|寻智|巡治|寻日|雄安|ai\s*$/i.test(
           String(auth.systemName || '') + ' ' + String(auth.SystemAPPName || '') + ' ' + String(auth.systemCompany || '')
         )
         _t.$store.state.setting.systemName = looksLegacy || !auth.systemName
-          ? '循安电力监控平台'
+          ? '数据中心动环监控平台'
           : auth.systemName
         _t.$store.state.setting.systemUrl = auth.systemUrl
         _t.$store.state.setting.SystemDynamicUrl = auth.SystemDynamicUrl
         _t.$store.state.setting.SystemLogo = (looksLegacy || !auth.SystemLogo || String(auth.SystemLogo).indexOf('data:image') === 0)
           ? xunanLogo
           : auth.SystemLogo
-        _t.$store.state.setting.systemLoginBg = auth.systemLoginBg
+        const loginBg = auth.systemLoginBg
+        if (loginBg && String(loginBg).indexOf('data:image') !== 0) {
+          _t.$store.state.setting.systemLoginBg = loginBg
+        }
         _t.$store.state.setting.SystemAuthAPPName = looksLegacy || !auth.SystemAPPName
-          ? '循安'
+          ? '数据中心动环监控平台'
           : auth.SystemAPPName
         _t.$store.state.setting.systemCompany = looksLegacy || !auth.systemCompany
-          ? '北京循安科技有限公司'
+          ? ''
           : auth.systemCompany
         _t.$store.state.setting.systemBg = auth.systemBg
         _t.$store.state.setting.skeletonLoading = false
         _t.setHtmlTitle()
-      }).catch(function(e){
-        _t.$message.error("授权信息丢失了，请联系管理员重新获取.", 6)
+      }).catch(function () {
+        _t.$store.state.setting.skeletonLoading = false
       })
     },
     GetSystemParams(){

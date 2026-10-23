@@ -1,23 +1,29 @@
 <template>
-  <div class="ism-pageview">
-    <ISMRenderLoader :show-uuid="dashboardUuid" />
-    <ScadaOrgOverview
-      v-if="showRunTree"
-      :model-id="dashboardUuid"
-      :project-uuid="projectUuid"
-    />
-    <RunTreeNavLoader
-      v-if="showRunTree"
-      :model-id="dashboardUuid"
-      :project-uuid="projectUuid"
-    />
-    <ScadaAlarmPanel
-      v-if="showRunTree"
-      :model-id="dashboardUuid"
-      :project-uuid="projectUuid"
-    />
-    <BackToAdminButton :project-uuid="projectUuid" />
-    <PreviewWatermark />
+  <div class="ism-pageview" :class="pageClass">
+    <template v-if="isBjga">
+      <BjgaScreenPage fullscreen />
+      <BackToAdminButton :project-uuid="bjgaProjectUuid" />
+    </template>
+    <template v-else>
+      <ISMRenderLoader :show-uuid="dashboardUuid" />
+      <ScadaOrgOverview
+        v-if="showRunTree"
+        :model-id="dashboardUuid"
+        :project-uuid="projectUuid"
+      />
+      <RunTreeNavLoader
+        v-if="showRunTree"
+        :model-id="dashboardUuid"
+        :project-uuid="projectUuid"
+      />
+      <ScadaAlarmPanel
+        v-if="showRunTree"
+        :model-id="dashboardUuid"
+        :project-uuid="projectUuid"
+      />
+      <BackToAdminButton :project-uuid="projectUuid" />
+      <PreviewWatermark />
+    </template>
   </div>
 </template>
 
@@ -36,7 +42,12 @@ import {
   resolveHomeProjectUuid,
   shouldShowRunTreeNav,
 } from '@/config/homeDashboard.js'
+import { isNoRunTreeMode, markEnvPlaneAppRunSession } from '@/xunzhiJf/appRunEmbed'
 import { AUTH_TYPE, getAuthorization } from '@/utils/request'
+
+const BJGA_APP_UID = 'a7b91292-dc10-4f00-8000-0000000000b1'
+const BJGA_PROJECT_UUID = 'd96005d5-dd28-3ad2-bc4d-983316c3f218'
+const BjgaScreenPage = () => import(/* webpackChunkName: "bjga-screen" */ '@/xunzhiJf/pages/BjgaScreenPage.vue')
 
 export default {
   name: 'AppRunShell',
@@ -47,30 +58,55 @@ export default {
     RunTreeNavLoader,
     ScadaAlarmPanel,
     BackToAdminButton,
+    BjgaScreenPage,
   },
   props: {
     uid: { type: String, required: true },
   },
   created() {
-    if (shouldShowRunTreeNav(this.uid, this.$store)) applyHomeProjectAuth(this.$store)
+    if (isNoRunTreeMode(this.$route, this.$store)) {
+      markEnvPlaneAppRunSession()
+    }
+    if (shouldShowRunTreeNav(this.uid, this.$store, this.$route)) applyHomeProjectAuth(this.$store)
   },
   watch: {
     projectUuid(value) {
-      if (value && shouldShowRunTreeNav(this.uid, this.$store)) {
+      if (value && shouldShowRunTreeNav(this.uid, this.$store, this.$route)) {
         applyHomeProjectAuth(this.$store)
       }
+    },
+    '$route.query': {
+      handler() {
+        this.$forceUpdate()
+      },
+      deep: true,
     },
   },
   computed: {
     dashboardUuid() {
       return this.uid
     },
+    isBjga() {
+      return this.uid === BJGA_APP_UID
+    },
+    bjgaProjectUuid() {
+      return BJGA_PROJECT_UUID
+    },
+    pageClass() {
+      return {
+        'ism-pageview--no-runtree': this.suppressRunTreeChrome,
+        'ism-pageview--bjga': this.isBjga,
+      }
+    },
     showRunTree() {
-      return shouldShowRunTreeNav(this.dashboardUuid, this.$store)
+      return shouldShowRunTreeNav(this.dashboardUuid, this.$store, this.$route)
+    },
+    suppressRunTreeChrome() {
+      return isNoRunTreeMode(this.$route, this.$store) || !this.showRunTree
     },
     projectUuid() {
       const uid = this.dashboardUuid
-      if (shouldShowRunTreeNav(uid, this.$store)) {
+      if (shouldShowRunTreeNav(uid, this.$store, this.$route)) {
         return resolveHomeProjectUuid(uid, this.$store) || HOME_PROJECT_UUID
       }
       const resolved = resolveHomeProjectUuid(uid, this.$store)
@@ -87,6 +123,13 @@ export default {
   width: 100%;
   position: relative;
   overflow: hidden;
+}
+
+.ism-pageview--bjga::before,
+.ism-pageview--bjga::after {
+  content: none;
+  display: none;
+  animation: none;
 }
 
 .ism-pageview::before {
@@ -125,5 +168,14 @@ export default {
   14%  { opacity: 0.3; }
   84%  { opacity: 0.3; }
   100% { background-position: 160% 160%; opacity: 0; }
+}
+
+/* 寻智平面页：强制隐藏旁路 RunTree / 组织层级总览（防止 v-if 竞态或旧 chunk 残留） */
+.ism-pageview--no-runtree .org-overview,
+.ism-pageview--no-runtree .ism-runtree,
+.ism-pageview--no-runtree .scada-alarm-root {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
 </style>

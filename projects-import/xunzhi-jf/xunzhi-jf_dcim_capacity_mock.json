@@ -1,0 +1,25 @@
+{
+  "schema": "dcim-capacity-mock-v1",
+  "project": "循智元晟",
+  "room": {
+    "room_id": "88888888888888888888888888888888",
+    "name": "F3-模块机房-01",
+    "monitor_list_node_uuid": "88888888888888888888888888888888"
+  },
+  "snapshot": {
+    "room_id": "88888888888888888888888888888888",
+    "dims": {
+      "N": { "label": "网络端口", "total": 48, "used": 12, "reserved": 4, "unit": "port" },
+      "S": { "label": "机柜U位", "total": 42, "used": 8, "reserved": 2, "unit": "U" },
+      "P": { "label": "供电", "total": 120.0, "used": 45.5, "reserved": 10.0, "unit": "kW" },
+      "C": { "label": "制冷", "total": 80.0, "used": 28.0, "reserved": 5.0, "unit": "kW" }
+    },
+    "ts": "2026-10-12T00:00:00Z"
+  },
+  "reservations": [],
+  "demo_expect": {
+    "space_S_free_u": 32,
+    "power_P_free_kw": 64.5,
+    "single_reserve": { "dim": "P", "amount_kw": 3.5, "power_P_reserved_after": 13.5 }
+  }
+}

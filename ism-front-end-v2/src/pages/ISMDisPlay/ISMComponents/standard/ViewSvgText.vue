@@ -1,7 +1,9 @@
 <template>
   <div xmlns="http://www.w3.org/1999/xhtml"
-       v-show="(detail.style.visible==1||isStart) && !isRetiredOverviewHint && !isOverviewAlarmBackdrop"
+       v-show="(detail.style.visible==1||isStart) && !isRetiredOverviewHint && !isOverviewAlarmBackdrop && !hideForEnvPlaneNoRunTree"
        @mousedown="onTextMouseDown"
+       @mouseenter="onBoundPointsEnter"
+       @mouseleave="onBoundPointsLeave"
        @click="onTextClick"
        :title="pagerInfoTitle || (isEnergyOverviewMode ? energyOverviewCoverageTitle : (labelRole === 'deviceBreadcrumb' ? displayText : null))"
        :class="chromeClass"
@@ -39,11 +41,12 @@
 <script>
 
 import ISMChildAutoMixin from '@/mixins/ISMChildAutoMixin'
+import imageBoundPointsMixin from '@/pages/ISMDisPlay/mixins/imageBoundPointsMixin'
 import store from '@/store'
 import { subscribeEnergyOverviewStats } from '@/services/energyOverview'
 
 export default {
-  mixins: [ISMChildAutoMixin],
+  mixins: [ISMChildAutoMixin, imageBoundPointsMixin],
     name: 'view-svg-text',
     inject: ['getNode'],
     data() {
@@ -243,6 +246,21 @@ export default {
           .map(part => part.trim())
           .filter(Boolean)
       },
+      isBoundPointsNavRole() {
+        const role = this.labelRole || ''
+        return /^(?:(?:detailPage|page)(?:Prev|Next)(?:Disabled)?|pageInfo|detailPageInfo|deviceListBack|navBack|globalOverview|breadcrumbArrow)$/.test(role)
+      },
+      boundPointList() {
+        if (this.isBoundPointsNavRole) return []
+        const binds = this.detail && Array.isArray(this.detail.dataBind) ? this.detail.dataBind : []
+        const picked = binds.filter((item) => item && (item.dataID || item.dataName))
+        if (picked.length) return picked
+        return this.bindsFromConditions()
+      },
+      canShowBoundPoints() {
+        if (this.isBoundPointsNavRole) return false
+        return !this.editMode && !this.IsToolBox && this.boundPointList.length > 0
+      },
       hasClickAction() {
         const actions = (this.detail && this.detail.action) || []
         return actions.some(a => a && a.type === 'click' && a.action === 'link')
@@ -278,6 +296,12 @@ export default {
       isOverviewAlarmBackdrop() {
         const name = String((this.detail && this.detail.name) || '')
         return /stat-alarm-(?:glow|fill|val)$/.test(name)
+      },
+      hideForEnvPlaneNoRunTree() {
+        const { isNoRunTreeMode } = require('@/xunzhiJf/appRunEmbed')
+        const { isEmbeddedMonitorTreeCell } = require('@/xunzhiJf/envPlaneNoRunTreeLayout')
+        if (!isNoRunTreeMode(this.$route, this.$store)) return false
+        return isEmbeddedMonitorTreeCell(this.detail)
       },
       /** 按文本/尺寸/链接自动识别大屏标签角色（不改模板 DB 也能图形化） */
       labelRole() {
@@ -624,6 +648,32 @@ export default {
         }
         return null
       },
+      bindsFromConditions() {
+        const d = this.detail || {}
+        const out = []
+        const push = (c) => {
+          if (!c || !(c.dataID || c.dataName)) return
+          out.push({
+            dataID: c.dataID || c.dataId || '',
+            dataName: c.dataName || c.DataName || (d.style && d.style.text) || '',
+            deviceSN: c.deviceSN || '',
+            DeviceName: c.DeviceName || '',
+            unit: c.unit || c.dataUnit || ''
+          })
+        }
+        const actives = d.active || []
+        for (let i = 0; i < actives.length; i++) {
+          push(actives[i] && actives[i].condition)
+        }
+        push(d.animate && d.animate.condition)
+        const seen = {}
+        return out.filter((item) => {
+          const key = (item.dataID || item.dataName) + '@' + (item.deviceSN || '')
+          if (seen[key]) return false
+          seen[key] = true
+          return true
+        })
+      },
       onTextMouseDown() {
         const role = this.labelRole
         if (!/^(?:(?:detailPage|page)(?:Prev|Next)(?:Disabled)?|deviceListBack|navBack|globalOverview)$/.test(role)) return
@@ -712,6 +762,7 @@ export default {
           a => a && a.type === 'click' && a.action === 'link' && a.link
         )
         if (!clickAction || !clickAction.link) {
+          this.onBoundPointsClick()
           return
         }
         const link = clickAction.link

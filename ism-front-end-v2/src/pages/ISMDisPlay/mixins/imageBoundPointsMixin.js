@@ -1,9 +1,6 @@
-import BoundPointsPopup from '../BoundPointsPopup.vue'
+import { getBoundPointsPopup } from './boundPointsHost'
 
 export default {
-  components: {
-    BoundPointsPopup
-  },
   computed: {
     boundPointList() {
       const binds = this.detail && Array.isArray(this.detail.dataBind) ? this.detail.dataBind : []
@@ -14,31 +11,39 @@ export default {
     }
   },
   methods: {
+    boundPointsOwnerKey() {
+      const detail = this.detail || {}
+      return String(detail.identifier || detail.id || detail.uuid || this._uid)
+    },
     onBoundPointsEnter(evt) {
-      if (!this.canShowBoundPoints || !this.$refs.boundPointsPopup) return
-      this.$refs.boundPointsPopup.show({
+      if (!this.canShowBoundPoints) return
+      const popup = getBoundPointsPopup(this)
+      if (!popup) return
+      popup.show({
         binds: this.boundPointList,
         clientX: evt.clientX,
-        clientY: evt.clientY
+        clientY: evt.clientY,
+        ownerKey: this.boundPointsOwnerKey()
       })
     },
-    onBoundPointsMove(evt) {
-      if (!this.canShowBoundPoints || !this.$refs.boundPointsPopup) return
-      this.$refs.boundPointsPopup.move({
-        clientX: evt.clientX,
-        clientY: evt.clientY
-      })
+    onBoundPointsMove() {
+      // 卡片出现后保持原位，方便点击钉住或关闭。
     },
     onBoundPointsLeave() {
-      if (!this.$refs.boundPointsPopup) return
-      this.$refs.boundPointsPopup.hide(false)
+      const popup = getBoundPointsPopup(this, false)
+      if (!popup) return
+      popup.clearSuppress(this.boundPointsOwnerKey())
+      popup.hide(false)
     },
     onBoundPointsClick(evt) {
-      if (!this.canShowBoundPoints || !this.$refs.boundPointsPopup) return
-      this.$refs.boundPointsPopup.togglePin({
+      if (!this.canShowBoundPoints) return
+      const popup = getBoundPointsPopup(this)
+      if (!popup) return
+      popup.togglePin({
         binds: this.boundPointList,
-        clientX: evt.clientX,
-        clientY: evt.clientY
+        clientX: evt && evt.clientX,
+        clientY: evt && evt.clientY,
+        ownerKey: this.boundPointsOwnerKey()
       })
     }
   }

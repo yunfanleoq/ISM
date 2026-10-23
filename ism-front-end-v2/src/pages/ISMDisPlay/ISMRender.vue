@@ -837,7 +837,6 @@ export default {
       }
     },
     alarmSoundSpeech : function() {
-      let speechInstance = new SpeechSynthesisUtterance();
       return {
         start:function (opitions,content) {
           let getSpeech = localStorage.getItem("Speech")
@@ -854,14 +853,8 @@ export default {
 
           if(getSpeech.enable)
           {
-            let lang=opitions.Lang===undefined||""?"zh-CN":opitions.Lang;
             if(content!='') {
-              speechSynthesis.cancel()
-              speechInstance.text = content;
-              speechInstance.lang = "zh-CN";
-              speechInstance.pitch = 2;
-              speechInstance.rate = getSpeech.speed;
-              speechSynthesis.speak(speechInstance);
+              window.playAlarmVoice(content, getSpeech.speed);
             }
           }
         }
@@ -962,8 +955,9 @@ export default {
       return [tm.home, tm.deviceList, tm.datapointList].filter(Boolean).indexOf(pageUuid) >= 0
     },
     /**
-     * 层级模板兜底：链接目标是「已删除的旧 page_id」时，
-     * 按导航树索引转换为对应层级模板页并附带 navContext。
+     * 层级模板兜底：只转换导航树里登记过的「已删除旧 page_id」。
+     * 菜单、按钮绑定的真实子页必须原样跳转。找不到旧页映射时不能改回首页，
+     * 否则一次图等多页面会全部落在当前页，再点就提示「已在目标页面」。
      */
     convertLegacyPageLink(linkInfo) {
       try {
@@ -974,19 +968,13 @@ export default {
         const index = st.navTreeIndex
         const pageUuid = linkInfo.Inside.pageUUID
         if (this.isTemplatePage(pageUuid)) return linkInfo
-        if (!index) {
-          const homePage = (st.navTemplateMap && st.navTemplateMap.home) || this.showUuid
-          return homePage
-            ? { ...linkInfo, Inside: { ...linkInfo.Inside, pageUUID: homePage }, navContext: null }
-            : linkInfo
+        if (!index || !index.byOldPageId || !index.byOldPageId[pageUuid]) {
+          return linkInfo
         }
         const { resolveOldPageTarget } = require('@/pages/ISMDisPlay/utils/navTreeIndex')
         const conv = resolveOldPageTarget(pageUuid, index, st.navTemplateMap)
-        if (!conv) {
-          const homePage = (st.navTemplateMap && st.navTemplateMap.home) || this.showUuid
-          return homePage
-            ? { ...linkInfo, Inside: { ...linkInfo.Inside, pageUUID: homePage }, navContext: null }
-            : linkInfo
+        if (!conv || !conv.pageUuid) {
+          return linkInfo
         }
         console.log('[showPage] legacy page link converted:', pageUuid, '→', conv.pageUuid, conv.navContext && conv.navContext.kind)
         return {
@@ -1256,7 +1244,6 @@ export default {
 
     },
     ActionSoundSpeech : function() {
-      let speechInstance = new SpeechSynthesisUtterance();
       return {
         start:function (opitions,content) {
           let getSpeech = localStorage.getItem("Speech")
@@ -1273,14 +1260,8 @@ export default {
 
           if(getSpeech.enable)
           {
-            let lang=opitions.Lang===undefined||""?"zh-CN":opitions.Lang;
             if(content!='') {
-              speechSynthesis.cancel()
-              speechInstance.text = content;
-              speechInstance.lang = "zh-CN";
-              speechInstance.pitch = 2;
-              speechInstance.rate = getSpeech.speed;
-              speechSynthesis.speak(speechInstance);
+              window.playAlarmVoice(content, getSpeech.speed);
             }
           }
         }
@@ -4087,6 +4068,11 @@ export default {
         console.log("[RunCavasContainerInit] loading components from JSON, cells count=", _t.configData.components?.cells?.length)
         const hasObserver = !!_t.configData.components?.__ob__
         console.log("[RunCavasContainerInit] components has __ob__ (Vue Observer)=", hasObserver)
+        const { isNoRunTreeMode } = require('@/xunzhiJf/appRunEmbed')
+        const { removeEmbeddedMonitorTreeCells } = require('@/xunzhiJf/envPlaneNoRunTreeLayout')
+        if (isNoRunTreeMode(_t.$route, _t.$store) && _t.configData.components?.cells) {
+          removeEmbeddedMonitorTreeCells(_t.configData.components.cells)
+        }
         const { sanitizeGraphComponents } = require('@/pages/ISMDisPlay/utils/graphCellSanitizer')
         const components = sanitizeGraphComponents(_t.configData.components, { tag: 'RunCavasContainerInit' })
         _t.ISMRuningCavasContainer.fromJSON(components)

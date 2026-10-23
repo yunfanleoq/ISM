@@ -24,7 +24,9 @@
             >
               <a-select-option v-for="options in RoleList" :key="options.RoleId" :value="options.RoleId">
                 <span v-if="options.RoleId=='Operator'">{{ $t("account.settings.UserList.RoleOperator") }}</span>
-                <span v-if="options.RoleId=='User'">{{ $t("account.settings.UserList.RoleUser") }}</span>
+                <span v-else-if="options.RoleId=='User'">{{ $t("account.settings.UserList.RoleUser") }}</span>
+                <span v-else-if="options.RoleId=='Leader'">{{ $t("account.settings.UserList.RoleLeader") }}</span>
+                <span v-else>{{ options.RoleName }}</span>
               </a-select-option>
 
             </a-select>

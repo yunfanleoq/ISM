@@ -11,7 +11,9 @@
         </template>
         <div slot="role" slot-scope="text">
           <span v-if="text=='Operator'">{{ $t("account.settings.UserList.RoleOperator") }}</span>
-          <span v-if="text=='User'">{{ $t("account.settings.UserList.RoleUser") }}</span>
+          <span v-else-if="text=='User'">{{ $t("account.settings.UserList.RoleUser") }}</span>
+          <span v-else-if="text=='Leader'">{{ $t("account.settings.UserList.RoleLeader") }}</span>
+          <span v-else>{{ text }}</span>
         </div>
         <div slot="action" slot-scope="text, record">
           <a-popconfirm :title="$t('dataModel.deleteConfirm')" @confirm="UserDel(record)">

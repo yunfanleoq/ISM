@@ -35,7 +35,6 @@ import SideMenu from '../components/menu/SideMenu'
 import Setting from '../components/setting/Setting'
 import {mapState, mapMutations, mapGetters} from 'vuex'
 import BreadcrumbHeader from '@/components/page/header/BreadcrumbHeader'
-// const minHeight = window.innerHeight - 64 - 122
 import {getI18nKey} from '@/utils/routerUtil'
 export default {
   name: 'AdminLayout',

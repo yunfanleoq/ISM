@@ -17,7 +17,7 @@ module.exports = {
   multiPage: false,                     //多页签模式，true:开启，false:不开启
   cachePage: true,                      //是否缓存页面数据，仅多页签模式下生效，true 缓存, false 不缓存
   hideSetting: false,                   //隐藏设置抽屉，true:隐藏，false:不隐藏
-  systemName: 'Loading',         //系统名称
+  systemName: '数据中心动环监控平台',         //系统名称
   systemVersion: 'V3.01.RC08bate',         //系统名称
   versionBete:false,
   versionDate:"2026/05/10 20:00",
@@ -38,7 +38,7 @@ module.exports = {
   SystemDynamicUrl:"https://www.ismctl.com/index.php/list_14/",
   SystemLogo:"",
   systemLoginBg:"",
-  SystemAuthAPPName:"",
+  SystemAuthAPPName:"数据中心动环监控平台",
   systemBg:"",
   WSPort:"10215",
   WSAddress:"local",

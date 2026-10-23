@@ -1786,7 +1786,6 @@ export default {
         }
       },
       alarmSoundSpeech : function() {
-        let speechInstance = new SpeechSynthesisUtterance();
         return {
           start:function (opitions,content) {
             let getSpeech = localStorage.getItem("Speech")
@@ -1803,13 +1802,8 @@ export default {
 
             if(getSpeech.enable)
             {
-              let lang=opitions.Lang===undefined||""?"zh-CN":opitions.Lang;
               if(content!='') {
-                speechInstance.text = content;
-                speechInstance.lang = "zh-CN";
-                speechInstance.pitch = 2;
-                speechInstance.rate = getSpeech.speed;
-                speechSynthesis.speak(speechInstance);
+                window.playAlarmVoice(content, getSpeech.speed);
               }
             }
           }
@@ -1982,7 +1976,6 @@ export default {
 
       },
       ActionSoundSpeech : function() {
-        let speechInstance = new SpeechSynthesisUtterance();
         return {
           start:function (opitions,content) {
             let getSpeech = localStorage.getItem("Speech")
@@ -1999,13 +1992,8 @@ export default {
 
             if(getSpeech.enable)
             {
-              let lang=opitions.Lang===undefined||""?"zh-CN":opitions.Lang;
               if(content!='') {
-                speechInstance.text = content;
-                speechInstance.lang = "zh-CN";
-                speechInstance.pitch = 2;
-                speechInstance.rate = getSpeech.speed;
-                speechSynthesis.speak(speechInstance);
+                window.playAlarmVoice(content, getSpeech.speed);
               }
             }
           }

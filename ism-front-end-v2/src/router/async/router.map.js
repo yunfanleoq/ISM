@@ -7,7 +7,9 @@ const view = {
 import TabsView from '@/layouts/tabs/TabsView'
 // import PageView from '@/layouts/PageView'
 import BlankView from '@/layouts/BlankView'
-import {createHomeDashboardRedirect} from '@/config/homeDashboard'
+import {createHomeDashboardRedirect, HOME_DASHBOARD_PATH} from '@/config/homeDashboard'
+import { applyXunzhiJfRouterMap } from '@/xunzhiJf/registerRoutes'
+import { xunzhiJfVizRouteBeforeEnter } from '@/xunzhiJf/projectContext'
 
 // 路由组件注册
 const routerMap = {
@@ -1171,4 +1173,78 @@ const routerMap = {
   component: () => import('@/pages/Setting/SystemAuth')
 },
 }
+applyXunzhiJfRouterMap(routerMap)
+
+// 静态别名：避免仅 loadRoutes 后嵌套未挂载时 /xunzhi/jf/viz/plane 404（missPlane）
+routerMap.XunzhiJfVizPlaneAlias = {
+  path: '/xunzhi/jf/viz/plane',
+  name: 'XunzhiJfVizPlaneAlias',
+  redirect: () => ({ path: HOME_DASHBOARD_PATH }),
+  meta: {
+    invisible: true,
+    authority: { role: ['Admin', 'Operator', 'User'] },
+  },
+}
+routerMap.XunzhiJfVizDashboardAlias = {
+  path: '/xunzhi/jf/viz/dashboard',
+  name: 'XunzhiJfVizDashboardAlias',
+  beforeEnter: xunzhiJfVizRouteBeforeEnter,
+  meta: {
+    invisible: true,
+    authority: { role: ['Admin', 'Operator', 'User'] },
+  },
+  component: () => import('@/xunzhiJf/pages/VizDashboardPage.vue'),
+}
+routerMap.XunzhiJfVizNav25dAlias = {
+  path: '/xunzhi/jf/viz/nav25d',
+  name: 'XunzhiJfVizNav25dAlias',
+  beforeEnter: xunzhiJfVizRouteBeforeEnter,
+  meta: {
+    invisible: true,
+    authority: { role: ['Admin', 'Operator', 'User'] },
+  },
+  component: () => import('@/xunzhiJf/pages/VizNav25dPage.vue'),
+}
+routerMap.XunzhiJfVizShowAlias = {
+  path: '/xunzhi/jf/viz/show',
+  name: 'XunzhiJfVizShowAlias',
+  meta: {
+    invisible: true,
+    title: '动环演示大屏',
+    authority: { role: ['Admin', 'Operator', 'User'] },
+  },
+  component: () => import('@/xunzhiJf/pages/DemoShowPage.vue'),
+}
+routerMap.XunzhiJfOntologyAlias = {
+  path: '/xunzhi/jf/ontology',
+  name: 'XunzhiJfOntologyAlias',
+  meta: {
+    invisible: true,
+    title: '本体中心',
+    authority: { role: ['Admin', 'Operator', 'User'] },
+  },
+  component: () => import('@/xunzhiJf/pages/OntologyCenter.vue'),
+}
+routerMap.XunzhiJfAgentAlias = {
+  path: '/xunzhi/jf/agent',
+  name: 'XunzhiJfAgentAlias',
+  meta: {
+    invisible: true,
+    title: '智能体',
+    authority: { role: ['Admin', 'Operator', 'User'] },
+  },
+  component: () => import('@/xunzhiJf/pages/AgentCenter.vue'),
+}
+routerMap.BjgaScreen = {
+  path: '/bjga',
+  name: 'BjgaScreenAlias',
+  meta: {
+    invisible: true,
+    title: '公安局动环',
+    bjgaHash: 'dashboard',
+    authority: { role: ['Admin', 'Operator', 'User'] },
+  },
+  component: () => import('@/xunzhiJf/pages/BjgaScreenPage.vue'),
+}
+
 export default routerMap

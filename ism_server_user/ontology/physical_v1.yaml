@@ -1,0 +1,50 @@
+version: v1
+domain: dcim
+layer: physical
+description: 机房物理世界。空间、供配电、制冷、环境测点、安防消防设备。
+entity_types:
+  - {type: Campus, label: 园区, layer: physical, maturity: planned, source: monitor_list 名称归类}
+  - {type: Building, label: 楼, layer: physical, maturity: planned, source: monitor_list 名称归类}
+  - {type: Floor, label: 层, layer: physical, maturity: planned, source: monitor_list 名称归类}
+  - {type: Room, label: 机房, layer: physical, maturity: live, source: monitor_list 名称含机房或模块}
+  - {type: Row, label: 列, layer: physical, maturity: planned, source: monitor_list 名称归类}
+  - {type: Rack, label: 机柜, layer: physical, maturity: mock, source: dcim_asset_store.json rack}
+  - {type: USlot, label: U位, layer: physical, maturity: mock, source: dcim_asset_store.json u_positions}
+  - {type: MicroModule, label: 微模块, layer: physical, maturity: planned, source: monitor_list 名称归类}
+  - {type: SiteNode, label: 监控树容器, layer: physical, maturity: live, source: monitor_list type=0}
+  - {type: MainsIncomer, label: 市电进线, layer: physical, maturity: planned, source: 设备名归类}
+  - {type: Transformer, label: 变压器, layer: physical, maturity: planned, source: 设备名归类}
+  - {type: LvBoard, label: 低压配电, layer: physical, maturity: live, source: 设备名含配电}
+  - {type: ColumnHeader, label: 列头柜, layer: physical, maturity: live, source: 设备名含列头}
+  - {type: UPS, label: UPS, layer: physical, maturity: live, source: 设备名含 UPS}
+  - {type: BatteryString, label: 电池组, layer: physical, maturity: live, source: 设备名含电池}
+  - {type: BatteryCell, label: 电池单体, layer: physical, maturity: planned, source: 测点名含单体}
+  - {type: PrecisionAC, label: 精密空调, layer: physical, maturity: live, source: 设备名含空调}
+  - {type: CDU, label: CDU, layer: physical, maturity: planned, source: 设备名含 CDU}
+  - {type: TempHumidityPoint, label: 温湿度点, layer: physical, maturity: live, source: device_real_data 点名}
+  - {type: LeakPoint, label: 漏水点, layer: physical, maturity: live, source: device_real_data 点名}
+  - {type: HydrogenPoint, label: 氢气点, layer: physical, maturity: live, source: device_real_data 点名}
+  - {type: Point, label: 测点, layer: physical, maturity: live, source: device_real_data}
+  - {type: Camera, label: 摄像机, layer: physical, maturity: planned, source: 设备名归类}
+  - {type: Door, label: 门禁, layer: physical, maturity: planned, source: 设备名归类}
+  - {type: IntrusionPoint, label: 入侵点, layer: physical, maturity: planned, source: 设备名归类}
+  - {type: FireDetector, label: 消防探测器, layer: physical, maturity: planned, source: 设备名归类}
+  - {type: AVAlarm, label: 声光报警, layer: physical, maturity: planned, source: 设备名归类}
+  - {type: ITAsset, label: IT资产, layer: physical, maturity: mock, source: dcim_asset_store.json assets}
+  - {type: NetworkEndpoint, label: 网络端点, layer: physical, maturity: planned, source: 无独立台账}
+  - {type: Device, label: 设备, layer: physical, maturity: live, source: monitor_list type=1}
+  - {type: VirtualDevice, label: 虚拟设备, layer: physical, maturity: live, source: 测点名前缀，不入库}
+  - {type: TypeAnchor, label: 类型锚点, layer: physical, maturity: live, source: schema}
+relation_types:
+  - {relation: contains, label: 包含, layer: physical, from: ["*"], to: ["*"]}
+  - {relation: feeds, label: 供电, layer: physical, from: ["*"], to: ["*"]}
+  - {relation: cools, label: 制冷, layer: physical, from: ["*"], to: ["*"]}
+  - {relation: measures, label: 测量, layer: physical, from: ["*"], to: ["*"]}
+  - {relation: part_of, label: 属于, layer: physical, from: ["*"], to: ["*"]}
+  - {relation: occupies, label: 占用, layer: physical, from: ["*"], to: ["*"]}
+  - {relation: classified_as, label: 归类, layer: physical, from: ["*"], to: ["*"]}
+axioms:
+  - {id: device_has_parent, severity: warning, label: 设备没有父节点, layer: physical}
+  - {id: site_unclassified, severity: warning, label: 容器未分型, layer: physical}
+  - {id: uslot_overlap, severity: error, label: U位重叠占用, layer: physical, blocks_export: true}
+  - {id: power_missing_feed, severity: warning, label: 动力设备没有上游供电, layer: physical}
