@@ -49,6 +49,21 @@
     };
   }
 
+  function thMean() {
+    var list = (window.DCIM && window.DCIM.thDevices) || [];
+    var ts = [], hs = [];
+    list.forEach(function (t) {
+      var tv = Number(t.temp), hv = Number(t.humi);
+      if (isFinite(tv)) ts.push(tv);
+      if (isFinite(hv)) hs.push(hv);
+    });
+    function mean(xs) {
+      if (!xs.length) return null;
+      return xs.reduce(function (a, b) { return a + b; }, 0) / xs.length;
+    }
+    return { temp: mean(ts), humi: mean(hs), n: Math.max(ts.length, hs.length) };
+  }
+
   /* 驾驶舱告警优先用未清除采集告警 */
   function todayLevels() {
     var D = window.DCIM, out = { 紧急: 0, 严重: 0, 重要: 0, 次要: 0, 预警: 0 };
@@ -73,6 +88,7 @@
     render: function (root) {
       applyLive();
       var snap = liveSnap();
+      var avgTh = thMean();
       var kwShow = BASE.itPower;
       var powerTitle = 'IT 总功率';
       var powerLabel = '当前功率';
@@ -94,7 +110,7 @@
           /* ---------- 左栏 ---------- */
           '<aside class="col col-left">' +
 
-            '<section class="card">' +
+            '<section class="card"' + goAttr('energy') + ' id="pueCard">' +
               '<div class="card-head"><i class="card-bar"></i><h2 class="card-title">能耗 PUE</h2></div>' +
               '<div class="card-body pue-body">' +
                 '<div class="gauge">' +
@@ -109,10 +125,11 @@
                     '<span class="stat-row"><b class="stat-num" id="upsEnergy">' + A.fix(BASE.upsEnergy, 1) + '</b><span class="stat-unit">万度</span></span></div>' +
                 '</div>' +
               '</div>' +
+              pueTip() +
             '</section>' +
 
-            '<section class="card">' +
-              '<div class="card-head"><i class="card-bar"></i><h2 class="card-title">部署设备数量</h2></div>' +
+            '<section class="card"' + goAttr('assetmgr') + '>' +
+              '<div class="card-head"><i class="card-bar"></i><h2 class="card-title">部署设备统计</h2></div>' +
               '<div class="summary">' +
                 '<div class="sum-item"><span class="sum-label">单位</span><b class="sum-num">5</b></div>' +
                 '<div class="sum-item"><span class="sum-label">系统</span><b class="sum-num">33</b></div>' +
@@ -127,7 +144,7 @@
               '</ul>' +
             '</section>' +
 
-            '<section class="card">' +
+            '<section class="card"' + goAttr('capacity') + '>' +
               '<div class="card-head"><i class="card-bar"></i><h2 class="card-title">机柜使用情况</h2></div>' +
               '<div class="card-body cab-body">' +
                 '<div class="ring">' +
@@ -153,17 +170,8 @@
             '<div class="stage" id="stage" data-floor="main">' +
               '<div class="stage-bg" id="stageBg"></div>' +
               '<h1 class="stage-title">数据中心动环管理系统</h1>' +
-              '<div class="stage-sub">驾驶舱 · ' + A.esc(window.DCIM.meta.project) + '</div>' +
+              '<div class="stage-sub">总览 · ' + A.esc(window.DCIM.meta.project) + '</div>' +
               '<i class="corner tl"></i><i class="corner tr"></i><i class="corner br"></i><i class="corner bl"></i>' +
-              '<button class="btn is-ghost" type="button" id="btnTour" ' +
-                'style="position:absolute;right:14px;top:14px;z-index:6;font-size:12px;padding:6px 12px;background:rgba(3,14,32,.9);backdrop-filter:blur(8px)">进入空间巡检 ›</button>' +
-              '<div class="floor-bar" id="floorBar">' +
-                '<button class="fbtn is-active" type="button" data-floor="main">主界面</button>' +
-                '<button class="fbtn" type="button" data-floor="1F">1F</button>' +
-                '<button class="fbtn" type="button" data-floor="2F">2F</button>' +
-                '<button class="fbtn" type="button" data-floor="3F">3F</button>' +
-                '<button class="fbtn" type="button" data-floor="4F">4F</button>' +
-              '</div>' +
             '</div>' +
             '<div class="floor-strip" id="floorStrip">' +
               window.DCIM.floors.slice().sort(function (a, b) {
@@ -195,7 +203,7 @@
           /* ---------- 右栏 ---------- */
           '<aside class="col col-right">' +
 
-            '<section class="card">' +
+            '<section class="card"' + goAttr('power/line') + '>' +
               '<div class="card-head"><i class="card-bar"></i><h2 class="card-title">' + powerTitle + '</h2></div>' +
               '<div class="power-row">' +
                 '<span class="power-label">' + powerLabel + '</span>' +
@@ -205,7 +213,7 @@
               '<div class="chart" id="powerChart"></div>' +
             '</section>' +
 
-            '<section class="card">' +
+            '<section class="card card-env"' + goAttr('facility/th') + '>' +
               '<div class="card-head"><i class="card-bar"></i><h2 class="card-title">机房温湿度</h2></div>' +
               '<div class="legend">' +
                 '<span class="legend-item"><i class="legend-dot" style="background:#FFA24D"></i><span class="legend-text">温度 <b id="liveTemp">' +
@@ -213,14 +221,19 @@
                 '<span class="legend-item"><i class="legend-dot" style="background:#2E9CF6"></i><span class="legend-text">湿度 <b id="liveHumi">' +
                   (snap.humi == null ? '—' : A.fix(snap.humi, 1)) + '</b> %</span></span>' +
               '</div>' +
-              '<div id="liveStrip" style="padding:0 4px 8px;font-size:13px;color:#9FD7FF">漏水信号 <b id="liveLeak">' +
+              '<div class="th-avg">' +
+                '<div><span>平均温度</span><b>' + (avgTh.temp == null ? '—' : A.fix(avgTh.temp, 1)) + '</b><em>℃</em></div>' +
+                '<div><span>平均湿度</span><b>' + (avgTh.humi == null ? '—' : A.fix(avgTh.humi, 1)) + '</b><em>%</em></div>' +
+              '</div>' +
+              '<div class="th-avg-note">' + (avgTh.n ? ('演示均值 · ' + avgTh.n + ' 个测点') : '暂无测点') + '</div>' +
+              '<div id="liveStrip" style="padding:0;font-size:12px;color:#9FD7FF">漏水信号 <b id="liveLeak">' +
                 A.esc(snap.leak == null ? '—' : String(snap.leak)) + '</b> · 位置 <b id="liveLeakM">' +
                 A.esc(snap.leakM == null ? '—' : String(snap.leakM)) + '</b> m · 列头柜 <b id="liveKw">' +
                 A.esc(snap.kw == null ? '—' : String(snap.kw)) + '</b> kW</div>' +
               '<div class="chart" id="envChart"></div>' +
             '</section>' +
 
-            '<section class="card">' +
+            '<section class="card"' + goAttr('facility/alarm') + '>' +
               '<div class="card-head"><i class="card-bar"></i><h2 class="card-title">告警统计（近 7 日）</h2></div>' +
               '<div class="alert-grid">' +
                 alertItem('紧急告警', lv.紧急, '#FF4D5E') +
@@ -270,74 +283,96 @@
       draw();
       upsE.textContent = A.fix(BASE.upsEnergy, 1);
 
-      /* PUE 仍是演示计算，允许轻微波动；采集功率不被改写 */
-      timer = setInterval(function () {
-        state.pue = A.clamp(BASE.pue + (Math.random() - 0.5) * 0.02, 1.2, 1.9);
-        if (!BASE._kwLive) state.power = BASE.itPower + (Math.random() - 0.5) * 6;
-        draw();
-      }, 4000);
-      setTimeout(function () {
-        if (!timer) return;
-      }, 5000);
-
-      /* 楼层切换 */
-      var stage = A.q('#stage', root), floorBar = A.q('#floorBar', root);
+      /* 楼体线框。楼层热区可悬停、可点，直接进入该层巡检。 */
       var stageBg = A.q('#stageBg', root);
-
-      /* 楼体线框：按项目实景绘制 */
-      if (stageBg && window.BLD) stageBg.innerHTML = window.BLD.svg({ floor: 'main' });
-
-      var floorStrip = A.q('#floorStrip', root);
-
-      function setFloor(f) {
-        stage.setAttribute('data-floor', f);
-        var idx = /^[1-9]/.test(f) ? Number(f.charAt(0)) : 0;
-        A.qa('.fbtn', floorBar).forEach(function (el) {
-          el.classList.toggle('is-active', el.getAttribute('data-floor') === f);
+      if (stageBg && window.BLD) stageBg.innerHTML = window.BLD.svg({ floor: 'main', interactive: true });
+      function markFloor(name) {
+        var n = name ? parseInt(name, 10) : 0;
+        A.qa('.flr', stageBg).forEach(function (el) {
+          el.classList.toggle('is-hl', Number(el.getAttribute('data-f')) === n);
         });
-        A.qa('.fs-item', floorStrip).forEach(function (el) {
-          el.classList.toggle('is-active', el.getAttribute('data-floor') === f);
+        A.qa('.win', stageBg).forEach(function (el) {
+          el.classList.toggle('is-hl', Number(el.getAttribute('data-f')) === n);
         });
-        A.qa('.bld-svg .win[data-f]', stageBg).forEach(function (w) {
-          w.classList.toggle('is-hl', Number(w.getAttribute('data-f')) === idx);
+      }
+      if (stageBg) {
+        stageBg.addEventListener('mouseover', function (e) {
+          var h = e.target.closest('.hit');
+          markFloor(h ? h.getAttribute('data-floor') : '');
         });
-        A.qa('.bld-svg .flr[data-f]', stageBg).forEach(function (g) {
-          g.classList.toggle('is-hl', Number(g.getAttribute('data-f')) === idx);
+        stageBg.addEventListener('mouseleave', function () { markFloor(''); });
+        stageBg.addEventListener('click', function (e) {
+          var h = e.target.closest('.hit');
+          if (!h) return;
+          var f = h.getAttribute('data-floor');
+          if (f) A.go('building/floor/' + encodeURIComponent(f) + '/dashboard');
         });
       }
 
-      floorBar.addEventListener('click', function (e) {
-        var b = e.target.closest('.fbtn');
-        if (b) setFloor(b.getAttribute('data-floor'));
-      });
-
-      /* 楼层概况卡：点击定位到该层，再次点击回到主界面 */
+      var floorStrip = A.q('#floorStrip', root);
       floorStrip.addEventListener('click', function (e) {
         var it = e.target.closest('.fs-item');
         if (!it) return;
         var f = it.getAttribute('data-floor');
-        setFloor(stage.getAttribute('data-floor') === f ? 'main' : f);
+        if (!f) return;
+        A.go('building/floor/' + encodeURIComponent(f) + '/dashboard');
       });
 
-      /* 3D 楼宇 / 楼层按钮 → 空间巡检 */
-      var bg = A.q('#stageBg', root);
-      if (bg) {
-        bg.style.cursor = 'pointer';
-        bg.addEventListener('click', function () { A.go('building'); });
-      }
-      var btnTour = A.q('#btnTour', root);
-      if (btnTour) btnTour.addEventListener('click', function () { A.go('building'); });
-
-      /* 告警卡片下钻 */
-      var alertCard = A.q('.alert-grid', root);
-      if (alertCard) {
-        alertCard.style.cursor = 'pointer';
-        alertCard.addEventListener('click', function () { A.go('facility'); });
-      }
+      root.addEventListener('click', function (e) {
+        var card = e.target.closest('[data-go]');
+        if (!card || !root.contains(card)) return;
+        A.go(card.getAttribute('data-go') + '/~dashboard');
+      });
+      root.addEventListener('mousemove', function (e) {
+        var box = e.target.closest('.card, .fs-item, .metric');
+        if (!box || !root.contains(box)) return;
+        var r = box.getBoundingClientRect();
+        box.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100).toFixed(1) + '%');
+        box.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100).toFixed(1) + '%');
+      });
     }
   });
 
   /* ---------- 片段 ---------- */
+  function goAttr(id) {
+    return A.allow(id) ? ' data-go="' + id + '"' : '';
+  }
+  function pueTip() {
+    var live = (window.DCIM && window.DCIM.live) || {};
+    var srcName = { auto: '自动', manual: '人工', estimate: '估算', mixed: '混合' };
+    var parts = live.parts;
+    if (!parts || !parts.length) {
+      parts = [
+        { name: 'IT', kw: live.it != null ? live.it : BASE.itPower, source: 'auto' },
+        { name: '制冷', kw: live.cooling, source: 'auto' },
+        { name: '供配电损耗', kw: live.loss, source: 'auto' },
+        { name: '照明及其他', kw: live.other, source: 'manual' }
+      ];
+    }
+    var total = live.total != null ? Number(live.total) : 0;
+    if (!(total > 0)) {
+      total = 0;
+      parts.forEach(function (p) { total += Number(p.kw) || 0; });
+    }
+    var rows = parts.map(function (p) {
+      if (p.kw == null || p.kw === '') return '';
+      return '<div class="pue-tip-row"><span>' + A.esc(p.name) + '</span><b>' + A.fix(Number(p.kw) || 0, 2) +
+        ' kW</b><em>' + (srcName[p.source] || '演示') + '</em></div>';
+    }).join('');
+    var meter = live.totalMeter
+      ? ''
+      : '<p class="pue-tip-warn">总进线电表未接入。分项是演示数，不是电表实采。</p>';
+    var ratio = live.manualRatio != null
+      ? '<p>人工数据占比 ' + A.fix(Number(live.manualRatio), 1) + '%。</p>' : '';
+    return '<div class="pue-tip">' +
+      '<b>PUE = 总功耗 / IT 功耗</b>' +
+      '<p>PUE 是数据中心总用电相对 IT 设备用电的倍数。越接近 1，制冷、供配电和照明等额外消耗越少。</p>' +
+      '<div class="pue-tip-row"><span>当前 PUE</span><b>' + A.fix(BASE.pue, 2) + '</b></div>' +
+      '<div class="pue-tip-row"><span>总用电功率</span><b>' + A.fix(total, 2) + ' kW</b></div>' +
+      '<div class="pue-tip-row"><span>累计电度</span><b>' + A.fix(BASE.upsEnergy, 1) + ' 万度</b></div>' +
+      rows + ratio + meter +
+      '<p class="pue-tip-go">点击进入能效碳排</p></div>';
+  }
   function devRow(name, count, icon) {
     return '<li class="dev-row"><span class="dev-icon">' + icon + '</span>' +
       '<span class="dev-name">' + name + '</span><b class="dev-count">' + A.num(count) + '</b></li>';

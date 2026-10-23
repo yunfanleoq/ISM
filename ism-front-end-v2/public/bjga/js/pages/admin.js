@@ -67,7 +67,7 @@
       ],
       rows: [
         { n: '登录页皮肤', v: '深蓝科技风', o: '深蓝科技风 / 浅色简约 / 深空灰', d: '控制登录页与首页背景主题' },
-        { n: '首页默认页', v: '驾驶舱', o: '驾驶舱 / 设施监控 / 资产总览', d: '用户登录后进入的默认页面' },
+        { n: '首页默认页', v: '总览', o: '总览 / 设施监控 / 资产总览', d: '用户登录后进入的默认页面' },
         { n: '导航显示样式', v: '横向页签', o: '横向页签 / 左侧菜单', d: '顶部模块导航的呈现方式' },
         { n: '大屏分辨率基准', v: '1920 × 1080', o: '1920×1080 / 2560×1440 / 3840×2160', d: '大屏等比缩放基准' },
         { n: '自动刷新间隔', v: '5 秒', o: '3 / 5 / 10 / 30 秒', d: '实时数据的刷新周期' },
@@ -225,7 +225,7 @@
         '<div class="card-body"><div class="sys-grid">' +
           '<div class="sys-item"><div class="k">当前项目</div><div class="v">' + A.esc(projectText()) + '</div></div>' +
           '<div class="sys-item"><div class="k">登录用户</div><div class="v">' + A.esc(userText()) + '</div></div>' +
-          '<div class="sys-item"><div class="k">数据刷新</div><div class="v">打开本大屏时请求一次 /bjga/bootstrap，装入项目、告警和采集。驾驶舱能效示意大约每 4 秒重绘，已经采到的功率不会被这段动画改掉。要看最新采集，重新进入页面或刷新浏览器。自监控里的「立即刷新」只更新那一页的主机状态。</div></div>' +
+          '<div class="sys-item"><div class="k">数据刷新</div><div class="v">打开本大屏时请求一次 /bjga/bootstrap，装入项目、告警和采集。总览上的 PUE 使用这一次算出的分项，不再每隔几秒改数字。要看最新采集，重新进入页面或刷新浏览器。自监控里的「立即刷新」只更新那一页的主机状态。</div></div>' +
           '<div class="sys-item"><div class="k">审计入口</div><div class="v"><a class="sys-link" href="#/audit">进入安全审计</a></div></div>' +
           '<div class="sys-item is-wide"><div class="k">热备状态（只读）</div><div class="v" id="sysHa">读取中…</div></div>' +
         '</div></div></section>';

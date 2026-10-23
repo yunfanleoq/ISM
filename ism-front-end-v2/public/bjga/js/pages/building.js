@@ -84,15 +84,19 @@
     },
 
     /* 只读 hash：#/building/floor/4F/assetmgr 或 #/building/room/机房名/assetmgr
-       有 assetmgr 段时，楼层这一级返回资产管理；没有这段时巡视仍从整栋楼进出。 */
+       有 assetmgr 段时，楼层这一级返回资产管理。
+       有 dashboard 段时，楼层这一级返回总览，不先落到整栋楼。 */
     openFromHash: function () {
       var raw = (location.hash || '').replace(/^#\//, '');
       var parts = raw.split('/');
+      var fromDash = parts.length && parts[parts.length - 1] === '~dashboard';
+      if (fromDash) parts.pop();
       if (parts[0] !== 'building' || (parts[1] !== 'floor' && parts[1] !== 'room')) return false;
       var name = parts[2] || '';
       try { name = decodeURIComponent(name); } catch (e) {}
       if (!name) return false;
-      var back = parts[3] === 'assetmgr' ? 'assetmgr' : '';
+      var back = parts[3] === 'assetmgr' ? 'assetmgr' : (parts[3] === 'dashboard' ? 'dashboard' : '');
+      if (back === 'assetmgr' && fromDash) back = 'assetmgr/~dashboard';
       if (parts[1] === 'floor') {
         var Dd = D();
         var ok = (Dd.floors || []).some(function (x) { return x.floor === name; })
@@ -249,7 +253,8 @@
     /* ---------------- 面包屑 ---------------- */
     crumbs: function () {
       var s = this.state, out = [];
-      var rootLabel = this.entryBack === 'assetmgr' ? '资产管理' : '整栋楼';
+      var backTop = String(this.entryBack || '').split('/')[0];
+      var rootLabel = backTop === 'assetmgr' ? '资产管理' : (backTop === 'dashboard' ? '总览' : '整栋楼');
       out.push('<span class="crumb-item' + (!s.floor ? ' is-cur' : '') + '" data-lv="0">' + rootLabel + '</span>');
       if (s.floor) out.push('<span class="crumb-sep">›</span><span class="crumb-item' + (!s.room ? ' is-cur' : '') + '" data-lv="1">' + s.floor + '</span>');
       if (s.room) out.push('<span class="crumb-sep">›</span><span class="crumb-item' + (!s.cab ? ' is-cur' : '') + '" data-lv="2">' + A.esc(s.room) + '</span>');
@@ -605,7 +610,9 @@
             A.num(r.dev) + ' 台设备 · ' + A.fix(r.kw, 1) + ' kW · 综合 ' + A.fix(r.comp, 1) + '% · 告警 ' +
             A.num(r.alarmN) + '</span>' + this.modeSw() + '</div>' +
           '<div class="iso-stage" id="v3Host"></div>' +
-          this.isoLegend('拖拽旋转 · 滚轮缩放 · WASD 漫游 · 双击飞向机柜 · 点击机柜查看 42U 排布') +
+          this.isoLegend(!r.cabCount && r.type === '弱电间'
+            ? '拖拽旋转 · 滚轮缩放 · 点击配线柜，看到的是和楼层同一套柜'
+            : '拖拽旋转 · 滚轮缩放 · WASD 漫游 · 双击飞向机柜 · 点击机柜查看 42U 排布') +
         '</div>';
       }
 
@@ -682,6 +689,21 @@
 
     /* ---------------- L3 机柜 ---------------- */
     cabParts: function (cabName) {
+      var weak = String(cabName || '').match(/^弱电柜:(.+):(\d+)-(\d+)$/);
+      if (weak) {
+        var wroom = D().rooms.filter(function (x) { return x.name === weak[1]; })[0];
+        var wlabel = '配线柜 ' + weak[2] + '-' + weak[3];
+        return {
+          cab: null, room: wroom, items: [],
+          rows: '<div class="rk-u"><span class="rk-unm">' + A.esc(wlabel) + ' · 与楼层同一套配线柜</span></div>',
+          cap: '<b>' + A.esc(wlabel) + '</b><span>弱电配线柜 · 无服务器 U 位门</span>',
+          right: A.UI.card({ title: wlabel, body: A.UI.kv([
+            ['所属机房', wroom ? wroom.name + '（' + wroom.floor + '）' : weak[1]],
+            ['外形', '弱电配线柜'],
+            ['对应', '楼层和房间里的同一架']
+          ]) })
+        };
+      }
       var cab = null, room = null;
       D().rooms.forEach(function (x) {
         x.cabinets.forEach(function (c) { if (c.name === cabName) { cab = c; room = x; } });
@@ -820,8 +842,9 @@
       var part = this.cabParts(cabName);
 
       var is3 = this.mode === '3d' && A.V3;
+      var weakCab = String(cabName).indexOf('弱电柜:') === 0;
       var lhead = '<div class="rk-lhead"><span class="side-title">' +
-        (is3 ? '42U 立体视图' : '42U 正面排布') + '</span>' + this.modeSw() + '</div>';
+        (weakCab ? '配线柜' : (is3 ? '42U 立体视图' : '42U 正面排布')) + '</span>' + this.modeSw() + '</div>';
       var cap = part.cap ? '<div class="rk-cap">' + part.cap + '</div>' : '';
       var mode = this.rackMode();
       var clean = this.rackCleanOn();

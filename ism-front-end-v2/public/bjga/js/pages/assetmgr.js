@@ -51,12 +51,13 @@
 
       root.innerHTML =
         '<div class="page-head">' +
+          A.originBack() +
           '<h1 class="page-title">资产管理</h1>' +
           '<span class="page-crumb">' + A.crumb('设备台账 · 空间占用 · 上下架') + '</span>' +
           '<div class="page-tools">' +
             '<span class="am-vtag">口径定稿 v1.0 · 13 条已落地</span>' +
             '<button class="btn is-ghost is-sm" data-act="go-io">导入 / 导出</button>' +
-            '<button class="btn is-primary is-sm" data-act="new">+ 设备登记</button>' +
+            (A.can('edit') ? '<button class="btn is-primary is-sm" data-act="new">+ 设备登记</button>' : '') +
           '</div>' +
         '</div>' +
         '<div class="am-nav">' + VIEWS.map(function (v) {
@@ -86,7 +87,8 @@
         paint();
       });
       A.q('[data-act="go-io"]', root).addEventListener('click', function () { S.view = 'io'; paint(); });
-      A.q('[data-act="new"]', root).addEventListener('click', function () {
+      var btnNew = A.q('[data-act="new"]', root);
+      if (btnNew) btnNew.addEventListener('click', function () {
         A.drawer('设备登记',
           U.kv([['资产编码', '系统生成（永久，不复用）'], ['主 SN', '参与查重；附属 SN 只记录不判重'],
             ['IP', '一对多，管理 / 业务 / 存储 / 心跳'], ['初始状态', '未定位（登记后进入待上架）']]) +
@@ -196,13 +198,12 @@
 
     box.innerHTML =
       '<section class="card am-kpi"><div class="stats am-stats">' +
-        '<div class="stat-box"><span><span class="v">' + A.num(M.total) + '</span><span class="u">台</span></span><span class="l">设备总数</span></div>' +
-        '<div class="stat-box"><span><span class="v" style="color:#00E39A">' + A.num(M.cnt['在用']) + '</span><span class="u">台</span></span><span class="l">在用</span></div>' +
-        '<div class="stat-box"><span><span class="v">' + M.usedCabs + '</span><span class="u">/ ' + M.totalCabs + ' 柜</span></span><span class="l">已用机柜</span></div>' +
-        '<div class="stat-box"><span><span class="v">' + M.deployedRooms.length + '</span><span class="u">个</span></span><span class="l">已部署机房</span></div>' +
-        '<div class="stat-box"><span><span class="v" style="color:#FF4D5E">' + A.num(M.cnt['未定位']) + '</span><span class="u">台</span></span><span class="l">未定位</span></div>' +
-        '<div class="stat-box"><span><span class="v" style="color:#FFD24D">' + A.fix(M.spaceRate, 2) + '</span><span class="u">%</span></span><span class="l">空间利用率</span></div>' +
-      '</div></section>' +
+        '<div class="stat-box"><span><span class="v">' + A.num(M.totalCabs) + '</span><span class="u">架</span></span><span class="l">机柜总数</span></div>' +
+        '<div class="stat-box"><span><span class="v" style="color:#00E39A">' + A.num(M.usedCabs) + '</span><span class="u">架</span></span><span class="l">已用机柜</span></div>' +
+        '<div class="stat-box"><span><span class="v">' + A.num(M.freeCabs) + '</span><span class="u">架</span></span><span class="l">未用机柜</span></div>' +
+        '<div class="stat-box"><span><span class="v">' + M.orgs.length + '</span><span class="u">个</span></span><span class="l">单位</span></div>' +
+        '<div class="stat-box"><span><span class="v">' + M.bizs.length + '</span><span class="u">个</span></span><span class="l">系统</span></div>' +
+      '</div><div class="am-note">上面五个数给总览看。台账、变更审批、盘点在本页标签里，不从大屏总览钻进来。</div></section>' +
 
       '<section class="card" style="flex:0 0 auto">' +
         '<div class="card-head"><i class="card-bar"></i><h2 class="card-title">按楼层 / 机房查看资产</h2>' +
@@ -509,14 +510,16 @@
       '</div>' +
       '<div class="am-sub">变更历史（不审批 · 强制留痕）</div>' +
       '<div class="am-tl">' + tl + '</div>' +
-      '<div class="am-sub">位置变更</div>' +
-      '<div class="am-move">' +
-        '<select class="select" data-m-cab>' + cabOpts + '</select>' +
-        '<input class="input" data-m-u type="number" min="1" max="42" value="' + Math.min(42, d.uStart) + '" style="width:74px"/>' +
-        '<button class="btn is-primary is-sm" data-m-ok>确认变更</button>' +
-      '</div>' +
-      '<div class="am-note">改完即生效，不需要审批；系统自动记录原位置、新位置、操作人与时间。' +
-        '下架不删除设备，留在「未定位」里，再次上架时选新机柜，轨迹才连得上。</div>' +
+      (A.can('edit')
+        ? '<div class="am-sub">位置变更</div>' +
+          '<div class="am-move">' +
+            '<select class="select" data-m-cab>' + cabOpts + '</select>' +
+            '<input class="input" data-m-u type="number" min="1" max="42" value="' + Math.min(42, d.uStart) + '" style="width:74px"/>' +
+            '<button class="btn is-primary is-sm" data-m-ok>确认变更</button>' +
+          '</div>' +
+          '<div class="am-note">改完即生效，不需要审批；系统自动记录原位置、新位置、操作人与时间。' +
+            '下架不删除设备，留在「未定位」里，再次上架时选新机柜，轨迹才连得上。</div>'
+        : '') +
       '<div class="am-iobtns" style="margin-top:16px">' +
         (d.room ? '<button class="btn is-ghost is-sm" type="button" data-go="room" data-name="' + A.esc(d.room) + '">查看该机房立体</button>' : '') +
         (d.floor ? '<button class="btn is-ghost is-sm" type="button" data-go="floor" data-name="' + A.esc(d.floor) + '">查看 ' + A.esc(d.floor) + ' 立体</button>' : '') +

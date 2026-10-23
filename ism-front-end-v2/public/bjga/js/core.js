@@ -167,26 +167,81 @@ window.App = window.App || {};
 
   A.register = function (id, def) { A.pages[id] = def; };
 
+  /* screen：macro 领导可见，work 业务可见，admin 仅管理员。管理员三者都可见。 */
   A.NAV = [
-    { id: 'dashboard', name: '驾驶舱' },
-    { id: 'building',  name: '空间巡检' },
-    { id: 'facility',  name: '运行监控' },
-    { id: 'power',     name: '配电专业' },
-    { id: 'energy',    name: '能效碳排' },
-    { id: 'capacity',  name: '容量总览' },
-    { id: 'assetmgr',  name: '资产管理' },
-    { id: 'report',    name: '报表报告' },
-    { id: 'ops',       name: '运维中心' },
-    { id: 'audit',     name: '安全审计' }
+    { id: 'dashboard', name: '总览', screen: 'macro' },
+    { id: 'building',  name: '空间巡检', screen: 'macro' },
+    { id: 'facility',  name: '运行监控', screen: 'macro' },
+    { id: 'energy',    name: '能效碳排', screen: 'macro' },
+    { id: 'capacity',  name: '容量总览', screen: 'macro' },
+    { id: 'report',    name: '报表报告', screen: 'macro' },
+    { id: 'power',     name: '配电专业', screen: 'work' },
+    { id: 'assetmgr',  name: '资产管理', screen: 'work' },
+    { id: 'ops',       name: '运维中心', screen: 'work' },
+    { id: 'audit',     name: '安全审计', screen: 'work' }
   ];
   A.MORE = [
-    { id: 'govern',  name: '数据治理' },
-    { id: 'config',  name: '工程配置' },
-    { id: 'selfmon', name: '自监控' },
-    { id: 'admin',   name: '系统管理' },
-    { id: 'ontology', name: '本体中心', href: '/#/xunzhi/jf/ontology' },
-    { id: 'backend', name: '进入后台', href: '/#/Project' }
+    { id: 'govern',  name: '数据治理', screen: 'admin' },
+    { id: 'config',  name: '工程配置', screen: 'admin' },
+    { id: 'selfmon', name: '自监控', screen: 'admin' },
+    { id: 'admin',   name: '系统管理', screen: 'admin' },
+    { id: 'ontology', name: '本体中心', screen: 'admin', href: '/#/xunzhi/jf/ontology' },
+    { id: 'backend', name: '进入后台', screen: 'admin', href: '/#/Project' }
   ];
+
+  /* 读现有登录用户的 role。读不到时按管理员，避免本机调试被空菜单挡住。 */
+  A.role = function () {
+    function fromStore(store) {
+      var keys, i, raw, obj, role;
+      try { keys = Object.keys(store); } catch (e) { return ''; }
+      for (i = 0; i < keys.length; i++) {
+        if (/pass|token|authorization/i.test(keys[i])) continue;
+        try { raw = store.getItem(keys[i]); } catch (e2) { continue; }
+        if (!raw || raw.charAt(0) !== '{') continue;
+        try { obj = JSON.parse(raw); } catch (e3) { continue; }
+        if (!obj || typeof obj !== 'object') continue;
+        if (obj.password || obj.Password) continue;
+        role = obj.Role || obj.role;
+        if (!role) continue;
+        if (!(obj.name || obj.Name || obj.Username || obj.uuid || obj.Uuid)) continue;
+        return String(role);
+      }
+      return '';
+    }
+    var found = '';
+    try { found = fromStore(window.localStorage); } catch (e) {}
+    if (found) return found;
+    try {
+      if (window.parent && window.parent !== window) found = fromStore(window.parent.localStorage);
+    } catch (e2) {}
+    return found || '';
+  };
+
+  /* macro 领导 / User；work 操作员；其余（含 Admin 和未登录）按管理员。 */
+  A.mode = function () {
+    var role = A.role();
+    if (role === 'Leader' || role === 'User') return 'macro';
+    if (role === 'Operator') return 'work';
+    return 'admin';
+  };
+
+  A.allow = function (id) {
+    var top = String(id || '').split('/')[0];
+    var item = null;
+    A.NAV.concat(A.MORE).some(function (n) {
+      if (n.id === top) { item = n; return true; }
+    });
+    if (!item) return A.mode() === 'admin';
+    var mode = A.mode();
+    if (mode === 'admin') return true;
+    if (mode === 'work') return item.screen === 'macro' || item.screen === 'work';
+    return item.screen === 'macro';
+  };
+
+  A.can = function (act) {
+    if (act === 'edit') return A.mode() !== 'macro';
+    return true;
+  };
 
   A.leaveTo = function (href) {
     try {
@@ -197,18 +252,55 @@ window.App = window.App || {};
     }
   };
 
+  /* 只有总览卡片下钻才带上来源。顶栏菜单是新进入，hash 里没有这段。 */
+  A.origin = '';
+
+  A.withOrigin = function (id) {
+    var s = String(id || '').replace(/^\/+|\/+$/g, '');
+    if (A.origin !== 'dashboard') return s;
+    if (/(?:^|\/)~dashboard$/.test(s)) return s;
+    return s + '/~dashboard';
+  };
+
+  A.originBack = function () {
+    if (A.origin !== 'dashboard') return '';
+    return '<button class="origin-back" type="button" data-origin="dashboard">返回总览</button>';
+  };
+
   A.go = function (id) {
     var top = String(id || '').split('/')[0];
     if (!A.pages[top]) id = 'dashboard';
-    location.hash = '#/' + id;
+    top = String(id).split('/')[0];
+    if (!A.allow(top)) {
+      A.toast('当前角色无权进入该页');
+      id = 'dashboard';
+    }
+    var next = '#/' + id;
+    if (location.hash === next) return;
+    location.hash = next;
   };
 
   A.render = function () {
     var raw = (location.hash || '').replace('#/', '');
     var parts = raw.split('/');
+    A.origin = '';
+    if (parts.length && parts[parts.length - 1] === '~dashboard') {
+      A.origin = 'dashboard';
+      parts.pop();
+    }
     var id = parts[0] || 'dashboard';
     A.subArg = parts[1] || '';
     if (!A.pages[id]) id = 'dashboard';
+    if (!A.allow(id)) {
+      A.toast('当前角色无权进入该页');
+      if ((location.hash || '') !== '#/dashboard') {
+        location.hash = '#/dashboard';
+        return;
+      }
+      id = 'dashboard';
+      A.subArg = '';
+      A.origin = '';
+    }
 
     A.qa('.tab').forEach(function (t) {
       t.classList.toggle('is-active', t.getAttribute('data-id') === id);
@@ -226,6 +318,13 @@ window.App = window.App || {};
     try {
       def.render(page);
       if (def.mount) def.mount(page);
+      page.addEventListener('click', function (e) {
+        var back = e.target.closest('[data-origin="dashboard"]');
+        if (!back || !page.contains(back)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        A.go('dashboard');
+      });
     } catch (err) {
       page.innerHTML = '<div class="empty">页面渲染异常<br>' + A.esc(err.message) + '</div>';
       console.error(err);
@@ -245,14 +344,18 @@ window.App = window.App || {};
 
   A.boot = function () {
     var tabs = A.q('#tabs');
+    var nav = A.NAV.filter(function (n) { return A.allow(n.id); });
+    var more = A.MORE.filter(function (n) { return A.allow(n.id); });
     tabs.style.gap = '12px';
-    tabs.innerHTML = A.NAV.map(function (n) {
+    tabs.innerHTML = nav.map(function (n) {
       return '<button class="tab" type="button" data-id="' + n.id + '">' + n.name + '</button>';
     }).join('') +
-      '<div class="tab-more"><button class="tab" type="button">更多</button><div class="tab-more-pop">' +
-      A.MORE.map(function (n) {
-        return '<button class="tab" type="button" data-id="' + (n.id || '') + '" data-href="' + (n.href || '') + '">' + n.name + '</button>';
-      }).join('') + '</div></div>';
+      (more.length
+        ? '<div class="tab-more"><button class="tab" type="button">更多</button><div class="tab-more-pop">' +
+          more.map(function (n) {
+            return '<button class="tab" type="button" data-id="' + (n.id || '') + '" data-href="' + (n.href || '') + '">' + n.name + '</button>';
+          }).join('') + '</div></div>'
+        : '');
     tabs.addEventListener('click', function (e) {
       var b = e.target.closest('.tab');
       if (!b) return;

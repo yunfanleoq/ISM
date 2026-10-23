@@ -232,6 +232,22 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 .kb-item.is-active { box-shadow: inset 0 0 0 1px rgba(0, 216, 255, .7); color: var(--cyan-light); }
 .kb-body { white-space: pre-wrap; line-height: 1.7; font-size: 13px; }
 .page-tools { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+.origin-back {
+  appearance: none;
+  flex: 0 0 auto;
+  height: 30px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .4px;
+  color: #E8FBFF;
+  background: linear-gradient(180deg, rgba(0, 216, 255, .32), rgba(0, 140, 200, .22));
+  box-shadow: inset 0 0 0 1px rgba(0, 216, 255, .9), inset 0 0 10px rgba(0, 216, 255, .35);
+}
+.origin-back:hover { background: linear-gradient(180deg, rgba(0, 216, 255, .46), rgba(0, 150, 210, .3)); }
 
 /* ============ 按钮 ============ */
 .btn {

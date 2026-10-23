@@ -14,11 +14,14 @@
   var AM = {};
   A.AM = AM;
 
-  /* 从资产管理进入某一层 / 某一间的立体画面；hash 末段 assetmgr 让返回回到资产管理 */
+  /* 从资产管理进入某一层 / 某一间的立体画面；hash 末段 assetmgr 让返回回到资产管理。
+     若这一次是从总览进的资产管理，来源 ~dashboard 要跟着走，回到资产页还能再回总览。 */
   AM.openSpace = function (kind, name) {
     if (!kind || !name) return;
     A.closeDrawer();
-    A.go('building/' + kind + '/' + encodeURIComponent(name) + '/assetmgr');
+    var tail = '/assetmgr';
+    if (A.origin === 'dashboard') tail += '/~dashboard';
+    A.go('building/' + kind + '/' + encodeURIComponent(name) + tail);
   };
 
   /* ---------- 空U系数（按设备类型取，不从机柜取） ---------- */

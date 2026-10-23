@@ -335,7 +335,9 @@
             : '<span class="am-node is-rej">使用单位提交</span><i class="am-arrow"></i><span class="am-node">数据中心管理员终审</span>';
 
       var btns = '';
-      if (f.st === '待初审' || f.st === '待终审') {
+      if (!A.can('edit')) {
+        btns = '<span class="am-done">只读</span>';
+      } else if (f.st === '待初审' || f.st === '待终审') {
         btns = '<button class="btn is-primary is-sm" data-fpass="' + f.no + '">' +
           (f.st === '待初审' ? '初审通过' : '终审通过') + '</button>' +
           '<button class="btn is-ghost is-sm" data-frej="' + f.no + '">驳回</button>';

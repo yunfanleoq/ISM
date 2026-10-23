@@ -149,7 +149,8 @@
     var ex = c + r * Math.sin(ang), ey = c - r * Math.cos(ang);
     var sx = c + r * Math.sin(225 * Math.PI / 180), sy = c - r * Math.cos(225 * Math.PI / 180);
     var exx = c + r * Math.sin(135 * Math.PI / 180), eyy = c - r * Math.cos(135 * Math.PI / 180);
-    var large = f > 0.5 ? 1 : 0;
+    /* 270° 仪表：扫过超过 180° 才用大弧。f>0.5 会在 PUE≈1.5 时把绿弧甩到另一条圆上 */
+    var large = 270 * f > 180 ? 1 : 0;
     return '<svg viewBox="0 0 ' + w + ' ' + h + '" fill="none">' +
       '<defs><linearGradient id="' + id + '" x1="0" y1="1" x2="1" y2="0">' +
       '<stop offset="0" stop-color="#00E39A"/><stop offset="1" stop-color="#00D8FF"/></linearGradient></defs>' +

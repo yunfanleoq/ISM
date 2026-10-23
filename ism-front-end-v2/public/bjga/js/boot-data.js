@@ -83,7 +83,12 @@
     if (!dcim.series) dcim.series = {};
     var by = {};
     devs.forEach(function (d) { (by[d.kind] = by[d.kind] || []).push(d); });
-    if (by.th && by.th.length) dcim.thDevices = by.th.map(toTh);
+    if (by.th && by.th.length) {
+      var known = {};
+      (dcim.rooms || []).forEach(function (r) { known[r.name] = 1; });
+      var named = by.th.map(toTh).filter(function (t) { return known[t.room]; });
+      if (named.length) dcim.thDevices = named;
+    }
     var keys = { pwr: '列头柜', ac: '空调', h2: '氢气', batt: '蓄电池' };
     Object.keys(keys).forEach(function (k) {
       if (by[k] && by[k].length) dcim.series[keys[k]] = toSeries(by[k]);

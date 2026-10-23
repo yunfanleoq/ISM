@@ -21,7 +21,7 @@
   var TICKET = { review: '待审核', approved: '已批准', executing: '执行中', archived: '已归档' };
 
   function head() {
-    return '<div class="page-head"><h1 class="page-title">配电专业</h1>' +
+    return '<div class="page-head">' + A.originBack() + '<h1 class="page-title">配电专业</h1>' +
       '<span class="page-crumb">' + A.crumb('本站拓扑与 IEEE33 分开') + '</span></div>' +
       '<p class="page-lead">这一页给配电运维用：看供配电一次系统，核对保护定值，看电能质量和录波，办操作票，做短路与灵敏度校核。没有采集源的计算和录波都标明演示。IEEE33 只用来校验算法，不是本站接线。</p>' +
       '<div class="subtabs">' + SUBS.map(function (s) {

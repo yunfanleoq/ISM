@@ -361,6 +361,16 @@ func ReconnectDbServer() {
 		Db.Model(&RolesList{}).CreateInBatches(&insertrole, 3) // 通过数据的指针来创建
 	}
 
+	var leaderRole RolesList
+	leaderMissing := Db.Model(&RolesList{}).Where("role_id = ?", "Leader").First(&leaderRole)
+	if errors.Is(leaderMissing.Error, gorm.ErrRecordNotFound) {
+		Db.Model(&RolesList{}).Create(&RolesList{
+			RoleName:   "领导",
+			RoleId:     "Leader",
+			Permission: "view",
+		})
+	}
+
 	var supportDeviceListCount int64
 	Db.Model(&DevicesSupportList{}).Where("ID > 0").Count(&supportDeviceListCount)
 	if supportDeviceListCount != 15 {

@@ -95,6 +95,7 @@ func BjgaLive() map[string]interface{} {
 	var meters []BjgaMeter
 	Db.Order("id").Find(&meters)
 	var it, cool, loss, other, ups, energy, manual, pueBase float64
+	src := map[string]string{}
 	for _, m := range meters {
 		switch m.Category {
 		case "it":
@@ -109,6 +110,13 @@ func BjgaLive() map[string]interface{} {
 			ups += m.Value
 		case "energy":
 			energy += m.Value
+		}
+		if m.Category == "it" || m.Category == "cooling" || m.Category == "loss" || m.Category == "other" {
+			if prev, ok := src[m.Category]; !ok || prev == "" {
+				src[m.Category] = m.Source
+			} else if prev != m.Source {
+				src[m.Category] = "mixed"
+			}
 		}
 		if m.Category != "energy" && m.Category != "ups" {
 			pueBase += m.Value
@@ -133,11 +141,20 @@ func BjgaLive() map[string]interface{} {
 			cabRate = used / total * 100
 		}
 	}
+	parts := []map[string]interface{}{
+		{"name": "IT", "kw": it, "source": src["it"]},
+		{"name": "制冷", "kw": cool, "source": src["cooling"]},
+		{"name": "供配电损耗", "kw": loss, "source": src["loss"]},
+		{"name": "照明及其他", "kw": other, "source": src["other"]},
+	}
 	return map[string]interface{}{
 		"pue": pue, "upsPower": ups, "upsEnergy": energy, "itPower": it,
 		"cooling": cool, "loss": loss, "other": other,
 		"manualRatio": bjgaRound(ratio, 1), "cabRate": bjgaRound(cabRate, 2),
 		"it": it, "total": pueBase,
+		"parts": parts,
+		// 种子分项不是总进线电表。有总表接入后再改为 true。
+		"totalMeter": false,
 	}
 }
 

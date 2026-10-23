@@ -50,6 +50,7 @@
   function capRoute() {
     var raw = (location.hash || '').replace(/^#\//, '');
     var parts = raw.split('/');
+    if (parts.length && parts[parts.length - 1] === '~dashboard') parts.pop();
     var name = parts[2] || '';
     try { name = decodeURIComponent(name); } catch (e) {}
     return { kind: parts[0] === 'capacity' ? (parts[1] || '') : '', name: name };
@@ -102,7 +103,7 @@
 
   function bindCapBack(root) {
     A.qa('[data-act="cap-back"]', root).forEach(function (b) {
-      b.addEventListener('click', function () { A.go(b.getAttribute('data-to') || 'capacity'); });
+      b.addEventListener('click', function () { A.go(A.withOrigin(b.getAttribute('data-to') || 'capacity')); });
     });
   }
 
@@ -110,7 +111,7 @@
     A.qa('.cap-room', root).forEach(function (el) {
       el.addEventListener('click', function () {
         var room = el.getAttribute('data-room');
-        if (room) A.go('capacity/room/' + encodeURIComponent(room));
+        if (room) A.go(A.withOrigin('capacity/room/' + encodeURIComponent(room)));
       });
     });
   }
@@ -119,7 +120,7 @@
     A.qa('[data-cap-floor]', root).forEach(function (el) {
       el.addEventListener('click', function () {
         var floor = el.getAttribute('data-cap-floor');
-        if (floor) A.go('capacity/floor/' + encodeURIComponent(floor));
+        if (floor) A.go(A.withOrigin('capacity/floor/' + encodeURIComponent(floor)));
       });
     });
   }
@@ -286,9 +287,12 @@
 
       root.innerHTML =
         '<div class="page-head">' +
+          A.originBack() +
           '<h1 class="page-title">容量总览</h1>' +
           '<span class="page-crumb">' + A.crumb('空间 · 电力 · 接口 三维取极高') +
-          '<div class="page-tools"><button class="btn is-primary is-sm" data-act="recalc">按台账重算</button><button class="btn is-ghost is-sm" data-act="export">导出容量明细</button></div>' +
+          '<div class="page-tools">' +
+            (A.can('edit') ? '<button class="btn is-primary is-sm" data-act="recalc">按台账重算</button>' : '') +
+            '<button class="btn is-ghost is-sm" data-act="export">导出容量明细</button></div>' +
         '</div>' +
 
         '<div class="card" style="flex:0 0 auto"><div class="card-body" style="padding:2px 0">' +

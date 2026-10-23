@@ -11,7 +11,7 @@
   var S = { sub: 'pue' };
 
   function head() {
-    return '<div class="page-head"><h1 class="page-title">能效碳排</h1>' +
+    return '<div class="page-head">' + A.originBack() + '<h1 class="page-title">能效碳排</h1>' +
       '<span class="page-crumb">' + A.crumb('人工数据带修订留痕') + '</span></div>' +
       '<div class="subtabs">' + SUBS.map(function (s) {
         return '<button class="subtab' + (s.id === S.sub ? ' is-active' : '') + '" data-sub="' + s.id + '">' + s.name + '</button>';
@@ -52,7 +52,11 @@
         meters.map(function (m) {
           var src = m.source === 'manual' ? '人工' : m.source === 'estimate' ? '估算' : '自动';
           return '<tr><td>' + A.esc(m.name) + '</td><td>' + A.esc(m.category) + '</td><td>' + src + '</td>' +
-            '<td class="mono">' + m.value + ' ' + A.esc(m.unit) + '</td><td><button class="btn is-ghost is-sm" data-m="' + m.id + '" data-v="' + m.value + '">修改</button></td></tr>';
+            '<td class="mono">' + m.value + ' ' + A.esc(m.unit) + '</td><td>' +
+            (A.can('edit')
+              ? '<button class="btn is-ghost is-sm" data-m="' + m.id + '" data-v="' + m.value + '">修改</button>'
+              : '<span class="muted">只读</span>') +
+            '</td></tr>';
         }).join('') + '</tbody></table>' +
         (diag ? '<div style="margin-top:12px;color:#FFD24D">高碳时段与高负载机房见碳排页。提高供水温度、延长自然冷却可拉低 PUE。</div>' : '') +
         '<div class="muted" style="margin-top:12px">修订记录</div><table class="tbl"><tbody>' +

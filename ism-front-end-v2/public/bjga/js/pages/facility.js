@@ -374,7 +374,7 @@
           '<button class="btn is-primary" data-act="search">查询</button>' +
           '<button class="btn is-ghost" data-act="reset">重置</button>' +
           '<div style="margin-left:auto;display:flex;gap:8px">' +
-            '<button class="btn is-ghost is-sm" data-act="accept">批量受理</button>' +
+            (A.can('edit') ? '<button class="btn is-ghost is-sm" data-act="accept">批量受理</button>' : '') +
             '<button class="btn is-ghost is-sm" data-act="export">导出</button>' +
           '</div>' +
         '</div>' +
@@ -426,6 +426,7 @@
 
       root.innerHTML =
         '<div class="page-head">' +
+          A.originBack() +
           '<h1 class="page-title">运行监控</h1>' +
           '<span class="page-crumb">' + A.crumb('实时监控') +
           '<div class="page-tools"><span id="clock" class="muted" style="font-family:var(--num)"></span></div>' +
@@ -593,8 +594,10 @@
             ['受理人', a.handler], ['受理状态', a.accept], ['确认状态', a.confirm], ['恢复状态', a.recover]
           ].map(function (p) { return p; })) +
           '<div style="margin-top:18px;display:flex;gap:8px">' +
-            '<button class="btn is-primary" data-do="accept">受理</button>' +
-            '<button class="btn" data-do="confirm">确认</button>' +
+            (A.can('edit')
+              ? '<button class="btn is-primary" data-do="accept">受理</button>' +
+                '<button class="btn" data-do="confirm">确认</button>'
+              : '') +
             '<button class="btn is-ghost" data-do="close">关闭</button>' +
           '</div>');
           A.qa('[data-do]').forEach(function (b) {

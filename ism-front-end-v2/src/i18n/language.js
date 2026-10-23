@@ -2137,7 +2137,8 @@ module.exports = {
           },
           UserList:{
             "RoleOperator":"操作员",
-            "RoleUser":"普通用户"
+            "RoleUser":"普通用户",
+            "RoleLeader":"领导"
           },
           roleManager:{
             "addRole":"新增角色",
@@ -5361,7 +5362,8 @@ module.exports = {
           },
           UserList:{
             "RoleOperator":"Operator",
-            "RoleUser":"OrdinaryUsers"
+            "RoleUser":"OrdinaryUsers",
+            "RoleLeader":"Leader"
           },
           roleManager:{
             "addRole":"Add Role",
@@ -8553,7 +8555,8 @@ module.exports = {
           },
           UserList:{
             "RoleOperator":"操作員",
-            "RoleUser":"普通用戶"
+            "RoleUser":"普通用戶",
+            "RoleLeader":"領導"
           },
           roleManager:{
             "addRole":"新增角色",
