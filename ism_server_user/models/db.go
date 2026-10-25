@@ -223,7 +223,14 @@ func ReconnectDbServer() {
 	gormlog.Info("正在连接数据库,请稍等......")
 
 	if dbtype == 1 {
-		dbConnect, err = gorm.Open(sqlite.Open("data/db/ism.db"), &dbConfig)
+		sqlitePath := "data/db/ism.db"
+		if configured, pathErr := config.String("sqlitepath"); pathErr == nil {
+			configured = strings.TrimSpace(configured)
+			if configured != "" {
+				sqlitePath = configured
+			}
+		}
+		dbConnect, err = gorm.Open(sqlite.Open(sqlitePath), &dbConfig)
 		if err == nil {
 			// 启用 WAL 模式：允许读写并发，大幅提升稳定性
 			dbConnect.Exec("PRAGMA journal_mode=WAL")

@@ -145,6 +145,7 @@ function loadRoutes(routesConfig) {
     store.getters['account/roles']
     store.getters['account/permissions']
     store.commit('setting/setMenuData', menuRoutes)
+    ensureHangxinScreenMenu(store)
     const homeName = store.state.setting.systemHomeDashboard &&
       store.state.setting.systemHomeDashboard.dashboardName
     if (homeName) {
@@ -174,6 +175,22 @@ function dedupRoutesByName(routes, seen) {
  * @param source {Route[]}
  * @returns {Route[]}
  */
+function ensureHangxinScreenMenu(store) {
+  const menu = store.state.setting.menuData
+  if (!menu || !menu.length) return
+  const exists = menu.some(item => item && (item.path === '/hx-dcim' || item.path === 'hx-dcim'))
+  if (exists) return
+  menu.push({
+    path: '/hx-dcim',
+    name: '新大屏',
+    meta: {
+      icon: 'dashboard',
+      authority: { role: ['Admin', 'Operator', 'User'] }
+    }
+  })
+  store.commit('setting/setMenuData', menu.slice())
+}
+
 function mergeRoutes(target, source) {
   const routesMap = {}
   target.forEach(item => routesMap[item.path] = item)

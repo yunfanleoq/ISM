@@ -71,6 +71,17 @@ const options = {
       component: () => import('@/pages/help/help')
     },
     {
+      path: '/hx-dcim',
+      name: '新大屏',
+      meta: {
+        icon: 'dashboard',
+        authority: {
+          role: ['Admin', 'Operator', 'User']
+        }
+      },
+      component: () => import('@/pages/hxDcim/HxDcimScreen')
+    },
+    {
       path: '/SCADAMonitor',
       name: '监控大屏',
       meta: {

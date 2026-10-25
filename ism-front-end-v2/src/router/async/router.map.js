@@ -163,6 +163,17 @@ const routerMap = {
     },
     component: () => import('@/pages/project/dashboard')
   },
+  HxDcim:{
+    path: '/hx-dcim',
+    name: '新大屏',
+    meta: {
+      icon: 'dashboard',
+      authority: {
+        role: ['Admin','Operator','User']
+      }
+    },
+    component: () => import('@/pages/hxDcim/HxDcimScreen')
+  },
   SCADAMonitor:{
     path: '/SCADAMonitor',
     name: '监控大屏',
