@@ -176,7 +176,8 @@
           powRate: r1(c.powRate), ifUsed: c.ifUsed || 0, ifRate: r1(c.ifRate),
           dlist: [], coefSum: 0, mix: {}, orgCount: {},
           spaceRate: 0, comp: 0, lv: 'off', freeU: 42, can2: 0, can4: 0,
-          units: [], mainUnit: '—'
+          units: [], mainUnit: '—',
+          placed: c.x != null || !!c.id
         };
         cabIndex[c.name] = o;
         arr.push(o);
@@ -193,7 +194,11 @@
     D.assets.forEach(function (a, i) {
       var cabName = a.cabinet || '';
       var cab = cabIndex[cabName];
-      var located = !!cab;
+      var rawStart = Number(a.uStart) || 0;
+      var rawH = Number(a.uH) || 0;
+      var rawEnd = Number(a.uEnd) || 0;
+      /* uStart/uH 为 0 的是机柜本体，不能占到 U1，否则会盖住柜内服务器 */
+      var located = !!cab && rawStart >= 1 && rawH >= 1;
 
       var st = !located ? '未定位'
         : a.status === '下架待处理' ? '已下架'
@@ -229,7 +234,9 @@
         room: a.room, floor: a.floor,
         cab: cabName, cabShort: String(cabName).replace('屏蔽机房', '').replace('机房', ''),
         col: Number(seg[1]) || 0, seq: Number(seg[2]) || 0,
-        uStart: a.uStart || 1, uEnd: a.uEnd || a.uStart || 1, uH: a.uH || 1,
+        uStart: located ? rawStart : (rawStart || 1),
+        uEnd: located ? (rawEnd || (rawStart + rawH - 1)) : (rawEnd || rawStart || 1),
+        uH: located ? rawH : (rawH || 1),
         sn: a.sn || '', snAlt: snState === 'dual' ? ('SN2-' + String(a.sn || '').slice(-8) + pad(i % 90 + 10, 2)) : '',
         snState: snState,
         cat: cat, type: a.type || cat,
@@ -242,7 +249,7 @@
       list.push(d);
       byCode[d.code] = d;
 
-      if (cab) {
+      if (located) {
         cab.dlist.push(d);
         cab.coefSum += d.coef;
         cab.mix[d.cat] = (cab.mix[d.cat] || 0) + 1;
@@ -310,7 +317,7 @@
     /* --- 全局汇总 ---
        第 12 条：未启用机柜（灰）不计入可分配容量，与容量总览同源
        总容量 = 已启用机柜数 × 42U；未启用柜位单列，不参与空间率分母 */
-    var usedCabN = cabs.filter(function (c) { return c.dev > 0; }).length;
+    var usedCabN = cabs.filter(function (c) { return c.dev > 0 || c.placed; }).length;
     var capU = usedCabN * 42;
     var capAllU = cabs.length * 42;
     var cnt = { '在用': 0, '备用': 0, '维修中': 0, '已下架': 0, '未定位': 0 };
@@ -383,7 +390,7 @@
       var r = byRoom[rn];
       r.cabN = cabByRoom[rn].length;
       r.comp = r.cabN ? r1(r.compSum / r.cabN) : 0;
-      r.usedCabs = cabByRoom[rn].filter(function (c) { return c.dev > 0; }).length;
+      r.usedCabs = cabByRoom[rn].filter(function (c) { return c.dev > 0 || c.placed; }).length;
       r.freeCabs = r.cabN - r.usedCabs;
       return r;
     });

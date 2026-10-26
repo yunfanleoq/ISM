@@ -5,7 +5,7 @@ import "math"
 func bjgaSeedExtra() error {
 	flows := []BjgaFlow{
 		{No: "ZC-2026-0031", Kind: "上架", Dev: "BJDC-409-2-3-0187", Name: "RH2288H V5", FromLoc: "未定位", ToLoc: "409-2-3 · U18", ByName: "张伟 · 交通管理支队", At: "2026-10-20 09:12", Stage: 1, St: "待初审", Round: 1},
-		{No: "ZC-2026-0030", Kind: "下架", Dev: "BJDC-205-4-11-0921", Name: "SR650", FromLoc: "205-4-11 · U31", ToLoc: "未定位", ByName: "李强 · 指挥中心", At: "2026-10-20 08:40", Stage: 1, St: "待初审", Round: 1},
+		{No: "ZC-2026-0030", Kind: "下架", Dev: "3M1-A-11", Name: "机柜", FromLoc: "3层1#数据机房 · A-11", ToLoc: "未定位", ByName: "值班员", At: "2026-10-20 08:40", Stage: 1, St: "待初审", Round: 1},
 		{No: "ZC-2026-0029", Kind: "上架", Dev: "BJDC-415-6-2-2049", Name: "S6520-48P", FromLoc: "未定位", ToLoc: "415-6-2 · U40", ByName: "王莉 · 网络安全保卫总队", At: "2026-10-19 16:22", Stage: 2, St: "待终审", Round: 1},
 		{No: "ZC-2026-0028", Kind: "位置变更", Dev: "BJDC-309-3-7-1360", Name: "OceanStor 5500", FromLoc: "309-3-7 · U12", ToLoc: "309-6-7 · U20", ByName: "陈默 · 科技信息化处", At: "2026-10-19 11:05", Stage: 2, St: "已通过", Round: 1},
 		{No: "ZC-2026-0027", Kind: "上架", Dev: "BJDC-413-1-9-1672", Name: "NF5280M6", FromLoc: "未定位", ToLoc: "413-1-9 · U06", ByName: "刘洋 · 警务保障部", At: "2026-10-18 15:31", Stage: 2, St: "已通过", Round: 1},
@@ -15,10 +15,10 @@ func bjgaSeedExtra() error {
 		return err
 	}
 	diffs := []BjgaStockDiff{
-		{Code: "BJDC-407-2-4-0011", Cab: "407-2-4", Model: "SR650", Kind: "颜色不一致", Book: "蓝 · 正常", Real: "现场贴红", At: "2026-10-18 10:22", St: "待核实"},
-		{Code: "BJDC-205-1-7-0132", Cab: "205-1-7", Model: "RH2288", Kind: "账有实无", Book: "在架 · U12", Real: "柜内无此设备", At: "2026-10-18 11:05", St: "待核实"},
+		{Code: "4M1-A-04", Cab: "4M1-A-04", Model: "机柜1200", Kind: "颜色不一致", Book: "蓝 · 正常", Real: "现场贴红", At: "2026-10-18 10:22", St: "待核实"},
+		{Code: "3M1-B-07", Cab: "3M1-B-07", Model: "机柜1200", Kind: "账有实无", Book: "在架", Real: "柜内无此设备", At: "2026-10-18 11:05", St: "待核实"},
 		{Code: "BJDC-309-4-2-1408", Cab: "309-4-2", Model: "OceanStor", Kind: "位置不符", Book: "列 3 · U20", Real: "实际在 U18", At: "2026-10-18 14:31", St: "待核实"},
-		{Code: "BJDC-413-5-17-1901", Cab: "413-5-17", Model: "NF5280M6", Kind: "型号不符", Book: "SR650", Real: "NF5280M6", At: "2026-10-19 09:18", St: "待核实"},
+		{Code: "4M2-C-05", Cab: "4M2-C-05", Model: "机柜1200", Kind: "型号不符", Book: "机柜1200", Real: "机柜1400", At: "2026-10-19 09:18", St: "待核实"},
 		{Code: "BJDC-415-1-3-2088", Cab: "415-1-3", Model: "S6520", Kind: "SN 重复", Book: "SN 与邻柜重复", Real: "需现场复核标签", At: "2026-10-19 10:40", St: "待核实"},
 	}
 	if err := Db.Create(&diffs).Error; err != nil {
@@ -31,8 +31,8 @@ func bjgaSeedExtra() error {
 		return err
 	}
 	if err := Db.Create(&[]BjgaMaintPlan{
-		{Device: "205 列头柜 A", Cat: "列头柜", Item: "绝缘检测", Cycle: "运行 4000h / 每年", NextDue: "2026-11-02", Status: "即将到期", SpecNote: "DL/T 596"},
-		{Device: "407 精密空调 1", Cat: "精密空调", Item: "滤网更换", Cycle: "运行 2000h", NextDue: "2026-10-28", Status: "到期", SpecNote: "GB 50174"},
+		{Device: "3M1 列头柜", Cat: "列头柜", Item: "绝缘检测", Cycle: "运行 4000h / 每年", NextDue: "2026-11-02", Status: "即将到期", SpecNote: "DL/T 596"},
+		{Device: "4M1 列间空调", Cat: "精密空调", Item: "滤网更换", Cycle: "运行 2000h", NextDue: "2026-10-28", Status: "到期", SpecNote: "GB 50174"},
 		{Device: "211 配电柜进线", Cat: "配电柜", Item: "预防性试验", Cycle: "每年", NextDue: "2026-12-15", Status: "正常", SpecNote: "DL/T 596"},
 	}).Error; err != nil {
 		return err
@@ -49,8 +49,8 @@ func bjgaSeedExtra() error {
 		return err
 	}
 	if err := Db.Create(&[]BjgaHotspot{
-		{Room: "407机房", Cab: "407机房-2-11", Tin: 29.4, LoadKw: 3.8, Advice: "同列下移高负载，补盲板"},
-		{Room: "205机房", Cab: "205机房-4-8", Tin: 28.1, LoadKw: 3.4, Advice: "核对冷通道封闭"},
+		{Room: "4层1#数据机房", Cab: "4M1-J-11", Tin: 29.4, LoadKw: 3.8, Advice: "同列下移高负载，补盲板"},
+		{Room: "3层1#数据机房", Cab: "3M1-D-08", Tin: 28.1, LoadKw: 3.4, Advice: "核对冷通道封闭"},
 		{Room: "413机房", Cab: "413机房-C-6", Tin: 27.6, LoadKw: 3.1, Advice: "邻柜负载偏高"},
 		{Room: "415机房", Cab: "415机房-A-3", Tin: 26.2, LoadKw: 2.4, Advice: "未超 27℃"},
 	}).Error; err != nil {
@@ -171,15 +171,15 @@ func bjgaSeedExtra() error {
 		return err
 	}
 	if err := Db.Create(&[]BjgaVideo{
-		{Name: "205 冷通道", Room: "205机房", Status: "在线"},
-		{Name: "407 门口", Room: "407机房", Status: "在线"},
+		{Name: "3M1 冷通道", Room: "3层1#数据机房", Status: "在线"},
+		{Name: "4M1 门口", Room: "4层1#数据机房", Status: "在线"},
 		{Name: "211 电池室", Room: "211电池室", Status: "离线"},
 	}).Error; err != nil {
 		return err
 	}
 	if err := Db.Create(&[]BjgaDoor{
-		{Name: "205 机房门", Room: "205机房", Status: "关闭", Last: "张伟 进门 08:12"},
-		{Name: "407 机房门", Room: "407机房", Status: "关闭", Last: "正常"},
+		{Name: "3M1 机房门", Room: "3层1#数据机房", Status: "关闭", Last: "模拟 · 进门 08:12"},
+		{Name: "4M1 机房门", Room: "4层1#数据机房", Status: "关闭", Last: "正常"},
 		{Name: "211 电池室门", Room: "211电池室", Status: "异常开门", Last: "未授权 02:16"},
 	}).Error; err != nil {
 		return err

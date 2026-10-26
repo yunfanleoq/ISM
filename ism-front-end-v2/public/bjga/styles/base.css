@@ -466,3 +466,22 @@ button, input, select, textarea { font-family: inherit; color: inherit; }
 .jb { justify-content: space-between; }
 .muted { color: var(--t-muted); }
 .nowrap { white-space: nowrap; }
+
+.src-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 6px;
+  font-size: 11px;
+  line-height: 18px;
+  border-radius: 2px;
+  color: #8A6A2F;
+  background: rgba(196, 161, 90, 0.2);
+  vertical-align: middle;
+}
+.src-tag.is-live { color: #1F6B4A; background: rgba(46, 160, 110, 0.16); }
+.cad-stage { height: calc(100vh - 168px); background: #E8EDF2; }
+.cad-plan { width: 100%; height: 100%; background: #D3D8DE; }
+.cad-wall { stroke: #8E98A3; stroke-width: 0.16; }
+.cad-room { fill: rgba(110, 140, 163, 0.45); stroke: #5C7890; stroke-width: 0.08; cursor: pointer; }
+.cad-cab { fill: #1C68A8; stroke: #D0D5DB; stroke-width: 0.04; cursor: pointer; }
+.cad-label { fill: #102030; font-size: 1.6px; text-anchor: middle; dominant-baseline: middle; pointer-events: none; }

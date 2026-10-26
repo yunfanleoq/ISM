@@ -125,7 +125,7 @@
     modeSw: function () {
       var m = this.mode;
       return '<div class="mode-sw">' +
-        '<b class="' + (m === '2d' ? 'is-on' : '') + '" data-m="2d">2D 平面</b>' +
+        '<b class="' + (m === '2d' ? 'is-on' : '') + '" data-m="2d">2.5D</b>' +
         '<b class="' + (m === '3d' ? 'is-on' : '') + '" data-m="3d">3D 立体</b>' +
       '</div>';
     },
@@ -338,6 +338,105 @@
         });
     },
 
+    /* ---------------- L1 图纸平面 ---------------- */
+    viewFloorCad: function (floor, fromEl, f, rs) {
+      var self = this;
+      var w = f.w || 48, d = f.d || 46;
+      function Y(y) { return d - y; }
+      function cleanName(s) {
+        return String(s || '').replace(/(\d+层)\1+/g, '$1');
+      }
+      function inOl(x, y) {
+        var ol = f.outline;
+        if (!ol || ol.length < 3) return true;
+        var inside = false, j = ol.length - 1, i, xi, yi, xj, yj;
+        for (i = 0; i < ol.length; i++) {
+          xi = ol[i][0]; yi = ol[i][1];
+          xj = ol[j][0]; yj = ol[j][1];
+          if ((yi > y) !== (yj > y) && x < (xj - xi) * (y - yi) / ((yj - yi) || 1e-9) + xi) inside = !inside;
+          j = i;
+        }
+        return inside;
+      }
+      var walls = (f.walls || []).map(function (seg) {
+        return '<line x1="' + seg[0] + '" y1="' + Y(seg[1]) + '" x2="' + seg[2] + '" y2="' + Y(seg[3]) + '" class="cad-wall"/>';
+      }).join('');
+      var halls = '';
+      var nameHtml = [];
+      var placed = [];
+      /* 画面向下 = 世界 y 减小。中心距小于 3 米时，后一个名字下移，直到分开。 */
+      function placeName(r, x, y, label, clickable) {
+        var px = x, py = y, guard = 0, i, dx, dy, hit;
+        while (guard < 8) {
+          hit = false;
+          for (i = 0; i < placed.length; i++) {
+            dx = placed[i].x - px; dy = placed[i].y - py;
+            if (dx * dx + dy * dy < 9) { hit = true; break; }
+          }
+          if (!hit) break;
+          py -= 2.4;
+          guard++;
+        }
+        placed.push({ x: px, y: py });
+        nameHtml.push('<text class="cad-label' + (clickable ? ' cad-name' : '') + '" data-room="' + A.esc(r.name) +
+          '" x="' + px + '" y="' + Y(py) + '"' +
+          (clickable ? ' style="pointer-events:auto;cursor:pointer"' : '') + '>' + A.esc(label) + '</text>');
+      }
+      rs.forEach(function (r) {
+        var p = r.poly;
+        if (r.type === '主机房') {
+          var cabsIn = (r.cabinets || []).filter(function (c) {
+            if (c.x == null) return false;
+            return inOl(c.x + (c.w || 0.6) / 2, c.y + (c.d || 1.2) / 2);
+          });
+          if (!cabsIn.length) return;
+          var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, i, c, cw, cd;
+          for (i = 0; i < cabsIn.length; i++) {
+            c = cabsIn[i]; cw = c.w || 0.6; cd = c.d || 1.2;
+            if (c.x < x0) x0 = c.x;
+            if (c.y < y0) y0 = c.y;
+            if (c.x + cw > x1) x1 = c.x + cw;
+            if (c.y + cd > y1) y1 = c.y + cd;
+          }
+          halls += '<rect class="cad-room" data-room="' + A.esc(r.name) + '" x="' + x0 + '" y="' + Y(y1) +
+            '" width="' + (x1 - x0) + '" height="' + (y1 - y0) + '"/>';
+          placeName(r, (x0 + x1) / 2, (y0 + y1) / 2, cleanName(r.code || r.name), false);
+          return;
+        }
+        if (r.type !== '配电室' && r.type !== '电池室' && r.type !== '操作间' && r.type !== '空调间') return;
+        if (!p || p.length < 4) return;
+        var tx = (p[0][0] + p[1][0]) / 2;
+        var ty = (p[0][1] + p[2][1]) / 2;
+        if (r.text && r.text.x != null && r.text.y != null) { tx = r.text.x; ty = r.text.y; }
+        placeName(r, tx, ty, cleanName(r.name), true);
+      });
+      var cabs = '';
+      rs.forEach(function (r) {
+        (r.cabinets || []).forEach(function (c) {
+          if (c.x == null) return;
+          if (!inOl(c.x + (c.w || 0.6) / 2, c.y + (c.d || 1.2) / 2)) return;
+          cabs += '<rect class="cad-cab" data-room="' + A.esc(r.name) + '" data-cab="' + A.esc(c.name) +
+            '" x="' + c.x + '" y="' + Y(c.y + (c.d || 1)) + '" width="' + (c.w || 0.6) + '" height="' + (c.d || 1.2) + '"/>';
+        });
+      });
+      var html = '<div class="fl-wrap"><div class="fl-head"><span class="fl-title">' + A.esc(floor) + ' 平面</span>' +
+        '<span class="fl-sub">' + f.rooms + ' 间 · ' + f.cabCount + ' 柜 · 按图纸布置 · ' + A.simTag('sim') + '</span>' +
+        this.modeSw() + '</div>' +
+        '<div class="cad-stage"><svg class="cad-plan" viewBox="-1 -1 ' + (w + 2) + ' ' + (d + 2) + '">' +
+        walls + halls + cabs + nameHtml.join('') + '</svg></div></div>';
+      var nx = this.fly(html, this.focusOf(fromEl), fromEl ? -1 : 1);
+      this.bindMode(nx);
+      A.qa('.cad-room,.cad-cab,.cad-name', nx).forEach(function (el) {
+        el.addEventListener('click', function () {
+          var room = el.getAttribute('data-room');
+          var cab = el.getAttribute('data-cab');
+          if (cab) { self.state.room = room; self.viewCab(cab, el); return; }
+          self.viewRoom(room, el);
+        });
+      });
+      this.crumbs();
+    },
+
     /* ---------------- L1 楼层平面 ---------------- */
     viewFloor: function (floor, fromEl) {
       this.cleanChrome(false, true);
@@ -394,8 +493,10 @@
         }).join('') + '</div>';
       }
 
-      var is3 = this.mode === '3d' && A.V3;
-      var head = '<div class="fl-head"><span class="fl-title">' + floor + (is3 ? ' 立体' : ' 平面') + '</span>' +
+      var cad = f.walls && f.walls.length;
+      var oblique = cad && this.mode !== '3d';
+      var is3 = (this.mode === '3d' || oblique) && A.V3;
+      var head = '<div class="fl-head"><span class="fl-title">' + floor + (oblique ? ' 2.5D' : (is3 ? ' 立体' : ' 平面')) + '</span>' +
           '<span class="fl-sub">' + (f.rooms || 0) + ' 间机房 · ' + (f.cabCount || 0) + ' 架机柜 · ' +
           A.num(f.alarmN || 0) + ' 条告警 · 总负载 ' + A.fix(f.kw || 0, 1) + ' kW</span>' + this.modeSw() + '</div>';
 
@@ -409,6 +510,7 @@
       var nx = this.fly(html, this.focusOf(fromEl), fromEl ? 1 : 1);
       if (is3) {
         A.V3.mount(A.q('#v3Host', nx), 'floor', floor, {
+          oblique: oblique,
           drill: function (name) {
             self.state.room = name; self.state.cab = null;
             self.viewRoom(name, null);
@@ -499,36 +601,42 @@
         } else {
           var byCol = {};
           r.cabinets.forEach(function (c) {
-            var p = c.name.split('-');
-            var ck = Number(p[p.length - 2]);
+            var ck = c.col || 0;
+            if (!ck && c.name) {
+              var p = c.name.split('-');
+              ck = Number(p[p.length - 2]);
+            }
             (byCol[ck] = byCol[ck] || []).push(c);
           });
           Object.keys(byCol).sort(function (a, b) { return Number(a) - Number(b); }).forEach(function (ck) {
             cols.push(byCol[ck].sort(function (a, b) {
-              return Number(a.name.split('-').pop()) - Number(b.name.split('-').pop());
+              return (a.seq || 0) - (b.seq || 0);
             }));
           });
         }
 
         /* 机柜格：色块 = 综合使用率四级色阶（灰未启用 / 蓝<70 / 黄70-90 / 红>90） */
         function cabCell(c) {
+          var label = c.id || (c.col + '-' + c.seq);
           var items = ix[c.name] || [];
-          if (!c.dev) {
+          if (!c.dev && !c.id) {
             return '<div class="cab2 is-empty" data-cab="' + A.esc(c.name) + '" title="' +
               A.esc(c.name) + ' · 未启用 · 可用 42U · 可部署 2U×' + Math.floor(42 / 3) + '">' +
-              '<div class="cab2-nm">' + c.col + '-' + c.seq + '</div></div>';
+              '<div class="cab2-nm">' + label + '</div></div>';
           }
           var lv = c.lv || (c.comp > 90 ? 'red' : c.comp >= 70 ? 'yellow' : 'blue');
           var lvName = lv === 'red' ? '满载' : lv === 'yellow' ? '偏高' : '正常';
-          var tip = A.esc(c.name) + ' · 综合 ' + c.comp + '%（' + lvName + '）' +
+          var tip = c.id
+            ? A.esc(c.id) + ' · ' + (c.kind || '') + ' mm · 模拟'
+            : A.esc(c.name) + ' · 综合 ' + c.comp + '%（' + lvName + '）' +
             '\n空间 ' + c.spaceRate + '%（' + c.usedU + 'U + ' + c.dev + '×' + c.coef + '系数 / 42U）' +
             '\n电力 ' + c.powRate + '%（' + c.rtKw + ' / ' + c.rated + 'kW）' +
             '\n接口 ' + c.ifRate + '%（' + c.ifUsed + ' / 20 口）' +
             '\n平均 ' + c.avgRate + '% · 峰值 ' + c.peakRate + '% · ' + c.dev + ' 台设备';
           return '<div class="cab2 lv-' + lv + '" data-cab="' + A.esc(c.name) + '" title="' + tip + '">' +
             '<div class="cab2-fill lv-' + lv + '" style="height:' + A.clamp(c.comp, 4, 100) + '%"></div>' +
-            '<div class="cab2-nm">' + c.col + '-' + c.seq + '</div>' +
-            '<div class="cab2-rate">' + Math.round(c.comp) + '%</div></div>';
+            '<div class="cab2-nm">' + label + '</div>' +
+            '<div class="cab2-rate">' + (c.id ? '' : Math.round(c.comp) + '%') + '</div></div>';
         }
 
         /* 列 + 列间通道（冷热交替），列头放列头柜 */
@@ -558,6 +666,17 @@
               );
             }
           }
+        } else {
+          cols.forEach(function (list) {
+            var letter = (list[0] && list[0].id && list[0].id.split('-')[0]) || '列';
+            plan.push(
+              '<div class="rm-lane">' +
+                '<div class="rm-lhd"><b>' + A.esc(letter) + '</b><span>列</span></div>' +
+                '<div class="rm-cabs">' + list.map(cabCell).join('') + '</div>' +
+                '<div class="rm-lane-nm"><b>列 ' + A.esc(letter) + '</b><span>' + list.length + ' 柜</span></div>' +
+              '</div>'
+            );
+          });
         }
 
         /* 房间周边设备：空调机组 / 送风来源 / 漏水 / 温湿度 / 配电 */
@@ -577,6 +696,10 @@
         var botEq = '<i class="rm-eq is-leak">漏水监测 ×' + (lay ? lay.leak : 2) + ' 回路</i>' +
           '<i class="rm-eq is-th">温湿度 ×' + (lay ? lay.th : 4) + ' 点</i>' +
           '<i class="rm-eq is-pdu">列头配电 ' + (lay ? lay.lhd * 2 : 2) + ' 路（A/B）</i>';
+        if (!lay) {
+          topEq = '<i class="rm-eq is-ac-out">列号来自平面图</i>';
+          botEq = '<i class="rm-eq is-th">柜内服务器是模拟，图纸上没有服务器清单</i>';
+        }
 
         html = '<div class="rm-wrap">' +
           '<div class="rm-head"><span class="rm-title">' + A.esc(r.name) + '</span>' +
@@ -602,7 +725,9 @@
           '</div></div>';
       }
 
-      if (this.mode === '3d' && A.V3) {
+      var cadRoom = (r.cabinets || []).some(function (c) { return c.x != null; });
+      var oblique = this.mode !== '3d' && cadRoom;
+      if ((this.mode === '3d' || oblique) && A.V3) {
         html = '<div class="rm-wrap">' +
           '<div class="rm-head"><span class="rm-title">' + A.esc(r.name) + '</span>' +
             '<span class="fl-sub">' + A.esc(r.type) + ' · ' +
@@ -617,8 +742,9 @@
       }
 
       var nx = this.fly(html, this.focusOf(fromEl), fromEl ? 1 : 1);
-      if (this.mode === '3d' && A.V3) {
+      if ((this.mode === '3d' || oblique) && A.V3) {
         A.V3.mount(A.q('#v3Host', nx), 'room', r.name, {
+          oblique: oblique,
           drill: function (name) { self.state.cab = name; self.viewCab(name, null); },
           toast: A.toast
         });
@@ -672,7 +798,7 @@
             ['平均温度', r.temp + ' ℃'], ['平均湿度', r.humi + ' %'],
             ['最近告警', r.lastAlarm || '-']
           ]) + '</div>' +
-          (r.cats.length ? '<div class="side-title" style="margin:14px 0 8px">设备类别构成</div>' +
+          (r.cats && r.cats.length ? '<div class="side-title" style="margin:14px 0 8px">设备类别构成</div>' +
             '<div style="display:flex;gap:14px;align-items:center">' +
               A.Charts.donut({ size: 104, r: 40, sw: 13, data: r.cats.map(function (c, i) {
                 return { value: c.value, color: ['#00D8FF', '#00E39A', '#FFA24D', '#B98CFF', '#2E9CF6', '#8FA8C4'][i % 6] };
@@ -708,7 +834,9 @@
       D().rooms.forEach(function (x) {
         x.cabinets.forEach(function (c) { if (c.name === cabName) { cab = c; room = x; } });
       });
-      var items = cabIndex()[cabName] || [];
+      var items = (cabIndex()[cabName] || []).filter(function (a) {
+        return a.uStart >= 1 && a.uH >= 1;
+      });
       var byU = {};
       items.forEach(function (a) { byU[a.uStart] = a; });
       var rows = [], skip = {};
@@ -724,13 +852,13 @@
         var un = d && d.uH > 1 ? (A.pad(u) + '-' + A.pad(Math.min(42, d.uEnd))) : A.pad(u);
         rows.push('<div class="rk-u' + cls + '" style="flex-grow:' + grow + '"' + (d ? ' data-sn="' + A.esc(d.sn) + '"' : '') + '>' +
           '<span class="rk-uno">' + un + '</span>' +
-          '<span class="rk-unm">' + (d ? A.esc(d.brand + ' ' + d.model) + ' <b style="opacity:.6">' + d.uH + 'U</b>' : '空位') + '</span>' +
+          '<span class="rk-unm">' + (d ? A.esc(d.brand + ' ' + d.model) + ' <b style="opacity:.6">' + d.uH + 'U</b>' + (d.source === 'sim' ? ' ' + A.simTag('sim') : '') : '空位') + '</span>' +
           '<span class="rk-ukw">' + (d ? d.kw + 'kW' : '') + '</span></div>');
       }
       var meta = window.ISO ? window.ISO.rackMeta(cabName) : null;
       var cap = meta
         ? '<b>' + A.esc(meta.name) + ' 机柜</b><span>' + meta.n + ' 台' +
-          (meta.spec ? ' · ' + meta.spec : '（空柜）') + '</span>' +
+          (meta.spec ? ' · ' + meta.spec : '（空柜）') + '</span>' + A.simTag('sim') +
           (meta.over ? '<em>⚠ ' + meta.over + ' 台 U 位冲突待调整</em>' : '')
         : '';
       var right = A.UI.card({ title: A.esc(cabName), body:
@@ -739,7 +867,7 @@
           { v: cab ? cab.usedU : 0, u: 'U', l: '已用 U 位' },
           { v: cab ? cab.comp : 0, u: '%', l: '综合使用率',
             color: cab ? (cab.comp > 90 ? 'var(--lv1)' : cab.comp >= 70 ? 'var(--orange)' : 'var(--cyan)') : '' },
-          { v: cab ? A.fix(cab.rtKw, 2) : 0, u: 'kW', l: '实测功率' }
+          { v: cab ? A.fix(cab.rtKw, 2) : 0, u: 'kW', l: '功率' }
         ]) +
         (cab && cab.dev ? A.UI.bars([
           { label: '空间', value: cab.spaceRate, cls: cab.spaceRate > 90 ? 'o' : '' },
@@ -764,7 +892,9 @@
           cols: [
             { t: 'U', k: 'uStart', w: 40, align: 'r' },
             { t: '类别', k: 'cat', w: 78 },
-            { t: '品牌 / 型号', k: 'x', html: function (a) { return A.esc(a.brand + ' ' + a.model); } },
+            { t: '品牌 / 型号', k: 'x', html: function (a) {
+              return A.esc(a.brand + ' ' + a.model) + (a.source === 'sim' ? ' ' + A.simTag('sim') : '');
+            } },
             { t: '功率', k: 'kw', align: 'r', w: 56 }
           ],
           rows: items
@@ -946,14 +1076,16 @@
           self.markDev(sn);
         }
         if (a) A.toast(a.cat + ' · ' + a.brand + ' ' + a.model + ' · ' + a.uH + 'U · U' +
-          a.uStart + '-' + a.uEnd + ' · ' + a.kw + 'kW · ' + (a.psu || 1) + ' 电源');
+          a.uStart + '-' + a.uEnd + ' · ' + a.kw + 'kW · ' + (a.psu || 1) + ' 电源' +
+          (a.source === 'sim' ? ' · 模拟' : ''));
         else A.toast('设备 ' + sn);
       });
       A.qa('.iso-dev', nx).forEach(function (el) {
         el.addEventListener('click', function () {
           var a = D().assets.filter(function (x) { return x.sn === el.getAttribute('data-sn'); })[0];
           if (a) A.toast(a.cat + ' · ' + a.brand + ' ' + a.model + ' · ' + a.uH + 'U · U' +
-            a.uStart + '-' + a.uEnd + ' · ' + a.kw + 'kW · ' + (a.psu || 1) + ' 电源');
+            a.uStart + '-' + a.uEnd + ' · ' + a.kw + 'kW · ' + (a.psu || 1) + ' 电源' +
+            (a.source === 'sim' ? ' · 模拟' : ''));
         });
       });
       this.bindMode(nx);

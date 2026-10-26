@@ -157,6 +157,9 @@
        只是在挡住视线的那一瞬间让它透明。近侧墙不淡出的话，
        低角度看机柜会被齐腰高的墙切掉一截。 */
     this.fade = opt.fade ? 1 : 0;
+    /* wall：图纸墙。正反两面都建了面，渲染时不按距离淡出，
+       也不因贴着相机或侧看面积小就把整面丢掉（那样只剩边线）。 */
+    this.wall = opt.wall ? 1 : 0;
     /* plate：贴在这个面上的文字（名称/编号）。跟面一起画、一起裁切，
        不进 pickLbl，点字等于点这块面板，不会另起一层抢走点击。 */
     this.plate = opt.plate || null;
@@ -166,6 +169,8 @@
     this.frame = opt.frame || 0;
     /* quiet：细节面（网孔、色条、底座）仍可点中，但悬停时不各描一圈白边。 */
     this.quiet = opt.quiet ? 1 : 0;
+    this.doorId = opt.doorId || null;
+    this.doorPose = opt.doorPose || null; /* shut / open：另一姿态不画、不挡、点不中 */
     this.sv = [];                     /* 复用：屏幕点 */
   }
   /* 立方体六面：col 必须传原色，明暗由 k 分配 —— 预先 shade 会二次压暗成一团黑 */
@@ -181,16 +186,18 @@
     function mk(p, k, plate) {
       out.push(new F(p, col, {
         k: k, stroke: o.stroke, sw: o.sw, op: o.op, obj: o.obj, noFog: o.noFog,
-        lay: opt.lay == null ? 1 : opt.lay, fade: opt.fade, quiet: opt.quiet, plate: plate || null
+        lay: opt.lay == null ? 1 : opt.lay, fade: opt.fade, quiet: opt.quiet, plate: plate || null,
+        doorId: opt.doorId || null, doorPose: opt.doorPose || null
       }));
     }
     var px = opt.plateX || null;
+    var py = opt.plateY || null;
     mk([[x, y, z + h], [x + w, y, z + h], [x + w, y + d, z + h], [x, y + d, z + h]], T);   /* 顶 +z */
     mk([[x, y, z], [x, y + d, z], [x + w, y + d, z], [x + w, y, z]], Bt);               /* 底 -z */
     if (!opt.skipRight) mk([[x + w, y, z], [x + w, y + d, z], [x + w, y + d, z + h], [x + w, y, z + h]], R, px); /* 右 +x */
     if (!opt.skipLeft) mk([[x, y, z], [x, y, z + h], [x, y + d, z + h], [x, y + d, z]], L, px);               /* 左 -x */
-    mk([[x, y + d, z], [x, y + d, z + h], [x + w, y + d, z + h], [x + w, y + d, z]], Fr); /* 前 +y */
-    mk([[x, y, z], [x + w, y, z], [x + w, y, z + h], [x, y, z + h]], Bk);               /* 后 -y */
+    mk([[x, y + d, z], [x, y + d, z + h], [x + w, y + d, z + h], [x + w, y + d, z]], Fr, py); /* 前 +y */
+    mk([[x, y, z], [x + w, y, z], [x + w, y, z + h], [x, y, z + h]], Bk, py);               /* 后 -y */
     return out;
   }
   /* 水平面（地板/楼板/通道色带）。lay 默认 0 = 背景层：
@@ -260,7 +267,45 @@
     var ed = [[0, 1], [1, 2], [2, 3], [3, 0], [4, 5], [5, 6], [6, 7], [7, 4], [0, 4], [1, 5], [2, 6], [3, 7]];
     for (i = 0; i < ed.length; i++) wallRim(lines, p8[ed[i][0]], p8[ed[i][1]]);
   }
-  /* 白墙围合一间房，朝 -y 留一扇打开的门。blocks 有值时墙和门扇写入碰撞盒，门洞不挡人。 */
+  /* 房间门默认关着。shut 盖住门口，open 向内打开。点门只切换这两套，热区跟着门扇走。 */
+  function placeRoomDoor(faces, blocks, objs, o) {
+    var x = o.x, yWall = o.yWall, doorW = o.doorW, doorH = o.doorH, thk = o.thk || 0.16;
+    var inward = o.inward || 1, name = o.name || '';
+    var gap0 = o.gap0;
+    var id = 'door:' + (name || ('@' + x.toFixed(2) + ',' + yWall.toFixed(2)));
+    var leaf = doorW * 0.9, leafT = 0.05;
+    var yShut = yWall + Math.max(0, (thk - leafT) / 2);
+    var yOpen = inward > 0 ? yWall + thk : yWall - leaf;
+    var plate = doorPlate(name);
+    function leafBox(x0, y0, z0, w, d, h, col, pose, plateX, plateY) {
+      box(faces, x0, y0, z0, w, d, h, col, {
+        doorId: id, doorPose: pose, quiet: 1, fade: 0,
+        topK: plateX || plateY ? 1.2 : 1,
+        rightK: 0.97, frontK: plateX || plateY ? 1.15 : 0.99,
+        leftK: 0.94, backK: 0.92, bottomK: 0.88,
+        plateX: plateX || null, plateY: plateY || null,
+        o: { obj: id, noFog: 1 }
+      });
+    }
+    leafBox(x + gap0 + 0.02, yShut, 0, doorW - 0.04, leafT, doorH, '#E7EEF3', 'shut', null, null);
+    var gw = Math.min(0.62, Math.max(0.36, doorW * 0.42));
+    leafBox(x + gap0 + (doorW - gw) / 2, yShut - 0.008, 1.2, gw, leafT + 0.016, 0.48, '#D7E6F2', 'shut', null, plate);
+    leafBox(x + gap0, yOpen, 0, 0.05, leaf, doorH, '#E7EEF3', 'open', null, null);
+    leafBox(x + gap0 - 0.012, yOpen + 0.16, 1.2, 0.02, Math.max(0.3, leaf - 0.32), 0.48, '#D7E6F2', 'open', plate, null);
+    if (blocks) {
+      blocks.push({ x0: x + gap0, y0: yWall, x1: x + gap0 + doorW, y1: yWall + thk, doorId: id, pose: 'shut' });
+      if (inward > 0) blocks.push({ x0: x + gap0 - 0.02, y0: yWall + thk, x1: x + gap0 + 0.08, y1: yWall + thk + leaf, doorId: id, pose: 'open' });
+      else blocks.push({ x0: x + gap0 - 0.02, y0: yWall - leaf, x1: x + gap0 + 0.08, y1: yWall, doorId: id, pose: 'open' });
+    }
+    if (objs) {
+      objs[id] = {
+        kind: 'door', name: id, drill: null,
+        hint: (roomTag(name) || '门') + ' · 点击开门',
+        focus: [x + gap0 + doorW / 2, yWall + thk / 2, 1.1]
+      };
+    }
+  }
+  /* 白墙围合一间房，朝 -y 留门。门默认关；blocks 有值时，关着挡住门口，打开后只挡门扇。 */
   function roomShell(faces, blocks, x, y, w, d, opt) {
     opt = opt || {};
     var t = 0.16, h = opt.h || 2.8, z0 = opt.z || 0, doorW = 1.2, doorH = 2.12;
@@ -288,11 +333,9 @@
     wb(x + gap0, y, z0 + doorH, doorW, t, Math.max(0.2, h - doorH));
     wb(x + gap0 - 0.05, y - 0.02, z0, 0.05, t + 0.05, doorH, '#C5CED6');
     wb(x + gap1, y - 0.02, z0, 0.05, t + 0.05, doorH, '#C5CED6');
-    var leaf = doorW * 0.9;
-    wb(x + gap0, y + t, z0, 0.05, leaf, doorH, '#E7EEF3');
-    blk(x + gap0 - 0.02, y + t, x + gap0 + 0.08, y + t + leaf);
-    box(faces, x + gap0 - 0.012, y + t + 0.16, z0 + 1.2, 0.02, Math.max(0.3, leaf - 0.32), 0.48, '#D7E6F2', {
-      quiet: 1, fade: fade, topK: 1.2, frontK: 1.15, plateX: doorPlate(opt.name), o: { noFog: 1 }
+    placeRoomDoor(faces, blocks, opt.objs, {
+      x: x, yWall: y, doorW: doorW, doorH: doorH, thk: t, inward: 1,
+      name: opt.name, gap0: gap0
     });
     wb(x, y + d - t, z0, w, t, h);
     blk(x, y + d - t, x + w, y + d);
@@ -421,7 +464,7 @@
     var W0 = plan.spanW + padX * 2, D0 = plan.spanD + padY * 2;
     var faces = [], lines = [], labels = [], objs = {};
     plate(faces, 0.15, 0.15, -0.06, W0 - 0.3, D0 - 0.3, C.roomFloor, { o: { stroke: '#5C7890', sw: 1, noFog: 1 } });
-    roomShell(faces, null, 0, 0, W0, D0, { h: 2.8, z: 0, name: r.name, lines: lines });
+    roomShell(faces, null, 0, 0, W0, D0, { h: 2.8, z: 0, name: r.name, lines: lines, objs: objs });
     var focus = null, i, rk, x, y;
     for (i = 0; i < plan.racks.length; i++) {
       rk = plan.racks[i];
@@ -458,9 +501,726 @@
   /* ==================== 场景构建 ==================== */
   var S = {};   /* S.floor / S.room / S.rack —— 返回 {faces,lines,labels,bb,cam,objs,parts} */
 
+  /* ---------- 图纸楼层：墙线、门、机柜都用台账坐标 ---------- */
+  function cadWall(faces, lines, x1, y1, x2, y2) {
+    var dx = x2 - x1, dy = y2 - y1;
+    var len = Math.sqrt(dx * dx + dy * dy);
+    if (len < 0.35) return;
+    var h = 2.72;
+    /* 正反两片，法线相反。绘制只留朝向相机的那一面，换到背面仍有实墙。
+       不淡出：fade 会把比场景中心更近的墙压到透明度 0.06，
+       同一面墙转个角度就从白变透。图纸墙始终不透明 #E6E9ED。 */
+    var opt = { k: 1, fade: 0, op: 1, noFog: 1, wall: 1, lay: 1 };
+    faces.push(new F(
+      [[x1, y1, 0], [x2, y2, 0], [x2, y2, h], [x1, y1, h]],
+      WALL_COL, opt
+    ));
+    faces.push(new F(
+      [[x1, y1, 0], [x1, y1, h], [x2, y2, h], [x2, y2, 0]],
+      WALL_COL, opt
+    ));
+    wallRim(lines, [x1, y1, h], [x2, y2, h]);
+    wallRim(lines, [x1, y1, 0.02], [x2, y2, 0.02]);
+  }
+  function wallBox(info) {
+    var ws = info.walls || [], i, w, x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (i = 0; i < ws.length; i++) {
+      w = ws[i];
+      if (w[0] < x0) x0 = w[0];
+      if (w[2] < x0) x0 = w[2];
+      if (w[1] < y0) y0 = w[1];
+      if (w[3] < y0) y0 = w[3];
+      if (w[0] > x1) x1 = w[0];
+      if (w[2] > x1) x1 = w[2];
+      if (w[1] > y1) y1 = w[1];
+      if (w[3] > y1) y1 = w[3];
+    }
+    if (!(x1 > x0 && y1 > y0)) {
+      x0 = 0; y0 = 0; x1 = info.w || 48; y1 = info.d || 46;
+    }
+    return { x0: x0, y0: y0, x1: x1, y1: y1 };
+  }
+  function inWallBox(hull, x, y, w, d) {
+    var cx = x + (w || 0) * 0.5, cy = y + (d || 0) * 0.5;
+    return cx >= hull.x0 && cx <= hull.x1 && cy >= hull.y0 && cy <= hull.y1;
+  }
+  /* 柜心是否在矩形内。pad 只补侧墙端点比最外排柜心短的大约 5cm，
+     不能用 0.8m，否则围墙外的无号柜会被算回这间机房。 */
+  function centerIn(box, x, y, w, d, pad) {
+    if (!box) return false;
+    var p = pad || 0;
+    var cx = x + (w || 0) * 0.5, cy = y + (d || 0) * 0.5;
+    return cx >= box.x0 - p && cx <= box.x1 + p && cy >= box.y0 - p && cy <= box.y1 + p;
+  }
+  function unnamedCab(c) {
+    return !!(c && /无号/.test(String(c.name || '')));
+  }
+  /* 无号柜不在任何数据机房围墙内。楼层墙包络比单间大，包住也不算在房里。 */
+  function unnamedOutside(c, rings) {
+    if (!unnamedCab(c) || c.x == null) return false;
+    var cw = c.w || 0.6, cd = c.d || 1.2, i;
+    for (i = 0; i < rings.length; i++) {
+      if (centerIn(rings[i], c.x, c.y, cw, cd, 0)) return false;
+    }
+    return true;
+  }
+  /* 只收墙内机柜。3M2-无号 在 y=-5.44、5M2-无号 在 y=-6.6，会把机房地板撑到外墙外面。
+     4M2-无号 在 y=1.41，楼层墙包络仍包得住，要先按房间围墙丢掉。 */
+  function cabSpanIn(hull, list) {
+    var x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, n = 0, i, c, w, d;
+    for (i = 0; i < list.length; i++) {
+      c = list[i];
+      if (c.x == null) continue;
+      w = c.w || 0.6; d = c.d || 1.2;
+      if (!inWallBox(hull, c.x, c.y, w, d)) continue;
+      if (c.x < x0) x0 = c.x;
+      if (c.y < y0) y0 = c.y;
+      if (c.x + w > x1) x1 = c.x + w;
+      if (c.y + d > y1) y1 = c.y + d;
+      n++;
+    }
+    if (!n || !(x1 > x0 && y1 > y0)) return null;
+    return { x0: x0, y0: y0, x1: x1, y1: y1 };
+  }
+  /* 机柜四周各找一条够长、又离柜不超过 4 米的墙，合成这一间自己的矩形围墙。
+     不收中点落在柜区附近的全部线段，否则走廊和隔壁房间会一起进来。 */
+  function roomRect(walls, span) {
+    if (!span || !walls) return null;
+    var x0 = span.x0, y0 = span.y0, x1 = span.x1, y1 = span.y1;
+    var V = [], H = [], i, w, dx, dy;
+    for (i = 0; i < walls.length; i++) {
+      w = walls[i];
+      dx = Math.abs(w[2] - w[0]); dy = Math.abs(w[3] - w[1]);
+      if (dx * dx + dy * dy < 0.09) continue;
+      if (dx < 0.28) V.push([(w[0] + w[2]) / 2, Math.min(w[1], w[3]), Math.max(w[1], w[3])]);
+      else if (dy < 0.28) H.push([(w[1] + w[3]) / 2, Math.min(w[0], w[2]), Math.max(w[0], w[2])]);
+    }
+    function cluster(items) {
+      items.sort(function (a, b) { return a[0] - b[0]; });
+      var groups = [], g, k;
+      for (k = 0; k < items.length; k++) {
+        if (!g || Math.abs(items[k][0] - g.anchor) > 0.45) {
+          g = { anchor: items[k][0], coord: items[k][0], mem: [items[k]], n: 1 };
+          groups.push(g);
+        } else {
+          g.n++;
+          g.coord = (g.coord * (g.n - 1) + items[k][0]) / g.n;
+          g.mem.push(items[k]);
+        }
+      }
+      return groups;
+    }
+    function overlap(mem, lo, hi) {
+      var iv = [], t, a, b, acc = 0, end = -1e9;
+      for (t = 0; t < mem.length; t++) {
+        a = Math.max(mem[t][1], lo - 0.4);
+        b = Math.min(mem[t][2], hi + 0.4);
+        if (b > a) iv.push([a, b]);
+      }
+      iv.sort(function (p, q) { return p[0] - q[0]; });
+      for (t = 0; t < iv.length; t++) {
+        a = iv[t][0]; b = iv[t][1];
+        if (a > end) { acc += b - a; end = b; }
+        else if (b > end) { acc += b - end; end = b; }
+      }
+      return acc;
+    }
+    function pick(groups, outside, lo, hi, need, towardMax) {
+      var cands = [], i, cov, best = 0, ok = [], chosen;
+      for (i = 0; i < groups.length; i++) {
+        if (!outside(groups[i].coord)) continue;
+        cov = overlap(groups[i].mem, lo, hi);
+        cands.push({ c: groups[i].coord, cov: cov });
+        if (cov > best) best = cov;
+      }
+      for (i = 0; i < cands.length; i++) {
+        if (cands[i].cov >= need && cands[i].cov >= best * 0.55) ok.push(cands[i]);
+      }
+      if (!ok.length) {
+        chosen = null;
+        for (i = 0; i < cands.length; i++) {
+          if (!chosen || cands[i].cov > chosen.cov) chosen = cands[i];
+        }
+        return chosen && chosen.cov >= 2 ? chosen.c : null;
+      }
+      chosen = ok[0];
+      for (i = 1; i < ok.length; i++) {
+        if (towardMax ? ok[i].c > chosen.c : ok[i].c < chosen.c) chosen = ok[i];
+      }
+      return chosen.c;
+    }
+    var Vg = cluster(V), Hg = cluster(H);
+    var needY = Math.max(3.5, (y1 - y0) * 0.4);
+    var needX = Math.max(3.5, (x1 - x0) * 0.4);
+    var L = pick(Vg, function (c) { return c < x0 - 0.15 && c > x0 - 4; }, y0, y1, needY, true);
+    var R = pick(Vg, function (c) { return c > x1 + 0.15 && c < x1 + 4; }, y0, y1, needY, false);
+    var B = pick(Hg, function (c) { return c < y0 - 0.15 && c > y0 - 4; }, x0, x1, needX, true);
+    var T = pick(Hg, function (c) { return c > y1 + 0.15 && c < y1 + 4; }, x0, x1, needX, false);
+    if (L == null || R == null || B == null || T == null || !(R > L + 1 && T > B + 1)) return null;
+    return { x0: L, y0: B, x1: R, y1: T };
+  }
+  /* 机柜四周各找一条够长、又离柜不超过 4 米的墙，合成这一间自己的矩形围墙。
+     不收中点落在柜区附近的全部线段，否则走廊和隔壁房间会一起进来。 */
+  function roomRect(walls, span) {
+    if (!span || !walls) return null;
+    var x0 = span.x0, y0 = span.y0, x1 = span.x1, y1 = span.y1;
+    var V = [], H = [], i, w, dx, dy;
+    for (i = 0; i < walls.length; i++) {
+      w = walls[i];
+      dx = Math.abs(w[2] - w[0]); dy = Math.abs(w[3] - w[1]);
+      if (dx * dx + dy * dy < 0.09) continue;
+      if (dx < 0.28) V.push([(w[0] + w[2]) / 2, Math.min(w[1], w[3]), Math.max(w[1], w[3])]);
+      else if (dy < 0.28) H.push([(w[1] + w[3]) / 2, Math.min(w[0], w[2]), Math.max(w[0], w[2])]);
+    }
+    function cluster(items) {
+      items.sort(function (a, b) { return a[0] - b[0]; });
+      var groups = [], g, k;
+      for (k = 0; k < items.length; k++) {
+        if (!g || Math.abs(items[k][0] - g.anchor) > 0.45) {
+          g = { anchor: items[k][0], coord: items[k][0], mem: [items[k]], n: 1 };
+          groups.push(g);
+        } else {
+          g.n++;
+          g.coord = (g.coord * (g.n - 1) + items[k][0]) / g.n;
+          g.mem.push(items[k]);
+        }
+      }
+      return groups;
+    }
+    function overlap(mem, lo, hi) {
+      var iv = [], t, a, b, acc = 0, end = -1e9;
+      for (t = 0; t < mem.length; t++) {
+        a = Math.max(mem[t][1], lo - 0.4);
+        b = Math.min(mem[t][2], hi + 0.4);
+        if (b > a) iv.push([a, b]);
+      }
+      iv.sort(function (p, q) { return p[0] - q[0]; });
+      for (t = 0; t < iv.length; t++) {
+        a = iv[t][0]; b = iv[t][1];
+        if (a > end) { acc += b - a; end = b; }
+        else if (b > end) { acc += b - end; end = b; }
+      }
+      return acc;
+    }
+    function pick(groups, outside, lo, hi, need, towardMax) {
+      var cands = [], i, cov, best = 0, ok = [], chosen;
+      for (i = 0; i < groups.length; i++) {
+        if (!outside(groups[i].coord)) continue;
+        cov = overlap(groups[i].mem, lo, hi);
+        cands.push({ c: groups[i].coord, cov: cov });
+        if (cov > best) best = cov;
+      }
+      for (i = 0; i < cands.length; i++) {
+        if (cands[i].cov >= need && cands[i].cov >= best * 0.55) ok.push(cands[i]);
+      }
+      if (!ok.length) {
+        chosen = null;
+        for (i = 0; i < cands.length; i++) {
+          if (!chosen || cands[i].cov > chosen.cov) chosen = cands[i];
+        }
+        return chosen && chosen.cov >= 2 ? chosen.c : null;
+      }
+      chosen = ok[0];
+      for (i = 1; i < ok.length; i++) {
+        if (towardMax ? ok[i].c > chosen.c : ok[i].c < chosen.c) chosen = ok[i];
+      }
+      return chosen.c;
+    }
+    var Vg = cluster(V), Hg = cluster(H);
+    var needY = Math.max(3.5, (y1 - y0) * 0.4);
+    var needX = Math.max(3.5, (x1 - x0) * 0.4);
+    var L = pick(Vg, function (c) { return c < x0 - 0.15 && c > x0 - 4; }, y0, y1, needY, true);
+    var R = pick(Vg, function (c) { return c > x1 + 0.15 && c < x1 + 4; }, y0, y1, needY, false);
+    var B = pick(Hg, function (c) { return c < y0 - 0.15 && c > y0 - 4; }, x0, x1, needX, true);
+    var T = pick(Hg, function (c) { return c > y1 + 0.15 && c < y1 + 4; }, x0, x1, needX, false);
+    if (L == null || R == null || B == null || T == null || !(R > L + 1 && T > B + 1)) return null;
+    return { x0: L, y0: B, x1: R, y1: T };
+  }
+  /* 机柜四周各找一条够长、又离柜不超过 4 米的墙，合成这一间自己的矩形围墙。
+     不收中点落在柜区附近的全部线段，否则走廊和隔壁房间会一起进来。 */
+  function roomRect(walls, span) {
+    if (!span || !walls) return null;
+    var x0 = span.x0, y0 = span.y0, x1 = span.x1, y1 = span.y1;
+    var V = [], H = [], i, w, dx, dy;
+    for (i = 0; i < walls.length; i++) {
+      w = walls[i];
+      dx = Math.abs(w[2] - w[0]); dy = Math.abs(w[3] - w[1]);
+      if (dx * dx + dy * dy < 0.09) continue;
+      if (dx < 0.28) V.push([(w[0] + w[2]) / 2, Math.min(w[1], w[3]), Math.max(w[1], w[3])]);
+      else if (dy < 0.28) H.push([(w[1] + w[3]) / 2, Math.min(w[0], w[2]), Math.max(w[0], w[2])]);
+    }
+    function cluster(items) {
+      items.sort(function (a, b) { return a[0] - b[0]; });
+      var groups = [], g, k;
+      for (k = 0; k < items.length; k++) {
+        if (!g || Math.abs(items[k][0] - g.anchor) > 0.45) {
+          g = { anchor: items[k][0], coord: items[k][0], mem: [items[k]], n: 1 };
+          groups.push(g);
+        } else {
+          g.n++;
+          g.coord = (g.coord * (g.n - 1) + items[k][0]) / g.n;
+          g.mem.push(items[k]);
+        }
+      }
+      return groups;
+    }
+    function overlap(mem, lo, hi) {
+      var iv = [], t, a, b, acc = 0, end = -1e9;
+      for (t = 0; t < mem.length; t++) {
+        a = Math.max(mem[t][1], lo - 0.4);
+        b = Math.min(mem[t][2], hi + 0.4);
+        if (b > a) iv.push([a, b]);
+      }
+      iv.sort(function (p, q) { return p[0] - q[0]; });
+      for (t = 0; t < iv.length; t++) {
+        a = iv[t][0]; b = iv[t][1];
+        if (a > end) { acc += b - a; end = b; }
+        else if (b > end) { acc += b - end; end = b; }
+      }
+      return acc;
+    }
+    function pick(groups, outside, lo, hi, need, towardMax) {
+      var cands = [], i, cov, best = 0, ok = [], chosen;
+      for (i = 0; i < groups.length; i++) {
+        if (!outside(groups[i].coord)) continue;
+        cov = overlap(groups[i].mem, lo, hi);
+        cands.push({ c: groups[i].coord, cov: cov });
+        if (cov > best) best = cov;
+      }
+      for (i = 0; i < cands.length; i++) {
+        if (cands[i].cov >= need && cands[i].cov >= best * 0.55) ok.push(cands[i]);
+      }
+      if (!ok.length) {
+        chosen = null;
+        for (i = 0; i < cands.length; i++) {
+          if (!chosen || cands[i].cov > chosen.cov) chosen = cands[i];
+        }
+        return chosen && chosen.cov >= 2 ? chosen.c : null;
+      }
+      chosen = ok[0];
+      for (i = 1; i < ok.length; i++) {
+        if (towardMax ? ok[i].c > chosen.c : ok[i].c < chosen.c) chosen = ok[i];
+      }
+      return chosen.c;
+    }
+    var Vg = cluster(V), Hg = cluster(H);
+    var needY = Math.max(3.5, (y1 - y0) * 0.4);
+    var needX = Math.max(3.5, (x1 - x0) * 0.4);
+    var L = pick(Vg, function (c) { return c < x0 - 0.15 && c > x0 - 4; }, y0, y1, needY, true);
+    var R = pick(Vg, function (c) { return c > x1 + 0.15 && c < x1 + 4; }, y0, y1, needY, false);
+    var B = pick(Hg, function (c) { return c < y0 - 0.15 && c > y0 - 4; }, x0, x1, needX, true);
+    var T = pick(Hg, function (c) { return c > y1 + 0.15 && c < y1 + 4; }, x0, x1, needX, false);
+    if (L == null || R == null || B == null || T == null || !(R > L + 1 && T > B + 1)) return null;
+    return { x0: L, y0: B, x1: R, y1: T };
+  }
+  function cadDoor(faces, objs, d) {
+    var len = Math.max(0.9, Math.min(1.5, d.len || 1.2));
+    var name = d.room || '';
+    var horizontal = Math.abs(d.dx || 0) >= Math.abs(d.dy || 0);
+    if (horizontal) {
+      placeRoomDoor(faces, null, objs, {
+        x: d.x - len / 2, yWall: d.y, doorW: len, doorH: 2.12, thk: 0.16,
+        inward: 1, name: name + '@' + d.x.toFixed(1) + ',' + d.y.toFixed(1), gap0: 0
+      });
+      return;
+    }
+    var id = 'door:' + name + '@' + d.x.toFixed(1) + ',' + d.y.toFixed(1);
+    var y0 = d.y - len / 2;
+    box(faces, d.x - 0.03, y0, 0, 0.06, len, 2.12, '#E7EEF3', {
+      doorId: id, doorPose: 'shut', quiet: 1, fade: 0, o: { obj: id, noFog: 1 }
+    });
+    box(faces, d.x - len, d.y - 0.03, 0, len, 0.06, 2.12, '#E7EEF3', {
+      doorId: id, doorPose: 'open', quiet: 1, fade: 0, o: { obj: id, noFog: 1 }
+    });
+    objs[id] = {
+      kind: 'door', name: id, drill: null,
+      hint: (roomTag(name) || '门') + ' · 点击开门',
+      focus: [d.x, d.y, 1.1]
+    };
+  }
+  function cadCabColor(c) {
+    var comp = c && c.comp;
+    if (!comp) return C.cabBlue;
+    return comp > 90 ? C.cabRed : comp >= 70 ? C.cabYellow : C.cabBlue;
+  }
+  function roomLabelText(r) {
+    var s = (r.type === '主机房' && r.code) ? String(r.code) : String(r.name || '');
+    return s.replace(/(\d+层)\1+/g, '$1');
+  }
+  function pctArr(arr, p) {
+    if (!arr.length) return 0;
+    var s = arr.slice().sort(function (a, b) { return a - b; });
+    var i = Math.floor((s.length - 1) * p);
+    if (i < 0) i = 0;
+    if (i > s.length - 1) i = s.length - 1;
+    return s[i];
+  }
+  /* 楼板收到长外墙内侧。墙端点的外接矩形会把右侧短线拉到外墙外面。 */
+  function outerFoot(info) {
+    var hull = wallBox(info);
+    var vx = {}, hy = {};
+    (info.walls || []).forEach(function (w) {
+      var len = Math.hypot(w[2] - w[0], w[3] - w[1]);
+      if (len < 0.5) return;
+      if (Math.abs(w[0] - w[2]) < 0.35) {
+        var xk = Math.round(((w[0] + w[2]) / 2) * 2) / 2;
+        vx[xk] = (vx[xk] || 0) + len;
+      } else if (Math.abs(w[1] - w[3]) < 0.35) {
+        var yk = Math.round(((w[1] + w[3]) / 2) * 2) / 2;
+        hy[yk] = (hy[yk] || 0) + len;
+      }
+    });
+    function edge(map, pickMax) {
+      var ks = Object.keys(map).map(Number).filter(function (k) { return map[k] >= 8; });
+      if (!ks.length) return null;
+      ks.sort(function (a, b) { return a - b; });
+      return pickMax ? ks[ks.length - 1] : ks[0];
+    }
+    var x0 = edge(vx, false), x1 = edge(vx, true);
+    var y0 = edge(hy, false), y1 = edge(hy, true);
+    if (x0 == null || x1 == null || x1 - x0 < 8) { x0 = hull.x0; x1 = hull.x1; }
+    if (y0 == null || y1 == null || y1 - y0 < 8) { y0 = hull.y0; y1 = hull.y1; }
+    return { x0: x0, y0: y0, x1: x1, y1: y1 };
+  }
+  function cabShadow(faces, x, y, w, d) {
+    plate(faces, x - 0.07, y - 0.07, 0.016, w + 0.14, d + 0.14, '#4E6274', { o: { noFog: 1 } });
+  }
+  /* 数据机房自己的一圈墙：左右取盖住机柜列的最近墙，上下收到这两侧墙的端头。
+     不把房外隔断、邻房和 8×6 文字框画进来。 */
+  function roomRing(info, r) {
+    var W = info.w || 48, Dp = info.d || 46;
+    var pts = [];
+    (r.cabinets || []).forEach(function (c) {
+      if (c.x == null) return;
+      var cx = c.x + (c.w || 0.6) / 2, cy = c.y + (c.d || 1.2) / 2;
+      if (cx < -0.4 || cy < -0.4 || cx > W + 0.4 || cy > Dp + 0.4) return;
+      pts.push([cx, cy]);
+    });
+    if (pts.length < 4) return null;
+    var gx = 0, gy = 0, i;
+    for (i = 0; i < pts.length; i++) { gx += pts[i][0]; gy += pts[i][1]; }
+    gx /= pts.length; gy /= pts.length;
+    var xs = [], ys = [];
+    for (i = 0; i < pts.length; i++) { xs.push(pts[i][0]); ys.push(pts[i][1]); }
+    var minX = pctArr(xs, 0.04), maxX = pctArr(xs, 0.96);
+    var minY = pctArr(ys, 0.04), maxY = pctArr(ys, 0.96);
+    var walls = info.walls || [];
+    var raw = [];
+    walls.forEach(function (w) {
+      var ax = w[0], ay = w[1], bx = w[2], by = w[3];
+      var len = Math.hypot(bx - ax, by - ay);
+      if (len < 0.8 || Math.abs(ax - bx) > 0.35) return;
+      var line = (ax + bx) / 2;
+      var a0 = Math.min(ay, by), a1 = Math.max(ay, by);
+      if (Math.min(a1, maxY + 0.8) - Math.max(a0, minY - 0.8) < 1.5) return;
+      var lo = 0, hi = 0, k;
+      for (k = 0; k < pts.length; k++) {
+        if (pts[k][0] < line - 0.35) lo++;
+        else if (pts[k][0] > line + 0.35) hi++;
+      }
+      if (lo > pts.length * 0.1 && hi > pts.length * 0.1) return;
+      var side, dist;
+      if (line < gx - 0.2) { side = 'L'; dist = minX - line; }
+      else if (line > gx + 0.2) { side = 'R'; dist = line - maxX; }
+      else return;
+      if (dist < -0.5 || dist > 4.2) return;
+      raw.push({ side: side, line: line, dist: dist, a0: a0, a1: a1, w: w });
+    });
+    function one(side) {
+      var arr = raw.filter(function (a) { return a.side === side; }).sort(function (a, b) { return a.line - b.line; });
+      var groups = [];
+      arr.forEach(function (a) {
+        var g = groups[groups.length - 1];
+        if (g && a.line - g.line0 < 0.4) { g.items.push(a); g.line0 = Math.max(g.line0, a.line); }
+        else groups.push({ line0: a.line, items: [a] });
+      });
+      var need = Math.max(6, (maxY - minY) * 0.45);
+      var scored = [];
+      groups.forEach(function (g) {
+        var y0 = 1e9, y1 = -1e9, dist = 1e9, lineSum = 0;
+        g.items.forEach(function (a) {
+          if (a.a0 < y0) y0 = a.a0;
+          if (a.a1 > y1) y1 = a.a1;
+          if (a.dist < dist) dist = a.dist;
+          lineSum += a.line;
+        });
+        if (y1 - y0 < need) return;
+        scored.push({ y0: y0, y1: y1, dist: dist, items: g.items, line: lineSum / g.items.length });
+      });
+      scored.sort(function (a, b) { return a.dist - b.dist; });
+      return scored[0] || null;
+    }
+    var L = one('L'), R = one('R');
+    if (!L && !R) return null;
+    var y0, y1;
+    if (L && R) {
+      y0 = Math.max(Math.min(L.y0, R.y0), minY - 2.8);
+      y1 = Math.min(Math.max(L.y1, R.y1), maxY + 2.8);
+    } else {
+      var s = L || R;
+      y0 = Math.max(s.y0, minY - 2.8);
+      y1 = Math.min(s.y1, maxY + 2.8);
+    }
+    if (!(y1 > y0 + 2)) return null;
+    var innerL = L ? Math.max.apply(null, L.items.map(function (a) { return a.line; })) : (minX - 0.6);
+    var innerR = R ? Math.min.apply(null, R.items.map(function (a) { return a.line; })) : (maxX + 0.6);
+    if (!(innerR > innerL + 1)) return null;
+    var segs = [];
+    function pushY(w) {
+      var x = (w[0] + w[2]) / 2;
+      var a = Math.min(w[1], w[3]), b = Math.max(w[1], w[3]);
+      var c0 = Math.max(a, y0 - 0.15), c1 = Math.min(b, y1 + 0.15);
+      if (c1 - c0 < 0.35) return;
+      segs.push([x, c0, x, c1]);
+    }
+    if (L) L.items.forEach(function (a) { pushY(a.w); });
+    if (R) R.items.forEach(function (a) { pushY(a.w); });
+    walls.forEach(function (w) {
+      if (Math.abs(w[1] - w[3]) > 0.35) return;
+      var y = (w[1] + w[3]) / 2;
+      if (Math.abs(y - y0) > 1.05 && Math.abs(y - y1) > 1.05) return;
+      if (y > minY + 0.5 && y < maxY - 0.5) return;
+      var a = Math.min(w[0], w[2]), b = Math.max(w[0], w[2]);
+      var c0 = Math.max(a, innerL - 0.3), c1 = Math.min(b, innerR + 0.3);
+      if (c1 - c0 < 0.35) return;
+      segs.push([c0, y, c1, y]);
+    });
+    return loosenRing({ x0: innerL, y0: y0, x1: innerR, y1: y1, segs: segs }, r);
+  }
+  /* 图纸墙若贴着柜边（3层1# 左侧只有约 0.4 米），沿远离柜心的方向推到净空。
+     机柜坐标不动，只挪墙线。已经宽于净空的边保持图纸位置。 */
+  function loosenRing(ring, r) {
+    var CLEAR = 1.2;
+    if (!ring || !ring.segs) return ring;
+    var cabs = (r.cabinets || []).filter(function (c) { return c.x != null; });
+    if (cabs.length < 4) return ring;
+    var minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9, i, c, w, d;
+    for (i = 0; i < cabs.length; i++) {
+      c = cabs[i]; w = c.w || 0.6; d = c.d || 1.2;
+      if (c.x < minX) minX = c.x;
+      if (c.y < minY) minY = c.y;
+      if (c.x + w > maxX) maxX = c.x + w;
+      if (c.y + d > maxY) maxY = c.y + d;
+    }
+    var cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
+    var nudges = [];
+    ring.segs = ring.segs.map(function (s) {
+      var x1 = s[0], y1 = s[1], x2 = s[2], y2 = s[3];
+      if (Math.abs(x1 - x2) < 0.35) {
+        var x = (x1 + x2) / 2;
+        var edge = x < cx ? minX : maxX;
+        var gap = x < cx ? (edge - x) : (x - edge);
+        if (gap < CLEAR) {
+          var nx = x < cx ? (edge - CLEAR) : (edge + CLEAR);
+          nudges.push({ axis: 'x', from: x, to: nx, a0: Math.min(y1, y2), a1: Math.max(y1, y2) });
+          return [nx, y1, nx, y2];
+        }
+      } else if (Math.abs(y1 - y2) < 0.35) {
+        var y = (y1 + y2) / 2;
+        var edgeY = y < cy ? minY : maxY;
+        var gapY = y < cy ? (edgeY - y) : (y - edgeY);
+        if (gapY < CLEAR) {
+          var ny = y < cy ? (edgeY - CLEAR) : (edgeY + CLEAR);
+          nudges.push({ axis: 'y', from: y, to: ny, a0: Math.min(x1, x2), a1: Math.max(x1, x2) });
+          return [x1, ny, x2, ny];
+        }
+      }
+      return s;
+    });
+    ring.segs.forEach(function (s) {
+      ring.x0 = Math.min(ring.x0, s[0], s[2]);
+      ring.x1 = Math.max(ring.x1, s[0], s[2]);
+      ring.y0 = Math.min(ring.y0, s[1], s[3]);
+      ring.y1 = Math.max(ring.y1, s[1], s[3]);
+    });
+    ring.nudges = nudges;
+    return ring;
+  }
+  function floorCad(floor, info) {
+    var D = window.DCIM;
+    var faces = [], lines = [], labels = [], objs = {}, parts = [];
+    var W = info.w || 48, Dp = info.d || 46;
+    var hull = wallBox(info);
+    var foot = outerFoot(info);
+    plate(faces, foot.x0, foot.y0, -0.2, foot.x1 - foot.x0, foot.y1 - foot.y0, C.site, { o: { stroke: '#C5CCD3', sw: 1.2, noFog: 1 } });
+    (info.walls || []).forEach(function (w) { cadWall(faces, lines, w[0], w[1], w[2], w[3]); });
+    var seenDoor = {};
+    (info.doors || []).forEach(function (d) {
+      var k = Math.round(d.x) + ':' + Math.round(d.y);
+      if (seenDoor[k]) return;
+      seenDoor[k] = 1;
+      cadDoor(faces, objs, d);
+    });
+    var rs = D.rooms.filter(function (r) { return r.floor === floor; });
+    /* 楼层墙包络包住整层。4M2-无号 的 y=1.41 仍在包络里，但在两间数据机房围墙外。 */
+    var rings = [];
+    rs.forEach(function (r) {
+      if (r.type !== '主机房') return;
+      var g = roomRing(info, r);
+      if (g) rings.push(g);
+    });
+    var nameSpots = [];
+    function spotName(x, y) {
+      var px = x, py = y, guard = 0, i, dx, dy;
+      while (guard < 8) {
+        var hit = false;
+        for (i = 0; i < nameSpots.length; i++) {
+          dx = nameSpots[i].x - px; dy = nameSpots[i].y - py;
+          if (dx * dx + dy * dy < 9) { hit = true; break; }
+        }
+        if (!hit) break;
+        py -= 2.6;
+        guard++;
+      }
+      nameSpots.push({ x: px, y: py });
+      return { x: px, y: py };
+    }
+    rs.forEach(function (r) {
+      var id = 'room:' + r.name;
+      var poly = r.poly;
+      var spanCabs = (r.cabinets || []).filter(function (c) { return !unnamedOutside(c, rings); });
+      var span = r.type === '主机房' ? cabSpanIn(hull, spanCabs) : null;
+      if (span) {
+        plate(faces, span.x0, span.y0, 0.01, span.x1 - span.x0, span.y1 - span.y0, C.roomFloor, { o: { stroke: '#5C7890', sw: 1, obj: id } });
+      }
+      var focus = span
+        ? [(span.x0 + span.x1) / 2, (span.y0 + span.y1) / 2, 1.2]
+        : (poly ? [(poly[0][0] + poly[1][0]) / 2, (poly[0][1] + poly[2][1]) / 2, 1.2] : [W / 2, Dp / 2, 1]);
+      objs[id] = {
+        kind: 'room', name: r.name, drill: r.name,
+        focus: focus,
+        hint: roomLabelText(r) || r.name
+      };
+      (r.cabinets || []).forEach(function (c) {
+        if (c.x == null) return;
+        var cw = c.w || 0.6, cd = c.d || 1.2;
+        if (!inWallBox(hull, c.x, c.y, cw, cd)) return;
+        if (unnamedOutside(c, rings)) return;
+        var cid = 'cab:' + c.name;
+        cabShadow(faces, c.x, c.y, cw, cd);
+        box(faces, c.x, c.y, 0.02, cw, cd, 2.0, cadCabColor(c), {
+          topK: 1.24, rightK: 0.66, frontK: 0.6, o: { obj: cid }
+        });
+        objs[cid] = {
+          kind: 'cab', name: c.name, drill: c.name,
+          focus: [c.x + cw / 2, c.y + cd / 2, 1.2],
+          hint: c.name
+        };
+        T(labels, c.x + cw / 2, c.y + cd / 2, 2.15, c.name, {
+          size: 11, col: '#F4FBFF', weight: '700', bg: 'rgba(3,12,24,.88)', obj: cid, lay: 2, dim: 1
+        });
+      });
+      if (r.type === '主机房' || r.type === '配电室' || r.type === '电池室' || r.type === '操作间' || r.type === '空调间') {
+        var lx, ly, lz;
+        if (r.type === '主机房' && span) {
+          lx = (span.x0 + span.x1) / 2;
+          ly = span.y1 + 0.35;
+          lz = 2.35;
+        } else if (poly) {
+          lx = (poly[0][0] + poly[1][0]) / 2;
+          ly = (poly[0][1] + poly[2][1]) / 2;
+          lz = 0.45;
+        } else return;
+        var at = spotName(lx, ly);
+        T(labels, at.x, at.y, lz, roomLabelText(r), {
+          size: r.type === '主机房' ? 14 : 12, col: '#102433', weight: '700',
+          bg: 'rgba(255,255,255,.88)', obj: id, lay: 2
+        });
+      }
+    });
+    T(labels, W - 0.4, Dp + 0.3, 0.2, floor + ' · ' + info.cabCount + ' 柜', { size: 12, col: '#9FB6CE', align: 'end' });
+    return {
+      faces: faces, lines: lines, labels: labels,
+      bb: { x0: -1.5, y0: -1.5, z0: -0.3, x1: W + 1.5, y1: Dp + 1.5, z1: 4.3 },
+      cam: { yaw: 0.62, pitch: 0.58, dist: Math.max(W, Dp) * 1.15, tx: W / 2, ty: Dp / 2, tz: 0.5 },
+      objs: objs, parts: parts, kind: 'floor'
+    };
+  }
+  function roomCad(r) {
+    var D = window.DCIM;
+    var faces = [], lines = [], labels = [], objs = {}, parts = [];
+    var info = (D.floors || []).filter(function (f) { return f.floor === r.floor; })[0] || {};
+    var hull = wallBox(info);
+    var poly = r.poly || [[0, 0], [10, 0], [10, 8], [0, 8]];
+    var ring = roomRing(info, r);
+    /* 墙外无号柜不进地板范围。有围墙就按这一间的 ring，没有再退回整层墙包络。 */
+    var spanCabs = (r.cabinets || []).filter(function (c) {
+      return !unnamedOutside(c, ring ? [ring] : []);
+    });
+    var span = cabSpanIn(hull, spanCabs);
+    var x0, y0, x1, y1;
+    if (ring) {
+      x0 = ring.x0; y0 = ring.y0; x1 = ring.x1; y1 = ring.y1;
+    } else if (span) {
+      x0 = span.x0; y0 = span.y0; x1 = span.x1; y1 = span.y1;
+    } else {
+      x0 = Math.max(poly[0][0], hull.x0); y0 = Math.max(poly[0][1], hull.y0);
+      x1 = Math.min(poly[1][0], hull.x1); y1 = Math.min(poly[2][1], hull.y1);
+    }
+    if (!(x1 > x0 && y1 > y0)) { x0 = hull.x0; y0 = hull.y0; x1 = hull.x1; y1 = hull.y1; }
+    var roomId = 'room:' + r.name;
+    objs[roomId] = {
+      kind: 'room', name: r.name, drill: null,
+      focus: [(x0 + x1) / 2, (y0 + y1) / 2, 1],
+      hint: r.name + ' · ' + r.cabCount + ' 柜 · 模拟'
+    };
+    var inset = 0.05;
+    plate(faces, x0 + inset, y0 + inset, -0.06,
+      Math.max(0.4, x1 - x0 - inset * 2), Math.max(0.4, y1 - y0 - inset * 2),
+      C.roomFloor, { o: { stroke: '#5C7890', sw: 1, noFog: 1 } });
+    if (ring) ring.segs.forEach(function (w) { cadWall(faces, lines, w[0], w[1], w[2], w[3]); });
+    (info.doors || []).forEach(function (d) {
+      if (d.room !== r.name) return;
+      var door = d;
+      (ring && ring.nudges || []).forEach(function (n) {
+        if (n.axis === 'x' && Math.abs(d.x - n.from) < 0.45 && d.y >= n.a0 - 0.5 && d.y <= n.a1 + 0.5) {
+          door = { x: n.to, y: d.y, dx: d.dx, dy: d.dy, len: d.len, room: d.room };
+        } else if (n.axis === 'y' && Math.abs(d.y - n.from) < 0.45 && d.x >= n.a0 - 0.5 && d.x <= n.a1 + 0.5) {
+          door = { x: d.x, y: n.to, dx: d.dx, dy: d.dy, len: d.len, room: d.room };
+        }
+      });
+      if (door.x < x0 - 1.6 || door.x > x1 + 1.6 || door.y < y0 - 1.6 || door.y > y1 + 1.6) return;
+      cadDoor(faces, objs, door);
+    });
+    (r.cabinets || []).forEach(function (c) {
+      if (c.x == null) return;
+      var cw = c.w || 0.6, cd = c.d || 1.2;
+      /* 柜心必须在本间围墙矩形内。3M2/4M2 的 A 列柜心比侧墙端点低 5cm，只补这一截。
+         5M2-无号 在 (40.85, -6.6)，离围墙约 17m，不再画到远处空地上。 */
+      var edge = ring ? 0.08 : 0;
+      if (!centerIn({ x0: x0, y0: y0, x1: x1, y1: y1 }, c.x, c.y, cw, cd, edge)) return;
+      var id = 'cab:' + c.name;
+      cabShadow(faces, c.x, c.y, cw, cd);
+      box(faces, c.x, c.y, 0.02, cw, cd, 2.0, cadCabColor(c), {
+        topK: 1.24, rightK: 0.66, frontK: 0.6, o: { obj: id }
+      });
+      objs[id] = {
+        kind: 'cab', name: c.name, drill: c.name,
+        focus: [c.x + (c.w || 0.6) / 2, c.y + (c.d || 1.2) / 2, 1.2],
+        hint: c.name + ' · ' + c.kind + ' mm · 模拟'
+      };
+      if (c.seq === 1 || c.seq === 8) {
+        T(labels, c.x + (c.w || 0.6) / 2, c.y + (c.d || 1) / 2, 2.3, c.name.split('-').pop(), {
+          size: 9, col: '#E6F4FF', obj: id, lay: 2
+        });
+      }
+    });
+    T(labels, (x0 + x1) / 2, y1 + 0.4, 0.1, r.name + ' · ' + r.cabCount + ' 柜', {
+      size: 13, col: '#E6F4FF', weight: '600', bg: 'rgba(3,12,24,.86)', obj: roomId, lay: 2
+    });
+    return {
+      faces: faces, lines: lines, labels: labels,
+      bb: { x0: x0 - 1, y0: y0 - 1, z0: -0.06, x1: x1 + 1, y1: y1 + 1, z1: 3 },
+      cam: { yaw: 0.7, pitch: 0.62, dist: Math.max(x1 - x0, y1 - y0) * 1.35, tx: (x0 + x1) / 2, ty: (y0 + y1) / 2, tz: 0.8 },
+      objs: objs, parts: parts, kind: 'room'
+    };
+  }
+
   /* ---------- L1 楼层 ---------- */
   S.floor = function (floor) {
     var D = window.DCIM;
+    var cadInfo = (D.floors || []).filter(function (f) { return f.floor === floor && f.walls && f.walls.length; })[0];
+    if (cadInfo) return floorCad(floor, cadInfo);
     var rs = D.rooms.filter(function (r) { return r.floor === floor; });
     var faces = [], lines = [], labels = [];
 
@@ -583,17 +1343,14 @@
     }
     /* 门只开在朝走廊的一侧，门扇向房间里开，小窗写房号。 */
     function swingDoor(x, yWall, len, inward, name) {
-      var doorW = 1.35, doorH = 2.12, leaf = doorW * 0.9;
+      var doorW = 1.35, doorH = 2.12;
       var gap0 = Math.max(0.2, (len - doorW) / 2);
-      var yLeaf = inward > 0 ? yWall + THK : yWall - leaf;
       var frameK = { topK: 1, rightK: 0.96, frontK: 0.98, leftK: 0.92, backK: 0.9, bottomK: 0.86, o: { noFog: 1, stroke: '#8E98A3', sw: 1.1 } };
       box(faces, x + gap0 - 0.04, yWall - 0.02, 0, 0.05, THK + 0.06, doorH, '#C5CED6', frameK);
       box(faces, x + gap0 + doorW - 0.01, yWall - 0.02, 0, 0.05, THK + 0.06, doorH, '#C5CED6', frameK);
-      box(faces, x + gap0, yLeaf, 0, 0.05, leaf, doorH, '#E7EEF3', {
-        topK: 1, rightK: 0.97, frontK: 0.99, leftK: 0.94, backK: 0.92, bottomK: 0.88, o: { noFog: 1 }
-      });
-      box(faces, x + gap0 - 0.012, yLeaf + 0.16, 1.2, 0.02, Math.max(0.3, leaf - 0.32), 0.48, '#D7E6F2', {
-        quiet: 1, topK: 1.2, frontK: 1.15, plateX: doorPlate(name), o: { noFog: 1 }
+      placeRoomDoor(faces, null, objs, {
+        x: x, yWall: yWall, doorW: doorW, doorH: doorH, thk: THK, inward: inward,
+        name: name, gap0: gap0
       });
     }
     function roomShell(x, y, w, d, doorSouth, name) {
@@ -816,6 +1573,7 @@
     var D = window.DCIM;
     var r = D.rooms.filter(function (x) { return x.name === name; })[0];
     if (!r) return null;
+    if (r.cad && r.cabinets && r.cabinets.length && r.cabinets[0].x != null) return roomCad(r);
     var faces = [], lines = [], labels = [], objs = {}, parts = [];
 
     if (!r.cabCount) {
@@ -824,7 +1582,7 @@
       var tc = TYPE_COLOR[r.type] || '#8FA8C4';
       var W0 = 9, D0 = 7;
       plate(faces, 0.2, 0.2, -0.06, W0 - 0.4, D0 - 0.4, C.roomFloor, { o: { stroke: '#5C7890', sw: 1, noFog: 1 } });
-      roomShell(faces, null, 0, 0, W0, D0, { h: 2.8, z: 0, name: r.name, lines: lines });
+      roomShell(faces, null, 0, 0, W0, D0, { h: 2.8, z: 0, name: r.name, lines: lines, objs: objs });
       var n0 = Math.max(3, Math.min(7, Math.round(r.dev / 2) || 4));
       var cid0 = 'room:' + r.name;
       for (var q0 = 0; q0 < n0; q0++) {
@@ -863,7 +1621,7 @@
 
     /* 房间地面是冷灰，和浅灰墙分开。冷热走道再铺在地面上。 */
     plate(faces, -1.05, -1.55, -0.06, W + 2.1, Dp + 1.85, C.roomFloor, { o: { stroke: '#5C7890', sw: 1, noFog: 1 } });
-    roomShell(faces, null, -1.2, -1.7, W + 2.4, Dp + 2.05, { h: 2.85, z: 0, name: r.name, lines: lines });
+    roomShell(faces, null, -1.2, -1.7, W + 2.4, Dp + 2.05, { h: 2.85, z: 0, name: r.name, lines: lines, objs: objs });
 
     /* 俯视机柜：深灰柜体。台账没写门型；本屏机柜按高开孔率网孔门（进柜门贴图同结构）。
        冷通道前门、热通道尾门都是黑框黑网，顶上留一条负载色。列头柜仍是实心门。
@@ -1093,6 +1851,7 @@
     if (uH >= 2) {
       var extra = a.cat || a.type || '';
       if (a.status) extra = extra ? (extra + ' · ' + a.status) : a.status;
+      if (a.source === 'sim') extra = extra ? (extra + ' · 模拟') : '模拟';
       if (extra) lines.push({ t: extra, col: '#A9C0D0', weight: '400' });
     }
     /* short：1U 太矮才允许省略。更高的面板先缩小字号，尽量把全名画完。 */
@@ -1143,7 +1902,7 @@
 
     var byCab = {};
     D.assets.forEach(function (a) {
-      if (!a.cabinet || a.uStart > 42) return;
+      if (!a.cabinet || a.uStart < 1 || a.uStart > 42) return;
       (byCab[a.cabinet] = byCab[a.cabinet] || []).push(a);
     });
 
@@ -1176,19 +1935,26 @@
     for (var fi = 0; fi < poses.length; fi++) {
       if (poses[fi].cab.name === cabName) focus = poses[fi];
     }
-    var Wroom = keys.length * (depth + aisle) - aisle;
-    var Dp = y0 + maxPer * (width + gap) + 0.4;
-
     var faces = [], lines = [], labels = [], objs = {};
     var blocks = [];
-    var rx0 = -1.15, ry0 = -0.85, rw = Wroom + 2.3, rd = Dp + 1.15;
+    /* 柜位不改。墙向外退，柜边到墙内皮留 1.6 米，转角处走得开。
+       原先北端只有约 0.6 米、左右约 1.0 米，人一拐弯就顶在柜角上。 */
+    var wallT = 0.16, clear = 1.6;
+    var cabX0 = 0;
+    var cabX1 = Math.max(depth, (keys.length - 1) * (depth + aisle) + depth);
+    var cabY0 = y0;
+    var cabY1 = y0 + Math.max(0, maxPer - 1) * (width + gap) + width;
+    var rx0 = cabX0 - clear - wallT;
+    var ry0 = cabY0 - clear - wallT;
+    var rw = (cabX1 + clear + wallT) - rx0;
+    var rd = (cabY1 + clear + wallT) - ry0;
     plate(faces, rx0 + 0.2, ry0 + 0.2, -0.04, rw - 0.4, rd - 0.4, C.roomFloor, { o: { stroke: '#5C7890', sw: 1, noFog: 1 } });
     /* 白墙和打开的门都进碰撞盒。门洞留空，人只能从门进出。 */
-    roomShell(faces, blocks, rx0, ry0, rw, rd, { h: 2.7, z: 0, name: room.name, lines: lines });
+    roomShell(faces, blocks, rx0, ry0, rw, rd, { h: 2.7, z: 0, name: room.name, lines: lines, objs: objs });
     function downFace(x, y, z, w, d, col, k) {
       faces.push(new F([[x, y, z], [x, y + d, z], [x + w, y + d, z], [x + w, y, z]], col, { k: k || 0.75, lay: 1 }));
     }
-    downFace(-1.2, -0.5, 2.78, Wroom + 2.6, Dp + 1.2, '#121820', 0.55);
+    downFace(rx0, ry0, 2.78, rw, rd, '#121820', 0.55);
     function aisleMean(ch) {
       var list = (D.thDevices || []).filter(function (t) {
         return t.room === room.name && t.ch === ch && isFinite(Number(t.temp));
@@ -1480,7 +2246,7 @@
     return {
       faces: faces, lines: lines, labels: labels, shellSkin: shellSkin,
       sub: devN + ' 台 · 通道走动',
-      bb: { x0: -1.2, y0: -0.6, z0: -0.05, x1: Wroom + 1.8, y1: Dp + 0.4, z1: H + 0.4 },
+      bb: { x0: rx0 - 0.3, y0: ry0 - 0.3, z0: -0.05, x1: rx0 + rw + 0.3, y1: ry0 + rd + 0.3, z1: H + 0.4 },
       fitBB: { x0: px - 0.4, y0: py - 0.4, z0: 0, x1: px + 0.4, y1: py + 0.4, z1: 2 },
       cam: { yaw: spawnYaw, pitch: pit, dist: 6, tx: px, ty: py, tz: eyeZ },
       objs: objs, parts: [], kind: 'rack', aisleMarks: aisleMarks,
@@ -1552,7 +2318,10 @@
     this.home = { yaw: c.yaw, pitch: c.pitch, dist: c.dist, tx: c.tx, ty: c.ty, tz: c.tz };
     this.minD = kind === 'rack' ? 1.1 : 2.2;
     this.maxD = kind === 'rack' ? 12 : (kind === 'room' ? 42 : 150);
-    if (inherit && !sc.walk) { this.cur.yaw = this.to.yaw = inherit.yaw; this.cur.pitch = this.to.pitch = inherit.pitch; }
+    if (inherit && !sc.walk && !api.oblique) { this.cur.yaw = this.to.yaw = inherit.yaw; this.cur.pitch = this.to.pitch = inherit.pitch; }
+    if (api.oblique) {
+      this.to.pitch = this.cur.pitch = this.home.pitch = 1.02;
+    }
     if (sc.walk) {
       this.walk = true;
       this.player = { x: sc.walk.x, y: sc.walk.y };
@@ -1930,7 +2699,12 @@
       clearTimeout(self._clkTimer);
       var p = local(e);
       var hit = self.hit(p.x, p.y);
-      if (!self.walk) { if (hit) self.flyTo(hit); return; }
+      if (!self.walk) {
+        var od = hit && self.sc.objs[hit];
+        if (od && od.kind === 'door') return;
+        if (hit) self.flyTo(hit);
+        return;
+      }
       if (self.insideView) {
         if (!hit) { self.exitInside(); return; }
         var din = self.sc.objs[hit];
@@ -2102,8 +2876,6 @@
         if (it.dep < lbDep) { lbDep = it.dep; lbHit = it; }
       }
     }
-    if (lbHit) return lbHit.obj;
-
     /* 第一遍：命中判定 + 记录每个命中的真实深度 */
     var hits = this._hits || (this._hits = []);
     hits.length = 0;
@@ -2128,7 +2900,7 @@
         if (pd < minD) minD = pd;
       }
     }
-    if (!hits.length) return null;
+    if (!hits.length) return lbHit ? lbHit.obj : null;
     /* 第二遍：深度最浅的命中为基准。设备面板（pri=1）只有 80×14 px，
        常与柜体侧板/后板在屏幕上重叠且深度只差几毫米 —— 这类"面挨着面"
        的贴合关系下让设备赢，用户点了设备就不会选中背后的柜体。
@@ -2141,6 +2913,8 @@
         bestP = it.pri; bestD = it.dep; best = it.obj;
       }
     }
+    if (best && String(best).indexOf('door:') === 0 && (!lbHit || bestD < lbDep)) return best;
+    if (lbHit) return lbHit.obj;
     return best || hits[0].obj;
   };
   Viewer.prototype.click = function (sx, sy) {
@@ -2148,6 +2922,17 @@
     if (!o) { this.sel = null; return; }
     var d = this.sc.objs[o];
     if (!d) { this.sel = o; return; }
+    if (d.kind === 'door') {
+      if (!this.openDoors) this.openDoors = {};
+      this.openDoors[d.name] = !this.openDoors[d.name];
+      var tag = (d.hint || '门').split(' · ')[0];
+      d.hint = tag + (this.openDoors[d.name] ? ' · 点击关门' : ' · 点击开门');
+      this._occN = -1;
+      this.sel = o;
+      this.needDraw = 1;
+      if (this.walk) this.keepOutside();
+      return;
+    }
     if (this.walk && (d.kind === 'cab' || d.kind === 'rack')) {
       this.armSelect(d.name);
       return;
@@ -2332,12 +3117,22 @@
   };
 
   /* ---------- 帧 ---------- */
+  Viewer.prototype.doorLive = function (id, pose) {
+    if (!id) return true;
+    var open = this.openDoors && this.openDoors[id];
+    return (open ? 'open' : 'shut') === pose;
+  };
+  Viewer.prototype.blockOn = function (b) {
+    if (!b || !b.doorId) return true;
+    return this.doorLive(b.doorId, b.pose);
+  };
   Viewer.prototype.hitsBlock = function (x, y, rad) {
     var blocks = this.sc.walk && this.sc.walk.blocks;
     if (!blocks) return false;
     var i, b;
     for (i = 0; i < blocks.length; i++) {
       b = blocks[i];
+      if (!this.blockOn(b)) continue;
       if (x >= b.x0 - rad && x <= b.x1 + rad && y >= b.y0 - rad && y <= b.y1 + rad) return true;
     }
     return false;
@@ -2356,8 +3151,12 @@
     var fx = Math.sin(yaw), fy = Math.cos(yaw);
     var dx = (fx * f + fy * s) * spd;
     var dy = (fy * f - fx * s) * spd;
-    /* 开门后要能贴近柜门左右挪。半径小一点，柜体本身仍挡着，走不进去。 */
-    var nx = this.player.x + dx, ny = this.player.y + dy, rad = this.insideView ? 0.16 : 0.28;
+    /* 走道里按约 0.40 米半径挡柜和墙。已经贴在柜子上时先沿法线滑出余量，
+       否则横竖两个方向都会被判定挡住，人卡在柜角转不过去。
+       柜门打开后半径收小，才能站到正对设备的位置。 */
+    var rad = this.insideView ? 0.18 : 0.40;
+    if (!this.insideView && this.hitsBlock(this.player.x, this.player.y, rad)) this.slipMargin(rad);
+    var nx = this.player.x + dx, ny = this.player.y + dy;
     if (!this.hitsBlock(nx, this.player.y, rad)) this.player.x = nx;
     if (!this.hitsBlock(this.player.x, ny, rad)) this.player.y = ny;
     this.keepOutside();
@@ -2393,6 +3192,7 @@
       var best = null, bestD = 1e9;
       for (i = 0; i < blocks.length; i++) {
         b = blocks[i];
+        if (!this.blockOn(b)) continue;
         if (x < b.x0 - 0.02 || x > b.x1 + 0.02 || y < b.y0 - 0.02 || y > b.y1 + 0.02) continue;
         var dl = Math.abs(x - b.x0), dr = Math.abs(b.x1 - x), db = Math.abs(y - b.y0), dt = Math.abs(b.y1 - y);
         var m = Math.min(dl, dr, db, dt);
@@ -2402,6 +3202,36 @@
           else if (m === dr) best = { x: b.x1 + 0.08, y: y };
           else if (m === db) best = { x: x, y: b.y0 - 0.08 };
           else best = { x: x, y: b.y1 + 0.08 };
+        }
+      }
+      if (!best) break;
+      x = best.x; y = best.y;
+    }
+    this.player.x = x;
+    this.player.y = y;
+  };
+  /* 人停在柜子的碰撞余量里时，推到最近的、确实已经出了碰撞盒的位置。
+     柜与柜在走向上的余量会叠在一起，贴着余量边界推，只会在两台柜子之间来回，出不了通道。 */
+  Viewer.prototype.slipMargin = function (rad) {
+    var blocks = this.sc.walk && this.sc.walk.blocks;
+    if (!blocks || !this.player) return;
+    var x = this.player.x, y = this.player.y, i, b, guard = 0;
+    while (guard++ < 6 && this.hitsBlock(x, y, rad)) {
+      var best = null, bestD = 1e9, k;
+      for (i = 0; i < blocks.length; i++) {
+        b = blocks[i];
+        if (!this.blockOn(b)) continue;
+        if (x < b.x0 - rad || x > b.x1 + rad || y < b.y0 - rad || y > b.y1 + rad) continue;
+        var opts = [
+          { x: b.x0 - rad - 0.04, y: y },
+          { x: b.x1 + rad + 0.04, y: y },
+          { x: x, y: b.y0 - rad - 0.04 },
+          { x: x, y: b.y1 + rad + 0.04 }
+        ];
+        for (k = 0; k < opts.length; k++) {
+          if (this.hitsBlock(opts[k].x, opts[k].y, rad)) continue;
+          var dx = opts[k].x - x, dy = opts[k].y - y, d = dx * dx + dy * dy;
+          if (d < bestD) { bestD = d; best = opts[k]; }
         }
       }
       if (!best) break;
@@ -2567,6 +3397,7 @@
     var src = (this.sc && this.sc.faces) || [], out = [], i, f;
     for (i = 0; i < src.length; i++) {
       f = src[i];
+      if (f.doorId && !this.doorLive(f.doorId, f.doorPose)) continue;
       if ((f.lay || 0) < 1) continue;
       if (f.op != null && f.op < 0.85) continue;
       if (f.blend) continue;
@@ -2673,6 +3504,7 @@
     /* ---- 面 ---- */
     for (i = 0; i < bxs.length; i++) {
       f = bxs[i];
+      if (f.doorId && !this.doorLive(f.doorId, f.doorPose)) continue;
       cx2 = f.c[0] - ex; cy2 = f.c[1] - ey; cz2 = f.c[2] - ez;
       /* 背面剔除：法线指向相机（eye - 面心）才画 */
       var ex2 = ex - f.c[0], ey2 = ey - f.c[1], ez2 = ez - f.c[2];
@@ -2681,7 +3513,7 @@
       /* 距离剔除 */
       cx2 = f.c[0] - ex; cy2 = f.c[1] - ey; cz2 = f.c[2] - ez;
       vx = cx2 * fx + cy2 * fy + cz2 * fz;             /* 前方距离 */
-      if (vx > (this.walk ? 26 : c.dist * 4.2) || vx < 0.02) continue;
+      if (vx > (this.walk ? 26 : c.dist * 4.2) || (vx < 0.02 && !f.wall)) continue;
 
       /* 逐顶点变换 + 近平面裁剪（vz = 沿 forward 的正向距离） */
       p = f.p; n = p.length;
@@ -2792,7 +3624,7 @@
            在屏幕上和它重叠。深度几乎相同时（差 < 0.12m，恰好是这种
            "面挨着面"的贴合关系），让设备赢 —— 否则用户明明点在设备
            面板上，命中的却是背后的柜体，观感就是"鼠标和选中的东西对不上" */
-        pickPri: f.obj ? (String(f.obj).indexOf('dev:') === 0 ? 1 : 0) : 0,
+        pickPri: f.obj ? (String(f.obj).indexOf('door:') === 0 ? 2 : String(f.obj).indexOf('dev:') === 0 ? 1 : 0) : 0,
         pickPoly: this.pickPts(px, py, vzA), pickDep: dep, plateCam: plateCam });
     }
 

@@ -391,8 +391,9 @@
     });
     if (!cab) return '';
 
-    var items = D.assets.filter(function (a) { return a.cabinet === cabName; })
-      .sort(function (a, b) { return a.uStart - b.uStart; });
+    var items = D.assets.filter(function (a) {
+      return a.cabinet === cabName && a.uStart >= 1 && a.uH >= 1;
+    }).sort(function (a, b) { return a.uStart - b.uStart; });
 
     var s = new Scene();
     var CW = 0.62, CD = 1.02, H = 2.0, HU = H / 42;   /* CW=柜宽(x) CD=柜深(y) 1U=4.76cm */
@@ -523,7 +524,9 @@
 
   /* 机柜元信息：柜号 / 台数 / 规格构成 / 超容 —— 交给 HTML 图注排版，SVG 里只留刻度 */
   ISO.rackMeta = function (cabName) {
-    var items = window.DCIM.assets.filter(function (a) { return a.cabinet === cabName; });
+    var items = window.DCIM.assets.filter(function (a) {
+      return a.cabinet === cabName && a.uStart >= 1 && a.uH >= 1;
+    });
     var byU = {};
     items.forEach(function (a) { byU[a.uH] = (byU[a.uH] || 0) + 1; });
     var spec = Object.keys(byU).sort(function (a, b) { return a - b; })

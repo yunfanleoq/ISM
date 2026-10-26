@@ -99,7 +99,16 @@
         powerTitle = '列头柜有功功率';
         powerLabel = '采集功率';
       }
-      var assetN = (window.DCIM && window.DCIM.meta && window.DCIM.meta.assetTotal) || 4293;
+      var assetN = (window.DCIM && window.DCIM.meta && window.DCIM.meta.assetTotal) || 0;
+      var rooms = (window.DCIM && window.DCIM.rooms) || [];
+      var assets = (window.DCIM && window.DCIM.assets) || [];
+      function catN(name) {
+        var n = 0, i;
+        for (i = 0; i < assets.length; i++) if (assets[i].cat === name) n++;
+        return n;
+      }
+      var hallN = 0, ri;
+      for (ri = 0; ri < rooms.length; ri++) if (rooms[ri].type === '主机房') hallN++;
       var lv = todayLevels();
       var lvTotal = lv.紧急 + lv.严重 + lv.重要 + lv.次要 + lv.预警;
       var pending = lv.紧急 + lv.严重;
@@ -131,16 +140,16 @@
             '<section class="card"' + goAttr('assetmgr') + '>' +
               '<div class="card-head"><i class="card-bar"></i><h2 class="card-title">部署设备统计</h2></div>' +
               '<div class="summary">' +
-                '<div class="sum-item"><span class="sum-label">单位</span><b class="sum-num">5</b></div>' +
-                '<div class="sum-item"><span class="sum-label">系统</span><b class="sum-num">33</b></div>' +
+                '<div class="sum-item"><span class="sum-label">楼层</span><b class="sum-num">' + ((window.DCIM.floors || []).length) + '</b></div>' +
+                '<div class="sum-item"><span class="sum-label">数据机房</span><b class="sum-num">' + hallN + '</b></div>' +
                 '<div class="sum-item"><span class="sum-label">设备</span><b class="sum-num">' + assetN + '</b></div>' +
               '</div>' +
               '<ul class="dev-list">' +
-                devRow('服务器', 3063, srvIcon()) +
-                devRow('交换机', 652, swIcon()) +
-                devRow('存储设备', 176, stoIcon()) +
-                devRow('网络安全设备', 283, secIcon()) +
-                devRow('其他设备', 119, othIcon()) +
+                devRow('机柜', catN('机柜'), srvIcon()) +
+                devRow('动环采集器', catN('采集器'), swIcon()) +
+                devRow('接入交换机', catN('交换机'), stoIcon()) +
+                devRow('汇聚交换机', catN('汇聚交换机A') + catN('汇聚交换机B'), secIcon()) +
+                devRow('管理服务器', catN('管理服务器A') + catN('管理服务器B'), othIcon()) +
               '</ul>' +
             '</section>' +
 
@@ -154,11 +163,11 @@
                 '</div>' +
                 '<div class="cab-stats">' +
                   '<div class="stat"><span class="stat-label">机柜总数</span>' +
-                    '<span class="stat-row"><b class="stat-num sm c-cyan">588</b><span class="stat-unit">个</span></span></div>' +
+                    '<span class="stat-row"><b class="stat-num sm c-cyan">' + A.num(window.DCIM.meta.cabTotal) + '</b><span class="stat-unit">个</span></span></div>' +
                   '<div class="stat"><span class="stat-label">已启用机柜</span>' +
-                    '<span class="stat-row"><b class="stat-num sm c-green">576</b><span class="stat-unit">个</span></span></div>' +
+                    '<span class="stat-row"><b class="stat-num sm c-green">' + A.num(window.DCIM.meta.cabUsed) + '</b><span class="stat-unit">个</span></span></div>' +
                   '<div class="stat"><span class="stat-label">未启用机柜</span>' +
-                    '<span class="stat-row"><b class="stat-num sm c-orange">12</b><span class="stat-unit">个</span></span></div>' +
+                    '<span class="stat-row"><b class="stat-num sm c-orange">' + A.num(window.DCIM.meta.cabFree) + '</b><span class="stat-unit">个</span></span></div>' +
                 '</div>' +
               '</div>' +
             '</section>' +
@@ -193,10 +202,10 @@
               }).join('') +
             '</div>' +
             '<div class="metrics">' +
-              metric('9745', '㎡', '数据中心总面积') +
-              metric('588', '个', '机柜总数') +
-              metric('21', '台', 'UPS 总数') +
-              metric('71', '台', '空调总数') +
+              metric(A.num(window.DCIM.meta.area || 0), '㎡', '楼层占地') +
+              metric(A.num(window.DCIM.meta.cabTotal), '个', '机柜总数') +
+              metric(String(window.DCIM.rooms.filter(function (r) { return r.type === '主机房'; }).length), '间', '数据机房') +
+              metric(String(window.DCIM.assets.filter(function (a) { return a.cat === '采集器'; }).length), '台', '动环采集器') +
             '</div>' +
           '</section>' +
 

@@ -19,7 +19,8 @@
   var X0 = 58, X1 = 988;         // 楼体横向范围
   var BL = 340, BR = 372;        // 底面线：左端 / 右端 y
   var KX = 0.72, KY = 0.21;      // 进深方向单位向量（向右后上方）
-  var N  = 4;                    // 地上层数
+  var N  = 3;                    // 图纸上的 3 / 4 / 5 层
+  var FLOOR_IDS = ['3F', '4F', '5F'];
   var ROOF = 80;                 // 屋顶面进深
   var DEP  = 112;                // 最右端侧立面进深
 
@@ -29,10 +30,7 @@
      cols = 竖向窗列数
      side = 是否绘制最右端大侧立面 */
   var SEGS = [
-    { x0:  58, x1: 149, cols: 4,  h: 168, dd:   0 },
-    { x0: 149, x1: 383, cols: 9,  h: 201, dd:  -8 },
-    { x0: 383, x1: 720, cols: 11, h: 257, dd:  -4 },
-    { x0: 720, x1: 988, cols: 9,  h: 338, dd:   0, side: true }
+    { x0: 58, x1: 988, cols: 18, h: 240, dd: 0, side: true }
   ];
 
   /* ---------- 基础函数 ---------- */
@@ -200,11 +198,11 @@
 
     /* 5. 楼后升腾的光柱 */
     o.push('<path class="fx-beam" fill="url(#' + gid + 'beam)" d="M' +
-           r2(738) + ',' + r2(topY(SEGS[3], 738) + 2) + 'L' + r2(806) + ',' + r2(topY(SEGS[3], 806) + 2) +
+           r2(738) + ',' + r2(topY(SEGS[0], 738) + 2) + 'L' + r2(806) + ',' + r2(topY(SEGS[0], 806) + 2) +
            'L' + r2(796) + ',-34' + 'L' + r2(746) + ',-34' + 'Z"/>');
     o.push('<path class="fx-beam b2" fill="url(#' + gid + 'beam)" d="M' +
-           r2(452) + ',' + r2(topY(SEGS[2], 452) + 2) + 'L' + r2(492) + ',' + r2(topY(SEGS[2], 492) + 2) +
-           'L' + r2(487) + ',' + r2(topY(SEGS[2], 452) - 96) + 'L' + r2(456) + ',' + r2(topY(SEGS[2], 452) - 96) + 'Z"/>');
+           r2(452) + ',' + r2(topY(SEGS[0], 452) + 2) + 'L' + r2(492) + ',' + r2(topY(SEGS[0], 492) + 2) +
+           'L' + r2(487) + ',' + r2(topY(SEGS[0], 452) - 96) + 'L' + r2(456) + ',' + r2(topY(SEGS[0], 452) - 96) + 'Z"/>');
 
     /* 6. 地面全息圆盘 + 同心扩散波纹 */
     o.push('<ellipse class="fx-disc" cx="' + r2(cx) + '" cy="' + r2(cy + 10) + '" rx="556" ry="96"/>');
@@ -485,10 +483,10 @@
       var n = alloc[j][si];
       if (!n) continue;
       var isHL = (j === hlIdx);
-      o.push('<g class="flr' + (isHL ? ' is-hl' : '') + '" data-f="' + (j + 1) + '">');
+      o.push('<g class="flr' + (isHL ? ' is-hl' : '') + '" data-f="' + FLOOR_IDS[j] + '">');
 
       var cw = (s.x1 - s.x0) / n;
-      var list = roomsOf((j + 1) + 'F');
+      var list = roomsOf(FLOOR_IDS[j]);
       var nodes = [];
 
 
@@ -679,7 +677,7 @@
   function svg(opt) {
     opt = opt || {};
     var hl = opt.floor;
-    var hlIdx = (hl && /^[1-9]/.test(hl)) ? Math.min(N, parseInt(hl, 10)) - 1 : -1;
+    var hlIdx = FLOOR_IDS.indexOf(hl);
     var gid = 'blW' + (opt.uid || 'A');
 
     var o = [], i, j;
@@ -689,7 +687,7 @@
       alloc = [];
       for (j = 0; j < N; j++) {
         var tot = 6, k2;
-        for (k2 = 0; k2 < FL.length; k2++) if (FL[k2].floor === (j + 1) + 'F') tot = FL[k2].rooms || 6;
+        for (k2 = 0; k2 < FL.length; k2++) if (FL[k2].floor === FLOOR_IDS[j]) tot = FL[k2].rooms || 6;
         alloc.push(allocRooms(Math.max(2, tot)));
       }
     }
@@ -818,7 +816,7 @@
         for (i = 0; i < s.cols; i++) {
           var cls = 'win' + (j === hlIdx ? ' is-hl' : '') +
                     (((i * 5 + j * 3 + s.x0) % 11 < 3) ? ' is-dim' : '');
-          wins += '<path class="' + cls + '" fill="url(#' + gid + ')" data-f="' + (j + 1) + '" d="' +
+          wins += '<path class="' + cls + '" fill="url(#' + gid + ')" data-f="' + FLOOR_IDS[j] + '" d="' +
                   winPath(s, s.x0 + i * cw + pad, s.x0 + (i + 1) * cw - pad, j) + '"/>';
         }
       }
@@ -935,7 +933,7 @@
                   'L' + r2(ox(s.x1, d)) + ',' + r2(yt(s.x1)) +
                   'L' + r2(ox(s.x1, d)) + ',' + r2(yb(s.x1)) +
                   'L' + r2(ox(s.x0, d)) + ',' + r2(yb(s.x0)) + 'Z';
-          o.push('<path class="hit' + (j2 === hlIdx ? ' is-on' : '') + '" data-floor="' + (j2 + 1) + 'F" d="' + p + '"/>');
+          o.push('<path class="hit' + (j2 === hlIdx ? ' is-on' : '') + '" data-floor="' + FLOOR_IDS[j2] + '" d="' + p + '"/>');
         });
       }
       o.push('</g>');

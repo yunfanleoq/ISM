@@ -635,7 +635,7 @@
         var d = byU[u];
         rows.push('<div class="u-row ' + (d ? (d.cat === '服务器' ? 'is-srv' : d.cat === '存储设备' ? 'is-sto' : 'is-net') : 'is-empty') + '">' +
           '<span class="u-no">' + u + '</span>' +
-          '<span class="u-nm">' + (d ? A.esc(d.model + ' · ' + d.sn) : '空位') + '</span>' +
+          '<span class="u-nm">' + (d ? A.esc(d.model + ' · ' + d.sn) + (d.source === 'sim' ? ' ' + A.simTag('sim') : '') : '空位') + '</span>' +
           (d ? '<span class="u-kw">' + d.kw + 'kW</span>' : '') + '</div>');
       }
 

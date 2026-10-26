@@ -280,6 +280,11 @@ window.App = window.App || {};
     location.hash = next;
   };
 
+  A.simTag = function (source) {
+    var live = source === 'live' || source === '实测';
+    return '<span class="src-tag' + (live ? ' is-live' : '') + '">' + (live ? '实测' : '模拟') + '</span>';
+  };
+
   A.render = function () {
     var raw = (location.hash || '').replace('#/', '');
     var parts = raw.split('/');
@@ -317,6 +322,11 @@ window.App = window.App || {};
     A.current = def;
     try {
       def.render(page);
+      var mode = (window.DCIM && window.DCIM.meta && window.DCIM.meta.dataMode) || 'sim';
+      A.qa('.page-head, .stage-sub, .card-head, .fl-head', page).forEach(function (el) {
+        if (el.querySelector('.src-tag')) return;
+        el.insertAdjacentHTML('beforeend', A.simTag(mode));
+      });
       if (def.mount) def.mount(page);
       page.addEventListener('click', function (e) {
         var back = e.target.closest('[data-origin="dashboard"]');

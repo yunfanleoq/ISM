@@ -10,7 +10,7 @@
   AM.views = AM.views || {};
 
   AM.state = {
-    cabRoom: '205机房',
+    cabRoom: '3层1#数据机房',
     cab: '',
     flowFilter: 'all',
     stockFilter: 'open',

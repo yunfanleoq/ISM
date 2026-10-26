@@ -153,7 +153,8 @@ func BjgaLive() map[string]interface{} {
 		"manualRatio": bjgaRound(ratio, 1), "cabRate": bjgaRound(cabRate, 2),
 		"it": it, "total": pueBase,
 		"parts": parts,
-		// 种子分项不是总进线电表。有总表接入后再改为 true。
+		"reading": "sim",
+		// 种子分项不是总进线电表。有总表接入后再改为 true，并把 reading 改为 live。
 		"totalMeter": false,
 	}
 }
