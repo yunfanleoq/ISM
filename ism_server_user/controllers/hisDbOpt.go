@@ -34,6 +34,7 @@ func buildTaosdumpArgs(host, port, user, pass, dbName, outDir string) []string {
 	if dbName == "" {
 		dbName = tdengineHistoryDB
 	}
+	threadFlag, threadNum := hisdbbackup.DataDumpThreadFlag()
 	return []string{
 		"-h", host,
 		"-P", port,
@@ -41,6 +42,8 @@ func buildTaosdumpArgs(host, port, user, pass, dbName, outDir string) []string {
 		taosdumpPasswordArg(pass),
 		"-D", dbName,
 		"-o", outDir,
+		// -T 只加速导数据，不加速表结构。不要传 -t。
+		threadFlag, threadNum,
 	}
 }
 
@@ -108,6 +111,20 @@ func showTdengineDatabases(viaDocker bool, container, host, port, user, pass str
 		return raw, nil, runErr
 	}
 	return raw, parseShowDatabases(raw), nil
+}
+
+func taosdumpFailMsg(out []byte, runErr error) string {
+	if runErr != nil && strings.Contains(runErr.Error(), "超时") {
+		return runErr.Error()
+	}
+	msg := strings.TrimSpace(string(out))
+	if msg == "" && runErr != nil {
+		return runErr.Error()
+	}
+	if len(msg) > 800 {
+		msg = msg[len(msg)-800:]
+	}
+	return msg
 }
 
 func taosdumpArgsForLog(args []string) string {
@@ -215,6 +232,13 @@ func (c *HisDbOptController) HisDbBackUp() {
 
 	stamp := hisdbbackup.BackupStamp(time.Now())
 	distName := "ISM_TDengine_Backup_" + stamp
+	if !beginHisBackup(distName) {
+		result["msg"] = "已有历史库备份在进行，请等这次结束再点。进度在「备份目录」里。"
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	defer finishHisBackup()
 	hostOut := filepath.Join("data", "hisdbbackup", distName)
 	if mkErr := os.MkdirAll(hostOut, 0755); mkErr != nil {
 		result["msg"] = "创建备份目录失败: " + mkErr.Error()
@@ -222,6 +246,15 @@ func (c *HisDbOptController) HisDbBackUp() {
 		c.ServeJSON()
 		return
 	}
+	keepBackup := false
+	defer func() {
+		if keepBackup {
+			return
+		}
+		if rmErr := hisdbbackup.RemoveIfInvalid(hostOut); rmErr != nil {
+			logs.Warn("HisDbBackUp remove invalid dir %s: %v", hostOut, rmErr)
+		}
+	}()
 
 	dumpHost := host
 	dumpPort := port
@@ -257,8 +290,13 @@ func (c *HisDbOptController) HisDbBackUp() {
 		return
 	}
 
+	var stopSync func() error
+	var copyErr error
+	var containerDir string
+	var out []byte
+	var runErr error
 	if viaDocker {
-		containerDir := "/tmp/" + distName
+		containerDir = "/tmp/" + distName
 		mkdirOut, mkdirErr := runCmdTimeout(30*time.Second, "docker", "exec", tdContainer, "mkdir", "-p", containerDir)
 		if mkdirErr != nil {
 			detail := strings.TrimSpace(string(mkdirOut))
@@ -271,46 +309,46 @@ func (c *HisDbOptController) HisDbBackUp() {
 			c.ServeJSON()
 			return
 		}
+		stopSync = startDockerDirSync(tdContainer, containerDir, hostOut)
 		dumpArgs := buildTaosdumpArgs(dumpHost, dumpPort, user, pass, matchedDB, containerDir)
 		dockerArgs := append([]string{"exec", tdContainer, taosdump}, dumpArgs...)
 		logs.Info("HisDbBackUp docker taosdump: docker exec %s %s %s", tdContainer, taosdump, taosdumpArgsForLog(dumpArgs))
-		out, runErr := runCmdTimeout(15*time.Minute, "docker", dockerArgs...)
-		msg := strings.TrimSpace(string(out))
-		if runErr != nil {
-			if msg == "" {
-				msg = runErr.Error()
-			}
-			if strings.Contains(msg, "is not exist") || strings.Contains(msg, "not exist") {
-				result["msg"] = "docker taosdump 失败（输出目录不存在）: " + msg
-			} else {
-				result["msg"] = "docker exec taosdump 失败: " + msg
-			}
-			logs.Error("HisDbBackUp docker taosdump failed: %v", msg)
-			c.Data["json"] = result
-			c.ServeJSON()
-			return
-		}
-		_ = exec.Command("docker", "cp", fmt.Sprintf("%s:%s/.", tdContainer, containerDir), hostOut).Run()
-		_ = exec.Command("docker", "exec", tdContainer, "rm", "-rf", containerDir).Run()
+		out, runErr = runCmdTimeoutWatch(noteHisBackupLine, "docker", dockerArgs...)
 	} else {
 		args := buildTaosdumpArgs(dumpHost, dumpPort, user, pass, matchedDB, hostOut)
 		logs.Info("HisDbBackUp taosdump: %s %s", taosdump, taosdumpArgsForLog(args))
-		out, runErr := runCmdTimeout(15*time.Minute, taosdump, args...)
-		msg := strings.TrimSpace(string(out))
-		if runErr != nil {
-			if msg == "" {
-				msg = runErr.Error()
-			}
-			result["msg"] = "taosdump 失败: " + msg
-			logs.Error("HisDbBackUp taosdump failed: %v", msg)
-			c.Data["json"] = result
-			c.ServeJSON()
-			return
+		out, runErr = runCmdTimeoutWatch(noteHisBackupLine, taosdump, args...)
+	}
+	// 先记下导出阶段。后面的拷贝会把阶段改成 copy，不能拿改过的阶段写失败原因。
+	dumpProg := currentDumpProgress()
+	if stopSync != nil {
+		noteHisBackupPhase("copy")
+		copyErr = stopSync()
+	}
+	failDetail := ""
+	if runErr != nil {
+		failDetail = taosdumpFailMsg(out, runErr)
+		logs.Error("HisDbBackUp taosdump failed: %v", failDetail)
+	}
+	if copyErr != nil {
+		logs.Error("HisDbBackUp copy to host failed: %v", copyErr)
+		if failDetail == "" {
+			failDetail = copyErr.Error()
+		} else {
+			failDetail = failDetail + "。" + copyErr.Error()
+		}
+		if runErr == nil {
+			runErr = copyErr
 		}
 	}
-
-	result["code"] = 0
-	result["msg"] = "备份成功"
+	keep, msg, ok := settleDump(hostOut, tdContainer, containerDir, runErr, failDetail, dumpProg)
+	if keep {
+		keepBackup = true
+	}
+	if ok {
+		result["code"] = 0
+	}
+	result["msg"] = msg
 	result["path"] = hostOut
 	c.Data["json"] = result
 	c.ServeJSON()

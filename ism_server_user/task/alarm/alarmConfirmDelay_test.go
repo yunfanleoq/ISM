@@ -1,9 +1,14 @@
 package alarmTask
 
 import (
+	"ISMServer/models"
 	protocol_common "ISMServer/protocol/common"
+	"path/filepath"
 	"testing"
 	"time"
+
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
 )
 
 func resetAlarmConfirmDelayForTest() {
@@ -70,5 +75,63 @@ func TestShouldDebounceUsesAlarmOnValue(t *testing.T) {
 	notActive := protocol_common.PushAlarm{DeviceUuid: "d2", DataUuid: "p-on0", Value: "1", AlarmOnValue: 0}
 	if shouldDebounceAlarmRaise(notActive, false) {
 		t.Fatal("value 1 with AlarmOnValue 0 should not debounce")
+	}
+}
+
+func TestClearStuckRecoveryWhenMemoryAlreadyZero(t *testing.T) {
+	if !clearStuckRecovery("0", "0", 1) {
+		t.Fatal("repeat 0 with trigger 1 must still clear the realtime row")
+	}
+	if clearStuckRecovery("0", "0", 0) {
+		t.Fatal("value 0 with trigger 0 is still an alarm")
+	}
+	if clearStuckRecovery("1", "0", 1) {
+		t.Fatal("a changed value is not the same-value recovery path")
+	}
+	if !protocol_common.IsAlarmValueActive("0", 0) || protocol_common.IsAlarmValueActive("0", 1) {
+		t.Fatal("trigger polarity changed")
+	}
+
+	old := models.Db
+	t.Cleanup(func() { models.Db = old })
+	db, err := gorm.Open(sqlite.Open(filepath.Join(t.TempDir(), "alarm.db")), &gorm.Config{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	models.Db = db
+	if err := db.AutoMigrate(&models.DevicesAlarmList{}); err != nil {
+		t.Fatal(err)
+	}
+	sentinel := time.Date(2006, 1, 2, 15, 4, 5, 0, time.Local)
+	row := models.DevicesAlarmList{
+		AlarmName:         "电池模式",
+		DeviceUuid:        "dev-u25",
+		ProjectUuid:       "proj",
+		DeviceName:        "配电室2B1_U25",
+		DataUuid:          "point-battery",
+		ModelDataUuid:     "model-battery",
+		HappenTime:        time.Date(2026, 10, 19, 16, 1, 11, 0, time.Local),
+		ClearTime:         sentinel,
+		AlarmMessage:      "2B1-U25_电池模式",
+		AlarmClearMessage: "2B1-U25_电池模式恢复",
+		AlarmLevel:        1,
+	}
+	if err := db.Create(&row).Error; err != nil {
+		t.Fatal(err)
+	}
+	clearAt := time.Date(2026, 10, 19, 16, 1, 20, 0, time.Local)
+	if n := models.ClearActiveDeviceAlarm(0, row.DeviceUuid, row.DataUuid, clearAt); n != 1 {
+		t.Fatalf("cleared %d rows, want 1", n)
+	}
+	var got models.DevicesAlarmList
+	if err := db.First(&got, row.ID).Error; err != nil {
+		t.Fatal(err)
+	}
+	activeBefore := time.Date(2007, 1, 2, 15, 4, 5, 0, time.Local)
+	if got.ClearTime.Before(activeBefore) {
+		t.Fatalf("row still active, clear_time=%v", got.ClearTime)
+	}
+	if n := models.ClearActiveDeviceAlarm(0, row.DeviceUuid, row.DataUuid, clearAt); n != 0 {
+		t.Fatalf("second clear affected %d rows", n)
 	}
 }

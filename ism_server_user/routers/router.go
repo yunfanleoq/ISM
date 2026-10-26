@@ -302,6 +302,7 @@ func init() {
 	beego.Router("/GetHisBackUpList", &controllers.HisDbOptController{}, "*:GetHisBackUpList")
 	beego.Router("/HisDbRestore", &controllers.HisDbOptController{}, "*:HisDbRestore")
 	beego.Router("/HisDbDeleteBackup", &controllers.HisDbOptController{}, "*:HisDbDeleteBackup")
+	beego.Router("/HisDbDownload", &controllers.HisDbOptController{}, "*:HisDbDownload")
 	beego.Router("/HisDbBackupUpload", &controllers.HisDbOptController{}, "*:HisDbBackupUpload")
 	beego.Router("/GetBackUpList", &controllers.DbOptController{}, "*:GetBackUpList")
 	beego.Router("/DbRestore", &controllers.DbOptController{}, "*:DbRestore")
@@ -387,6 +388,7 @@ func init() {
 	beego.Router("/EditReportTemplete", &controllers.ReportTempleteController{}, "*:EditReportTemplete")
 	beego.Router("/SaveReportTemplete", &controllers.ReportTempleteController{}, "*:SaveReportTemplete")
 	beego.Router("/GetReportTempleteFile", &controllers.ReportTempleteController{}, "*:GetReportTempleteFile")
+	beego.Router("/GetDiyReportFile", &controllers.ReportTempleteController{}, "*:GetDiyReportFile")
 	beego.Router("/HandExport", &controllers.ReportTempleteController{}, "*:HandExport")
 
 	// SQL报表模板

@@ -1839,7 +1839,7 @@ export default {
     },
     isImageHotspotComponent () {
       const type = this.configObject && this.configObject.type
-      return type === 'ism-view-png-image' || type === 'image' || type === 'view-svg-image'
+      return type === 'ism-view-png-image' || type === 'image' || type === 'view-svg-image' || type === 'view-svg-text' || type === 'ism-view-svg-text'
     },
     imageDataBind () {
       if (!this.configObject || !Array.isArray(this.configObject.dataBind)) {
@@ -2447,6 +2447,11 @@ export default {
     },
     onSelectData(selectData) {
 
+      if(this.BandType=="data" && Array.isArray(selectData)) {
+        this.applyCheckedDataBinds(selectData)
+        this.UpdateNodeData()
+        return
+      }
       if(this.BandType=="data") {
         if (!Array.isArray(this.configObject.dataBind)) {
           this.$set(this.configObject, 'dataBind', [])
@@ -2465,6 +2470,7 @@ export default {
         this.configObject.dataBind[this.selectBandDataIndex].deviceSN = selectData.DeviceSN
         this.configObject.dataBind[this.selectBandDataIndex].dataName = selectData.name
         this.configObject.dataBind[this.selectBandDataIndex].dataID = selectData.uuid
+        this.configObject.dataBind[this.selectBandDataIndex].dataUnit = selectData.unit || selectData.dataUnit || ''
       }
       else if(this.BandType=="active") {
         this.configObject.active[this.selectBandDataIndex].DeviceName=selectData.DeviceName
@@ -2532,7 +2538,55 @@ export default {
     ShowDeviceDataModel(index,type){
       this.selectBandDataIndex = index;
       this.BandType = type
-      this.$refs.deviceDataModel.showDataModal()
+      this.$refs.deviceDataModel.showDataModal({ multiSelect: type === 'data' })
+    },
+    makeDataBindItem(selectData) {
+      return {
+        DeviceName: selectData.DeviceName,
+        isBandDevice: selectData.IsDevice,
+        deviceSN: selectData.DeviceSN,
+        dataName: selectData.name,
+        dataID: selectData.uuid,
+        dataUnit: selectData.unit || selectData.dataUnit || ''
+      }
+    },
+    applyCheckedDataBinds(points) {
+      if (!this.configObject) return
+      if (!Array.isArray(this.configObject.dataBind)) {
+        this.$set(this.configObject, 'dataBind', [])
+      }
+      const binds = this.configObject.dataBind
+      const seen = {}
+      for (let i = 0; i < binds.length; i++) {
+        const id = binds[i] && binds[i].dataID
+        if (id) seen[id] = true
+      }
+      const fresh = []
+      const list = Array.isArray(points) ? points : []
+      for (let i = 0; i < list.length; i++) {
+        const point = list[i]
+        const id = point && point.uuid
+        if (!id || seen[id]) continue
+        seen[id] = true
+        fresh.push(point)
+      }
+      const idx = this.selectBandDataIndex
+      const slot = binds[idx]
+      const slotEmpty = !slot || !slot.dataID
+      if (!fresh.length) {
+        if (slot && !slot.dataID) {
+          binds.splice(idx, 1)
+        }
+        return
+      }
+      let start = 0
+      if (slotEmpty) {
+        this.$set(binds, idx, this.makeDataBindItem(fresh[0]))
+        start = 1
+      }
+      for (let i = start; i < fresh.length; i++) {
+        binds.push(this.makeDataBindItem(fresh[i]))
+      }
     },
     changeAction(v,index){
       if(v=='SetValue')

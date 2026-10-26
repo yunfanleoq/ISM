@@ -433,6 +433,15 @@ func commitRenderedAlarm(alarm protocol_common.PushAlarm) {
 	DeviceAlarmTemp[alarmConfirmKey(alarm)] = alarm
 }
 
+// clearStuckRecovery 内存里已经是同一个恢复值时，仍要清掉库里卡住的实时告警。
+// 触发值为 0 且当前值也是 0 时仍处于告警态，不能清。
+func clearStuckRecovery(memoryValue, currentValue string, alarmOnValue int) bool {
+	if memoryValue != currentValue {
+		return false
+	}
+	return !protocol_common.IsAlarmValueActive(currentValue, alarmOnValue)
+}
+
 func DealWithAlarm() {
 	InitializeStartupAlarmGuard()
 	for {
@@ -456,7 +465,12 @@ func DealWithAlarm() {
 
 			isRaising := protocol_common.IsAlarmValueActive(alarm.Value, alarm.AlarmOnValue)
 			if protocol_common.ObserveStartupAlarm(alarm, isRaising) {
-				// Silent baseline only: no DB create / notice during startup window.
+				// 启动窗内不新建告警。已经恢复的值仍要把重启前卡住的实时告警送进历史。
+				if !isRaising && alarm.DataUuid != deviceStatusDataUUID {
+					if models.ClearActiveDeviceAlarm(0, alarm.DeviceUuid, alarm.DataUuid, alarm.HappenTime) > 0 {
+						protocol_common.PushGAlarmQueue.QueuePush(alarm)
+					}
+				}
 				DeviceAlarmTemp[key] = alarm
 				if alarm.DataUuid == "sys.suid.device.status" {
 					status := 1
@@ -538,6 +552,8 @@ func DealWithAlarm() {
 							go SendAlarmNotice(alarm)
 						}
 						models.Db.Model(&models.MonitorList{}).Where("uuid = ?", alarm.DeviceUuid).Update("status", 1)
+					} else if models.ClearActiveDeviceAlarm(0, alarm.DeviceUuid, alarm.DataUuid, alarm.HappenTime) > 0 {
+						protocol_common.PushGAlarmQueue.QueuePush(alarm)
 					}
 				}
 				DeviceAlarmTemp[key] = alarm
@@ -555,10 +571,8 @@ func DealWithAlarm() {
 							go SendAlarmNotice(alarm)
 						}
 					} else {
-						updateAlarm.ClearTime = alarm.HappenTime
-						updateAlarm.KeepTime = (float64)((alarm.HappenTime.UnixMilli() - alarmTemp.HappenTime.UnixMilli()) / 1000.0)
 						status = 1
-						models.Db.Model(&models.DevicesAlarmList{}).Where("ID = ? AND device_uuid = ? AND data_uuid = ?", alarmTemp.ID, alarm.DeviceUuid, alarm.DataUuid).Updates(models.DevicesAlarmList{ClearTime: updateAlarm.ClearTime, KeepTime: updateAlarm.KeepTime})
+						models.ClearActiveDeviceAlarm(alarmTemp.ID, alarm.DeviceUuid, alarm.DataUuid, alarm.HappenTime)
 						protocol_common.PushGAlarmQueue.QueuePush(alarm)
 						if alarm.AlarmClearMessage != "" && !alarm.SuppressNotice {
 							go SendAlarmNotice(alarm)
@@ -569,6 +583,13 @@ func DealWithAlarm() {
 					}
 
 					DeviceAlarmTemp[key] = alarm
+				} else if clearStuckRecovery(alarmTemp.Value, alarm.Value, alarm.AlarmOnValue) {
+					if models.ClearActiveDeviceAlarm(alarmTemp.ID, alarm.DeviceUuid, alarm.DataUuid, alarm.HappenTime) > 0 {
+						protocol_common.PushGAlarmQueue.QueuePush(alarm)
+						if alarm.AlarmClearMessage != "" && !alarm.SuppressNotice {
+							go SendAlarmNotice(alarm)
+						}
+					}
 				}
 			}
 		}

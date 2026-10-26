@@ -42,23 +42,34 @@
     return ' data-i="' + i + '"' + k;
   }
 
+  /* 工程里同一开关常导出两把刀（分/合各一帧、坐标略偏）。有 k 用 k；无 k 用 dev，避免叠绘红绿。 */
+  function knifePickId(n) {
+    if (n.t === 'S') return 'S:' + n.x + ',' + n.y;
+    if (n.t !== 'I') return '';
+    if (n.k) return 'I:' + n.k;
+    if (n.dev) return 'I:dev:' + n.dev;
+    return 'I:' + n.x + ',' + n.y;
+  }
+
   function knifeInner(decor) {
-    /* 合闸红：竖线不断，中段右侧一条贴线的小弧。分闸绿：竖线从铰接点断开，刀片甩成大钩。两组互斥，线宽相同。 */
+    /* 合闸红：半圆弧留着，竖线从母线连通到底，不画斜刀片。分闸绿：竖线在下触点处断开。刀片是同一条直线：上端在上方铰接圆点圆心 (18,44)，下端在半圆弧弧长 2/3 处、下部 1/3 分界 (39.51,70.92)，不贴上沿、不贴正中。 */
+    var arc = '<path d="M30 52 A13.2 13.2 0 0 1 30 78"/>';
+    var dots = '<circle cx="18" cy="14" r="4.15" fill="currentColor" stroke="none"/>' +
+      '<circle cx="18" cy="44" r="4.15" fill="currentColor" stroke="none"/>' +
+      '<circle cx="18" cy="86" r="4.15" fill="currentColor" stroke="none"/>';
+    var bladeLine = '<line x1="18" y1="44" x2="39.51" y2="70.92" stroke-linecap="butt"/>';
     var blade = '<svg class="hx-blade" viewBox="-6 0 48 124" preserveAspectRatio="xMidYMid meet">' +
       '<g class="hx-k-closed" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round">' +
         '<line x1="18" y1="0" x2="18" y2="114" stroke-linecap="butt"/>' +
-        '<path d="M30 52 A13.2 13.2 0 0 1 30 78"/>' +
-        '<circle cx="18" cy="14" r="4.15" fill="currentColor" stroke="none"/>' +
-        '<circle cx="18" cy="44" r="4.15" fill="currentColor" stroke="none"/>' +
-        '<circle cx="18" cy="86" r="4.15" fill="currentColor" stroke="none"/>' +
+        arc +
+        dots +
       '</g>' +
       '<g class="hx-k-open" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round">' +
         '<line x1="18" y1="0" x2="18" y2="44" stroke-linecap="butt"/>' +
         '<line x1="18" y1="86" x2="18" y2="114" stroke-linecap="butt"/>' +
-        '<path d="M18 44 C19 46.7 19.7 49 21 52 C22.3 55 24.2 59 26 62 C27.8 65 30 68 32 70 C34 72 36.5 74.7 38 74 C39.5 73.3 40.7 69 41 66 C41.3 63 41.2 58.5 40 56 C38.8 53.5 35.7 51.7 34 51 C32.3 50.3 31.3 51.7 30 52"/>' +
-        '<circle cx="18" cy="14" r="4.15" fill="currentColor" stroke="none"/>' +
-        '<circle cx="18" cy="44" r="4.15" fill="currentColor" stroke="none"/>' +
-        '<circle cx="18" cy="86" r="4.15" fill="currentColor" stroke="none"/>' +
+        arc +
+        bladeLine +
+        dots +
       '</g>' +
       '<circle cx="18" cy="114" r="4.2" fill="#ffffff"/>' +
       '</svg>';
@@ -80,13 +91,10 @@
     var pick = {};
     nodes.forEach(function (n, i) {
       if (capNode(n)) return;
-      if (n.t === 'S') {
-        var sid = n.x + ',' + n.y;
-        if (pick[sid] == null) pick[sid] = i;
-      } else if (n.t === 'I') {
-        var kid = 'I:' + (n.k || (n.x + ',' + n.y));
-        if (pick[kid] == null || n.st === '1') pick[kid] = i;
-      }
+      if (n.t !== 'S' && n.t !== 'I') return;
+      var kid = knifePickId(n);
+      if (!kid) return;
+      if (pick[kid] == null || n.st === '1') pick[kid] = i;
     });
     nodes.forEach(function (n, i) {
       if (capNode(n)) return;
@@ -100,15 +108,9 @@
         }
         return;
       }
-      if (n.t === 'S') {
-        if (pick[n.x + ',' + n.y] !== i) return;
-        rest.push(knifeHtml(n, i, page.kind === 'column' && n.decor));
-        return;
-      }
-      if (n.t === 'I') {
-        var ik = 'I:' + (n.k || (n.x + ',' + n.y));
-        if (pick[ik] !== i) return;
-        rest.push(knifeHtml(n, i, false));
+      if (n.t === 'S' || n.t === 'I') {
+        if (pick[knifePickId(n)] !== i) return;
+        rest.push(knifeHtml(n, i, n.t === 'S' && page.kind === 'column' && n.decor));
         return;
       }
       if (n.t === 'T') {

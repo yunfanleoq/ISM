@@ -323,6 +323,7 @@ func setDeviceDataEx(deviceData string, floatValue interface{}, skipAlarm bool) 
 				}
 			}
 			signleAlarm.AlarmLevel = getRealData.AlarmLevel
+			signleAlarm.AlarmOnValue = getRealData.AlarmOnValue
 			signleAlarm.AlarmClearMessage = getRealData.AlarmClearMessage
 			signleAlarm.AlarmMessage = getRealData.AlarmMessage
 			signleAlarm.DataName = getRealData.Name
@@ -442,6 +443,7 @@ func setDeviceDataEx(deviceData string, floatValue interface{}, skipAlarm bool) 
 						}
 					}
 					signleAlarm.AlarmLevel = readData.AlarmLevel
+					signleAlarm.AlarmOnValue = readData.AlarmOnValue
 					signleAlarm.AlarmClearMessage = readData.AlarmClearMessage
 					signleAlarm.AlarmMessage = readData.AlarmMessage
 					signleAlarm.DataName = readData.Name

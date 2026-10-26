@@ -6,7 +6,8 @@
     render: function (root) {
       root.innerHTML = '<div id="hxPower" class="grow" style="min-height:0"></div>';
       var host = document.getElementById('hxPower');
-      var run = function () { if (window.HXScreen) window.HXScreen.mount(host, 'power'); };
+      /* drill：左侧整棵架构树，配电室→一次图，机房/列→列头柜，顶栏面包屑 */
+      var run = function () { if (window.HXScreen) window.HXScreen.mount(host, 'drill'); };
       if (window.HXScreen && window.HXScreen.ready) window.HXScreen.ready.then(run);
       else run();
     },

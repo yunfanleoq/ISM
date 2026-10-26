@@ -432,6 +432,9 @@ export default {
         if(res.data.code==0)
         {
           _t.dataSource =res.data.list || []
+          if (res.data.truncated) {
+            _t.$message.warning(res.data.msg || '结果过多，已只返回前 10 万行')
+          }
           const rows = _t.dataSource || []
           const uniq = {}
           rows.forEach(function (r) {

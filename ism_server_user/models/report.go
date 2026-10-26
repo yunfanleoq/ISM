@@ -10,6 +10,7 @@ package models
 
 import (
 	protocol_common "ISMServer/protocol/common"
+	"ISMServer/utils/diyreport"
 	"ISMServer/utils/errmsg"
 	"bytes"
 	"context"
@@ -1075,7 +1076,8 @@ func GetDataTsHistoryList(projectuuid string, params map[string]interface{}, dbC
 	queryStartTime, queryEndTime = tdengineBoundStrings(queryStartTime, queryEndTime)
 
 	var queryRows *sql.Rows
-	querySql := buildDataTsHistoryQuerySQL(projectuuid, deviceList, dataList, queryStartTime, queryEndTime)
+	rowLimit := historyQueryRowLimit(params)
+	querySql := buildDataTsHistoryQuerySQL(projectuuid, deviceList, dataList, queryStartTime, queryEndTime, rowLimit)
 	queryRows, err = dbClient.Query(querySql)
 	if err != nil {
 		fmt.Print(err)
@@ -1084,6 +1086,10 @@ func GetDataTsHistoryList(projectuuid string, params map[string]interface{}, dbC
 	defer queryRows.Close()
 
 	for queryRows.Next() {
+		if rowLimit > 0 && len(getDataHistorys) >= rowLimit {
+			params["truncated"] = true
+			break
+		}
 		var r DevicesHistoryDataList
 
 		err := queryRows.Scan(&r.RecordTime, &r.DataName, &r.DeviceUuid, &r.ProjectUuid, &r.DeviceName, &r.DataUuid, &r.ModelDataUuid, &r.DataUnit, &r.DataValue)
@@ -1311,6 +1317,22 @@ func MinNum(arr []float64) (min float64, minIndex int) {
 	}
 	return min, minIndex
 }
+
+func openDiyReportTemplate(path string) (*xlst.Xlst, []string, string) {
+	doc := xlst.New()
+	if err := doc.ReadTemplate(path); err != nil {
+		return nil, nil, diyreport.ReadFailMsg
+	}
+	names, err := diyreport.PointNamesFromXlsx(path)
+	if err != nil {
+		return nil, nil, diyreport.ReadFailMsg
+	}
+	if len(names) == 0 {
+		return doc, nil, diyreport.NoPointMsg
+	}
+	return doc, names, ""
+}
+
 func GetDiyDataClickHouseHistoryList(projectuuid string, params map[string]interface{}) (string, int, map[string]interface{}) {
 
 	var queryStartTime string
@@ -1324,11 +1346,10 @@ func GetDiyDataClickHouseHistoryList(projectuuid string, params map[string]inter
 
 	sheetDataTempleteUuid := params["tUuid"]
 	sheetDataTempletePath := "static/reportTemplete/" + sheetDataTempleteUuid.(string) + ".xlsx"
-	doc := xlst.New()
-	err4 := doc.ReadTemplate(sheetDataTempletePath)
-	HistoryName := []string{}
-	if len(HistoryName) <= 0 {
-		return "", errmsg.ERROR_DATABASE, nil
+	doc, HistoryName, failMsg := openDiyReportTemplate(sheetDataTempletePath)
+	var err4 error
+	if failMsg != "" {
+		return "", errmsg.ERROR, map[string]interface{}{"msg": failMsg}
 	}
 	var buildStart strings.Builder
 	var buildEnd strings.Builder
@@ -1412,6 +1433,7 @@ func GetDiyDataClickHouseHistoryList(projectuuid string, params map[string]inter
 	var findHistoryDataModel []DeviceRealData
 	err = Db.Model(&DeviceRealData{}).Where("project_uuid =? and device_uuid = ? and is_record = 1", projectuuid, deviceList).Select("*").Find(&findHistoryDataModel).Error
 	if err != nil || len(findHistoryDataModel) <= 0 {
+		ctx["msg"] = diyreport.QueryFailMsg
 		return "", errmsg.ERROR_DATABASE, ctx
 	}
 	ctx["DeviceName"] = findHistoryDataModel[0].DeviceName
@@ -1503,14 +1525,17 @@ func GetDiyDataClickHouseHistoryList(projectuuid string, params map[string]inter
 	if err4 == nil {
 		err = doc.Render(ctx)
 		if err != nil {
+			ctx["msg"] = diyreport.RenderFailMsg
 			return "", errmsg.ERROR, ctx
 		}
 
 		err = doc.Save(saveFilePath)
 		if err != nil {
+			ctx["msg"] = diyreport.RenderFailMsg
 			return "", errmsg.ERROR, ctx
 		}
 	} else {
+		ctx["msg"] = diyreport.ReadFailMsg
 		return "", errmsg.ERROR, ctx
 	}
 	return saveFilePath, errmsg.SUCCSECODE, ctx
@@ -1526,11 +1551,10 @@ func GetDiyDataHistoryList(projectuuid string, params map[string]interface{}) (s
 
 	sheetDataTempleteUuid := params["tUuid"]
 	sheetDataTempletePath := "static/reportTemplete/" + sheetDataTempleteUuid.(string) + ".xlsx"
-	doc := xlst.New()
-	err4 := doc.ReadTemplate(sheetDataTempletePath)
-	HistoryName := []string{}
-	if len(HistoryName) <= 0 {
-		return "", errmsg.ERROR_DATABASE, nil
+	doc, HistoryName, failMsg := openDiyReportTemplate(sheetDataTempletePath)
+	var err4 error
+	if failMsg != "" {
+		return "", errmsg.ERROR, map[string]interface{}{"msg": failMsg}
 	}
 
 	dateType := params["dateType"]
@@ -1616,6 +1640,7 @@ func GetDiyDataHistoryList(projectuuid string, params map[string]interface{}) (s
 	var findHistoryDataModel []DeviceRealData
 	err = Db.Model(&DeviceRealData{}).Where("project_uuid =? and device_uuid = ? and is_record = 1", projectuuid, deviceList).Select("*").Find(&findHistoryDataModel).Error
 	if err != nil || len(findHistoryDataModel) <= 0 {
+		ctx["msg"] = diyreport.QueryFailMsg
 		return "", errmsg.ERROR_DATABASE, ctx
 	}
 	ctx["DeviceName"] = findHistoryDataModel[0].DeviceName
@@ -1791,14 +1816,17 @@ func GetDiyDataHistoryList(projectuuid string, params map[string]interface{}) (s
 	if err4 == nil {
 		err = doc.Render(ctx)
 		if err != nil {
+			ctx["msg"] = diyreport.RenderFailMsg
 			return "", errmsg.ERROR, ctx
 		}
 
 		err = doc.Save(saveFilePath)
 		if err != nil {
+			ctx["msg"] = diyreport.RenderFailMsg
 			return "", errmsg.ERROR, ctx
 		}
 	} else {
+		ctx["msg"] = diyreport.ReadFailMsg
 		return "", errmsg.ERROR, ctx
 	}
 	return saveFilePath, errmsg.SUCCSECODE, ctx
@@ -1814,11 +1842,10 @@ func GetDiyDataTsHistoryList(projectuuid string, params map[string]interface{}, 
 
 	sheetDataTempleteUuid := params["tUuid"]
 	sheetDataTempletePath := "static/reportTemplete/" + sheetDataTempleteUuid.(string) + ".xlsx"
-	doc := xlst.New()
-	err4 := doc.ReadTemplate(sheetDataTempletePath)
-	HistoryName := []string{}
-	if len(HistoryName) <= 0 {
-		return "", errmsg.ERROR_DATABASE, nil
+	doc, HistoryName, failMsg := openDiyReportTemplate(sheetDataTempletePath)
+	var err4 error
+	if failMsg != "" {
+		return "", errmsg.ERROR, map[string]interface{}{"msg": failMsg}
 	}
 
 	dateType := params["dateType"]
@@ -1904,6 +1931,7 @@ func GetDiyDataTsHistoryList(projectuuid string, params map[string]interface{}, 
 	var findHistoryDataModel []DeviceRealData
 	err = Db.Model(&DeviceRealData{}).Where("project_uuid =? and device_uuid = ? and is_record = 1", projectuuid, deviceList).Select("*").Find(&findHistoryDataModel).Error
 	if err != nil || len(findHistoryDataModel) <= 0 {
+		ctx["msg"] = diyreport.QueryFailMsg
 		return "", errmsg.ERROR_DATABASE, ctx
 	}
 	ctx["DeviceName"] = findHistoryDataModel[0].DeviceName
@@ -1916,13 +1944,21 @@ func GetDiyDataTsHistoryList(projectuuid string, params map[string]interface{}, 
 	// var getAllDataHistorys []DevicesHistoryDataList
 	var AllDataHistorysMap = make(map[string][]DevicesHistoryDataList, 0)
 
-	dataListStr := "(" + StringJoin(HistoryName, ",") + ")"
 	tdStart, tdEnd := tdengineBoundStrings(queryStartTime, queryEndTime)
-	querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.TempleteHistoryDatas where project_uuid ='%s' and device_uuid = '%s' AND data_name in %s and record_time>='%s' and record_time<='%s' order by record_time asc", projectuuid, deviceList, dataListStr, tdStart, tdEnd)
+	querySql, sqlErr := diyreport.BuildTsHistoryQuerySQL(projectuuid, deviceList, HistoryName, tdStart, tdEnd)
+	if sqlErr != nil {
+		ctx["msg"] = sqlErr.Error()
+		return "", errmsg.ERROR, ctx
+	}
+	if dbClient == nil {
+		ctx["msg"] = diyreport.QueryFailMsg
+		return "", errmsg.ERROR, ctx
+	}
 	queryRows, err := dbClient.Query(querySql)
 	// err = Db.Model(&DevicesHistoryDataList{}).Where("device_uuid = ? AND model_data_uuid in ? and record_time>=? AND record_time<=? ", deviceList, ModelDataUuid, queryStartTime, queryEndTime).Select("data_name,device_uuid,device_name,model_data_uuid,record_time,data_value").Order("record_time asc ").Limit(1000000).Find(&getAllDataHistorys).Error
 	if err != nil {
 		fmt.Println(err)
+		ctx["msg"] = diyreport.QueryFailMsg
 		return "", errmsg.ERROR, ctx
 	}
 	for queryRows.Next() {
@@ -2008,14 +2044,17 @@ func GetDiyDataTsHistoryList(projectuuid string, params map[string]interface{}, 
 	if err4 == nil {
 		err = doc.Render(ctx)
 		if err != nil {
+			ctx["msg"] = diyreport.RenderFailMsg
 			return "", errmsg.ERROR, ctx
 		}
 
 		err = doc.Save(saveFilePath)
 		if err != nil {
+			ctx["msg"] = diyreport.RenderFailMsg
 			return "", errmsg.ERROR, ctx
 		}
 	} else {
+		ctx["msg"] = diyreport.ReadFailMsg
 		return "", errmsg.ERROR, ctx
 	}
 	return saveFilePath, errmsg.SUCCSECODE, ctx
@@ -2112,6 +2151,7 @@ func GetDiyDataInfluxHistoryList(projectuuid string, params map[string]interface
 	var findHistoryDataModel []DeviceRealData
 	err = Db.Model(&DeviceRealData{}).Where("project_uuid =? and device_uuid = ? and is_record = 1", projectuuid, deviceList).Select("*").Find(&findHistoryDataModel).Error
 	if err != nil || len(findHistoryDataModel) <= 0 {
+		ctx["msg"] = diyreport.QueryFailMsg
 		return "", errmsg.ERROR_DATABASE, ctx
 	}
 	ctx["DeviceName"] = findHistoryDataModel[0].DeviceName
@@ -2248,14 +2288,17 @@ func GetDiyDataInfluxHistoryList(projectuuid string, params map[string]interface
 	if err4 == nil {
 		err = doc.Render(ctx)
 		if err != nil {
+			ctx["msg"] = diyreport.RenderFailMsg
 			return "", errmsg.ERROR, ctx
 		}
 
 		err = doc.Save(saveFilePath)
 		if err != nil {
+			ctx["msg"] = diyreport.RenderFailMsg
 			return "", errmsg.ERROR, ctx
 		}
 	} else {
+		ctx["msg"] = diyreport.ReadFailMsg
 		return "", errmsg.ERROR, ctx
 	}
 	return saveFilePath, errmsg.SUCCSECODE, ctx
@@ -2509,7 +2552,7 @@ func GetChartDataTsHistoryList(params []byte, dbClient *sql.DB) (int, []map[stri
 
 	dataListStr := "(" + StringJoin(modelDataUuidList, ",") + ")"
 
-	querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.TempleteHistoryDatas where device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceListStr, dataListStr, startTimeBeStr, endTimeBeStr)
+	querySql := fmt.Sprintf(""+tdengineHistorySelectFrom("ISMHistoryDb.TempleteHistoryDatas")+" where device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceListStr, dataListStr, startTimeBeStr, endTimeBeStr)
 	queryRows, err := dbClient.Query(querySql)
 
 	// err = Db.Model(&DevicesHistoryDataList{}).Where("device_uuid in ? AND model_data_uuid in ? and record_time>=? AND record_time<=? ", deviceList, modelDataUuidList, startTimeBe, endTimeBe).Select("data_name,device_uuid,device_name,model_data_uuid,record_time,data_value").Limit(1000000).Find(&getAllDataHistorys).Error
@@ -2958,7 +3001,7 @@ func GetTsTrendChartData(params []byte, dbClient *sql.DB) (int, []DevicesHistory
 
 	dataListStr := "(" + StringJoin(modelDataUuidList, ",") + ")"
 
-	querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.TempleteHistoryDatas where device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceListStr, dataListStr, startTimeBeStr, endTimeBeStr)
+	querySql := fmt.Sprintf(""+tdengineHistorySelectFrom("ISMHistoryDb.TempleteHistoryDatas")+" where device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceListStr, dataListStr, startTimeBeStr, endTimeBeStr)
 	queryRows, err := dbClient.Query(querySql)
 
 	// err = Db.Model(&DevicesHistoryDataList{}).Where("device_uuid in ? AND model_data_uuid in ? and record_time>=? AND record_time<=? ", deviceList, modelDataUuidList, startTimeBe, endTimeBe).Select("data_name,device_uuid,device_name,model_data_uuid,record_time,data_value").Limit(1000000).Find(&getAllDataHistorys).Error
@@ -4785,7 +4828,7 @@ func GetTsTrendChartDataByDate(params []byte, dbClient *sql.DB) (int, []DevicesH
 
 	dataListStr := "(" + StringJoin(modelDataUuidList, ",") + ")"
 
-	querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.TempleteHistoryDatas where device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceListStr, dataListStr, startTimeBeStr, endTimeBeStr)
+	querySql := fmt.Sprintf(""+tdengineHistorySelectFrom("ISMHistoryDb.TempleteHistoryDatas")+" where device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceListStr, dataListStr, startTimeBeStr, endTimeBeStr)
 	queryRows, err := dbClient.Query(querySql)
 
 	// err = Db.Model(&DevicesHistoryDataList{}).Where("device_uuid in ? AND model_data_uuid in ? and record_time>=? AND record_time<=? ", deviceList, modelDataUuidList, startTimeBe, endTimeBe).Select("data_name,device_uuid,device_name,model_data_uuid,record_time,data_value").Limit(1000000).Find(&getAllDataHistorys).Error

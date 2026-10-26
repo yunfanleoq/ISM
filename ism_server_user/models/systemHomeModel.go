@@ -112,7 +112,21 @@ func GetSystemHomeDashboardConfig(projectUuid string) (SystemHomeDashboardConfig
 			cfg = discoverSystemHomeConfig(projectUuid)
 			if model2, code2 := DisplayModelGet(cfg.DashboardUuid); code2 == errmsg.SUCCSE {
 				dashboardName = model2.Name
+			} else {
+				cfg = SystemHomeDashboardConfig{}
 			}
+		}
+	} else if cfg.DashboardUuid != "" {
+		// 库里没有这个组态（例如别的项目残留的 plane 名）。不要把无效 ID 交给前端，否则监控大屏会进空白页。
+		cfg = discoverSystemHomeConfig(projectUuid)
+		dashboardName = ""
+		if model2, code2 := DisplayModelGet(cfg.DashboardUuid); code2 == errmsg.SUCCSE {
+			dashboardName = model2.Name
+			if cfg.ProjectUuid == "" {
+				cfg.ProjectUuid = model2.ProjectUuid
+			}
+		} else {
+			cfg = SystemHomeDashboardConfig{}
 		}
 	}
 

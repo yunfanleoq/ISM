@@ -11,6 +11,9 @@
   var pinned = false;
   var hostEl = null;
   var onResize = null;
+  var treeFlat = null;
+  var drillPick = null;
+  var drillActive = null;
 
   function esc(s) {
     return String(s == null ? '' : s)
@@ -18,7 +21,7 @@
   }
 
   function loadScenes() {
-    return fetch('/hx-dcim/data/hx-scenes.json?v=20261024draw').then(function (r) {
+    return fetch('/hx-dcim/data/hx-scenes.json?v=20261025drill').then(function (r) {
       if (!r.ok) throw new Error('no scenes');
       return r.json();
     }).then(function (j) {
@@ -76,12 +79,21 @@
     return key;
   }
 
+  function powerDrillBtn(key) {
+    if (!page || page.kind !== 'power' || !w.HXArch || !w.HXArch.suggestFromPower) return '';
+    var code = (key || '').match(/(\d[AB]\d)/);
+    if (!code) return '';
+    var sug = w.HXArch.suggestFromPower('配电室' + code[1]);
+    if (!sug || !sug.item) return '';
+    return '<button type="button" class="hx-drill-go" data-hx-drill="1">下钻 · ' + esc(sug.item.name) + '</button>';
+  }
+
   function hoverHtml(key, rows) {
     var body = rows.length ? rows.map(function (p) {
       var known = L().remembered(p) || p;
       return '<div class="hx-pt"><span>' + esc(p.name) + '</span><b data-hx-uuid="' + esc(p.uuid) + '">' + esc(L().showValue(known)) + '</b></div>';
     }).join('') : '<div class="hx-pt"><span>这一回路还没有测点</span></div>';
-    return '<div class="hx-hover-title">' + esc(labelOf(key)) + '</div>' + body;
+    return '<div class="hx-hover-title">' + esc(labelOf(key)) + '</div>' + body + powerDrillBtn(key);
   }
 
   function placeHover(box, ev) {
@@ -245,6 +257,108 @@
     return null;
   }
 
+  function showStub(main, resolved, item) {
+    if (!main) return;
+    var links = (resolved && resolved.links) || [];
+    var hint = esc((resolved && resolved.reason) || '暂无画面');
+    var btns = links.map(function (lk, i) {
+      return '<button type="button" class="hx-drill-go" data-link-i="' + i + '">前往 ' + esc(lk.label || lk.design) + '</button>';
+    }).join('');
+    var sug = resolved && resolved.kind === 'power' && w.HXArch ? w.HXArch.suggestFromPower(resolved.design) : null;
+    if (sug && sug.item) {
+      btns = '<button type="button" class="hx-drill-go is-primary" data-suggest="1">下钻 · ' +
+        esc(sug.item.name) + (sug.item.resolved && sug.item.resolved.cab ? ' · ' + sug.item.resolved.cab.name : '') +
+        '</button>' + btns;
+    }
+    main.innerHTML =
+      '<div class="hx-site-note">' +
+        '<div class="hx-title">' + esc((item && item.name) || (resolved && resolved.design) || '现场节点') + '</div>' +
+        '<div class="hx-pt">' + hint + '。可通过左侧架构树继续钻取，或点下方关联入口。</div>' +
+        (btns ? '<div class="hx-drill-actions">' + btns + '</div>' : '') +
+      '</div>';
+    main.querySelectorAll('[data-suggest]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (drillPick && sug && sug.item) drillPick(sug.item.resolved.room, sug.item.resolved.cab, sug.item);
+      });
+    });
+    main.querySelectorAll('[data-link-i]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var lk = links[Number(btn.getAttribute('data-link-i'))];
+        if (!lk || !w.HXArch || !treeFlat) return;
+        var picked = w.HXArch.pickByDesign(treeFlat, lk.design);
+        if (picked && drillPick) drillPick(picked.resolved.room, picked.resolved.cab, picked);
+        else if (drillPick && lk.design) {
+          var path = w.HXArch.findLeafPath(lk.design);
+          if (path) {
+            var r = w.HXArch.resolveLeaf(path.name, path.ancestors);
+            drillPick(r.room, r.cab, { name: path.name, ancestors: path.ancestors, resolved: r });
+          }
+        }
+      });
+    });
+    L().allow([]);
+    pageRows = [];
+  }
+
+  function setCrumb(labels) {
+    var el = hostEl && hostEl.querySelector('#hxCrumb');
+    if (!el) return;
+    var parts = labels || [];
+    if (!parts.length) {
+      el.innerHTML = '<span class="hx-crumb-item is-cur">架构钻取</span>';
+      return;
+    }
+    el.innerHTML = parts.map(function (p, i) {
+      var cur = i === parts.length - 1 ? ' is-cur' : '';
+      return '<span class="hx-crumb-item' + cur + '">' + esc(p) + '</span>' +
+        (i < parts.length - 1 ? '<span class="hx-crumb-sep">›</span>' : '');
+    }).join('');
+  }
+
+  function setDrillLinks(resolved) {
+    var bar = hostEl && hostEl.querySelector('#hxDrillLinks');
+    if (!bar) return;
+    if (!resolved || resolved.kind !== 'power' || !w.HXArch) {
+      bar.innerHTML = '';
+      return;
+    }
+    var sug = w.HXArch.suggestFromPower(resolved.design || resolved.room && resolved.room.name);
+    if (!sug || !sug.item) {
+      bar.innerHTML = '';
+      return;
+    }
+    bar.innerHTML = '<span class="hx-drill-hint">关联</span>' +
+      '<button type="button" class="hx-drill-chip" data-suggest="1">' +
+      esc(sug.target.label || sug.item.name) + ' ›</button>';
+    bar.querySelector('[data-suggest]').addEventListener('click', function () {
+      if (drillPick) drillPick(sug.item.resolved.room, sug.item.resolved.cab, sug.item);
+    });
+  }
+
+  function applyPick(room, cab, item) {
+    if (!hostEl) return;
+    var main = hostEl.querySelector('.hx-main');
+    drillActive = item || null;
+    var labels = w.HXArch ? w.HXArch.crumbLabels(item && item.ancestors, item && item.name, cab && cab.name) : [];
+    setCrumb(labels);
+    var resolved = item && item.resolved;
+    if (resolved && resolved.ok && room) {
+      openRoomCab(hostEl, room, cab);
+      if (resolved.kind === 'power' || (item && /^配电室/.test(item.name || ''))) {
+        setDrillLinks({ kind: 'power', design: (item && item.name) || room.name });
+      } else {
+        setDrillLinks(null);
+      }
+      return;
+    }
+    if (resolved && !resolved.ok) {
+      showStub(main, resolved, item);
+      setDrillLinks(resolved);
+      return;
+    }
+    if (room) openRoomCab(hostEl, room, cab);
+  }
+
   function showPage(id, host) {
     page = prep(pageById(id));
     pinned = false;
@@ -262,6 +376,15 @@
     if (!main._hxBound) {
       main._hxBound = 1;
       bindHover(main);
+      main.addEventListener('click', function (ev) {
+        var drillBtn = ev.target.closest ? ev.target.closest('[data-hx-drill]') : null;
+        if (!drillBtn || !hotKey || !w.HXArch) return;
+        ev.stopPropagation();
+        var code = hotKey.match(/(\d[AB]\d)/);
+        if (!code) return;
+        var sug = w.HXArch.suggestFromPower('配电室' + code[1]);
+        if (sug && sug.item && drillPick) drillPick(sug.item.resolved.room, sug.item.resolved.cab, sug.item);
+      });
     }
     pageRows = L().drivers(page);
     L().allow(pageRows);
@@ -300,20 +423,19 @@
     ];
   }
 
-  function mount(host, mode) {
-    if (!host) return;
-    hostEl = host;
+  function openRoomCab(host, room, cab) {
+    if (!room) return;
+    var id = cab && cab.pageId ? cab.pageId : room.pageId;
+    if (!id && room.cabs && room.cabs[0]) id = room.cabs[0].pageId;
+    showPage(id, host);
+  }
+
+  function mountFlatTree(host, tree, mode) {
     var folders = catalog().filter(function (f) {
       if (!f.rooms.length) return false;
       return mode === 'room' ? f.name !== '配电室' : true;
     });
-    host.innerHTML = '<div class="hx-wrap"><aside class="hx-tree" id="hxTree"></aside><section class="hx-main" id="hxMain"><div class="hx-pt">正在摆画面</div></section></div>';
-    var tree = host.querySelector('#hxTree');
     var flat = [];
-    if (!scenes.length) {
-      tree.innerHTML = '<div class="hx-pt">还没有解开航信画的一次图。</div>';
-      return;
-    }
     tree.innerHTML = '<div class="hx-folder">工程树</div>' + folders.map(function (f) {
       if (!f.rooms.length) return '';
       return '<div class="hx-folder">' + esc(f.name) + '</div>' + f.rooms.map(function (r) {
@@ -334,9 +456,7 @@
         b.classList.toggle('is-on', on);
       });
       var cab = ci == null ? null : (room.cabs || [])[ci];
-      var id = cab && cab.pageId ? cab.pageId : room.pageId;
-      if (!id && room.cabs && room.cabs[0]) id = room.cabs[0].pageId;
-      showPage(id, host);
+      openRoomCab(host, room, cab);
     }
     tree.querySelectorAll('.hx-node').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -356,6 +476,50 @@
       flat[idx].cabs.forEach(function (c, i) { if (c.name === 'A列头') cabIdx = i; });
     }
     open(idx, cabIdx);
+  }
+
+  function mount(host, mode) {
+    if (!host) return;
+    hostEl = host;
+    treeFlat = null;
+    drillPick = function (room, cab, item) { applyPick(room, cab, item); };
+    host.innerHTML =
+      '<div class="hx-wrap">' +
+        '<aside class="hx-tree" id="hxTree"></aside>' +
+        '<div class="hx-body">' +
+          '<div class="hx-drill-bar">' +
+            '<div class="hx-crumb" id="hxCrumb"></div>' +
+            '<span class="hx-drill-hint" id="hxDrillHint">已解开一次图正常显示；灰显配电室可下钻关联机房</span>' +
+            '<div class="hx-drill-links" id="hxDrillLinks"></div>' +
+          '</div>' +
+          '<section class="hx-main" id="hxMain"><div class="hx-pt">正在摆画面</div></section>' +
+        '</div>' +
+      '</div>';
+    var tree = host.querySelector('#hxTree');
+    var arch = w.HXArch;
+    if (arch && arch.renderTree && arch.branches && arch.branches.length) {
+      var pickMode = mode === 'room' ? 'room' : (mode === 'power' ? 'power' : (mode === 'all' || mode === 'drill' ? 'drill' : ''));
+      treeFlat = arch.renderTree(tree, {
+        mode: pickMode,
+        active: drillActive,
+        onPick: function (room, cab, item) { applyPick(room, cab, item); }
+      });
+      var preferRoom = mode === 'room' ? '机房模块2A1' : '配电室5A1';
+      var preferCab = mode === 'room' ? 'A列头' : null;
+      var pi = arch.findPrefer(treeFlat.flat, preferRoom, preferCab);
+      if (pi >= 0) {
+        var item = treeFlat.flat[pi];
+        arch.activateFlatItem(treeFlat, pi);
+        applyPick(item.resolved.room, item.resolved.cab, item);
+      } else {
+        setCrumb([]);
+      }
+    } else if (scenes.length) {
+      mountFlatTree(host, tree, mode);
+    } else {
+      tree.innerHTML = '<div class="hx-pt">还没有解开航信画的一次图；请从架构树选择已绑点的机房列。</div>';
+      setCrumb([]);
+    }
     if (onResize) window.removeEventListener('resize', onResize);
     onResize = function () { fit(); };
     window.addEventListener('resize', onResize);
@@ -407,11 +571,17 @@
   L().onChange = paint;
 
   w.HXScreen = {
-    ready: Promise.all([L().ready, loadScenes()]).then(function () { L().connect(); }),
+    ready: Promise.all([
+      L().ready,
+      loadScenes(),
+      (w.HXArch && w.HXArch.ready) || Promise.resolve()
+    ]).then(function () { L().connect(); }),
     mount: mount,
     leave: leave,
     bootBrand: bootBrand,
     catalog: catalog,
-    openIn: openIn
+    openIn: openIn,
+    applyPick: applyPick,
+    setCrumb: setCrumb
   };
 })(window);

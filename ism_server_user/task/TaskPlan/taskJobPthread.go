@@ -499,8 +499,8 @@ func exportReportTemplete(task models.TaskPlanList) {
 		return
 	}
 	for _, templete := range getTempleteList {
-		path, code := models.HandExportModel(templete)
-		if code == 0 {
+		path, code, failMsg := exportSavedReportTemplete(templete)
+		if code == errmsg.SUCCSECODE {
 			re := SendEmailAttach(task, path, task.ProjectUuid)
 			if re == 0 {
 				logs.Info("%s 导出并发送成功", task.TaskName)
@@ -508,9 +508,25 @@ func exportReportTemplete(task models.TaskPlanList) {
 				logs.Error("%s 发送失败", task.TaskName)
 			}
 		} else {
-			logs.Error("%s 发送失败", task.TaskName)
+			if strings.TrimSpace(failMsg) == "" {
+				failMsg = "导出失败"
+			}
+			logs.Error("%s 导出失败: %s", task.TaskName, failMsg)
 		}
 		time.Sleep(time.Second * 1)
+	}
+}
+
+func exportSavedReportTemplete(uuid string) (string, int, string) {
+	switch protocol_common.HistoryRecordDbType {
+	case 2:
+		return models.HandTsExportModel(uuid, protocol_common.HistoryRecordTsDb)
+	case 3:
+		return models.HandClickHouseExportModel(uuid)
+	case 4:
+		return models.HandInfluxdbExportModel(uuid)
+	default:
+		return models.HandExportModel(uuid)
 	}
 }
 func exportSQLReportTemplete(task models.TaskPlanList) {

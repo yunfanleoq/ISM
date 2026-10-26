@@ -1409,7 +1409,7 @@ func GetRealDataByUuid(uuid, devices []string) ([]DeviceRealData, int) {
 	}
 
 	var readDataList []DeviceRealData
-	err := Db.Model(&DeviceRealData{}).Select("model_data_uuid,device_uuid,uuid,project_uuid,value").Where("model_data_uuid in ? and device_uuid in ?", uuid, devices).Find(&readDataList).Error
+	err := Db.Model(&DeviceRealData{}).Select("model_data_uuid,device_uuid,uuid,project_uuid,value,data_unit").Where("model_data_uuid in ? and device_uuid in ?", uuid, devices).Find(&readDataList).Error
 	if err != nil {
 		return nil, errmsg.ERROR
 	}

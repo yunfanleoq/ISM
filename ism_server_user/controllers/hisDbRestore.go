@@ -25,6 +25,9 @@ type hisBackupItem struct {
 	FilePath   string `json:"FilePath"`
 	FileSize   string `json:"FileSize"`
 	Valid      bool   `json:"Valid"`
+	Status     string `json:"Status"`
+	StatusText string `json:"StatusText"`
+	Progress   int    `json:"Progress"`
 }
 
 type tdengineConn struct {
@@ -114,12 +117,24 @@ func (c *HisDbOptController) GetHisBackUpList() {
 		if infoErr == nil {
 			createTime = info.ModTime().Format("2006-01-02 15:04:05")
 		}
+		valid := hisdbbackup.IsValidTaosdumpDir(abs)
+		status, statusText, progress := hisBackupView(e.Name(), valid)
+		if status != "running" {
+			if reason := hisdbbackup.IncompleteReason(abs); reason != "" {
+				status = "incomplete"
+				statusText = "不完整：" + reason
+				progress = 0
+			}
+		}
 		list = append(list, hisBackupItem{
 			FileName:   e.Name(),
 			CreateTime: createTime,
 			FilePath:   filepath.Join(hisdbbackup.Root, e.Name()),
 			FileSize:   formatFileSize(hisdbbackup.DirSize(abs)),
-			Valid:      hisdbbackup.IsValidTaosdumpDir(abs),
+			Valid:      valid,
+			Status:     status,
+			StatusText: statusText,
+			Progress:   progress,
 		})
 	}
 	result["list"] = list
@@ -225,7 +240,7 @@ func (c *HisDbOptController) HisDbRestore() {
 			c.ServeJSON()
 			return
 		}
-		cpOut, cpErr := runCmdTimeout(15*time.Minute, "docker", "cp", absTarget+"/.", tdContainer+":"+containerDir)
+		cpOut, cpErr := runCmdTimeout(6*time.Hour, "docker", "cp", absTarget+"/.", tdContainer+":"+containerDir)
 		if cpErr != nil {
 			detail := strings.TrimSpace(string(cpOut))
 			if detail == "" {
@@ -240,11 +255,11 @@ func (c *HisDbOptController) HisDbRestore() {
 		importArgs[len(importArgs)-1] = containerDir
 		dockerArgs := append([]string{"exec", tdContainer, taosdump}, importArgs...)
 		logs.Info("HisDbRestore docker taosdump: docker exec %s %s %s", tdContainer, taosdump, taosdumpArgsForLog(importArgs))
-		out, runErr = runCmdTimeout(15*time.Minute, "docker", dockerArgs...)
+		out, runErr = runCmdTimeout(6*time.Hour, "docker", dockerArgs...)
 		_ = exec.Command("docker", "exec", tdContainer, "rm", "-rf", containerDir).Run()
 	} else {
 		logs.Info("HisDbRestore taosdump: %s %s", taosdump, taosdumpArgsForLog(importArgs))
-		out, runErr = runCmdTimeout(15*time.Minute, taosdump, importArgs...)
+		out, runErr = runCmdTimeout(6*time.Hour, taosdump, importArgs...)
 	}
 	msg := strings.TrimSpace(string(out))
 	if runErr != nil {
@@ -304,4 +319,45 @@ func (c *HisDbOptController) HisDbDeleteBackup() {
 	result["code"] = errmsg.SUCCSECODE
 	c.Data["json"] = result
 	c.ServeJSON()
+}
+
+func (c *HisDbOptController) HisDbDownload() {
+	result := map[string]interface{}{"code": errmsg.ERROR, "msg": ""}
+	var getParams struct {
+		DbFilePath string `json:"DbFilePath"`
+	}
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &getParams); err != nil {
+		result["code"] = errmsg.NOTJSON
+		result["msg"] = "参数不是 JSON"
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	absTarget, err := hisdbbackup.SafePath(getParams.DbFilePath)
+	if err != nil {
+		result["msg"] = "非法备份路径: " + err.Error()
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	st, err := os.Stat(absTarget)
+	if err != nil || !st.IsDir() {
+		result["msg"] = "备份目录不存在"
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	baseName := filepath.Base(absTarget)
+	zipPath := filepath.Join(os.TempDir(), baseName+".zip")
+	_ = os.Remove(zipPath)
+	if zipErr := hisdbbackup.ZipDir(absTarget, zipPath); zipErr != nil {
+		result["msg"] = "打包失败: " + zipErr.Error()
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
+	}
+	defer os.Remove(zipPath)
+	ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
+	WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "下载了历史库备份 "+baseName, errmsg.JournalLevelInfo, c.Ctx.Input)
+	c.Ctx.Output.Download(zipPath, baseName+".zip")
 }

@@ -169,9 +169,10 @@
               style="margin: 16px 0 12px"
               :message="hisBackupHint"
             />
-            <a-button type="default" :loading="hisBackingUp" @click="HisDbBackUp">
+            <a-button type="default" :loading="hisBackingUp" :disabled="backupButtonDisabled" @click="HisDbBackUp">
               备份历史库
             </a-button>
+            <span v-if="hisBackupLocked" style="margin-left: 12px; color: #13C2C2;">正在备份中，完成前不要再点。进度在「备份目录」。</span>
             <a-button type="default" style="margin-left: 8px" @click="openHisRestore">
               还原历史库
             </a-button>
@@ -216,7 +217,7 @@
           </a-spin>
         </a-tab-pane>
         <a-tab-pane key="4" tab="备份目录" forceRender>
-          <HisRestorePanel ref="hisRestorePanel" />
+          <HisRestorePanel ref="hisRestorePanel" @running-change="onHisBackupRunning" />
         </a-tab-pane>
       </a-tabs>
     </a-card>
@@ -232,6 +233,8 @@ export default {
     return {
       messageShowLoad:false,
       hisBackingUp:false,
+      hisListRunning:false,
+      hisListKnown:false,
       hisActiveTab:'1',
       DbType:"1",
       OnceWriteHistoryCounts:100,
@@ -268,6 +271,12 @@ export default {
   },
   components: {HisRestorePanel},
   computed: {
+    hisBackupLocked () {
+      return this.hisBackingUp || this.hisListRunning
+    },
+    backupButtonDisabled () {
+      return this.hisBackupLocked || !this.hisListKnown
+    },
     hisBackupHint () {
       const dir = 'ism_server_user/data/hisdbbackup/'
       if (String(this.DbType) === '2') {
@@ -370,13 +379,22 @@ export default {
         _t.Configuring = false
       })
     },
+    onHisBackupRunning(running){
+      this.hisListKnown = true
+      this.hisListRunning = !!running
+    },
     HisDbBackUp(){
       let _t = this
+      if (this.backupButtonDisabled) return
       this.hisBackingUp = true
+      this.hisActiveTab = '4'
+      this.$nextTick(function () {
+        const panel = _t.$refs.hisRestorePanel
+        if (panel && panel.startWatch) panel.startWatch()
+      })
       HisDbBackup({}).then(function (res){
         if(res.data && res.data.code==0) {
-          _t.$message.success((res.data.msg || '备份成功') + (res.data.path ? ('：' + res.data.path) : ''))
-          _t.$nextTick(function () { _t.refreshHisBackupList() })
+          _t.$message.success((res.data.msg || '备份完成') + (res.data.path ? ('：' + res.data.path) : ''))
         } else {
           _t.$message.error((res.data && res.data.msg) || '历史库备份失败')
         }
@@ -384,6 +402,9 @@ export default {
         _t.$message.error('历史库备份请求失败')
       }).finally(function (){
         _t.hisBackingUp = false
+        const panel = _t.$refs.hisRestorePanel
+        if (panel && panel.stopWatch) panel.stopWatch()
+        _t.refreshHisBackupList()
       })
     },
     onHisTabChange(key){

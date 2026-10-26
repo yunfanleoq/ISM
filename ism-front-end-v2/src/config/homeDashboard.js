@@ -69,6 +69,7 @@ export function createHomeDashboardRedirect() {
     if (!getHomeDashboardUuid(store)) {
       return '/dashboard'
     }
+    applyHomeProjectAuth(store)
     return getHomeDashboardPath(store)
   }
 }

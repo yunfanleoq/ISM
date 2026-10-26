@@ -253,6 +253,7 @@ module.exports = {
   GETHISBACKUPLIST: `${BASE_URL}GetHisBackUpList`,
   HISDBRESTORE: `${BASE_URL}HisDbRestore`,
   HISDBDELETEBACKUP: `${BASE_URL}HisDbDeleteBackup`,
+  HISDBDOWNLOAD: `${BASE_URL}HisDbDownload`,
   HISDBBACKUPUPLOAD: `${BASE_URL}HisDbBackupUpload`,
   GETTABLESLIST: `${BASE_URL}GetTablesList`,
   GETBACKUPLIST: `${BASE_URL}GetBackUpList`,
@@ -341,6 +342,7 @@ module.exports = {
   EDITREPORTTEMPLETE:`${BASE_URL}EditReportTemplete`,
   SAVEREPORTTEMPLETE:`${BASE_URL}SaveReportTemplete`,
   GETREPORTTEMPLETEFILE:`${BASE_URL}GetReportTempleteFile`,
+  GETDIYREPORTFILE:`${BASE_URL}GetDiyReportFile`,
   HANDEXPORT:`${BASE_URL}HandExport`,
 
   //SQL模板

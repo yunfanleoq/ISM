@@ -129,9 +129,10 @@ func (c *CustomDataCtl) DealWithCustomAlarmData(AlarmData protocol_common.PushAl
 	}
 	alarm.AlarmClearMessage = updateAlarm.AlarmClearMessage
 	alarm.AlarmMessage = updateAlarm.AlarmMessage
+	isRaising := protocol_common.IsAlarmValueActive(alarm.Value, alarm.AlarmOnValue)
 
 	if !isExist {
-		if alarm.Value == "1" {
+		if isRaising {
 			ClearTime, _ := time.Parse("2006-01-02 15:04:05", "2006-01-02 15:04:05")
 			updateAlarm.ClearTime = ClearTime
 			models.Db.Model(&models.DevicesAlarmList{}).Create(&updateAlarm)
@@ -146,13 +147,15 @@ func (c *CustomDataCtl) DealWithCustomAlarmData(AlarmData protocol_common.PushAl
 				protocol_common.PushGAlarmQueue.QueuePush(alarm)
 				go ismAlarmNotice.SendAlarmNotice(alarm)
 				models.Db.Model(&models.MonitorList{}).Where("uuid = ?", alarm.DeviceUuid).Update("status", 1)
+			} else if models.ClearActiveDeviceAlarm(0, alarm.DeviceUuid, alarm.DataUuid, alarm.HappenTime) > 0 {
+				protocol_common.PushGAlarmQueue.QueuePush(alarm)
 			}
 		}
 		c.DeviceAlarmTemp[key] = alarm
 	} else {
 		if alarmTemp.Value != alarm.Value {
 			var status int = 0
-			if alarm.Value == "1" {
+			if isRaising {
 				ClearTime, _ := time.Parse("2006-01-02 15:04:05", "2006-01-02 15:04:05")
 				updateAlarm.ClearTime = ClearTime
 				models.Db.Model(&models.DevicesAlarmList{}).Create(&updateAlarm)
@@ -163,10 +166,8 @@ func (c *CustomDataCtl) DealWithCustomAlarmData(AlarmData protocol_common.PushAl
 					go ismAlarmNotice.SendAlarmNotice(alarm)
 				}
 			} else {
-				updateAlarm.ClearTime = alarm.HappenTime
-				updateAlarm.KeepTime = (float64)((alarm.HappenTime.UnixMilli() - alarmTemp.HappenTime.UnixMilli()) / 1000.0)
 				status = 1
-				models.Db.Model(&models.DevicesAlarmList{}).Where("ID = ? AND device_uuid = ? AND data_uuid = ?", alarmTemp.ID, alarm.DeviceUuid, alarm.DataUuid).Updates(models.DevicesAlarmList{ClearTime: updateAlarm.ClearTime, KeepTime: updateAlarm.KeepTime})
+				models.ClearActiveDeviceAlarm(alarmTemp.ID, alarm.DeviceUuid, alarm.DataUuid, alarm.HappenTime)
 				protocol_common.PushGAlarmQueue.QueuePush(alarm)
 				if alarm.AlarmClearMessage != "" {
 					go ismAlarmNotice.SendAlarmNotice(alarm)
@@ -177,6 +178,13 @@ func (c *CustomDataCtl) DealWithCustomAlarmData(AlarmData protocol_common.PushAl
 			}
 
 			c.DeviceAlarmTemp[key] = alarm
+		} else if alarmTemp.Value == alarm.Value && !isRaising {
+			if models.ClearActiveDeviceAlarm(alarmTemp.ID, alarm.DeviceUuid, alarm.DataUuid, alarm.HappenTime) > 0 {
+				protocol_common.PushGAlarmQueue.QueuePush(alarm)
+				if alarm.AlarmClearMessage != "" {
+					go ismAlarmNotice.SendAlarmNotice(alarm)
+				}
+			}
 		}
 	}
 }
@@ -287,6 +295,7 @@ func (c *CustomDataCtl) dealWithCustomDataAndExit(dealWithCustomData models.Cust
 			}
 		}
 		signleAlarm.AlarmLevel = getRealData.AlarmLevel
+		signleAlarm.AlarmOnValue = getRealData.AlarmOnValue
 		signleAlarm.AlarmClearMessage = getRealData.AlarmClearMessage
 		signleAlarm.AlarmMessage = getRealData.AlarmMessage
 		signleAlarm.DataName = getRealData.Name

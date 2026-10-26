@@ -171,7 +171,8 @@ import TemplateRender from 'vue-template-render'
 import {ExecSysScript} from "@/services/system";
 import {AUTH_TYPE, checkAuthorization, getAuthorization, setAuthorization} from "@/utils/request";
 import {getRealDataByUuid} from "@/services/device";
-import { fetchRealDataByUuidBatched, REAL_DATA_DEFAULT_PAGE_SIZE } from "@/utils/realDataBatch";
+import { fetchRealDataByPairs } from "@/utils/realDataBatch";
+import { selectRuntimeRealDemand, readGraphViewport, demandSignature, groupRealDataPush } from "@/pages/ISMDisPlay/utils/runtimeRealDemand";
 import Vue from 'vue'
 import Contextmenu from "vue-contextmenujs"
 Vue.use(Contextmenu);
@@ -233,8 +234,7 @@ export default {
           }
           _t.chargePage = true
           this.$message.loading({ content: 'Loading...', key: 'updatable', duration: 0 });
-          this.CurrentRealUUIDList=[]
-          this.CurrentModelUUIDList=[]
+          this.retireMainRealDemand()
           this.CurrentPagerRealDataUuidList=[]
           this.CurrentPagerRealDeviceUuidList=[]
           console.log('[watch:showUuid] calling selectDisplayPageDataStruct, page=', JSON.parse(JSON.stringify(page)))
@@ -418,7 +418,15 @@ export default {
       CurrentRealDataNameList:[],
       CurrentModelUUIDList:[],
       CurrentPopRealUUIDList:[],
-      CurrentPopModelUUIDList:[]
+      CurrentPopModelUUIDList:[],
+      realDemandGen: 0,
+      popRealDemandGen: 0,
+      hoverCellId: '',
+      popHoverCellId: '',
+      lastMainDemandKey: '',
+      lastPopDemandKey: '',
+      viewportDemandTimer: null,
+      popViewportDemandTimer: null,
     }
   },
   created(){
@@ -446,156 +454,115 @@ export default {
       await result.download({ format: 'png', filename: this.configData.name });
     },
     InitPagerRealData() {
-      ismDebug('SCADA.InitPagerRealData.enter', {
-        pageRenderToken: this.pageRenderToken,
-        dataUuids: (this.CurrentPagerRealDataUuidList || []).length,
-        devices: (this.CurrentPagerRealDeviceUuidList || []).length,
-      })
-      console.log('[InitPagerRealData] ENTRY, pageRenderToken=', this.pageRenderToken, 'CurrentPagerRealDataUuidList.length=', this.CurrentPagerRealDataUuidList?.length, 'CurrentPagerRealDeviceUuidList.length=', this.CurrentPagerRealDeviceUuidList?.length)
-      const renderToken = this.pageRenderToken
-      let _t = this
-      const datauuid = this.CurrentPagerRealDataUuidList
-      const devices = this.CurrentPagerRealDeviceUuidList
-      _t.CurrentRealUUIDList=[]
-      _t.CurrentModelUUIDList=[]
-      this.trackTimeout(function (){
-        console.log('[InitPagerRealData] trackTimeout callback, renderToken=', renderToken, 'pageRenderToken=', _t.pageRenderToken, '_isDestroyed=', _t._isDestroyed)
-        if (_t._isDestroyed || renderToken !== _t.pageRenderToken) {
-          console.warn('[InitPagerRealData] ABORTED: token mismatch or destroyed')
-          return
-        }
-        let newuuids=[]
-        for(let i=0;i<datauuid.length;i++)
-        {
-          if((typeof datauuid[i]!="undefined")&&(datauuid[i].length>0))
-          {
-            newuuids.push(datauuid[i])
-          }
-        }
-        let newdevices=[]
-        for(let i=0;i<devices.length;i++)
-        {
-          if((typeof devices[i]!="undefined")&&(devices[i].length>0))
-          {
-            newdevices.push(devices[i])
-          }
-        }
-        console.log('[InitPagerRealData] calling getRealDataByUuid batched, uuids=', newuuids.length, 'devices=', newdevices.length)
-        fetchRealDataByUuidBatched(getRealDataByUuid, {
-          uuid: newuuids,
-          devices: newdevices,
-          batchSize: REAL_DATA_DEFAULT_PAGE_SIZE,
-        }).then(function (body) {
-          console.log('[InitPagerRealData] getRealDataByUuid response, code=', body?.code, 'realData.length=', body?.realData?.length)
-          if (_t._isDestroyed || renderToken !== _t.pageRenderToken) {
-            console.warn('[InitPagerRealData] response ABORTED: token mismatch or destroyed')
-            return
-          }
-          _t.settingLoading = false
-          if (body.code == 0) {
-            // 按 DeviceUuid 分组，批量 emit，减少事件数量和 handler 调用次数
-            let pushDataMap = {}
-            const realData = body.realData || []
-            for (let k = 0; k < realData.length; k++) {
-              if(realData[k].value=="")
-              {
-                continue
-              }
-              let duid = realData[k].duid
-              if (!pushDataMap[duid]) {
-                pushDataMap[duid] = {
-                  DeviceUuid: duid,
-                  ProjectUuid: realData[k].project_uuid,
-                  Cmd: "RealData",
-                  Data: []
-                }
-              }
-              _t.CurrentRealUUIDList.push(realData[k].uuid)
-              _t.CurrentModelUUIDList.push(realData[k].mduid)
-              let DataObj = {
-                Uuid: realData[k].uuid,
-                ModelDataUuid: realData[k].mduid,
-                Value: realData[k].value
-              }
-              pushDataMap[duid].Data.push(DataObj)
-            }
-            for (let duid in pushDataMap) {
-              _t.$EventBus.$emit("readDataPush", pushDataMap[duid])
-            }
-          }
-        })
-      },0, 'main')
+      this.refreshVisibleRealDemand()
     },
     InitPopUpPagerRealData() {
-      const renderToken = this.popUpRenderToken
-      let _t = this
-      const datauuid = this.CurrentPagerPopRealDataUuidList
-      const devices = this.CurrentPagerPopRealDeviceUuidList
-      _t.CurrentPopRealUUIDList=[]
-      _t.CurrentPopModelUUIDList=[]
-      this.trackTimeout(function (){
-        if (_t._isDestroyed || renderToken !== _t.popUpRenderToken) {
-          return
+      this.refreshPopRealDemand()
+    },
+    retireMainRealDemand() {
+      this.realDemandGen += 1
+      this.hoverCellId = ''
+      this.lastMainDemandKey = ''
+      this.CurrentRealUUIDList = []
+      this.CurrentModelUUIDList = []
+      if (this.viewportDemandTimer) {
+        clearTimeout(this.viewportDemandTimer)
+        this.viewportDemandTimer = null
+      }
+    },
+    retirePopRealDemand() {
+      this.popRealDemandGen += 1
+      this.popHoverCellId = ''
+      this.lastPopDemandKey = ''
+      this.CurrentPopRealUUIDList = []
+      this.CurrentPopModelUUIDList = []
+      if (this.popViewportDemandTimer) {
+        clearTimeout(this.popViewportDemandTimer)
+        this.popViewportDemandTimer = null
+      }
+    },
+    scheduleViewportDemand() {
+      if (this.viewportDemandTimer) clearTimeout(this.viewportDemandTimer)
+      const _t = this
+      this.viewportDemandTimer = setTimeout(function () {
+        _t.viewportDemandTimer = null
+        if (!_t._isDestroyed) _t.refreshVisibleRealDemand()
+      }, 200)
+    },
+    schedulePopViewportDemand() {
+      if (this.popViewportDemandTimer) clearTimeout(this.popViewportDemandTimer)
+      const _t = this
+      this.popViewportDemandTimer = setTimeout(function () {
+        _t.popViewportDemandTimer = null
+        if (!_t._isDestroyed) _t.refreshPopRealDemand()
+      }, 200)
+    },
+    refreshVisibleRealDemand() {
+      const cells = this.configData && this.configData.components ? this.configData.components.cells : []
+      const demand = selectRuntimeRealDemand(cells, {
+        viewport: readGraphViewport(this.ISMRuningCavasContainer),
+        hoverId: this.hoverCellId,
+      })
+      const key = demandSignature(demand)
+      if (key === this.lastMainDemandKey) return
+      const gen = ++this.realDemandGen
+      this.lastMainDemandKey = key
+      this.CurrentRealUUIDList = []
+      this.CurrentModelUUIDList = []
+      ismDebug('SCADA.InitPagerRealData.enter', {
+        pageRenderToken: this.pageRenderToken,
+        dataUuids: demand.pairs.length + demand.systemUuids.length,
+        devices: demand.pairs.length,
+      })
+      if (!demand.pairs.length && !demand.systemUuids.length) return
+      const _t = this
+      fetchRealDataByPairs(getRealDataByUuid, demand, {
+        isStale: function () { return gen !== _t.realDemandGen || _t._isDestroyed },
+      }).then(function (body) {
+        if (gen !== _t.realDemandGen || _t._isDestroyed) return
+        _t.settingLoading = false
+        if (!body || body.code != 0) return
+        const grouped = groupRealDataPush(body.realData)
+        _t.CurrentRealUUIDList = grouped.uuids
+        _t.CurrentModelUUIDList = grouped.modelUuids
+        const map = grouped.pushDataMap
+        for (const duid in map) {
+          _t.$EventBus.$emit('readDataPush', map[duid])
         }
-        if(datauuid.length>0)
-        {
-          let newuuids=[]
-          for(let i=0;i<datauuid.length;i++)
-          {
-            if((typeof datauuid[i]!="undefined")&&(datauuid[i].length>0))
-            {
-              newuuids.push(datauuid[i])
-            }
-          }
-          let newdevices=[]
-          for(let i=0;i<devices.length;i++)
-          {
-            if((typeof devices[i]!="undefined")&&(devices[i].length>0))
-            {
-              newdevices.push(devices[i])
-            }
-          }
-          fetchRealDataByUuidBatched(getRealDataByUuid, {
-            uuid: newuuids,
-            devices: newdevices,
-            batchSize: REAL_DATA_DEFAULT_PAGE_SIZE,
-          }).then(function (body){
-            if (_t._isDestroyed || renderToken !== _t.popUpRenderToken) {
-              return
-            }
-            _t.settingLoading=false
-            if(body.code==0)
-            {
-              // 按 DeviceUuid 分组，批量 emit，减少事件数量和 handler 调用次数
-              let pushDataMap = {}
-              const realData = body.realData || []
-              for(let k = 0,realDataLen = realData.length;k<realDataLen;k++)
-              {
-                let duid = realData[k].duid
-                if (!pushDataMap[duid]) {
-                  pushDataMap[duid] = {
-                    DeviceUuid: duid,
-                    ProjectUuid: realData[k].project_uuid,
-                    Cmd: "RealData",
-                    Data: []
-                  }
-                }
-                _t.CurrentPopRealUUIDList.push(realData[k].uuid)
-                _t.CurrentPopModelUUIDList.push(realData[k].mduid)
-                let DataObj = {
-                  Uuid: realData[k].uuid,
-                  ModelDataUuid: realData[k].mduid,
-                  Value: realData[k].value
-                }
-                pushDataMap[duid].Data.push(DataObj)
-              }
-              for (let duid in pushDataMap) {
-                _t.$EventBus.$emit("readDataPush", pushDataMap[duid])
-              }
-            }
-          })
+      }).catch(function () {
+        if (gen === _t.realDemandGen) _t.lastMainDemandKey = ''
+      })
+    },
+    refreshPopRealDemand() {
+      const cells = this.PopUpConfigData && this.PopUpConfigData.components ? this.PopUpConfigData.components.cells : []
+      const demand = selectRuntimeRealDemand(cells, {
+        viewport: readGraphViewport(this.ISMPopUpRunningContainer),
+        hoverId: this.popHoverCellId,
+      })
+      const key = demandSignature(demand)
+      if (key === this.lastPopDemandKey) return
+      const gen = ++this.popRealDemandGen
+      this.lastPopDemandKey = key
+      this.CurrentPopRealUUIDList = []
+      this.CurrentPopModelUUIDList = []
+      if (!demand.pairs.length && !demand.systemUuids.length) return
+      const _t = this
+      fetchRealDataByPairs(getRealDataByUuid, demand, {
+        isStale: function () { return gen !== _t.popRealDemandGen || _t._isDestroyed },
+      }).then(function (body) {
+        if (gen !== _t.popRealDemandGen || _t._isDestroyed) return
+        _t.settingLoading = false
+        if (!body || body.code != 0) return
+        const grouped = groupRealDataPush(body.realData)
+        _t.CurrentPopRealUUIDList = grouped.uuids
+        _t.CurrentPopModelUUIDList = grouped.modelUuids
+        const map = grouped.pushDataMap
+        for (const duid in map) {
+          _t.$EventBus.$emit('readDataPush', map[duid])
         }
-      },0, 'popup')
+      }).catch(function () {
+        if (gen === _t.popRealDemandGen) _t.lastPopDemandKey = ''
+      })
     },
     getInitialPageId() {
       return this.$route && this.$route.query ? this.$route.query.pageId : ""
@@ -622,8 +589,7 @@ export default {
           // 标记正在切换，阻止数据推送期间无效的 DealWithUpdateData
           _t.chargePage = true
           this.$message.loading({content: 'Loading...', key: 'updatable', duration: 0});
-          this.CurrentRealUUIDList=[]
-          this.CurrentModelUUIDList=[]
+          this.retireMainRealDemand()
           _t.CurrentPagerRealDataUuidList=[]
           _t.CurrentPagerRealDeviceUuidList=[]
           this.getLayerDataStructByTokenData({
@@ -690,8 +656,7 @@ export default {
           // 标记正在切换，阻止数据推送期间无效的 DealWithUpdateData
           _t.chargePage = true
           this.$message.loading({content: 'Loading...', key: 'updatable', duration: 0});
-          this.CurrentRealUUIDList=[]
-          this.CurrentModelUUIDList=[]
+          this.retireMainRealDemand()
           this.CurrentPagerRealDataUuidList=[]
           this.CurrentPagerRealDeviceUuidList=[]
           this.getLayerDataStruct({
@@ -974,20 +939,12 @@ export default {
         const index = st.navTreeIndex
         const pageUuid = linkInfo.Inside.pageUUID
         if (this.isTemplatePage(pageUuid)) return linkInfo
-        if (!index) {
-          const homePage = (st.navTemplateMap && st.navTemplateMap.home) || this.showUuid
-          return homePage
-            ? { ...linkInfo, Inside: { ...linkInfo.Inside, pageUUID: homePage }, navContext: null }
-            : linkInfo
-        }
+        // 解析不到旧页时保持原链接。强行改成首页会让配电室子页、总览按钮都落到同一页，
+        // 随后弹出「已在目标页面」或「弹窗目标与当前页相同」。
+        if (!index) return linkInfo
         const { resolveOldPageTarget } = require('@/pages/ISMDisPlay/utils/navTreeIndex')
         const conv = resolveOldPageTarget(pageUuid, index, st.navTemplateMap)
-        if (!conv) {
-          const homePage = (st.navTemplateMap && st.navTemplateMap.home) || this.showUuid
-          return homePage
-            ? { ...linkInfo, Inside: { ...linkInfo.Inside, pageUUID: homePage }, navContext: null }
-            : linkInfo
-        }
+        if (!conv) return linkInfo
         console.log('[showPage] legacy page link converted:', pageUuid, '→', conv.pageUuid, conv.navContext && conv.navContext.kind)
         return {
           ...linkInfo,
@@ -1253,7 +1210,7 @@ export default {
         this.ISMRuningCavasContainer.resize(this.configData.layer.width, this.configData.layer.height);
         this.ISMRuningCavasContainer.scale( 1,  1);
       }
-
+      this.scheduleViewportDemand()
     },
     ActionSoundSpeech : function() {
       let speechInstance = new SpeechSynthesisUtterance();
@@ -1530,6 +1487,7 @@ export default {
       this.$message.destroy()
       this.PopUpDialog  = false
       this.popUpPageRequestToken += 1
+      this.retirePopRealDemand()
       this.currentPopUpDisplayUUID = ""
       this.currentPopUpPageUUID = ""
       this.destroyPopUpGraph()
@@ -1541,6 +1499,7 @@ export default {
       {
         this.PopUpDialog  = false
         this.popUpPageRequestToken += 1
+        this.retirePopRealDemand()
         this.currentPopUpDisplayUUID = ""
         this.currentPopUpPageUUID = ""
         this.destroyPopUpGraph()
@@ -3596,8 +3555,7 @@ export default {
               return
             }
             _t.destroyPopUpGraph()
-            this.CurrentPopRealUUIDList=[]
-            this.CurrentPopModelUUIDList=[]
+            this.retirePopRealDemand()
             this.CurrentPagerPopRealDataUuidList=[]
             this.CurrentPagerPopRealDeviceUuidList=[]
             this.selectPopUpDisplayPageDataStruct({
@@ -3734,8 +3692,7 @@ export default {
               pageUuid: linkInfo.Inside.pageUUID
             }
 
-            _t.CurrentRealUUIDList=[]
-            _t.CurrentModelUUIDList=[]
+            _t.retireMainRealDemand()
             this.CurrentPagerRealDataUuidList=[]
             this.CurrentPagerRealDeviceUuidList=[]
 
@@ -4015,13 +3972,17 @@ export default {
       this.ISMRuningCavasContainer.off('blank:contextmenu')
       this.ISMRuningCavasContainer.off('cell:contextmenu')
       this.ISMRuningCavasContainer.off('scale')
+      this.ISMRuningCavasContainer.off('translate')
 
       window.removeEventListener('resize', this.setScale);
       window.addEventListener('resize', this.setScale);
       // token 已在函数入口处自增，此处只捕获当前值供回调使用
       const renderToken = this.pageRenderToken
-      this.ISMRuningCavasContainer.on('scale', ( scale ) => {
-
+      this.ISMRuningCavasContainer.on('scale', () => {
+        _t.scheduleViewportDemand()
+      });
+      this.ISMRuningCavasContainer.on('translate', () => {
+        _t.scheduleViewportDemand()
       });
       //
       this.ISMRuningCavasContainer.on('node:click', ( { e, x, y, node, view } ) => {
@@ -4037,9 +3998,13 @@ export default {
         _t.handleGraphNodeAction(node, 'mouseup')
       });
       this.ISMRuningCavasContainer.on('node:mouseenter', ( { e, x, y, node, view } ) => {
+        _t.hoverCellId = node && node.id ? node.id : ''
+        _t.refreshVisibleRealDemand()
         _t.handleGraphNodeAction(node, 'mouseenter')
       });
       this.ISMRuningCavasContainer.on('node:mouseleave', ( { e, x, y, node, view } ) => {
+        if (node && _t.hoverCellId === node.id) _t.hoverCellId = ''
+        _t.refreshVisibleRealDemand()
         _t.handleGraphNodeAction(node, 'mouseleave')
       });
       //页面空白处右键菜单
@@ -4158,8 +4123,11 @@ export default {
           };
         },
       })
-      this.ISMPopUpRunningContainer.on('scale', ( scale ) => {
-
+      this.ISMPopUpRunningContainer.on('scale', () => {
+        _t.schedulePopViewportDemand()
+      });
+      this.ISMPopUpRunningContainer.on('translate', () => {
+        _t.schedulePopViewportDemand()
       });
       //
       this.ISMPopUpRunningContainer.on('node:click', ( { e, x, y, node, view } ) => {
@@ -4175,9 +4143,13 @@ export default {
         _t.handleGraphNodeAction(node, 'mouseup')
       });
       this.ISMPopUpRunningContainer.on('node:mouseenter', ( { e, x, y, node, view } ) => {
+        _t.popHoverCellId = node && node.id ? node.id : ''
+        _t.refreshPopRealDemand()
         _t.handleGraphNodeAction(node, 'mouseenter')
       });
       this.ISMPopUpRunningContainer.on('node:mouseleave', ( { e, x, y, node, view } ) => {
+        if (node && _t.popHoverCellId === node.id) _t.popHoverCellId = ''
+        _t.refreshPopRealDemand()
         _t.handleGraphNodeAction(node, 'mouseleave')
       });
       //页面空白处右键菜单
@@ -4675,8 +4647,7 @@ export default {
             _t.clearPendingTimers('main')
             // 标记正在切换，阻止数据推送期间无效的 DealWithUpdateData
             // _t.$message.loading({content: 'Loading...', key: 'updatable', duration: 0});
-            _t.CurrentRealUUIDList=[]
-            _t.CurrentModelUUIDList=[]
+            _t.retireMainRealDemand()
             _t.CurrentPagerRealDataUuidList=[]
             _t.CurrentPagerRealDeviceUuidList=[]
             _t.selectDisplayPageDataStruct({
@@ -5373,6 +5344,8 @@ export default {
     });
   },
   beforeDestroy() {
+    this.retireMainRealDemand()
+    this.retirePopRealDemand()
     speechSynthesis.cancel()
     this.$notification.destroy()
     this.clearPendingTimers()

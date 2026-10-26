@@ -256,6 +256,36 @@ func ResyncOfflineDeviceAlarms(projectUuid string, deviceUuids []string) int64 {
 	return synced
 }
 
+// ClearActiveDeviceAlarm 把仍在实时库的告警写上清除时间，使其进入历史。
+// 内存里的行号对不上时，按设备+测点清掉未消除的那一行。
+func ClearActiveDeviceAlarm(id uint, deviceUuid, dataUuid string, clearTime time.Time) int64 {
+	if deviceUuid == "" || dataUuid == "" {
+		return 0
+	}
+	if clearTime.IsZero() {
+		clearTime = time.Now()
+	}
+	updates := map[string]interface{}{
+		"clear_time": clearTime,
+		"keep_time":  alarmKeepTimeExpr(clearTime),
+	}
+	if id > 0 {
+		byID := Db.Model(&DevicesAlarmList{}).
+			Where("id = ? AND device_uuid = ? AND data_uuid = ? AND clear_time < ?", id, deviceUuid, dataUuid, alarmActiveClearThreshold).
+			Updates(updates)
+		if byID.Error == nil && byID.RowsAffected > 0 {
+			return byID.RowsAffected
+		}
+	}
+	byPoint := Db.Model(&DevicesAlarmList{}).
+		Where("device_uuid = ? AND data_uuid = ? AND clear_time < ?", deviceUuid, dataUuid, alarmActiveClearThreshold).
+		Updates(updates)
+	if byPoint.Error != nil {
+		return 0
+	}
+	return byPoint.RowsAffected
+}
+
 // alarmKeepTimeExpr 按数据库方言计算 keep_time（秒），避免 Find 全量再逐行 Updates。
 func alarmKeepTimeExpr(clearTime time.Time) interface{} {
 	clearTimeStr := clearTime.Format("2006-01-02 15:04:05")

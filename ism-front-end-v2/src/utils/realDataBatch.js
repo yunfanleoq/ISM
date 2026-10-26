@@ -65,3 +65,72 @@ export async function fetchRealDataByUuidBatched(requestFn, { uuid = [], devices
 
   return { code: lastCode, realData: merged }
 }
+
+/**
+ * 按「设备 + 该设备上的测点」拆请求。
+ * 禁止把一页上所有设备 ID 和所有测点 ID 放进同一次 IN 查询，否则会交叉出整站测点。
+ */
+export function groupDemandRequests(demand, batchSize = REAL_DATA_DEFAULT_PAGE_SIZE) {
+  const pairs = (demand && demand.pairs) || []
+  const systemUuids = (demand && demand.systemUuids) || []
+  const byDevice = new Map()
+  for (let i = 0; i < pairs.length; i++) {
+    const pair = pairs[i]
+    if (!pair || typeof pair.uuid !== 'string' || !pair.uuid || typeof pair.device !== 'string' || !pair.device) {
+      continue
+    }
+    let list = byDevice.get(pair.device)
+    if (!list) {
+      list = []
+      byDevice.set(pair.device, list)
+    }
+    if (list.indexOf(pair.uuid) === -1) {
+      list.push(pair.uuid)
+    }
+  }
+  const size = clampPageSize(batchSize)
+  const requests = []
+  byDevice.forEach((uuids, device) => {
+    const chunks = chunkArray(uuids, size)
+    for (let i = 0; i < chunks.length; i++) {
+      requests.push({ uuid: chunks[i], devices: [device] })
+    }
+  })
+  const system = systemUuids.filter(u => typeof u === 'string' && u.length > 0)
+  const systemChunks = chunkArray(system, size)
+  for (let i = 0; i < systemChunks.length; i++) {
+    requests.push({ uuid: systemChunks[i], devices: [] })
+  }
+  return requests
+}
+
+/**
+ * 按配对分批取实时值。isStale() 为真时停掉后续批次，已离开的页不再继续要数。
+ */
+export async function fetchRealDataByPairs(requestFn, demand, { batchSize = REAL_DATA_DEFAULT_PAGE_SIZE, isStale } = {}) {
+  if (typeof requestFn !== 'function') {
+    return { code: 0, realData: [] }
+  }
+  const requests = groupDemandRequests(demand, batchSize)
+  const merged = []
+  let lastCode = 0
+  for (let i = 0; i < requests.length; i++) {
+    if (typeof isStale === 'function' && isStale()) {
+      break
+    }
+    const res = await requestFn(requests[i])
+    const body = res && res.data
+    if (!body) {
+      continue
+    }
+    lastCode = body.code
+    if (body.code === 0 && Array.isArray(body.realData)) {
+      for (let k = 0; k < body.realData.length; k++) {
+        merged.push(body.realData[k])
+      }
+    } else if (body.code !== 0) {
+      return { code: body.code, realData: merged }
+    }
+  }
+  return { code: lastCode, realData: merged }
+}

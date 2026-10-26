@@ -34,34 +34,12 @@
   /* ---------------- 页面 ---------------- */
   A.register('building', {
     render: function (root) {
-      var self = this;
-      var meta = (window.DCIM && window.DCIM.meta) || {};
-      this.state = { room: null, cab: null };
-      this._flat = [];
-
-      root.innerHTML =
-        '<div class="tour">' +
-          '<div class="tour-bar">' +
-            '<div class="tour-brand"><span class="tb-name">' + A.esc(meta.system || '监控大屏') + '</span>' +
-              '<span class="tb-sub">' + A.esc(meta.project || '航信') + '</span></div>' +
-            '<div class="crumb" id="tourCrumb"><span class="crumb-item is-cur">现场空间</span></div>' +
-            '<div class="tour-hint" id="tourHint">按航信监控树选择。点配电室开一次图，点机房开列头柜</div>' +
-          '</div>' +
-          '<div class="tour-main">' +
-            '<aside class="tour-side" id="tourSide"><div class="hx-tree" id="hxSiteTree"></div></aside>' +
-            '<div class="cam" id="cam"><div class="cam-grid"></div>' +
-              '<div class="cam-view" id="hxCam"></div></div>' +
-          '</div>' +
-        '</div>';
-
-      this.camHost = A.q('#hxCam', root);
-      this.treeHost = A.q('#hxSiteTree', root);
-      this.crumb = A.q('#tourCrumb', root);
-      this.crumb.addEventListener('click', function (e) {
-        if (e.target.closest('[data-lv="0"]')) self.paintSite();
-      });
-
-      var run = function () { self.paintSite(); };
+      root.innerHTML = '<div id="hxBuilding" class="grow" style="min-height:0"></div>';
+      var host = document.getElementById('hxBuilding');
+      /* 与 #/power 相同：架构树 + 面包屑 + 主区钻取 */
+      var run = function () {
+        if (window.HXScreen) window.HXScreen.mount(host, 'drill');
+      };
       if (window.HXScreen && window.HXScreen.ready) window.HXScreen.ready.then(run);
       else run();
     },
@@ -126,8 +104,36 @@
       });
     },
 
+    siteRoomFlat: function () {
+      var flat = [];
+      this.siteFolders().forEach(function (f) {
+        (f.rooms || []).forEach(function (r) { flat.push(r); });
+      });
+      return flat;
+    },
+
     renderTree: function () {
       var self = this;
+      var arch = window.HXArch;
+      if (arch && arch.renderTree && arch.branches && arch.branches.length) {
+        self._flat = self.siteRoomFlat();
+        var active = null;
+        if (self.state.room) {
+          var cur = self._flat.filter(function (x) { return x.name === self.state.room; })[0];
+          active = {
+            room: cur || { name: self.state.room },
+            cab: (self.state.cab != null && cur && cur.cabs) ? cur.cabs[self.state.cab] : null
+          };
+        }
+        var rendered = arch.renderTree(this.treeHost, {
+          onPick: function (room, cab, item) {
+            self.openByResolved(room, cab, item);
+          },
+          active: active
+        });
+        self._archFlat = rendered;
+        return;
+      }
       var folders = this.siteFolders();
       var flat = [];
       var html = folders.map(function (f) {
@@ -169,8 +175,63 @@
       this.camHost.innerHTML =
         '<div class="hx-site-note">' +
           '<div class="hx-title">航信现场空间</div>' +
-          '<div class="hx-pt">监控树没有楼层这一级。左侧 ' + n + ' 个配电室、机房模块、数据机房来自现场索引。点配电室打开一次图，点机房打开列头柜。</div>' +
+          '<div class="hx-pt">左侧按架构层级机构（配电室/机房 → 楼层 → 房间 → 列）。已绑测点的节点可点；灰显项尚未解开画面或未绑点。共 ' + n + ' 个可巡检房间。</div>' +
         '</div>';
+    },
+
+    openByResolved: function (room, cab, item) {
+      var self = this;
+      if (!window.HXScreen || !window.HXScreen.openIn) return;
+      var ci = null;
+      if (room && cab && room.cabs) {
+        room.cabs.forEach(function (c, idx) { if (c.name === cab.name) ci = idx; });
+      } else if (room && room.cabs && room.cabs.length) ci = 0;
+      if (room) {
+        this.state.room = room.name;
+        this.state.cab = ci;
+      }
+      this.renderTree();
+      var labelParts = window.HXArch && item
+        ? window.HXArch.crumbLabels(item.ancestors, item.name, cab && cab.name)
+        : [(item && item.name) || (room && room.name) || '节点'];
+      this.crumb.innerHTML =
+        '<span class="crumb-item" data-lv="0">现场空间</span><span class="crumb-sep">›</span>' +
+        '<span class="crumb-item is-cur">' + A.esc(labelParts.join(' › ')) + '</span>';
+      var resolved = item && item.resolved;
+      if (resolved && !resolved.ok) {
+        if (window.HXScreen.leave) window.HXScreen.leave();
+        var links = resolved.links || [];
+        var sug = resolved.kind === 'power' && window.HXArch ? window.HXArch.suggestFromPower(resolved.design) : null;
+        var btns = links.map(function (lk, i) {
+          return '<button type="button" class="hx-drill-go" data-link-i="' + i + '">前往 ' + A.esc(lk.label || lk.design) + '</button>';
+        }).join('');
+        if (sug && sug.item) {
+          btns = '<button type="button" class="hx-drill-go is-primary" data-suggest="1">下钻 · ' +
+            A.esc(sug.item.name) + '</button>' + btns;
+        }
+        this.camHost.innerHTML =
+          '<div class="hx-site-note">' +
+            '<div class="hx-title">' + A.esc(item.name || resolved.design || '') + '</div>' +
+            '<div class="hx-pt">' + A.esc(resolved.reason || '暂无画面') + '。请点关联入口或左侧树继续。</div>' +
+            (btns ? '<div class="hx-drill-actions">' + btns + '</div>' : '') +
+          '</div>';
+        this.camHost.querySelectorAll('[data-suggest]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            if (sug && sug.item) self.openByResolved(sug.item.resolved.room, sug.item.resolved.cab, sug.item);
+          });
+        });
+        this.camHost.querySelectorAll('[data-link-i]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            var lk = links[Number(btn.getAttribute('data-link-i'))];
+            if (!lk || !window.HXArch || !self._archFlat) return;
+            var picked = window.HXArch.pickByDesign(self._archFlat, lk.design);
+            if (picked) self.openByResolved(picked.resolved.room, picked.resolved.cab, picked);
+          });
+        });
+        return;
+      }
+      if (!room) return;
+      window.HXScreen.openIn(this.camHost, room, cab);
     },
 
     openSite: function (i, ci) {

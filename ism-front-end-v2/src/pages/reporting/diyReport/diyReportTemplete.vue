@@ -168,7 +168,7 @@
 <script>
 import {formatDate} from '@/utils/common';
 import Mtextarea from "@/components/textarea";
-import {HandExportReportTemplete,GetReportTempletes,AddReportTemplete,DelReportTemplete,EditReportTemplete} from "@/services/reportTemplete";
+import {HandExportReportTemplete,GetReportTempletes,AddReportTemplete,DelReportTemplete,EditReportTemplete,GetDiyReportFile,isPackedFile,packedFileError,downloadArrayBuffer} from "@/services/reportTemplete";
 import {getMonitorTree} from "@/services/device";
 export default {
   name: 'diyDataHistoryTemplete',
@@ -308,23 +308,27 @@ export default {
       _t.$message.loading({ content: _t.$t('diyReportTemplete.ExportLoading'),duration: 0 });
       _t.IsExport=true
       HandExportReportTemplete(params).then(function (res){
-        if(res.data.code==0)
+        _t.$message.destroy()
+        _t.IsExport=false
+        const body = res && res.data ? res.data : {}
+        if(body.code==0)
         {
-          _t.$message.destroy()
-          const elink = document.createElement('a')
-          elink.href = res.data.path
-          elink.setAttribute('download', rc.Name+".zip")
-          elink.style.display = 'none'
-          document.body.appendChild(elink)
-          setTimeout(() => {
-            elink.click()
-            document.body.removeChild(elink)
-          }, 66)
+          GetDiyReportFile(body.path).then(function (fileRes) {
+            const buf = fileRes && fileRes.data
+            if (!isPackedFile(buf)) {
+              _t.$message.error(packedFileError(buf) || _t.$t('diyReportTemplete.HandExportFailed'))
+              return
+            }
+            downloadArrayBuffer(buf, rc.Name+".zip")
+          }).catch(function () {
+            _t.$message.error(_t.$t('diyReportTemplete.HandExportFailed'))
+          })
         }else{
-          _t.IsExport=false
-          _t.$message.destroy()
-          _t.$message.error(_t.$t('diyReportTemplete.HandExportFailed'))
+          _t.$message.error(body.msg || _t.$t('diyReportTemplete.HandExportFailed'))
         }
+      }).catch(function () {
+        _t.$message.destroy()
+        _t.$message.error(_t.$t('diyReportTemplete.HandExportFailed'))
       }).finally(function (error) {
         _t.IsExport = false
       })

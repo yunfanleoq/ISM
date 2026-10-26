@@ -95,7 +95,9 @@ const reqCommon = {
 
     const explicitProjectUuid = getExplicitProjectUuid(config, projectHeaderName)
 
-    if (!explicitProjectUuid && getAuthorization(AUTH_TYPE.AUTH1)) {
+    if (explicitProjectUuid) {
+      config.headers.common[projectHeaderName] = explicitProjectUuid
+    } else if (getAuthorization(AUTH_TYPE.AUTH1)) {
       config.headers.common[projectHeaderName] =  getAuthorization(AUTH_TYPE.AUTH1)
     }
     if (getAuthorization(AUTH_TYPE.AUTH3)) {
@@ -121,10 +123,13 @@ const reqCommon = {
     if (url.indexOf('login') === -1 && xsrfCookieName && !getAuthorization(AUTH_TYPE.BEARER)) {
       message.warning('认证 token 已过期，请重新登录')
     }
-    if((url.indexOf('login') !== -1)||(url.indexOf('login') !== -1)||(url.indexOf('ProjectList') !== -1)||((url.indexOf('ProjectAdd') !== -1))||(url.indexOf('ProjectEdit') !== -1)||((url.indexOf('ProjectDel') !== -1)))
+    if((url.indexOf('login') !== -1)||(url.indexOf('ProjectList') !== -1)||((url.indexOf('ProjectAdd') !== -1))||(url.indexOf('ProjectEdit') !== -1)||((url.indexOf('ProjectDel') !== -1)))
     {
       delete config.headers.common[projectHeaderName]
-      removeAuthorization(AUTH_TYPE.AUTH1)
+      // 只在登录时清项目 ID。项目列表请求不能清，否则大屏齿轮进后台后数据仓库会丢 ProjectUuid。
+      if (url.indexOf('login') !== -1) {
+        removeAuthorization(AUTH_TYPE.AUTH1)
+      }
     }
     else{
       if (explicitProjectUuid) {

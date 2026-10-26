@@ -23,7 +23,30 @@ func FileExists(path string) bool {
 	return err == nil && !st.IsDir()
 }
 
-func IsValidTaosdumpDir(dir string) bool {
+// RemoveIfInvalid 只删除备份根目录下、还没有 dbs.sql 的本次失败目录。
+// 已经可用的备份一律保留。
+func RemoveIfInvalid(dir string) error {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return err
+	}
+	root, err := AbsRoot()
+	if err != nil {
+		return err
+	}
+	rel, err := filepath.Rel(root, abs)
+	if err != nil || rel == "." || rel == "" || strings.HasPrefix(rel, "..") || rel != filepath.Base(rel) {
+		return fmt.Errorf("refuse to remove %s", dir)
+	}
+	if IsValidTaosdumpDir(abs) {
+		return nil
+	}
+	return os.RemoveAll(abs)
+}
+
+const IncompleteMarker = "backup.incomplete"
+
+func HasDbsSQL(dir string) bool {
 	if FileExists(filepath.Join(dir, "dbs.sql")) {
 		return true
 	}
@@ -38,6 +61,120 @@ func IsValidTaosdumpDir(dir string) bool {
 		}
 	}
 	return false
+}
+
+func MarkIncomplete(dir, reason string) error {
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dir, IncompleteMarker), []byte(reason), 0644)
+}
+
+func IncompleteReason(dir string) string {
+	b, err := os.ReadFile(filepath.Join(dir, IncompleteMarker))
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(string(b))
+}
+
+// HasDumpDataFile 除了 .sql 和未完成标记，还有实际写出的文件。
+func HasDumpDataFile(dir string) bool {
+	found := false
+	_ = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info == nil || info.IsDir() {
+			return nil
+		}
+		name := info.Name()
+		if name == IncompleteMarker || strings.HasSuffix(name, ".sql") {
+			return nil
+		}
+		if info.Size() > 0 {
+			found = true
+			return io.EOF
+		}
+		return nil
+	})
+	return found
+}
+
+// BackupReady 只有数据表导完、并且文件已经在这个目录里，才算完整备份。
+func BackupReady(dir string, p DumpProgress) (bool, string) {
+	if !HasDbsSQL(dir) {
+		return false, "目录里没有 dbs.sql"
+	}
+	if p.Total > 0 && !p.DataComplete() {
+		if p.Phase == "data" {
+			return false, fmt.Sprintf("数据只导出 %d/%d，不能当完整备份", p.Done, p.Total)
+		}
+		return false, fmt.Sprintf("表结构之后的数据还没导完（共 %d 张表），不能当完整备份", p.Total)
+	}
+	if p.Total > 0 && !HasDumpDataFile(dir) {
+		return false, "只有表结构，没有数据文件，不能当完整备份"
+	}
+	return true, ""
+}
+
+func IsValidTaosdumpDir(dir string) bool {
+	if FileExists(filepath.Join(dir, IncompleteMarker)) {
+		return false
+	}
+	return HasDbsSQL(dir)
+}
+
+// ZipDir 把备份目录内容打进 zip，顶层就是 dbs.sql 和 taosdump- 目录，便于再上传还原。
+func ZipDir(srcDir, zipPath string) error {
+	if err := os.MkdirAll(filepath.Dir(zipPath), 0755); err != nil {
+		return err
+	}
+	out, err := os.Create(zipPath)
+	if err != nil {
+		return err
+	}
+	zw := zip.NewWriter(out)
+	walkErr := filepath.Walk(srcDir, func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		rel, relErr := filepath.Rel(srcDir, path)
+		if relErr != nil {
+			return relErr
+		}
+		if rel == "." {
+			return nil
+		}
+		name := filepath.ToSlash(rel)
+		if info.IsDir() {
+			_, createErr := zw.Create(name + "/")
+			return createErr
+		}
+		header, headerErr := zip.FileInfoHeader(info)
+		if headerErr != nil {
+			return headerErr
+		}
+		header.Name = name
+		header.Method = zip.Deflate
+		w, createErr := zw.CreateHeader(header)
+		if createErr != nil {
+			return createErr
+		}
+		in, openErr := os.Open(path)
+		if openErr != nil {
+			return openErr
+		}
+		_, copyErr := io.Copy(w, in)
+		in.Close()
+		return copyErr
+	})
+	closeErr := zw.Close()
+	fileErr := out.Close()
+	if walkErr != nil {
+		return walkErr
+	}
+	if closeErr != nil {
+		return closeErr
+	}
+	return fileErr
 }
 
 func DirSize(root string) int64 {

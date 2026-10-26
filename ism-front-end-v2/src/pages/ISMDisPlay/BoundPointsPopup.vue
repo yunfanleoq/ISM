@@ -5,14 +5,18 @@
     :style="boxStyle"
     @mouseenter="onEnter"
     @mouseleave="onLeave"
+    @mousedown.stop
+    @click.stop
   >
     <div class="bpp-header">
       <span class="bpp-col bpp-col-idx">序号</span>
       <span class="bpp-col bpp-col-dev">设备</span>
       <span class="bpp-col bpp-col-name">测点</span>
       <span class="bpp-col bpp-col-val">数值</span>
+      <button type="button" class="bpp-pin" @click.stop="onTitleAction">{{ pinned ? '点击关闭' : '点击钉住' }}</button>
+      <button type="button" class="bpp-close" title="关闭" @click.stop="closeNow">×</button>
     </div>
-    <div class="bpp-body">
+    <div class="bpp-body" :style="bodyStyle">
       <div v-if="loading" class="bpp-tip">数据加载中…</div>
       <div v-else-if="error" class="bpp-tip bpp-tip-err">{{ error }}</div>
       <div v-else-if="rows.length === 0" class="bpp-tip">暂无绑定测点</div>
@@ -36,7 +40,7 @@
 import { getRealDataByUuid } from '@/services/device'
 
 const HIDE_DELAY = 180
-const MAX_W = 560
+const MAX_W = 720
 const MAX_H = 420
 
 export default {
@@ -51,7 +55,11 @@ export default {
       posX: 0,
       posY: 0,
       reqSeq: 0,
-      hideTimer: null
+      hideTimer: null,
+      suppressTimer: null,
+      ownerKey: '',
+      suppressKey: '',
+      boxMaxH: MAX_H
     }
   },
   computed: {
@@ -59,48 +67,137 @@ export default {
       return {
         left: this.posX + 'px',
         top: this.posY + 'px',
-        maxWidth: MAX_W + 'px',
-        maxHeight: MAX_H + 'px'
+        width: 'min(' + MAX_W + 'px, calc(100vw - 16px))',
+        maxWidth: 'calc(100vw - 16px)',
+        maxHeight: (this.boxMaxH || MAX_H) + 'px'
       }
+    },
+    bodyStyle() {
+      const h = Math.max(120, (this.boxMaxH || MAX_H) - 34)
+      return { maxHeight: h + 'px' }
     }
   },
+  created() {
+    this._popupId = 'bpp-' + Math.random().toString(36).slice(2)
+    if (this.$EventBus) {
+      this.$EventBus.$on('ism-bound-points-claim', this.onOtherClaim)
+    }
+  },
+  mounted() {
+    if (this.$el && this.$el.parentNode !== document.body) {
+      document.body.appendChild(this.$el)
+    }
+    document.addEventListener('mousedown', this.onDocPointer, true)
+    document.addEventListener('keydown', this.onKeydown)
+  },
   beforeDestroy() {
+    if (this.$EventBus) {
+      this.$EventBus.$off('ism-bound-points-claim', this.onOtherClaim)
+    }
     if (this.hideTimer) clearTimeout(this.hideTimer)
+    if (this.suppressTimer) clearTimeout(this.suppressTimer)
+    document.removeEventListener('mousedown', this.onDocPointer, true)
+    document.removeEventListener('keydown', this.onKeydown)
   },
   methods: {
-    show(payload) {
+    onOtherClaim(id) {
+      if (id !== this._popupId) this.hide(true)
+    },
+    show(payload, options) {
       if (!payload || !Array.isArray(payload.binds) || payload.binds.length === 0) {
         return
       }
+      const ownerKey = payload.ownerKey || ''
+      const force = !!(options && options.force)
+      if (!force && this.suppressKey && ownerKey && ownerKey === this.suppressKey) {
+        return
+      }
+      if (force) this.clearSuppress(ownerKey)
+      if (this.$EventBus) this.$EventBus.$emit('ism-bound-points-claim', this._popupId)
       if (this.hideTimer) {
         clearTimeout(this.hideTimer)
         this.hideTimer = null
       }
+      this.ownerKey = ownerKey || this.ownerKey
       this.computePosition(payload.clientX, payload.clientY)
       this.visible = true
       this.loadData(payload.binds)
     },
+    closeNow() {
+      if (this.hideTimer) {
+        clearTimeout(this.hideTimer)
+        this.hideTimer = null
+      }
+      if (this.ownerKey) this.suppressKey = this.ownerKey
+      this.pinned = false
+      this.visible = false
+      this.armSuppressClear()
+    },
+    armSuppressClear() {
+      if (!this.suppressKey) return
+      if (this.suppressTimer) clearTimeout(this.suppressTimer)
+      this.suppressTimer = setTimeout(() => {
+        this.suppressTimer = null
+        this.suppressKey = ''
+      }, 320)
+    },
+    cancelSuppressClear() {
+      if (this.suppressTimer) {
+        clearTimeout(this.suppressTimer)
+        this.suppressTimer = null
+      }
+    },
+    clearSuppress(ownerKey) {
+      if (this.suppressKey && ownerKey && ownerKey !== this.suppressKey) return
+      this.suppressKey = ''
+      if (this.suppressTimer) {
+        clearTimeout(this.suppressTimer)
+        this.suppressTimer = null
+      }
+    },
     togglePin(payload) {
       if (this.pinned && this.visible) {
-        this.pinned = false
-        this.hide(true)
+        this.closeNow()
         return
       }
       this.pinned = true
-      this.show(payload)
+      if (payload) this.show(payload, { force: true })
+    },
+    onTitleAction() {
+      if (this.pinned) {
+        this.closeNow()
+        return
+      }
+      this.pinned = true
+      this.clearSuppress(this.ownerKey)
+    },
+    onDocPointer(evt) {
+      if (!this.pinned || !this.visible) return
+      const el = this.$el
+      if (el && evt.target && el.contains(evt.target)) return
+      this.closeNow()
+    },
+    onKeydown(evt) {
+      if (!this.visible) return
+      if (evt.key === 'Escape' || evt.key === 'Esc') this.closeNow()
     },
     move(payload) {
       if (!this.visible || this.pinned || !payload) return
       this.computePosition(payload.clientX, payload.clientY)
     },
     hide(force) {
-      if (this.pinned && !force) return
+      if (force) {
+        this.closeNow()
+        return
+      }
+      if (this.pinned) return
       if (this.hideTimer) clearTimeout(this.hideTimer)
       this.hideTimer = setTimeout(() => {
-        this.visible = false
-        this.pinned = false
         this.hideTimer = null
-      }, force ? 0 : HIDE_DELAY)
+        if (this.pinned) return
+        this.pinned = false
+        this.visible = false
+      }, HIDE_DELAY)
     },
     onEnter() {
       if (this.hideTimer) {
@@ -109,10 +206,16 @@ export default {
       }
     },
     onLeave() {
-      this.hide(false)
+      if (this.pinned) return
+      this.closeNow()
     },
     loadData(binds) {
       const uuids = binds.map((item) => item && (item.dataID || item.dataId)).filter(Boolean)
+      const devices = []
+      binds.forEach((item) => {
+        const id = item && (item.deviceSN || item.duid)
+        if (id && devices.indexOf(id) < 0) devices.push(id)
+      })
       const seq = ++this.reqSeq
       this.loading = true
       this.error = ''
@@ -127,14 +230,15 @@ export default {
         this.loading = false
         return
       }
-      getRealDataByUuid({ uuid: uuids }).then((res) => {
+      getRealDataByUuid({ uuid: uuids, devices: devices }).then((res) => {
         if (seq !== this.reqSeq) return
         const data = res && res.data ? res.data : {}
         const list = Array.isArray(data.realData) ? data.realData : []
         const byUuid = {}
         list.forEach((it) => {
-          const id = it.uuid || it.Uuid
-          if (id) byUuid[id] = it
+          ;[it.uuid, it.Uuid, it.mduid, it.model_data_uuid].forEach((id) => {
+            if (id) byUuid[id] = it
+          })
         })
         this.rows = binds.map((item, index) => {
           const id = item && (item.dataID || item.dataId)
@@ -144,7 +248,7 @@ export default {
             device: (real && (real.DeviceName || real.deviceName)) || (item && (item.DeviceName || item.deviceSN)) || '',
             name: (real && (real.name || real.Name)) || (item && item.dataName) || '',
             value: this.fmtValue(real && real.value),
-            unit: (real && (real.unit || real.DataUnit)) || ''
+            unit: (real && (real.unit || real.DataUnit || real.data_unit)) || (item && (item.unit || item.dataUnit || item.DataUnit)) || ''
           }
         })
         this.loading = false
@@ -161,17 +265,20 @@ export default {
     computePosition(clientX, clientY) {
       const vw = window.innerWidth || document.documentElement.clientWidth
       const vh = window.innerHeight || document.documentElement.clientHeight
+      const margin = 8
       const offset = 16
-      const estW = Math.min(MAX_W, 520)
-      const estH = Math.min(MAX_H, 60 + this.rows.length * 30 + 40)
+      const estW = Math.min(MAX_W, Math.max(360, vw - margin * 2))
+      const available = Math.max(160, vh - margin * 2)
+      const boxH = Math.min(MAX_H, available)
       let x = (clientX || 0) + offset
       let y = (clientY || 0) + offset
-      if (x + estW > vw - 8) x = (clientX || 0) - estW - offset
-      if (x < 8) x = 8
-      if (y + estH > vh - 8) y = vh - estH - 8
-      if (y < 8) y = 8
+      if (x + estW > vw - margin) x = (clientX || 0) - estW - offset
+      if (x < margin) x = margin
+      if (y + boxH > vh - margin) y = vh - margin - boxH
+      if (y < margin) y = margin
       this.posX = x
       this.posY = y
+      this.boxMaxH = Math.max(160, Math.min(MAX_H, vh - y - margin))
     }
   }
 }
@@ -200,11 +307,36 @@ export default {
   color: #ffffff;
   font-size: 13px;
   font-weight: 600;
+  flex: 0 0 34px;
+}
+.bpp-pin {
   flex: 0 0 auto;
+  margin-left: 8px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 12px;
+  cursor: pointer;
+  padding: 0;
+}
+.bpp-close {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 28px;
+  margin-right: 4px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  font-size: 18px;
+  line-height: 28px;
+  cursor: pointer;
 }
 .bpp-body {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   overflow-x: hidden;
+  overscroll-behavior: contain;
 }
 .bpp-row {
   display: flex;
@@ -222,10 +354,20 @@ export default {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.bpp-col-idx { width: 56px; flex: 0 0 56px; }
-.bpp-col-dev { width: 120px; flex: 1 1 120px; }
-.bpp-col-name { width: 140px; flex: 1 1 140px; }
-.bpp-col-val { width: 110px; flex: 0 0 110px; text-align: right; }
+.bpp-col-idx { width: 48px; flex: 0 0 48px; }
+.bpp-col-dev { width: 90px; flex: 1 1 72px; min-width: 0; }
+.bpp-col-name {
+  flex: 1 1 auto;
+  min-width: 180px;
+  white-space: normal;
+  word-break: break-all;
+  overflow: visible;
+  text-overflow: clip;
+  line-height: 1.4;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+.bpp-col-val { width: 128px; flex: 0 0 128px; text-align: right; }
 .bpp-badge {
   display: inline-block;
   min-width: 18px;

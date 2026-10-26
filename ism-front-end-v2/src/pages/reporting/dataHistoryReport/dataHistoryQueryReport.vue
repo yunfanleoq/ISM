@@ -565,6 +565,9 @@ export default {
           // 原有逻辑：更新分页和导出文件名
           _t.pagination.total = _t.dataSource.length;
           _t.exportName = `${_t.$t('reporting.DataHistory.exportName')}_${formatDate(new Date(), 'yyyy-MM-dd hh:mm:ss')}.xls`;
+          if (res.data.truncated) {
+            _t.$message.warning(res.data.msg || '结果过多，已只返回前 10 万行');
+          }
         } else {
           _t.$message.error(res.data.msg || _t.$t('reporting.AlarmHistory.QueryFail'));
         }

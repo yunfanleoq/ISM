@@ -31,11 +31,27 @@
         <template v-for="(item, index) in hisColumns" :slot="item.slotName">
           <span :key="index">{{ $t(item.slotName) }}</span>
         </template>
-        <span slot="ValidText" slot-scope="text">{{ text ? '可用' : '不完整' }}</span>
+        <span slot="BackupStatus" slot-scope="text, record">
+          <div>{{ record.StatusText || (record.Valid ? '备份完成' : '不完整') }}</div>
+          <a-progress
+            v-if="record.Status === 'running'"
+            :percent="Number(record.Progress) || 0"
+            :strokeWidth="8"
+            status="active"
+          />
+        </span>
         <div slot="HisOpt" slot-scope="text, record">
+          <a
+            type="link"
+            :style="{ cursor: record.Status === 'running' ? 'not-allowed' : 'pointer', color: record.Status === 'running' ? '#bbb' : '#13C2C2' }"
+            @click="record.Status === 'running' ? null : doHisDownload(record)"
+          >
+            <a-icon type="download" /><span style="margin-left: 2px;">{{$t('DbBack.download')}}</span>
+          </a>
+          <a-divider type="vertical" />
           <a-popconfirm
             title="还原将覆盖当前 TDengine 历史库 ISMHistoryDb，原有历史数据会删除。确定继续？"
-            :disabled="!record.Valid"
+            :disabled="!record.Valid || record.Status === 'running'"
             @confirm="doHisRestore(record.FilePath)"
           >
             <a
@@ -44,8 +60,11 @@
             ><a-icon type="reload" /><span style="margin-left: 2px;">{{$t('DbBack.Restore')}}</span></a>
           </a-popconfirm>
           <a-divider type="vertical" />
-          <a-popconfirm :title="$t('DbBack.DeleteConfirm')" @confirm="doHisDelete(record.FilePath)">
-            <a type="link" style="cursor: pointer;color: #eb2f96"><a-icon type="delete" /><span style="margin-left: 2px;">{{$t('DbBack.Delete')}}</span></a>
+          <a-popconfirm :title="$t('DbBack.DeleteConfirm')" :disabled="record.Status === 'running'" @confirm="doHisDelete(record.FilePath)">
+            <a
+              type="link"
+              :style="{ cursor: record.Status === 'running' ? 'not-allowed' : 'pointer', color: record.Status === 'running' ? '#bbb' : '#eb2f96' }"
+            ><a-icon type="delete" /><span style="margin-left: 2px;">{{$t('DbBack.Delete')}}</span></a>
           </a-popconfirm>
         </div>
       </a-table>
@@ -53,7 +72,7 @@
   </div>
 </template>
 <script>
-import {GetHisBackUpList as requestGetHisBackUpList, HisDbRestore, HisDbDeleteBackup, HisDbBackupUpload} from "@/services/dbbackup";
+import {GetHisBackUpList as requestGetHisBackUpList, HisDbRestore, HisDbDeleteBackup, HisDbDownload, HisDbBackupUpload} from "@/services/dbbackup";
 export default {
   i18n: require('../../i18n/language'),
   data () {
@@ -61,38 +80,41 @@ export default {
       hisRestoreLoading:false,
       hisRestoreSpinMode:'loading',
       HisBackupList:[],
+      watching:false,
+      seenRunning:false,
+      pollTimer:null,
       hisPagination:{
         pageSize:15,
         showSizeChanger:true
       },
       hisColumns: [
         {
-          width: '24%',
+          width: '22%',
           slotName: 'DbBack.Name',
           scopedSlots: { customRender: 'FileName', title: 'DbBack.Name' },
           dataIndex: 'FileName',
         },
         {
           slotName: 'DbBack.BackUpTime',
-          width: '20%',
+          width: '16%',
           scopedSlots: { customRender: 'CreateTime', title: 'DbBack.BackUpTime' },
           dataIndex: 'CreateTime',
         },
         {
           slotName: 'DbBack.FileSize',
-          width: '16%',
+          width: '12%',
           scopedSlots: { customRender: 'FileSize', title: 'DbBack.FileSize' },
           dataIndex: 'FileSize',
         },
         {
-          title: '完整性',
-          width: '12%',
-          dataIndex: 'Valid',
-          scopedSlots: { customRender: 'ValidText' },
+          title: '状态',
+          width: '24%',
+          dataIndex: 'StatusText',
+          scopedSlots: { customRender: 'BackupStatus' },
         },
         {
           slotName: 'configComponent.video.TableVideoOpt',
-          width: '18%',
+          width: '26%',
           scopedSlots: { customRender: 'HisOpt', title: 'configComponent.video.TableVideoOpt'}
         }
       ],
@@ -100,6 +122,9 @@ export default {
   },
   mounted () {
     this.loadList()
+  },
+  beforeDestroy () {
+    this.stopWatch()
   },
   computed: {
     hisRestoreSpinTip () {
@@ -110,11 +135,50 @@ export default {
     }
   },
   methods: {
-    loadList(){
+    stopWatch(){
+      this.watching = false
+      if (this.pollTimer) {
+        clearTimeout(this.pollTimer)
+        this.pollTimer = null
+      }
+    },
+    hisBackupListRunning(){
+      return (this.HisBackupList || []).some(function (item) {
+        return item && item.Status === 'running'
+      })
+    },
+    notifyRunning(){
+      const running = this.hisBackupListRunning()
+      this.$emit('running-change', running)
+      if (running) this.startWatch(true)
+    },
+    startWatch(alreadyRunning){
+      if (this.watching) return
+      this.watching = true
+      this.seenRunning = !!alreadyRunning
+      this.pollOnce()
+    },
+    pollOnce(){
+      if (!this.watching) return
       let _t = this
-      this.hisRestoreSpinMode = 'loading'
-      this.hisRestoreLoading = true
-      requestGetHisBackUpList({}).then(function (res){
+      this.loadList(true).finally(function () {
+        if (!_t.watching) return
+        const running = _t.hisBackupListRunning()
+        if (running) _t.seenRunning = true
+        if (running || !_t.seenRunning) {
+          _t.pollTimer = setTimeout(function () { _t.pollOnce() }, running ? 3000 : 2000)
+          return
+        }
+        _t.watching = false
+      })
+    },
+    loadList(silent){
+      let _t = this
+      if (!silent) {
+        this.hisRestoreSpinMode = 'loading'
+        this.hisRestoreLoading = true
+      }
+      return requestGetHisBackUpList({}).then(function (res){
         if(res.data && res.data.code==0) {
           _t.HisBackupList = res.data.list || []
         } else {
@@ -126,7 +190,8 @@ export default {
       }).catch(function (){
         _t.$message.error('获取历史库备份列表失败')
       }).finally(function (){
-        _t.hisRestoreLoading = false
+        if (!silent) _t.hisRestoreLoading = false
+        _t.notifyRunning()
       })
     },
     doHisRestore(path){
@@ -141,6 +206,46 @@ export default {
         }
       }).catch(function (){
         _t.$message.error(_t.$t('DbBack.RestoreFailed'))
+      }).finally(function (){
+        _t.hisRestoreLoading = false
+      })
+    },
+    doHisDownload(record){
+      const path = record && record.FilePath
+      const name = record && record.FileName
+      let _t = this
+      this.hisRestoreSpinMode = 'loading'
+      this.hisRestoreLoading = true
+      HisDbDownload({DbFilePath: path}).then(function (res){
+        const data = res.data
+        if (data instanceof Blob && data.type && data.type.indexOf('application/json') !== -1) {
+          const reader = new FileReader()
+          reader.onload = function () {
+            let msg = '下载失败'
+            try {
+              const json = JSON.parse(reader.result)
+              if (json && json.msg) msg = json.msg
+            } catch (e) {}
+            _t.$message.error(msg)
+          }
+          reader.readAsText(data)
+          return
+        }
+        if (!(data instanceof Blob) || data.size === 0) {
+          _t.$message.error('下载失败')
+          return
+        }
+        const fileName = (name ? String(name) : 'history-backup') + '.zip'
+        const url = window.URL.createObjectURL(data)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = fileName
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+      }).catch(function (){
+        _t.$message.error('下载失败')
       }).finally(function (){
         _t.hisRestoreLoading = false
       })

@@ -126,6 +126,7 @@ import LuckyExcel from 'luckyexcel'
 import {formatDate} from '@/utils/common';
 import { exportExcel,getExcelData } from '@/utils/export'
 import reportTempleteModel from "@/components/reportTempleteModel/reportTempleteModel";
+import {GetReportTempleteFile, GetDiyReportFile, isPackedFile, packedFileError, downloadArrayBuffer} from "@/services/reportTemplete";
 import 'moment/locale/zh-cn';
 import  'moment/locale/en-ie';
 import  'moment/locale/zh-tw';
@@ -144,6 +145,8 @@ export default {
         showSizeChanger:true
       },
       TempleteName:"",
+      templeteUuid:"",
+      _sheetReady:false,
       isMaskShow: false,
       selectRow:0,
       selectCol:0,
@@ -289,16 +292,10 @@ export default {
       this.json_fields = this.json_fields_en
     }
     this.exportName = this.$t('reporting.DataHistory.exportName')+"."+formatDate( new Date(),'yyyy-MM-dd hh:mm:ss')+".xlsx"
-
-    let _t = this
-    luckysheet.destroy()
-    // In some cases, you need to use $nextTick
-    this.$nextTick(() => {
-      this.luckysheetOpt =  luckysheet.create(this.sheetOptions);
-    });
+    this.ensureLuckySheet()
   },
   activated(){
-
+    this.ensureLuckySheet()
   },
   filters: {
     formatDate(time) {
@@ -308,16 +305,18 @@ export default {
   },
   created(){
     this.getMonitorTree()
-    let _t = this
-    luckysheet.destroy()
-    // In some cases, you need to use $nextTick
-    this.$nextTick(() => {
-      this.luckysheetOpt =  luckysheet.create(this.sheetOptions);
-    });
   },
   watch: {
     '$route'() {
-      luckysheet.destroy()
+      // 全局 luckysheet 只有一份。页签切走后再拆，避免把当前页刚建好的表拆掉。
+      this.$nextTick(() => {
+        const el = this.$el
+        if (el && el.offsetParent !== null) {
+          return
+        }
+        this._sheetReady = false
+        this.safeDestroyLuckySheet()
+      })
     }
   },
   methods: {
@@ -340,6 +339,56 @@ export default {
       else{
         this.SelectDateRange =[moment().add(-1, 'day'),moment()]
       }
+    },
+    safeDestroyLuckySheet(){
+      try {
+        if (typeof luckysheet !== 'undefined' && luckysheet.destroy) {
+          luckysheet.destroy()
+        }
+      } catch (e) {}
+    },
+    isLuckySheetVisible(){
+      const el = document.getElementById('luckysheetQuery')
+      return !!(el && el.querySelector('.luckysheet-grid-container, .luckysheet-cell-main, #luckysheet-cell-main'))
+    },
+    ensureLuckySheet(){
+      if (this._sheetReady || this.isLuckySheetVisible()) {
+        return
+      }
+      if (!this.sheetOptions || !this.sheetOptions.container) {
+        return
+      }
+      this._sheetReady = true
+      this.$nextTick(() => {
+        this.safeDestroyLuckySheet()
+        luckysheet.create(this.sheetOptions)
+      })
+    },
+    applyExcelJson(exportJson){
+      const info = exportJson && exportJson.info ? exportJson.info : {}
+      this.sheetOptions.data = exportJson.sheets
+      this.sheetOptions.title = (info && typeof info.name === 'string') ? info.name : 'report'
+      this.sheetOptions.userInfo = (info && info.creator) ? info.creator : ''
+      this._sheetReady = true
+      this.safeDestroyLuckySheet()
+      luckysheet.create(this.sheetOptions)
+    },
+    renderExcelBuffer(buf, filename){
+      const _t = this
+      if (!isPackedFile(buf)) {
+        _t.$message.error(packedFileError(buf) || _t.$t('diyReportTemplete.LoadFailed'))
+        return
+      }
+      const file = new File([buf], filename || 'report.xlsx', {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      })
+      LuckyExcel.transformExcelToLucky(file, function (exportJson) {
+        if (!exportJson || !exportJson.sheets || exportJson.sheets.length === 0) {
+          _t.$message.warning(_t.$t('diyReportTemplete.LoadFailed'))
+          return
+        }
+        _t.applyExcelJson(exportJson)
+      })
     },
     loadTemplete(){
       this.$refs.reportTempleteModel.showModal()
@@ -372,36 +421,25 @@ export default {
       exportExcel(luckysheet.getluckysheetfile(), this.exportName)
     },
     LoadReportTemplete(uuid){
-      let myDate = new Date()
-      let  value = '/static/reportTemplete/'+uuid+'.xlsx?'+myDate.getMilliseconds()
-      let name = uuid
       let _t = this
-      LuckyExcel.transformExcelToLuckyByUrl(value, name, function (exportJson, luckysheetfile) {
-        if (exportJson.sheets == null || exportJson.sheets.length == 0) {
-          return
-        }
-        luckysheet.destroy()
-        _t.sheetOptions.data = exportJson.sheets
-        _t.sheetOptions.title = exportJson.info.name,
-            _t.sheetOptions.userInfo = exportJson.info.name.creator,
-            luckysheet.create(_t.sheetOptions)
+      GetReportTempleteFile(uuid).then(function (res) {
+        _t.renderExcelBuffer(res && res.data, (uuid || 'template') + '.xlsx')
+      }).catch(function () {
+        _t.$message.error(_t.$t('diyReportTemplete.LoadFailed'))
       })
     },
-    LoadRemoteReport(path){
-      let myDate = new Date()
-      let  value = '/'+path+'?'+myDate.getMilliseconds()
-      // let  value = '/static/HistoryData/dd.xlsx'
-      let name = formatDate(new Date(),'yyyy-MM-dd hh:mm:ss')
+    showQueryResult(path){
       let _t = this
-      LuckyExcel.transformExcelToLuckyByUrl(value, name, function (exportJson, luckysheetfile) {
-          if (exportJson.sheets == null || exportJson.sheets.length == 0) {
-            return
-          }
-          luckysheet.destroy()
-          _t.sheetOptions.data = exportJson.sheets
-          _t.sheetOptions.title = exportJson.info.name
-          _t.sheetOptions.userInfo = exportJson.info.name.creator
-          luckysheet.create(_t.sheetOptions)
+      GetDiyReportFile(path).then(function (res) {
+        const buf = res && res.data
+        if (!isPackedFile(buf)) {
+          _t.$message.error(packedFileError(buf) || _t.$t('diyReportTemplete.LoadFailed'))
+          return
+        }
+        _t.renderExcelBuffer(buf, 'result.xlsx')
+        downloadArrayBuffer(buf, _t.exportName)
+      }).catch(function () {
+        _t.$message.error(_t.$t('diyReportTemplete.LoadFailed'))
       })
     },
     QueryHistoryDataList(){
@@ -439,21 +477,15 @@ export default {
         _t.$message.loading({ content: _t.$t('diyReport.QueryLoading'),duration: 0 });
         _t.messageShowLoad=true
         GetDiyDataHistoryList(params).then(function (res){
-          if(res.data.code==0)
-          {
-            _t.$message.destroy()
-            _t.LoadRemoteReport(res.data.path)
-            const elink = document.createElement('a')
-            elink.href = res.data.path
-            elink.setAttribute('download', _t.exportName)
-            elink.style.display = 'none'
-            document.body.appendChild(elink)
-            setTimeout(() => {
-              elink.click()
-              document.body.removeChild(elink)
-            }, 66)
-          }
+          _t.$message.destroy()
           _t.messageShowLoad=false
+          const body = res && res.data ? res.data : {}
+          if(body.code==0)
+          {
+            _t.showQueryResult(body.path)
+          } else {
+            _t.$message.error(body.msg || _t.$t('loginPage.serverError'), 3)
+          }
         }).catch(function(){
           _t.messageShowLoad=false
           _t.$message.destroy()

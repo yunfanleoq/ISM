@@ -477,18 +477,21 @@ export default {
           if(this.detail.style.MenuConfig[i].key==key)
           {
             this.detail.style.MenuConfig.splice(i,1)
+            this.$forceUpdate()
             this.updateMenuScrollState()
             return
           }
         }
-        if (menuData.children && menuData.children.length > 0)
+        if (menuData && menuData.children && menuData.children.length > 0)
         {
           for(let i=0;i<menuData.children.length;i++)
           {
             if(menuData.children[i].key==key)
             {
               menuData.children.splice(i,1)
+              this.$forceUpdate()
               this.updateMenuScrollState()
+              return
             }
           }
         }
@@ -576,7 +579,7 @@ export default {
           if (menu.children && menu.children.length > 0) {
             const found = this.findParentsMenuByKey(menu.children, key,menu); // 递归查找子菜单
             if (found) {
-              return menu;
+              return found;
             }
           }
         }

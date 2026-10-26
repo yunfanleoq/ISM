@@ -12,6 +12,7 @@ package controllers
 import (
 	"ISMServer/models"
 	protocol_common "ISMServer/protocol/common"
+	"ISMServer/utils/diyreport"
 	"ISMServer/utils/errmsg"
 	"bytes"
 	"encoding/json"
@@ -242,6 +243,33 @@ func (c *ReportTempleteController) GetReportTempleteFile() {
 	c.Ctx.Output.Download(filePath, clean+".xlsx")
 }
 
+func (c *ReportTempleteController) GetDiyReportFile() {
+	rel := strings.TrimSpace(c.GetString("path"))
+	if rel == "" {
+		var body struct {
+			Path string `json:"path"`
+		}
+		_ = json.Unmarshal(c.Ctx.Input.RequestBody, &body)
+		rel = strings.TrimSpace(body.Path)
+	}
+	full, err := diyreport.ResolveHistoryDataFile(".", rel)
+	if err != nil {
+		c.Data["json"] = map[string]interface{}{
+			"code": -1,
+			"msg":  diyreport.ErrHistoryFile.Error(),
+		}
+		c.ServeJSON()
+		return
+	}
+	name := filepath.Base(full)
+	if strings.EqualFold(filepath.Ext(name), ".zip") {
+		c.Ctx.Output.Header("Content-Type", "application/zip")
+	} else {
+		c.Ctx.Output.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	}
+	c.Ctx.Output.Download(full, name)
+}
+
 func (c *ReportTempleteController) HandExport() {
 
 	type EditReportTemplete struct {
@@ -251,6 +279,7 @@ func (c *ReportTempleteController) HandExport() {
 
 	var code = -1
 	var path string = ""
+	var failMsg string
 	result := map[string]interface{}{
 		"code": code,
 		"msg":  "成功",
@@ -264,13 +293,13 @@ func (c *ReportTempleteController) HandExport() {
 			code = errmsg.NOTJSON
 		} else {
 			if protocol_common.HistoryRecordDbType == 1 || protocol_common.HistoryRecordDbType == 5 {
-				path, code = models.HandExportModel(editReportTempletes.Uuid)
+				path, code, failMsg = models.HandExportModel(editReportTempletes.Uuid)
 			} else if protocol_common.HistoryRecordDbType == 2 {
-				path, code = models.HandTsExportModel(editReportTempletes.Uuid, protocol_common.HistoryRecordTsDb)
+				path, code, failMsg = models.HandTsExportModel(editReportTempletes.Uuid, protocol_common.HistoryRecordTsDb)
 			} else if protocol_common.HistoryRecordDbType == 4 {
-				path, code = models.HandInfluxdbExportModel(editReportTempletes.Uuid)
+				path, code, failMsg = models.HandInfluxdbExportModel(editReportTempletes.Uuid)
 			} else if protocol_common.HistoryRecordDbType == 3 {
-				path, code = models.HandClickHouseExportModel(editReportTempletes.Uuid)
+				path, code, failMsg = models.HandClickHouseExportModel(editReportTempletes.Uuid)
 			}
 
 		}
@@ -279,6 +308,12 @@ func (c *ReportTempleteController) HandExport() {
 	}
 	result["code"] = code
 	result["path"] = path
+	if code != errmsg.SUCCSECODE {
+		if strings.TrimSpace(failMsg) == "" {
+			failMsg = "自定义报表导出失败"
+		}
+		result["msg"] = failMsg
+	}
 	c.Data["json"] = result
 	c.ServeJSON()
 }

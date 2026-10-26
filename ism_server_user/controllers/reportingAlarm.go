@@ -11,6 +11,7 @@ package controllers
 import (
 	"ISMServer/models"
 	protocol_common "ISMServer/protocol/common"
+	"ISMServer/utils/diyreport"
 	"bufio"
 	"bytes"
 	"compress/gzip"
@@ -179,6 +180,7 @@ func (c *ReportController) GetDataHistoryList() {
 	if err != nil {
 		code = -1
 	} else {
+		params["rowLimit"] = models.HistoryQueryRowLimit
 		if protocol_common.HistoryRecordDbType == 1 || protocol_common.HistoryRecordDbType == 5 {
 			data, code = models.GetDataHistoryList(ProjectUuid, params)
 		} else if protocol_common.HistoryRecordDbType == 2 {
@@ -191,8 +193,12 @@ func (c *ReportController) GetDataHistoryList() {
 
 	}
 	result := map[string]interface{}{
-		"code": code,
-		"list": data,
+		"code":      code,
+		"list":      data,
+		"truncated": params["truncated"] == true,
+	}
+	if params["truncated"] == true {
+		result["msg"] = "结果超过 10 万行，已只返回前 10 万行。请缩小时间范围或少选测点。"
 	}
 
 	c.Data["json"] = result
@@ -578,6 +584,7 @@ func (c *ReportController) GetDataHistoryReport() {
 	if err != nil {
 		code = -1
 	} else {
+		params["rowLimit"] = models.HistoryQueryRowLimit
 		if protocol_common.HistoryRecordDbType == 1 || protocol_common.HistoryRecordDbType == 5 {
 			data, code = models.GetDataHistoryReport(ProjectUuid, params)
 		} else if protocol_common.HistoryRecordDbType == 2 {
@@ -638,8 +645,12 @@ func (c *ReportController) GetDataHistoryReport() {
 		}
 	}
 	result := map[string]interface{}{
-		"code": code,
-		"list": data,
+		"code":      code,
+		"list":      data,
+		"truncated": params["truncated"] == true,
+	}
+	if params["truncated"] == true {
+		result["msg"] = "结果超过 10 万行，已只返回前 10 万行。请缩小时间范围或少选测点。"
 	}
 
 	c.Data["json"] = result
@@ -652,6 +663,7 @@ func (c *ReportController) GetDiyDataHistoryList() {
 	var data string
 	var params = make(map[string]interface{})
 	var code int
+	var ctx map[string]interface{}
 	rawData := c.Ctx.Input.RequestBody
 	ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
 	//json数据封装到user对象中
@@ -660,13 +672,13 @@ func (c *ReportController) GetDiyDataHistoryList() {
 		code = -1
 	} else {
 		if protocol_common.HistoryRecordDbType == 1 || protocol_common.HistoryRecordDbType == 5 {
-			data, code, _ = models.GetDiyDataHistoryList(ProjectUuid, params)
+			data, code, ctx = models.GetDiyDataHistoryList(ProjectUuid, params)
 		} else if protocol_common.HistoryRecordDbType == 2 {
-			data, code, _ = models.GetDiyDataTsHistoryList(ProjectUuid, params, protocol_common.HistoryRecordTsDb)
+			data, code, ctx = models.GetDiyDataTsHistoryList(ProjectUuid, params, protocol_common.HistoryRecordTsDb)
 		} else if protocol_common.HistoryRecordDbType == 4 {
-			data, code, _ = models.GetDiyDataInfluxHistoryList(ProjectUuid, params)
+			data, code, ctx = models.GetDiyDataInfluxHistoryList(ProjectUuid, params)
 		} else if protocol_common.HistoryRecordDbType == 3 {
-			data, code, _ = models.GetDiyDataClickHouseHistoryList(ProjectUuid, params)
+			data, code, ctx = models.GetDiyDataClickHouseHistoryList(ProjectUuid, params)
 		}
 
 	}
@@ -674,9 +686,20 @@ func (c *ReportController) GetDiyDataHistoryList() {
 		"code": code,
 		"path": data,
 	}
+	if msg := diyreport.EnsureFailMsg(code, diyReportCtxMsg(ctx)); msg != "" {
+		result["msg"] = msg
+	}
 	c.Data["json"] = result
 
 	c.ServeJSON() //返回json格式
+}
+
+func diyReportCtxMsg(ctx map[string]interface{}) string {
+	if ctx == nil {
+		return ""
+	}
+	msg, _ := ctx["msg"].(string)
+	return msg
 }
 
 func (c *ReportController) GetChartDataHistoryList() {
