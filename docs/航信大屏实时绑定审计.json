@@ -1,0 +1,4898 @@
+{
+  "project_uuid": "3ec5821f-b512-2adb-3e1c-473720d0a93e",
+  "model_id": "b8b4c094-faa9-a22a-1d0d-037539b27a6c",
+  "devices": {
+    "total": 342,
+    "enabled": 122
+  },
+  "pages": [
+    {
+      "cells": 128,
+      "shapes": {
+        "view-svg-text": 126,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "building-1131570899"
+    },
+    {
+      "cells": 128,
+      "shapes": {
+        "view-svg-text": 126,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "building-1275279789"
+    },
+    {
+      "cells": 38,
+      "shapes": {
+        "view-svg-text": 36,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "building-1713132134"
+    },
+    {
+      "cells": 32,
+      "shapes": {
+        "view-svg-text": 30,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "building-730335501"
+    },
+    {
+      "cells": 32,
+      "shapes": {
+        "view-svg-text": 30,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "building-933890026"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1021301299"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1027694168"
+    },
+    {
+      "cells": 101,
+      "active_entries": 12,
+      "bound_cells": 11,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1030993404"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1035931756"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1036868640"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1042578905"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1049128881"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-105054073"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1052890608"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1057375617"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1068791976"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1071020671"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1073584005"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1074191911"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1078667392"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1079945129"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1088386008"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1096628183"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1104369727"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1113424366"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1118137693"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1137637913"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1139603655"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1146242092"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1150630351"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1152194482"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1164425301"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1167400556"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-117150927"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-117331558"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1173370206"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1177010150"
+    },
+    {
+      "cells": 101,
+      "active_entries": 7,
+      "bound_cells": 7,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1177738040"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1179480917"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1204450461"
+    },
+    {
+      "cells": 101,
+      "active_entries": 7,
+      "bound_cells": 7,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1205730627"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1219332579"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1220614535"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1221331859"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1222021118"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1228505920"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1241734016"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-125630936"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1263533033"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1270383070"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1271494832"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1271503490"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1274631615"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1278206350"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1278270388"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1280122424"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1305660793"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1320733104"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1332812079"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1334704457"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-133686056"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1342369495"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1348224365"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1365682394"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1376157353"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1384444158"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1386219978"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1391159293"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1393098207"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1396605610"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1411500059"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1417583631"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1436785071"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1449806057"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1455597382"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-145630281"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1466370639"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1470017171"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1471588159"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1480211998"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1481979300"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1494344020"
+    },
+    {
+      "cells": 101,
+      "active_entries": 7,
+      "bound_cells": 7,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1494756730"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1494839547"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1496418727"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1497179550"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1505786248"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1510379859"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1516105957"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1516718174"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1518199826"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1519012588"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1522940664"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1527684361"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-154384768"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1553682910"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1558058860"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1558974179"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1567035573"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-157021448"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1570591167"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1574373743"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1580763809"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1584248076"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1587606724"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1598557003"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1605209164"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1609113089"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1617362504"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1617559570"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1617916356"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1628505392"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1638987876"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1639121184"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1641914536"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1661578562"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1674645292"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1675718799"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-168272559"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1685410405"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-168850797"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1689766449"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1695380476"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-169551951"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1703889819"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1704466039"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1714720798"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-171674272"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-172069649"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-17242854"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1734169003"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1743209710"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1747552191"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1780731986"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1783182454"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1785002413"
+    },
+    {
+      "cells": 101,
+      "active_entries": 7,
+      "bound_cells": 7,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1789965881"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1790000585"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-180459765"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1813089236"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1820496073"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1824187019"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1850349109"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-185179175"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1863267534"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1871449051"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-187373996"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1883028284"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1891550180"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1897338770"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1919893968"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-192506732"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1926007756"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1928498466"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1942302345"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1944887456"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1951296524"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1959811821"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1962562505"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-197126242"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1981806101"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1987115884"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-1988149492"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-1991618763"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-2000572102"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-2029572163"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-2040271870"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-2051392348"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-2059323185"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-2073414967"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-2081965893"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-2085229612"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-2090909287"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-2101934272"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-2102972715"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-2104105884"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-2104220627"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-2106848847"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-2108461244"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-2114487267"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-2119554818"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-2120070187"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-2125439179"
+    },
+    {
+      "cells": 101,
+      "active_entries": 7,
+      "bound_cells": 7,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-2137253376"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-2144578172"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-214984187"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-216493357"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-218078737"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-219728098"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-227439676"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-232467314"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-234360140"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-234748831"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-241691424"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-245107644"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-250559517"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-251935169"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-252618792"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-272010008"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-27688829"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-280503601"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-29224484"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-294091650"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-296439178"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-298110050"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-300009389"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-301999045"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-311801140"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-31823034"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-319933153"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-322725747"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-332709769"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-335610360"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-339935092"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-342346468"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-344942819"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-34602876"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-348173099"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-368756321"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-371884729"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-372582954"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-378230516"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-379746766"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-380521277"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-386082982"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-395756641"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-39643576"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-397841027"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-400998189"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-402820321"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-406602976"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-407789767"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-428088753"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-430416231"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-434154643"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-436445744"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-445412394"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-457832629"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-459064983"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-460865363"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-46365599"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-465916548"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-472439445"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-476072488"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-489825427"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-492327807"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-497522235"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-505891248"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-51447048"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-519627545"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-527221946"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-533049063"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-541264550"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-545282508"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-546903746"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-554575889"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-560323629"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-563198933"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-566302832"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-570134803"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-573695476"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-579716272"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-5840457"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-58450867"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-586759509"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-587131742"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-589547170"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-591760675"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-593633202"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-598893697"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-60154086"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-603507645"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-604629947"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-609906990"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-615522273"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-623096064"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-629667611"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-643471318"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-651250776"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-653554505"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-65423974"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-65427759"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-656341092"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-672429528"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-675386979"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-67705699"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-688638087"
+    },
+    {
+      "cells": 101,
+      "active_entries": 12,
+      "bound_cells": 11,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-69269401"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-698922642"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-699388894"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-703284828"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-704193092"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-706580262"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-708055620"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-708061205"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-710198551"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-723403241"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-731191528"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-738511157"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-739047057"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-744400121"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-74922475"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-758973949"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-760798058"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-760892923"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-763446735"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-771116502"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-772203699"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-773755389"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-778342700"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-778668765"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-780329882"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-795509444"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-796036707"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-802128980"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-802819303"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-806549568"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-825340917"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-831746827"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-832259777"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-833854836"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-835371153"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-846759943"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-847897"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-85263591"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-862379218"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-864982930"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-866383528"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-888909192"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-889518670"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-893750329"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-904872104"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-905315980"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-908401673"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-909679304"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-909865530"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-914336427"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-925522608"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-928232781"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-942963038"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-947921525"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-956948130"
+    },
+    {
+      "cells": 101,
+      "active_entries": 8,
+      "bound_cells": 8,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-957715491"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-969552619"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-971563937"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "bound_cells": 14,
+      "bound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "device-984480078"
+    },
+    {
+      "cells": 101,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-988249303"
+    },
+    {
+      "cells": 101,
+      "active_entries": 1,
+      "bound_cells": 1,
+      "shapes": {
+        "view-svg-text": 95,
+        "view-svg-time": 1,
+        "dv-border-box13": 5
+      },
+      "page_name": "device-detail"
+    },
+    {
+      "cells": 70,
+      "active_entries": 12,
+      "bound_cells": 12,
+      "shapes": {
+        "view-svg-text": 68,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1131570899-X01"
+    },
+    {
+      "cells": 62,
+      "active_entries": 9,
+      "bound_cells": 9,
+      "shapes": {
+        "view-svg-text": 60,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1131570899-X02"
+    },
+    {
+      "cells": 54,
+      "active_entries": 6,
+      "bound_cells": 6,
+      "shapes": {
+        "view-svg-text": 52,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1131570899-X11"
+    },
+    {
+      "cells": 54,
+      "active_entries": 6,
+      "bound_cells": 6,
+      "shapes": {
+        "view-svg-text": 52,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1131570899-X12"
+    },
+    {
+      "cells": 54,
+      "active_entries": 6,
+      "bound_cells": 6,
+      "shapes": {
+        "view-svg-text": 52,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1131570899-XBP"
+    },
+    {
+      "cells": 54,
+      "active_entries": 6,
+      "bound_cells": 6,
+      "shapes": {
+        "view-svg-text": 52,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1131570899-XT"
+    },
+    {
+      "cells": 54,
+      "active_entries": 6,
+      "bound_cells": 6,
+      "shapes": {
+        "view-svg-text": 52,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1131570899-Y01"
+    },
+    {
+      "cells": 54,
+      "active_entries": 6,
+      "bound_cells": 6,
+      "shapes": {
+        "view-svg-text": 52,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1131570899-Y02"
+    },
+    {
+      "cells": 54,
+      "active_entries": 6,
+      "bound_cells": 6,
+      "shapes": {
+        "view-svg-text": 52,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1131570899-Y03"
+    },
+    {
+      "cells": 54,
+      "active_entries": 6,
+      "bound_cells": 6,
+      "shapes": {
+        "view-svg-text": 52,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1131570899-Y04"
+    },
+    {
+      "cells": 102,
+      "active_entries": 24,
+      "bound_cells": 24,
+      "shapes": {
+        "view-svg-text": 100,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1131570899-Y11"
+    },
+    {
+      "cells": 102,
+      "active_entries": 24,
+      "bound_cells": 24,
+      "shapes": {
+        "view-svg-text": 100,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1131570899-Y12"
+    },
+    {
+      "cells": 118,
+      "active_entries": 30,
+      "bound_cells": 30,
+      "shapes": {
+        "view-svg-text": 116,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1131570899-Y13"
+    },
+    {
+      "cells": 102,
+      "active_entries": 24,
+      "bound_cells": 24,
+      "shapes": {
+        "view-svg-text": 100,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1131570899-Y14"
+    },
+    {
+      "cells": 70,
+      "active_entries": 12,
+      "bound_cells": 12,
+      "shapes": {
+        "view-svg-text": 68,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1131570899-Y15"
+    },
+    {
+      "cells": 86,
+      "active_entries": 18,
+      "bound_cells": 18,
+      "shapes": {
+        "view-svg-text": 84,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1131570899-Y16"
+    },
+    {
+      "cells": 158,
+      "active_entries": 33,
+      "bound_cells": 33,
+      "shapes": {
+        "view-svg-text": 156,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1131570899-default"
+    },
+    {
+      "cells": 70,
+      "active_entries": 12,
+      "bound_cells": 12,
+      "shapes": {
+        "view-svg-text": 68,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1275279789-X01"
+    },
+    {
+      "cells": 46,
+      "active_entries": 3,
+      "bound_cells": 3,
+      "shapes": {
+        "view-svg-text": 44,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1275279789-X02"
+    },
+    {
+      "cells": 54,
+      "active_entries": 6,
+      "bound_cells": 6,
+      "shapes": {
+        "view-svg-text": 52,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1275279789-X11"
+    },
+    {
+      "cells": 54,
+      "active_entries": 6,
+      "bound_cells": 6,
+      "shapes": {
+        "view-svg-text": 52,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1275279789-X12"
+    },
+    {
+      "cells": 54,
+      "active_entries": 6,
+      "bound_cells": 6,
+      "shapes": {
+        "view-svg-text": 52,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1275279789-XBP"
+    },
+    {
+      "cells": 54,
+      "active_entries": 6,
+      "bound_cells": 6,
+      "shapes": {
+        "view-svg-text": 52,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1275279789-XT"
+    },
+    {
+      "cells": 54,
+      "active_entries": 6,
+      "bound_cells": 6,
+      "shapes": {
+        "view-svg-text": 52,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1275279789-Y01"
+    },
+    {
+      "cells": 54,
+      "active_entries": 6,
+      "bound_cells": 6,
+      "shapes": {
+        "view-svg-text": 52,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1275279789-Y02"
+    },
+    {
+      "cells": 54,
+      "active_entries": 6,
+      "bound_cells": 6,
+      "shapes": {
+        "view-svg-text": 52,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1275279789-Y03"
+    },
+    {
+      "cells": 54,
+      "active_entries": 6,
+      "bound_cells": 6,
+      "shapes": {
+        "view-svg-text": 52,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1275279789-Y04"
+    },
+    {
+      "cells": 102,
+      "active_entries": 24,
+      "bound_cells": 24,
+      "shapes": {
+        "view-svg-text": 100,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1275279789-Y11"
+    },
+    {
+      "cells": 102,
+      "active_entries": 24,
+      "bound_cells": 24,
+      "shapes": {
+        "view-svg-text": 100,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1275279789-Y12"
+    },
+    {
+      "cells": 118,
+      "active_entries": 30,
+      "bound_cells": 30,
+      "shapes": {
+        "view-svg-text": 116,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1275279789-Y13"
+    },
+    {
+      "cells": 102,
+      "active_entries": 24,
+      "bound_cells": 24,
+      "shapes": {
+        "view-svg-text": 100,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1275279789-Y14"
+    },
+    {
+      "cells": 70,
+      "active_entries": 12,
+      "bound_cells": 12,
+      "shapes": {
+        "view-svg-text": 68,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1275279789-Y15"
+    },
+    {
+      "cells": 86,
+      "active_entries": 18,
+      "bound_cells": 18,
+      "shapes": {
+        "view-svg-text": 84,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1275279789-Y16"
+    },
+    {
+      "cells": 158,
+      "active_entries": 35,
+      "bound_cells": 35,
+      "shapes": {
+        "view-svg-text": 156,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1275279789-default"
+    },
+    {
+      "cells": 134,
+      "shapes": {
+        "view-svg-text": 132,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1713132134-1"
+    },
+    {
+      "cells": 158,
+      "shapes": {
+        "view-svg-text": 156,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-1713132134-default"
+    },
+    {
+      "cells": 158,
+      "active_entries": 45,
+      "bound_cells": 45,
+      "shapes": {
+        "view-svg-text": 156,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-730335501-default"
+    },
+    {
+      "cells": 158,
+      "active_entries": 32,
+      "bound_cells": 32,
+      "shapes": {
+        "view-svg-text": 156,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "floor-933890026-default"
+    },
+    {
+      "cells": 168,
+      "active_entries": 11,
+      "bound_cells": 7,
+      "unbound_electric": 6,
+      "unbound_arrows": 2,
+      "bound_arrows": 2,
+      "bound_electric": 2,
+      "bound_charts": 2,
+      "shapes": {
+        "view-svg-text": 143,
+        "view-svg-time": 1,
+        "dv-border-box12": 4,
+        "dv-border-box13": 6,
+        "view-svg-electric1": 4,
+        "view-svg-electric2": 4,
+        "ViewCanvasMoveLineArrow": 4,
+        "ism-view-real-data-smooth-chart": 2
+      },
+      "page_name": "main"
+    },
+    {
+      "cells": 82,
+      "unbound_electric": 6,
+      "unbound_arrows": 2,
+      "active_entries": 6,
+      "bound_cells": 4,
+      "bound_arrows": 2,
+      "bound_electric": 2,
+      "shapes": {
+        "view-svg-text": 68,
+        "view-svg-time": 1,
+        "dv-border-box13": 1,
+        "view-svg-electric1": 4,
+        "view-svg-electric2": 4,
+        "ViewCanvasMoveLineArrow": 4
+      },
+      "page_name": "oneline"
+    },
+    {
+      "cells": 34,
+      "unbound_electric": 1,
+      "unbound_arrows": 2,
+      "shapes": {
+        "view-svg-text": 29,
+        "view-svg-time": 1,
+        "dv-border-box13": 1,
+        "view-svg-electric6": 1,
+        "ViewCanvasMoveLineArrow": 2
+      },
+      "page_name": "oneline-1227940994"
+    },
+    {
+      "cells": 45,
+      "unbound_electric": 2,
+      "unbound_arrows": 2,
+      "active_entries": 3,
+      "bound_cells": 3,
+      "shapes": {
+        "view-svg-text": 38,
+        "view-svg-time": 1,
+        "dv-border-box13": 2,
+        "view-svg-electric6": 1,
+        "ViewCanvasMoveLineArrow": 2,
+        "view-svg-electric2": 1
+      },
+      "page_name": "oneline-1713132134"
+    },
+    {
+      "cells": 89,
+      "active_entries": 21,
+      "bound_cells": 19,
+      "bound_electric": 2,
+      "bound_arrows": 2,
+      "unbound_electric": 4,
+      "shapes": {
+        "view-svg-text": 74,
+        "view-svg-time": 1,
+        "dv-border-box13": 6,
+        "view-svg-electric6": 1,
+        "ViewCanvasMoveLineArrow": 2,
+        "view-svg-electric2": 1,
+        "view-svg-electric3": 1,
+        "view-svg-electric7": 1,
+        "view-svg-electric4": 1,
+        "view-svg-electric5": 1
+      },
+      "page_name": "oneline-730335501"
+    },
+    {
+      "cells": 45,
+      "unbound_electric": 2,
+      "active_entries": 7,
+      "bound_cells": 5,
+      "bound_arrows": 2,
+      "shapes": {
+        "view-svg-text": 38,
+        "view-svg-time": 1,
+        "dv-border-box13": 2,
+        "view-svg-electric6": 1,
+        "ViewCanvasMoveLineArrow": 2,
+        "view-svg-electric2": 1
+      },
+      "page_name": "oneline-933890026"
+    },
+    {
+      "cells": 25,
+      "shapes": {
+        "view-svg-text": 22,
+        "view-svg-time": 1,
+        "dv-border-box13": 1,
+        "ism-view-real-table": 1
+      },
+      "page_name": "room-1713132134"
+    },
+    {
+      "cells": 25,
+      "shapes": {
+        "view-svg-text": 22,
+        "view-svg-time": 1,
+        "dv-border-box13": 1,
+        "ism-view-real-table": 1
+      },
+      "page_name": "room-730335501"
+    },
+    {
+      "cells": 25,
+      "shapes": {
+        "view-svg-text": 22,
+        "view-svg-time": 1,
+        "dv-border-box13": 1,
+        "ism-view-real-table": 1
+      },
+      "page_name": "room-933890026"
+    },
+    {
+      "cells": 25,
+      "shapes": {
+        "view-svg-text": 23,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "zone-1227940994"
+    },
+    {
+      "cells": 34,
+      "shapes": {
+        "view-svg-text": 32,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "zone-1713132134"
+    },
+    {
+      "cells": 54,
+      "shapes": {
+        "view-svg-text": 52,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "zone-730335501"
+    },
+    {
+      "cells": 34,
+      "shapes": {
+        "view-svg-text": 32,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "zone-933890026"
+    },
+    {
+      "cells": 54,
+      "shapes": {
+        "view-svg-text": 52,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "模板-区域"
+    },
+    {
+      "cells": 25,
+      "shapes": {
+        "view-svg-text": 22,
+        "view-svg-time": 1,
+        "dv-border-box13": 1,
+        "ism-view-real-table": 1
+      },
+      "page_name": "模板-机房"
+    },
+    {
+      "cells": 128,
+      "shapes": {
+        "view-svg-text": 126,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "模板-机柜"
+    },
+    {
+      "cells": 101,
+      "unbound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "模板-设备-05f4b599"
+    },
+    {
+      "cells": 101,
+      "unbound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "模板-设备-23cc4a85"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "unbound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "模板-设备-410c9f53"
+    },
+    {
+      "cells": 101,
+      "unbound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "模板-设备-85b80478"
+    },
+    {
+      "cells": 101,
+      "unbound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "模板-设备-9e467ced"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "unbound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "模板-设备-dc6e1c05"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "unbound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "模板-设备-de439e36"
+    },
+    {
+      "cells": 101,
+      "active_entries": 15,
+      "unbound_charts": 1,
+      "shapes": {
+        "view-svg-text": 94,
+        "view-svg-time": 1,
+        "dv-border-box13": 5,
+        "ism-view-real-data-smooth-chart": 1
+      },
+      "page_name": "模板-设备-通用"
+    },
+    {
+      "cells": 158,
+      "active_entries": 15,
+      "bound_cells": 15,
+      "shapes": {
+        "view-svg-text": 156,
+        "view-svg-time": 1,
+        "dv-border-box13": 1
+      },
+      "page_name": "模板-设备组"
+    }
+  ],
+  "summary": {
+    "cells": 40055,
+    "active_entries": 3732,
+    "bound_cells": 3491,
+    "bound_charts": 173,
+    "unbound_electric": 21,
+    "unbound_arrows": 8,
+    "bound_arrows": 8,
+    "bound_electric": 6,
+    "unbound_charts": 8,
+    "unique_bindings": 2738,
+    "invalid_binding_count": 0
+  },
+  "invalid_bindings": []
+}

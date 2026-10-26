@@ -40,6 +40,9 @@ module.exports = {
   DISPLAYMODELADD: `${BASE_URL}displayModelAdd`,
   DISPLAYMODELLIST: `${BASE_URL}displayModelList`,
   DISPLAYMODELDELETE: `${BASE_URL}displayModelDel`,
+  DISPLAYMODELDELETEDLIST: `${BASE_URL}displayModelDeletedList`,
+  DISPLAYMODELRESTORE: `${BASE_URL}displayModelRestore`,
+  DISPLAYMODELFORCEDEL: `${BASE_URL}displayModelForceDel`,
   DISPLAYMODELEDIT: `${BASE_URL}displayModelEdit`,
   DISPLAYMODELSINGLE: `${BASE_URL}displayModelGet`,
   DISPLAYLOGINPAGE: `${BASE_URL}DisplayLoginPage`,
@@ -53,6 +56,8 @@ module.exports = {
   DISPLAYMODELPAGEEDIT: `${BASE_URL}DisplayModelPageEdit`,
   DISPLAYMODELPAGESETHOME: `${BASE_URL}DisplayModelPageSetHome`,
   DISPLAYMODELPAGECOPY: `${BASE_URL}DisplayModelPageCopy`,
+  DISPLAYMODELPAGEBINDTEMPLATE: `${BASE_URL}DisplayModelPageBindTemplate`,
+  DISPLAYMODELTEMPLATEMAP: `${BASE_URL}displayModelTemplateMap`,
   DISPLAYTEMPLETELIST: `${BASE_URL}DisplayTempleteList`,
   DISPLAYTEMPLETEGET: `${BASE_URL}DisplayTempleteGet`,
   GETDISPLAYMODELLAYERDATABYTOKEN:`${BASE_URL}getDisplayModelLayerDataByToken`,
@@ -159,6 +164,7 @@ module.exports = {
   DNP3MODELNODEIDLIST: `${BASE_URL}dnp3ModelNodeIDList`,
 
   GETDEVICEMODELDATALIST: `${BASE_URL}GetDeviceModelDataList`,
+  GETMODELDATAPOINTS: `${BASE_URL}getModelDataPoints`,
   SETDEVICESTARTORSTOP: `${BASE_URL}SetDeviceStartOrStop`,
 
   GETHISTORYALARMLIST: `${BASE_URL}GetAlarmHistoryList`,
@@ -196,6 +202,10 @@ module.exports = {
   CURRENTALARMLIST: `${BASE_URL}GetCurrentAlarmList`,
   SHIELDALARMLIST: `${BASE_URL}AlarmShieldList`,
   UPDATECURRENTALARM: `${BASE_URL}AlarmOpt`,
+  CLEARALLCURRENTALARM: `${BASE_URL}AlarmClearAll`,
+  ALARMEVENTFEED: `${BASE_URL}GetAlarmEventFeed`,
+  ALARMTRIGGEREXPORT: `${BASE_URL}AlarmTriggerExport`,
+  ALARMTRIGGERIMPORT: `${BASE_URL}AlarmTriggerImport`,
 
   UPLOADUSERAVATAR:`${BASE_URL}uploadUserAvatar`,
   GETUSERINFO:`${BASE_URL}GetUserInfo`,
@@ -239,9 +249,16 @@ module.exports = {
   TESTESEND: `${BASE_URL}TestSend`,
 
   DBBACKUP: `${BASE_URL}DbBackUp`,
+  HISDBBACKUP: `${BASE_URL}HisDbBackUp`,
+  GETHISBACKUPLIST: `${BASE_URL}GetHisBackUpList`,
+  HISDBRESTORE: `${BASE_URL}HisDbRestore`,
+  HISDBDELETEBACKUP: `${BASE_URL}HisDbDeleteBackup`,
+  HISDBDOWNLOAD: `${BASE_URL}HisDbDownload`,
+  HISDBBACKUPUPLOAD: `${BASE_URL}HisDbBackupUpload`,
   GETTABLESLIST: `${BASE_URL}GetTablesList`,
   GETBACKUPLIST: `${BASE_URL}GetBackUpList`,
   DBRESTORE: `${BASE_URL}DbRestore`,
+  DBDELETEBACKUP: `${BASE_URL}DbDeleteBackup`,
   DBDOWN: `${BASE_URL}DbDown`,
   GETDBCONFIG: `${BASE_URL}GetDbConfig`,
   SETDBCONFIG: `${BASE_URL}SetDbConfig`,
@@ -324,6 +341,8 @@ module.exports = {
   GETREPORTTEMPLETE:`${BASE_URL}GetReportTemplete`,
   EDITREPORTTEMPLETE:`${BASE_URL}EditReportTemplete`,
   SAVEREPORTTEMPLETE:`${BASE_URL}SaveReportTemplete`,
+  GETREPORTTEMPLETEFILE:`${BASE_URL}GetReportTempleteFile`,
+  GETDIYREPORTFILE:`${BASE_URL}GetDiyReportFile`,
   HANDEXPORT:`${BASE_URL}HandExport`,
 
   //SQL模板
@@ -336,6 +355,10 @@ module.exports = {
   VIEWSQLREPORTTEMPLETE:`${BASE_URL}SQLCreateAndView`,
 
   LOCALUPGATEDATAMODEL:`${BASE_URL}UpdateDataModel`,
+  LOCALUPGATEALLMODBUSDATAMODEL:`${BASE_URL}UpdateAllModbusDataModel`,
+  LOCALUPGATEALLVIRTUALDEVICEDATAMODEL:`${BASE_URL}UpdateAllVirtualDeviceDataModel`,
+  EXPORTALLVIRTUALDEVICEDATAMODEL:`${BASE_URL}ExportAllVirtualDeviceDataModel`,
+  EXPORTALLMODBUSDATAMODEL:`${BASE_URL}ExportAllModbusDataModel`,
   LOCALUPGATEDATAIEC104DATA:`${BASE_URL}UpdateIEC104DataModel`,
   LOCALUPGATEDATAMODBUSTCPDATA:`${BASE_URL}UpdateModbusTcpPushDataModel`,
   //系统脚本
@@ -361,6 +384,8 @@ module.exports = {
   GETINCONNECT:`${BASE_URL}GetInConnectList`,
 
   //系统参数
+  GETSYSTEMHOME:`${BASE_URL}GetSystemHomeDashboard`,
+  SETSYSTEMHOME:`${BASE_URL}SetSystemHomeDashboard`,
   GETSYSTEMPARAMS:`${BASE_URL}GetSystemWebData`,
   SAVESYSTEMPARAMS:`${BASE_URL}SaveSystemWebData`,
   GETSYSTEMMQTTDATA:`${BASE_URL}GetSystemMqttData`,
@@ -374,6 +399,10 @@ module.exports = {
   TESTSYSNTPCONFIG:`${BASE_URL}TestNtpServer`,
   GETSYSTEMOPCUADATA:`${BASE_URL}opcuaServerConfig`,
   SAVESSYSTEMOPCUADATA:`${BASE_URL}opcuaServerConfigSet`,
+  GETENERGYOVERVIEWCONFIG:`${BASE_URL}GetEnergyOverviewConfig`,
+  SAVEENERGYOVERVIEWCONFIG:`${BASE_URL}SaveEnergyOverviewConfig`,
+  GETENERGYOVERVIEWCANDIDATES:`${BASE_URL}GetEnergyOverviewCandidates`,
+  GETENERGYOVERVIEWSTATS:`${BASE_URL}GetEnergyOverviewStats`,
 
   //数据模版
   ADDTEMPLETEDATA:`${BASE_URL}AddSystemDataTemplete`,
@@ -390,4 +419,5 @@ module.exports = {
   DIYPICUPLOAD:`${BASE_URL}DiyUpload`,
 //实时数据表格
   GETREALDATATOTABLE:`${BASE_URL}GetRealDataByName`,
+  GETREALDATABYBINDINGS:`${BASE_URL}GetRealDataByBindings`,
 }

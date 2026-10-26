@@ -34,6 +34,49 @@ type DisplayModelController struct {
 	beego.Controller
 }
 
+func decodeDisplayModelLayer(row *models.DisplayModelLayer) {
+	if row.Components != "" {
+		if decoded, err := base64.StdEncoding.DecodeString(row.Components); err == nil {
+			row.Components = string(decoded)
+		}
+	}
+	if row.Layer != "" {
+		if decoded, err := base64.StdEncoding.DecodeString(row.Layer); err == nil {
+			row.Layer = string(decoded)
+		}
+	}
+}
+
+func decodeDisplayModelLayers(rows []models.DisplayModelLayer) {
+	for i := range rows {
+		decodeDisplayModelLayer(&rows[i])
+	}
+}
+
+func slimDisplayModelLayers(rows []models.DisplayModelLayer) []map[string]interface{} {
+	slim := make([]map[string]interface{}, 0, len(rows))
+	for _, row := range rows {
+		item := map[string]interface{}{
+			"ID":                row.ID,
+			"modelId":           row.ModelId,
+			"PageName":          row.PageName,
+			"PageId":            row.PageId,
+			"IsHome":            row.IsHome,
+			"IsLogin":           row.IsLogin,
+			"PageType":          row.PageType,
+			"layer":             row.Layer,
+			"components":        "",
+			"templateKind":      row.TemplateKind,
+			"templateModelUuid": row.TemplateModelUuid,
+		}
+		if row.IsHome == 1 {
+			item["components"] = row.Components
+		}
+		slim = append(slim, item)
+	}
+	return slim
+}
+
 func (c *DisplayModelController) ModelList() {
 
 	var getLists []models.DisplayModels
@@ -141,7 +184,80 @@ func (c *DisplayModelController) ModelDel() {
 		code = models.DisplayModelDel(delModel.DisplayModelUid)
 	}
 	ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
-	WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "删除了显示模型", errmsg.JournalLevelInfo, c.Ctx.Input)
+	WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "删除了显示模型(软删除,可在回收站恢复)", errmsg.JournalLevelInfo, c.Ctx.Input)
+	result := map[string]interface{}{
+		"code": code,
+	}
+
+	c.Data["json"] = result
+
+	c.ServeJSON() //返回json格式
+}
+
+// ModelDeletedList 回收站：列出当前项目下已软删除的显示模型
+func (c *DisplayModelController) ModelDeletedList() {
+
+	var getLists []models.DeletedDisplayModel
+	var code int
+
+	ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
+	if ProjectUuid != "" {
+		getLists, code = models.DisplayModelDeletedList(ProjectUuid)
+	} else {
+		code = -1
+		getLists = nil
+	}
+	result := map[string]interface{}{
+		"code": code,
+		"list": getLists,
+	}
+
+	c.Data["json"] = result
+
+	c.ServeJSON() //返回json格式
+}
+
+// ModelRestore 回收站：恢复已软删除的显示模型
+func (c *DisplayModelController) ModelRestore() {
+
+	var delModel models.DisplayModels
+	var code int
+
+	data := c.Ctx.Input.RequestBody
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
+	err := json.Unmarshal(data, &delModel)
+	if err != nil {
+		code = -1
+	} else {
+		code = models.DisplayModelRestore(delModel.DisplayModelUid)
+	}
+	ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
+	WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "从回收站恢复了显示模型", errmsg.JournalLevelInfo, c.Ctx.Input)
+	result := map[string]interface{}{
+		"code": code,
+	}
+
+	c.Data["json"] = result
+
+	c.ServeJSON() //返回json格式
+}
+
+// ModelForceDel 回收站：彻底删除（物理删除，不可恢复）
+func (c *DisplayModelController) ModelForceDel() {
+
+	var delModel models.DisplayModels
+	var code int
+
+	data := c.Ctx.Input.RequestBody
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
+	err := json.Unmarshal(data, &delModel)
+	if err != nil {
+		code = -1
+	} else {
+		code = models.DisplayModelForceDel(delModel.DisplayModelUid)
+	}
+	ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
+	WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "从回收站彻底删除了显示模型(物理删除)", errmsg.JournalLevelWarning, c.Ctx.Input)
 	result := map[string]interface{}{
 		"code": code,
 	}
@@ -221,33 +337,14 @@ func (c *DisplayModelController) ModelLayerPagerGet() {
 		getModel, code = models.DisplayModelLayerPageGet(fmt.Sprintf("%s", getModelJson["pageid"]))
 	}
 
-	tempComponents, deErr := base64.StdEncoding.DecodeString(getModel.Components)
-	if deErr == nil {
-		getModel.Components = string(tempComponents)
-	}
-
-	tempLayers, layErr := base64.StdEncoding.DecodeString(getModel.Layer)
-	if layErr == nil {
-		getModel.Layer = string(tempLayers)
-	}
+	decodeDisplayModelLayer(&getModel)
 
 	result := map[string]interface{}{
 		"code":  code,
 		"layer": getModel,
 	}
-	c.Ctx.Output.Header("Content-Encoding", "gzip")
-	gw := gzip.NewWriter(c.Ctx.ResponseWriter)
-
-	defer func() {
-		gw.Close()
-		result = nil
-		getModelJson = nil
-	}()
-
-	err1 := json.NewEncoder(gw).Encode(result)
-	if err1 != nil {
-		fmt.Println("encode err: ", err1)
-	}
+	c.Data["json"] = result
+	c.ServeJSON()
 }
 
 func (c *DisplayModelController) ModelLayerGet() {
@@ -255,6 +352,7 @@ func (c *DisplayModelController) ModelLayerGet() {
 	var code int
 	var getModel []models.DisplayModelLayer
 	var getDisplayInfo models.DisplayModels
+	metaOnly := false
 
 	var getModelJson = make(map[string]interface{})
 
@@ -265,26 +363,36 @@ func (c *DisplayModelController) ModelLayerGet() {
 	if err != nil {
 		code = -1
 	} else {
-		getModel, code = models.DisplayModelLayerGet(fmt.Sprintf("%s", getModelJson["muid"]))
+		// metaOnly=true：只返回页面元数据(及首页 components)，其余页 components 置空。
+		// 用于大屏按需加载，首屏响应体积可从数十 MB 降至 ~1 MB。
+		if v, ok := getModelJson["metaOnly"]; ok {
+			if b, ok2 := v.(bool); ok2 {
+				metaOnly = b
+			}
+		}
+		if metaOnly {
+			getModel, code = models.DisplayModelLayerGetMeta(fmt.Sprintf("%s", getModelJson["muid"]))
+		} else {
+			getModel, code = models.DisplayModelLayerGet(fmt.Sprintf("%s", getModelJson["muid"]))
+		}
 		getDisplayInfo, _ = models.DisplayModelGet(fmt.Sprintf("%s", getModelJson["muid"]))
 	}
-	for key, _ := range getModel {
-		tempComponents, deErr := base64.StdEncoding.DecodeString(getModel[key].Components)
-		if deErr == nil {
-			getModel[key].Components = string(tempComponents)
-		}
+	decodeDisplayModelLayers(getModel)
 
-		tempLayers, layErr := base64.StdEncoding.DecodeString(getModel[key].Layer)
-		if layErr == nil {
-			getModel[key].Layer = string(tempLayers)
-		}
-		tempLayers = nil
-		tempComponents = nil
+	var layerPayload interface{} = getModel
+	if metaOnly {
+		layerPayload = slimDisplayModelLayers(getModel)
 	}
+
 	result := map[string]interface{}{
 		"code":    code,
-		"layer":   getModel,
+		"layer":   layerPayload,
 		"Display": getDisplayInfo,
+	}
+	if metaOnly {
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
 	}
 	c.Ctx.Output.Header("Content-Encoding", "gzip")
 	gw := gzip.NewWriter(c.Ctx.ResponseWriter)
@@ -307,6 +415,7 @@ func (c *DisplayModelController) ModelLayerGetByToken() {
 	var code int
 	var getModel []models.DisplayModelLayer
 	var getDisplayInfo models.DisplayModels
+	metaOnly := true
 
 	var getModelJson = make(map[string]interface{})
 
@@ -319,6 +428,11 @@ func (c *DisplayModelController) ModelLayerGetByToken() {
 	if err != nil {
 		code = -1
 	} else {
+		if v, ok := getModelJson["metaOnly"]; ok {
+			if b, ok2 := v.(bool); ok2 {
+				metaOnly = b
+			}
+		}
 		var getToken models.UserApiAccessToken
 		token := fmt.Sprintf("%s", getModelJson["token"])
 		if !protocolCommon.IsLicense {
@@ -328,31 +442,33 @@ func (c *DisplayModelController) ModelLayerGetByToken() {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				code = -4
 			} else {
-				getModel, code = models.DisplayModelLayerGet(fmt.Sprintf("%s", getModelJson["muid"]))
+				if metaOnly {
+					getModel, code = models.DisplayModelLayerGetMeta(fmt.Sprintf("%s", getModelJson["muid"]))
+				} else {
+					getModel, code = models.DisplayModelLayerGet(fmt.Sprintf("%s", getModelJson["muid"]))
+				}
 				getDisplayInfo, _ = models.DisplayModelGet(fmt.Sprintf("%s", getModelJson["muid"]))
 				tokenGet, expireAt, _ = middleware.SetToken("admin", "admin", "超级管理员", "662929b7-1d42-41fa-baa2-08b1988e4f54")
-
-				for key, _ := range getModel {
-					tempComponents, deErr := base64.StdEncoding.DecodeString(getModel[key].Components)
-					if deErr == nil {
-						getModel[key].Components = string(tempComponents)
-					}
-
-					tempLayers, layErr := base64.StdEncoding.DecodeString(getModel[key].Layer)
-					if layErr == nil {
-						getModel[key].Layer = string(tempLayers)
-					}
-				}
+				decodeDisplayModelLayers(getModel)
 			}
 		}
 	}
 
+	var layerPayload interface{} = getModel
+	if metaOnly {
+		layerPayload = slimDisplayModelLayers(getModel)
+	}
 	result := map[string]interface{}{
 		"code":     code,
-		"layer":    getModel,
+		"layer":    layerPayload,
 		"Display":  getDisplayInfo,
 		"expireAt": expireAt,
 		"token":    tokenGet,
+	}
+	if metaOnly {
+		c.Data["json"] = result
+		c.ServeJSON()
+		return
 	}
 	c.Ctx.Output.Header("Content-Encoding", "gzip")
 	gw := gzip.NewWriter(c.Ctx.ResponseWriter)
@@ -440,13 +556,16 @@ func (c *DisplayModelController) ModelLayerSave() {
 func (c *DisplayModelController) ModelPageAdd() {
 
 	var code int
+	var pageId string
 
 	type pageInfoStu struct {
-		Uuid     string `json:"modelUuid"`
-		Name     string `json:"name"`
-		Size     string `json:"size"`
-		PageType int    `json:"pageType"`
-		IsLogin  int    `json:"isLogin"`
+		Uuid               string `json:"modelUuid"`
+		Name               string `json:"name"`
+		Size               string `json:"size"`
+		PageType           int    `json:"pageType"`
+		IsLogin            int    `json:"isLogin"`
+		TemplateKind       string `json:"templateKind"`
+		TemplateModelUuid  string `json:"templateModelUuid"`
 	}
 
 	var pageInfo pageInfoStu
@@ -458,18 +577,73 @@ func (c *DisplayModelController) ModelPageAdd() {
 	if err != nil {
 		code = -1
 	} else {
-
-		code = models.DisplayModelPageAdd(pageInfo.Uuid, pageInfo.Name, pageInfo.Size, pageInfo.PageType, pageInfo.IsLogin)
+		code, pageId = models.DisplayModelPageAdd(pageInfo.Uuid, pageInfo.Name, pageInfo.Size, pageInfo.PageType, pageInfo.IsLogin, pageInfo.TemplateKind, pageInfo.TemplateModelUuid)
 	}
 	ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
 	WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "添加了显示模型的页面"+pageInfo.Name, errmsg.JournalLevelInfo, c.Ctx.Input)
 	result := map[string]interface{}{
-		"code": code,
+		"code":   code,
+		"pageId": pageId,
 	}
 
 	c.Data["json"] = result
 
 	c.ServeJSON() //返回json格式
+}
+
+func (c *DisplayModelController) ModelPageBindTemplate() {
+	var code int
+	var pageId string
+
+	type bindStu struct {
+		ModelUuid         string `json:"modelUuid"`
+		PageId            string `json:"pageId"`
+		TemplateKind      string `json:"templateKind"`
+		TemplateModelUuid string `json:"templateModelUuid"`
+		Force             bool   `json:"force"`
+	}
+	var req bindStu
+	data := c.Ctx.Input.RequestBody
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
+	err := json.Unmarshal(data, &req)
+	if err != nil {
+		code = -1
+	} else {
+		code, pageId = models.DisplayModelPageBindTemplate(req.ModelUuid, req.PageId, req.TemplateKind, req.TemplateModelUuid, req.Force)
+	}
+	ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
+	WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "绑定显示模型模板页", errmsg.JournalLevelInfo, c.Ctx.Input)
+	result := map[string]interface{}{
+		"code":   code,
+		"pageId": pageId,
+	}
+	c.Data["json"] = result
+	c.ServeJSON()
+}
+
+func (c *DisplayModelController) ModelTemplateMap() {
+	var code int = 0
+	var tplMap map[string]interface{}
+
+	type reqStu struct {
+		Muid string `json:"muid"`
+	}
+	var req reqStu
+	data := c.Ctx.Input.RequestBody
+	var json = jsoniter.ConfigCompatibleWithStandardLibrary
+	err := json.Unmarshal(data, &req)
+	if err != nil || req.Muid == "" {
+		code = -1
+		tplMap = map[string]interface{}{}
+	} else {
+		tplMap = models.DisplayModelTemplateMap(req.Muid)
+	}
+	result := map[string]interface{}{
+		"code": code,
+		"map":  tplMap,
+	}
+	c.Data["json"] = result
+	c.ServeJSON()
 }
 
 func (c *DisplayModelController) ModelPageDel() {

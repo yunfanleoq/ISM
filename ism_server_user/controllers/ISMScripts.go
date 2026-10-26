@@ -205,6 +205,9 @@ func (c *ISMScriptController) DisableScript() {
 			message = "JSON格式错误"
 		} else {
 			code, _ = models.ModelDisableScript(EditTask.Uuid, EditTask.Disable)
+			if EditTask.Disable == 1 {
+				ISMScript.UnregisterScriptNow(EditTask.Uuid)
+			}
 			WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "编辑了脚本", errmsg.JournalLevelInfo, c.Ctx.Input)
 		}
 	} else {

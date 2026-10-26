@@ -1,0 +1,98 @@
+# 数据中心二级大屏模板
+# 适用于简单场景：概览 + 设备列表
+
+template:
+  id: "data_center_2level"
+  name: "数据中心二级监控大屏"
+  description: "适用于简单场景：概览 + 设备列表两级"
+  category: "data_center"
+  version: "1.0"
+
+  canvas:
+    width: 1920
+    height: 1080
+    bg_color: "#0a0e17"
+    theme: "dark"
+
+  layout:
+    header:
+      x: 0
+      y: 0
+      width: 1920
+      height: 80
+      components:
+        - type: "title"
+          text: "数据中心监控大屏"
+          position: { x: 20, y: 20, w: 800, h: 40 }
+
+    stats_cards:
+      x: 20
+      y: 100
+      width: 1880
+      height: 120
+      count: 6
+      gap: 15
+      components:
+        - title: "总功率"
+          data_source: "total_power"
+          unit: "kW"
+        - title: "PUE"
+          data_source: "pue"
+          unit: ""
+        - title: "温度"
+          data_source: "avg_temp"
+          unit: "°C"
+        - title: "湿度"
+          data_source: "avg_humidity"
+          unit: "%"
+        - title: "在线设备"
+          data_source: "online_count"
+          unit: "台"
+        - title: "告警数"
+          data_source: "alarm_count"
+          unit: "条"
+
+    main_content:
+      x: 20
+      y: 240
+      width: 1200
+      height: 820
+      components:
+        - type: "chart-line"
+          title: "功率趋势"
+          data_source: "power_trend"
+
+    side_panel:
+      x: 1240
+      y: 240
+      width: 660
+      height: 820
+      components:
+        - type: "table"
+          title: "设备状态列表"
+          columns: ["设备名称", "状态", "功率", "温度"]
+
+  sub_pages:
+    - level: 1
+      name: "device-detail"
+      title_template: "{device_name} — 详情"
+      layout:
+        grid:
+          cols: 4
+          rows: 5
+          gap_x: 20
+          gap_y: 20
+      components:
+        - type: "param-grid"
+          data_source: "device_params"
+
+  theme:
+    dark:
+      bg: "#0a0e17"
+      card_bg: "#1a2332"
+      card_border: "#2a3a4a"
+      text_primary: "#e0e6ed"
+      text_secondary: "#8a94a6"
+      accent: "#00d4aa"
+      accent_warning: "#ff9f43"
+      accent_danger: "#ff6b6b"

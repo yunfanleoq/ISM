@@ -93,6 +93,8 @@ def map_mysql_type(data_type: str, column_type: str) -> str:
         return "INTEGER"
     if dt in ("float", "double", "decimal", "numeric"):
         return "REAL"
+    if dt in ("date", "datetime", "timestamp", "time"):
+        return "DATETIME"
     if dt in ("blob", "binary", "varbinary", "longblob", "mediumblob", "tinyblob"):
         return "BLOB"
     return "TEXT"

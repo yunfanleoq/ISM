@@ -55,10 +55,7 @@
 </template>
 
 <script>
-import svgView from '../View';
 import moment from 'moment/moment'
-import {mapState} from "vuex";
-import store from "@/store";
 import ISMChildAutoMixin from '@/mixins/ISMChildAutoMixin'
 export default {
   mixins: [ISMChildAutoMixin],
@@ -292,8 +289,7 @@ export default {
         minute = minute < 10 ? "0" + minute : minute; // 如果只有一位，则前面补零
         let second = date.getSeconds(); // 秒
         second = second < 10 ? "0" + second : second; // 如果只有一位，则前面补零
-        this.nowDate = `${year}/${month}/${day} ${hour}:${minute}:${second}`;
-        this.nowDate = moment(this.nowDate).format(this.TimeFormat);
+        this.nowDate = moment(date).format(this.TimeFormat);
         if(this.IsShowWeek==1) {
           this.nowDate = this.nowDate+ "  "+`${week}`;
         }
@@ -332,7 +328,7 @@ export default {
           }
         }
         i=0
-        this.animateType = option.animate.selected
+        this.animateType = option.animate.selected || []
         if(option.animate.isExpression)
         {
           this.isStart = false

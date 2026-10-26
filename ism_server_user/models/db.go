@@ -13,6 +13,7 @@ import (
 	ISMNetwork "ISMServer/task/network"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/beego/beego/v2/core/config"
@@ -34,10 +35,101 @@ type Writer struct {
 }
 
 func (w Writer) Printf(format string, args ...interface{}) {
-	// log.Infof(format, args...)
 	logString := fmt.Sprintf(format, args...)
-
+	// 同类 schema/scan 噪音：节流后最多偶发一条，避免脚本/采集循环刷盘
+	if strings.Contains(logString, "unsupported Scan") && strings.Contains(logString, "created_at") {
+		protocol_common.ErrorThrottled("gorm:scan:created_at", "sqlite datetime scan noise throttled: unsupported Scan created_at (text->*time.Time)")
+		return
+	}
+	if strings.Contains(logString, "no such column") {
+		brief := logString
+		if len(brief) > 240 {
+			brief = brief[:240]
+		}
+		protocol_common.ErrorThrottled("gorm:nocol:"+brief, "%s", brief)
+		return
+	}
 	gormlog.Info(logString)
+}
+
+// ensureCriticalSchema 大包 AutoMigrate 可能在 display_model_layer 处中断，
+// 关键点表/模型表必须独立补齐（SQLite 与 OceanBase 均走 Migrator，缺列才加）。
+func ensureCriticalSchema() {
+	if e := Db.AutoMigrate(&DeviceRealData{}, &ModbusDevicesDataModel{}, &VirtualDeviceDataModel{}, &IEC104DevicesDataModel{}, &IEC61850DevicesDataModel{}, &MqttDevicesDataModel{}, &OpcuaDevicesDataModel{}, &SnmpDevicesDataModel{}, &SimS7DataModel{}, &Dlt645DevicesDataModel{}, &CJT188DevicesDataModel{}, &BacnetDevicesDataModel{}, &HJ212DevicesDataModel{}, &RESTFulDataModel{}); e != nil {
+		gormlog.Info("关键表独立迁移失败: %v", e)
+	}
+	for _, item := range []struct {
+		model interface{}
+		col   string
+		label string
+	}{
+		{&DeviceRealData{}, "alarm_on_value", "device_real_data.alarm_on_value"},
+		{&ModbusDevicesDataModel{}, "alarm_on_value", "modbus_devices_data_model.alarm_on_value"},
+		{&VirtualDeviceDataModel{}, "alarm_on_value", "virtual_device_data_model.alarm_on_value"},
+		{&DeviceRealData{}, "alarm_confirm_delay_sec", "device_real_data.alarm_confirm_delay_sec"},
+		{&ModbusDevicesDataModel{}, "alarm_confirm_delay_sec", "modbus_devices_data_model.alarm_confirm_delay_sec"},
+		{&VirtualDeviceDataModel{}, "alarm_confirm_delay_sec", "virtual_device_data_model.alarm_confirm_delay_sec"},
+		{&IEC104DevicesDataModel{}, "alarm_confirm_delay_sec", "iec104_devices_data_model.alarm_confirm_delay_sec"},
+		{&IEC61850DevicesDataModel{}, "alarm_confirm_delay_sec", "iec61850_devices_data_model.alarm_confirm_delay_sec"},
+		{&MqttDevicesDataModel{}, "alarm_confirm_delay_sec", "mqtt_devices_data_model.alarm_confirm_delay_sec"},
+		{&OpcuaDevicesDataModel{}, "alarm_confirm_delay_sec", "opcua_devices_data_model.alarm_confirm_delay_sec"},
+		{&SnmpDevicesDataModel{}, "alarm_confirm_delay_sec", "snmp_devices_data_model.alarm_confirm_delay_sec"},
+		{&SimS7DataModel{}, "alarm_confirm_delay_sec", "sim_s7_data_model.alarm_confirm_delay_sec"},
+		{&Dlt645DevicesDataModel{}, "alarm_confirm_delay_sec", "dlt645_devices_data_model.alarm_confirm_delay_sec"},
+		{&CJT188DevicesDataModel{}, "alarm_confirm_delay_sec", "cjt188_devices_data_model.alarm_confirm_delay_sec"},
+		{&BacnetDevicesDataModel{}, "alarm_confirm_delay_sec", "bacnet_devices_data_model.alarm_confirm_delay_sec"},
+		{&HJ212DevicesDataModel{}, "alarm_confirm_delay_sec", "hj212_devices_data_model.alarm_confirm_delay_sec"},
+		{&RESTFulDataModel{}, "alarm_confirm_delay_sec", "rest_ful_data_model.alarm_confirm_delay_sec"},
+	} {
+		if Db.Migrator().HasColumn(item.model, item.col) {
+			continue
+		}
+		if err := Db.Migrator().AddColumn(item.model, item.col); err != nil {
+			gormlog.Info("补列失败 %s: %v", item.label, err)
+		} else {
+			gormlog.Info("已补列 %s", item.label)
+		}
+	}
+	ensureDeviceRealDataQueryIndexes()
+}
+
+// ensureDeviceRealDataQueryIndexes 修复 GetSystemAnalysis COUNT 等热点查询超时：
+// MySQL/OceanBase 上历史库可能把 UUID 列建成 LONGTEXT 且无二级索引，导致全表扫描撞 ob_query_timeout。
+func ensureDeviceRealDataQueryIndexes() {
+	dbtype, _ := config.Int("dbtype")
+	// MySQL(0) / OceanBase(4)：LONGTEXT 无法有效建索引，先改成 VARCHAR(250)
+	if dbtype == 0 || dbtype == 4 {
+		for _, col := range []string{"project_uuid", "uuid", "device_uuid", "muid", "model_data_uuid"} {
+			sql := fmt.Sprintf("ALTER TABLE device_real_data MODIFY COLUMN `%s` VARCHAR(250) NOT NULL", col)
+			if err := Db.Exec(sql).Error; err != nil {
+				// 已是目标类型或权限不足时不阻断启动
+				gormlog.Info("device_real_data.%s 列类型对齐跳过/失败: %v", col, err)
+			}
+		}
+	}
+
+	type idxSpec struct {
+		name string
+		ddl  string
+	}
+	indexes := []idxSpec{
+		// 概览 COUNT：WHERE project_uuid=? AND deleted_at IS NULL
+		{"idx_drd_project_deleted", "CREATE INDEX idx_drd_project_deleted ON device_real_data(project_uuid, deleted_at)"},
+		{"idx_drd_uuid", "CREATE INDEX idx_drd_uuid ON device_real_data(uuid)"},
+		{"idx_drd_device_uuid", "CREATE INDEX idx_drd_device_uuid ON device_real_data(device_uuid)"},
+		// Modbus 采集 JOIN 热点
+		{"idx_drd_device_muid_model", "CREATE INDEX idx_drd_device_muid_model ON device_real_data(device_uuid, muid, model_data_uuid)"},
+	}
+	for _, idx := range indexes {
+		if Db.Migrator().HasIndex(&DeviceRealData{}, idx.name) {
+			continue
+		}
+		if err := Db.Exec(idx.ddl).Error; err != nil {
+			gormlog.Info("创建 device_real_data 索引 %s 失败: %v", idx.name, err)
+		} else {
+			gormlog.Info("已创建索引 %s", idx.name)
+		}
+	}
 }
 
 func init() {
@@ -50,9 +142,24 @@ func CheckAllTables() {
 	// 自动迁移
 	r := time.Now()
 	gormlog.Info("正在检查系统表,请稍等......")
-	err := Db.AutoMigrate(&BacnetDevicesDataModel{}, &SQLReportTemplete{}, &CJT188DevicesDataModel{}, &VirtualDeviceDataModel{}, &ModbusTcpDataPushModel{}, &IEC104DataPushModel{}, &SystemDataInterface{}, &SystemDataTemplete{}, &DisplayModelsUserList{}, &HJ212DevicesDataModel{}, &OutConnectList{}, &IEC61850DevicesDataModel{}, &IEC104DevicesDataModel{}, &Dlt645DevicesDataModel{}, &MqttDevicesDataModel{}, &ISMScript{}, &ReportTemplete{}, &TaskPlanList{}, &SimS7DataModel{}, &UserApiAccessToken{}, &RESTFulDataModel{}, &CustomData{}, &SystemDataModel{}, &OpcuaDevicesDataModel{}, &RolesList{}, &AlarmNotice{}, &SystemJournal{}, &StaticData{}, &ProjectVideoList{}, &ProjectUser{}, &ProjectLists{}, &AlarmTrigger{}, &DevicesHistoryDataList{}, &DevicesAlarmList{}, &SystemImge{}, &ModbusDevicesDataModel{}, &ModbusDevicesRegisterGroup{}, &User{}, &DisplayModelLayer{}, &DevicesModel{}, &SnmpDevicesDataModel{}, &MonitorList{}, &DeviceRealData{}, &DevicesSupportList{}, &DisplayModels{})
+	err := Db.AutoMigrate(&BacnetDevicesDataModel{}, &SQLReportTemplete{}, &CJT188DevicesDataModel{}, &VirtualDeviceDataModel{}, &ModbusTcpDataPushModel{}, &IEC104DataPushModel{}, &SystemDataInterface{}, &SystemDataTemplete{}, &DisplayModelsUserList{}, &HJ212DevicesDataModel{}, &OutConnectList{}, &IEC61850DevicesDataModel{}, &IEC104DevicesDataModel{}, &Dlt645DevicesDataModel{}, &MqttDevicesDataModel{}, &ISMScript{}, &ReportTemplete{}, &TaskPlanList{}, &SimS7DataModel{}, &UserApiAccessToken{}, &RESTFulDataModel{}, &CustomData{}, &SystemDataModel{}, &OpcuaDevicesDataModel{}, &RolesList{}, &AlarmNotice{}, &SystemJournal{}, &StaticData{}, &ProjectVideoList{}, &ProjectUser{}, &ProjectLists{}, &AlarmTrigger{}, &DevicesHistoryDataList{}, &DevicesAlarmList{}, &SystemImge{}, &ModbusDevicesDataModel{}, &ModbusDevicesRegisterGroup{}, &User{}, &DisplayModelLayer{}, &DevicesModel{}, &SnmpDevicesDataModel{}, &MonitorList{}, &DeviceRealData{}, &DevicesSupportList{}, &DisplayModels{}, &AutoGenTask{}, &AutoGenTemplate{})
 	if err != nil {
 		gormlog.Info(err)
+	}
+	// 大表迁移可能被旧版 display_model_layer DDL 兼容问题中断；关键实时/告警列与能源表必须独立迁移。
+	ensureCriticalSchema()
+	if energyErr := Db.AutoMigrate(
+		&EnergyOverviewConfig{},
+		&EnergyOverviewAggregateSnapshot{},
+		&EnergyOverviewDailyBaseline{},
+	); energyErr != nil {
+		gormlog.Info(energyErr)
+	}
+	dbtype, _ := config.Int("dbtype")
+	if dbtype == 4 && !Db.Migrator().HasIndex(&DisplayModelLayer{}, "idx_dml_model_deleted") {
+		if err := Db.Exec("CREATE INDEX idx_dml_model_deleted ON display_model_layer(model_id, deleted_at)").Error; err != nil {
+			gormlog.Info("创建大屏元数据联合索引失败: %v", err)
+		}
 	}
 	d := time.Since(r)
 	gormlog.Info("系统表检查完成,耗时:%s", d)
@@ -108,11 +215,22 @@ func ReconnectDbServer() {
 	if historyKeepDays > 0 {
 		protocol_common.HistoryKeepDays = historyKeepDays
 	}
+	// alarm_keep_days：未配置时沿用默认 90；显式 0 表示关闭告警硬删
+	if alarmKeepDays, alarmKeepErr := config.Int("alarm_keep_days"); alarmKeepErr == nil {
+		protocol_common.AlarmKeepDays = alarmKeepDays
+	}
 
 	gormlog.Info("正在连接数据库,请稍等......")
 
 	if dbtype == 1 {
-		dbConnect, err = gorm.Open(sqlite.Open("data/db/ism.db"), &dbConfig)
+		sqlitePath := "data/db/ism.db"
+		if configured, pathErr := config.String("sqlitepath"); pathErr == nil {
+			configured = strings.TrimSpace(configured)
+			if configured != "" {
+				sqlitePath = configured
+			}
+		}
+		dbConnect, err = gorm.Open(sqlite.Open(sqlitePath), &dbConfig)
 		if err == nil {
 			// 启用 WAL 模式：允许读写并发，大幅提升稳定性
 			dbConnect.Exec("PRAGMA journal_mode=WAL")
@@ -149,7 +267,8 @@ func ReconnectDbServer() {
 		panic("达梦数据库不支持当前平台，请使用 SQLite(dbtype=1)、MySQL(dbtype=0) 或 PostgreSQL(dbtype=2)")
 	} else if dbtype == 4 {
 		// OceanBase MySQL 兼容模式
-		connstr := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&timeout=10s&readTimeout=30s&writeTimeout=30s",
+		// writeTimeout 调高：全量点位 CreateInBatches 等批量写在大表上可能超过 30s
+		connstr := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local&timeout=10s&readTimeout=120s&writeTimeout=120s",
 			oceanbaseuser,
 			oceanbasepwd,
 			oceanbasehost,
@@ -196,22 +315,15 @@ func ReconnectDbServer() {
 	}
 	protocol_common.ClearAlarmType, err = config.Int("clearalarmtype")
 	if err != nil {
-		protocol_common.ClearAlarmType = 0 //默认清除告警
+		// 默认保持未结束告警，禁止启动时静默全量消除
+		protocol_common.ClearAlarmType = 1
 	}
+	// 严禁：启动时把全部实时告警写 clear_time。是否清除由客户「一键清除/清除」决定。
 	if protocol_common.ClearAlarmType == 0 {
-		//把告警没有结束的全部结束,不再更新keeptime
-		var clearAlarm []DevicesAlarmList
-		Db.Model(&DevicesAlarmList{}).Where("clear_time < ?", "2007-01-02 15:04:05").Find(&clearAlarm)
-		for _, device := range clearAlarm {
-			var upateAlarm DevicesAlarmList
-
-			upateAlarm.ClearTime = time.Now()
-			upateAlarm.KeepTime = (float64)((upateAlarm.ClearTime.UnixMilli() - device.HappenTime.UnixMilli()) / 1000.0)
-			Db.Model(&DevicesAlarmList{}).Where("clear_time < ?", "2007-01-02 15:04:05").Updates(&upateAlarm)
-		}
+		gormlog.Warn("clearalarmtype=0：已忽略启动全量结束告警的旧逻辑，未消除告警保持原状")
 	}
 	//单机版初始化超级管理员数据
-	AdminUserError := Db.Model(&User{}).Where("username = 'admin'").First(&adminUser)
+	AdminUserError := userTable().Where("username = 'admin'").First(&adminUser)
 
 	if errors.Is(AdminUserError.Error, gorm.ErrRecordNotFound) {
 		adminUser.Username = "admin"
@@ -220,7 +332,7 @@ func ReconnectDbServer() {
 		adminUser.Name = "超级管理员"
 		adminUser.Uuid = uuid.New()
 
-		Db.Model(&User{}).Create(&adminUser) // 通过数据的指针来创建
+		userTable().Create(&adminUser) // 通过数据的指针来创建
 	}
 
 	AdminUserError = Db.Model(&RolesList{}).Where("role_id = ?", "Admin").First(&adminRole)

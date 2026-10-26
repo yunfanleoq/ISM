@@ -1222,6 +1222,10 @@ func (c *SimS7Ctl) DealWithPLCS7AlarmData(AlarmData protocol_common.PushAlarm) {
 	build.WriteString(alarm.DataUuid)
 	key := build.String()
 	alarmTemp, isExist := c.DeviceAlarmTemp[key]
+	if protocol_common.ObserveStartupAlarm(alarm, alarm.Value == "1") {
+		c.DeviceAlarmTemp[key] = alarm
+		return
+	}
 
 	updateAlarm.AlarmName = alarm.DataName
 	updateAlarm.DeviceUuid = alarm.DeviceUuid
@@ -3062,7 +3066,8 @@ func (c *SimS7Ctl) GatherSimS7DeviceData() {
 				signleAlarm.HappenTime = time.Now()
 				c.DealWithPLCS7AlarmData(signleAlarm)
 				// protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-			} else if data.IsRecord == 1 {
+			}
+			if data.IsRecord == 1 {
 				//存储信息
 				signleHistoryData.DataName = data.Name
 				signleHistoryData.DeviceName = device.Name

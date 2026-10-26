@@ -22,13 +22,13 @@
                   </span>
                 </div>
                 <div v-else>
-                    <span class="node-title" :title="item.title">
+                    <span class="node-title" :title="pageDisplayTitle(item)">
                         <template slot="title">
                           <span>{{$t('ISMResources.PageTipsIsHome')}}</span>
                         </template>
                       <a-icon type="home" v-if="item.IsHome==1"/>
                       <span class="empty-home-ico" v-else></span>
-                      {{item.title}}
+                      {{pageDisplayTitle(item)}}
                     </span>
                     <span class="" style="margin-left: 0px" v-if="selectTreeKey==item.key">
                       <a-tooltip placement="top" v-if="item.IsLogin!=1">
@@ -232,6 +232,8 @@ export default {
       PCPageList: state => store.state.ISMDisPlayEditorTool.PCPageList,
       PhonePageList: state => store.state.ISMDisPlayEditorTool.PhonePageList,
       ISMCavasContainer:state => store.state.ISMDisPlayEditorTool.ISMCavasContainer,
+      navTemplateMap: state => store.state.ISMDisPlayEditorTool.navTemplateMap,
+      editorRuntimePreview: state => store.state.ISMDisPlayEditorTool.editorRuntimePreview,
     }),
   },
   watch: {
@@ -257,22 +259,88 @@ export default {
     ...mapMutations('ISMDisPlayEditorTool',[
       'ClearRedo',
       'ClearUndo',
-      'ClearisHistoryOp'
+      'ClearisHistoryOp',
+      'setNavContext',
+      'setEditorRuntimePreview'
     ]),
+    runtimeTemplatePageIds(){
+      const map = this.navTemplateMap || {}
+      return new Set([
+        map.home,
+        map.deviceList,
+        map.datapointList,
+      ].filter(Boolean))
+    },
+    pageDisplayTitle(item){
+      if (!item || item.isComponents || item.pageType !== 1) {
+        return item && item.title ? item.title : ''
+      }
+      const showTags = typeof localStorage !== 'undefined' && localStorage.getItem('ismShowPageTemplateTags') === '1'
+      if (!showTags) {
+        return item.title
+      }
+      if (this.runtimeTemplatePageIds().has(item.pageUuid)) {
+        return `${item.title}（${this.$t('displayConfig.RuntimeTemplate')}）`
+      }
+      if (item.IsHome != 1) {
+        return `${item.title}（${this.$t('displayConfig.LegacyPage')}）`
+      }
+      return item.title
+    },
     handleSelectPageSizeChange(value){
         this.pageSize = value
     },
-    doSaveLayerData(uuid){
+    resolveSavePageId(){
+      if (this.selectPageUuid) {
+        return this.selectPageUuid
+      }
+      if (this.selectTreeKey && this.selectTreeKey !== 0 && this.selectTreeKey !== '0') {
+        return this.selectTreeKey
+      }
+      const page = this.checkPageInfo
+      if (page) {
+        return page.pageUuid || page.PageId || page.key || page.uuid || ''
+      }
+      if (this.PCPageCheckKey && this.PCPageCheckKey[0]) {
+        return this.PCPageCheckKey[0]
+      }
+      if (this.PhonePageCheckKey && this.PhonePageCheckKey[0]) {
+        return this.PhonePageCheckKey[0]
+      }
+      return ''
+    },
+    doSaveLayerData(uuid, explicitPageId){
+      if (this.editorRuntimePreview && this.editorRuntimePreview.active) {
+        this.$message.warning('运行态预览不可直接保存，请编辑对应模板后再保存')
+        return Promise.resolve()
+      }
+      const pageId = explicitPageId || this.resolveSavePageId()
+      if (!pageId) {
+        this.$message.error(this.$t('displayModel.SaveDataFailed') + ' (empty pageId)')
+        return Promise.resolve()
+      }
+      if (pageId !== this.selectPageUuid) {
+        try {
+          this.$store.state.ISMDisPlayEditorTool.selectPageUuid = pageId
+        } catch (e) { /* ignore */ }
+      }
       let _t = this
       let params = {
         uuid:uuid,
-        pageid:this.selectPageUuid,
+        pageid:pageId,
         LayerData:null,
       }
       const LayerData = JSON.parse(JSON.stringify(this.configData))
+      let cellsJson
+      try {
+        cellsJson = this.ISMCavasContainer.toJSON()
+      } catch (e) {
+        this.$message.error(this.$t('displayModel.SaveDataFailed') + ' (toJSON: ' + ((e && e.message) || e) + ')')
+        return Promise.resolve()
+      }
       const normalizedLayerData = normalizeISMScene({
         layer: LayerData.layer,
-        components: this.ISMCavasContainer.toJSON()
+        components: cellsJson
       })
       LayerData.layer = {
         ...LayerData.layer,
@@ -280,19 +348,33 @@ export default {
       }
       LayerData.components = normalizedLayerData.components
       params.LayerData = LayerData
-      this.saveLayerDataStruct(params).then(function (res){
+      const fromSwitch = !!explicitPageId
+      const savePromise = this.saveLayerDataStruct(params).then(function (res){
         if(res.data.code == 200)
         {
-          let uid = _t.$route.params.uid
-          _t.updateAllLayerDataStruct({pageType:_t.isMobile,uuid:uid,cb:function (){}});
+          if (!fromSwitch) {
+            let uid = _t.$route.params.uid
+            _t.updateAllLayerDataStruct({pageType:_t.isMobile,uuid:uid,metaOnly:true,cb:function (){}});
+          }
+        }
+        else if (res.data.code == 4090)
+        {
+          _t.$message.warning((res.data && res.data.message) || '运行态预览不可直接保存，请编辑对应模板后再保存')
         }
         else
         {
           _t.$message.error(_t.$t('displayModel.SaveDataFailed'))
         }
+        return res
+      }).finally(function () {
+        if (_t._pageSaveQueue === savePromise) {
+          _t._pageSaveQueue = null
+        }
       })
+      this._pageSaveQueue = savePromise
+      return savePromise
     },
-    chargePage(key,info){
+    async chargePage(key,info){
       if(info.selectedNodes.length>0)
       {
         let page = info.selectedNodes[0].data.props.dataRef
@@ -305,6 +387,16 @@ export default {
         }
         else
         {
+          const targetId = key && key.length > 0 ? key[0] : ''
+          const prevPageId = this.selectPageUuid || this.selectTreeKey
+          if (this._pageSaveQueue) {
+            try { await this._pageSaveQueue } catch (e) { /* keep switching */ }
+          }
+          if (prevPageId && targetId && String(prevPageId) !== String(targetId)) {
+            try {
+              await this.doSaveLayerData(this.$route.params.uid, prevPageId)
+            } catch (e) { /* keep switching */ }
+          }
           if(key.length>0)
           {
             this.selectTreeKey = key[0]
@@ -317,12 +409,11 @@ export default {
             this.PCPageCheckKey = []
           }
           this.checkPageInfo = page
-          //保存上个页面
-          this.doSaveLayerData(this.$route.params.uid)
+          this.setEditorRuntimePreview(null)
+          this.setNavContext(null)
           this.selectLayerDataStruct(page)
           document.title = page.AppName + ' | ' + page.title
         }
-        // this.setGroupList()
       }
     },
     addModelPage(e,type) {
@@ -343,19 +434,49 @@ export default {
             pageType:parseInt(this.pageType)
           };
           DisplayModelPageAdd(params).then(function (res){
-            if (res.data.code == 4002) {
+            const code = res && res.data ? res.data.code : null
+            const newPageId = res && res.data ? res.data.pageId : ''
+            if (code == 4002) {
               _t.$message.success(_t.$t('ISMResources.PageAddSuccess'), 3)
-              _t.getLayerDataStruct({uuid:_t.$route.params.uid,cb:function (){
+              _t.setEditorRuntimePreview && _t.setEditorRuntimePreview(null)
+              _t.setNavContext && _t.setNavContext(null)
+              _t.getLayerDataStruct({uuid:_t.$route.params.uid,metaOnly:true,cb:function (){
                   _t.spinning = false
+                  _t.logging = false
+                  if (newPageId) {
+                    try {
+                      _t.$store.state.ISMDisPlayEditorTool.selectPageUuid = newPageId
+                    } catch (e) { /* ignore */ }
+                    const list = parseInt(_t.pageType) === 1
+                      ? (_t.PCPageList || [])
+                      : (_t.PhonePageList || [])
+                    const page = list.find(p => p && (p.pageUuid === newPageId || p.PageId === newPageId))
+                    if (page) {
+                      if (parseInt(_t.pageType) === 1) {
+                        _t.PCPageCheckKey = [newPageId]
+                        _t.PhonePageCheckKey = []
+                      } else {
+                        _t.PhonePageCheckKey = [newPageId]
+                        _t.PCPageCheckKey = []
+                      }
+                      _t.selectTreeKey = newPageId
+                      _t.checkPageInfo = page
+                      _t.selectLayerDataStruct(page)
+                      document.title = (page.AppName || '') + ' | ' + (page.title || page.name || '')
+                    }
+                  }
                 }});
               _t.AddPageVisible=false
-            }else if (res.data.code == 4005) {
+            }else if (code == 4005) {
+              _t.logging = false
               _t.$message.error(_t.$t('ISMResources.PageCountOut'), 3)
-            }else if (res.data.code == 4006) {
+            }else if (code == 4006) {
+              _t.logging = false
               _t.$message.error(_t.$t('ISMResources.LoginPageNoAuth'), 3)
             }
             else{
-              _t.$message.error(_t.$t('ISMResources.PageAddFailed'), 3)
+              _t.logging = false
+              _t.$message.error((_t.$t('ISMResources.PageAddFailed') || '页面添加失败') + (code != null ? ` (code=${code})` : ''), 3)
             }
           }).catch(function (){
             _t.logging = false
@@ -448,7 +569,7 @@ export default {
       DisplayModelPageCopy(params).then(function (res){
         if (res.data.code == 200) {
           _t.$message.success(_t.$t('ISMResources.PageUpdateSuccess'), 3)
-          _t.getLayerDataStruct({uuid:_t.$route.params.uid,cb:function (){
+          _t.getLayerDataStruct({uuid:_t.$route.params.uid,metaOnly:true,cb:function (){
               _t.spinning = false
             }});
         }else if (res.data.code == 4005) {

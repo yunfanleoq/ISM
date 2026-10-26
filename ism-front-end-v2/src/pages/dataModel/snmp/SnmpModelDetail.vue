@@ -466,6 +466,14 @@
                   </a-input>
                 </a-form-item>
               </a-col>
+              <a-col :span="12">
+                <a-form-item label="告警确认延迟">
+                  <a-checkbox v-decorator="['alarmConfirmDelayEnable', { valuePropName: 'checked', initialValue: false }]">启用</a-checkbox>
+                  <a-input-number v-decorator="['alarmConfirmDelaySec', { initialValue: 5 }]" :min="1" :max="3600" style="width: 90px; margin-left: 8px;" />
+                  秒
+                </a-form-item>
+              </a-col>
+
             </div>
             <div v-else>
               <a-col :span="12" >
@@ -866,6 +874,8 @@ export default {
                 dataRecord:(typeof item.record!="undefined")?item.record.toString():"0",
                 AlarmMessage :(typeof item.AlarmMessage!="undefined")?item.AlarmMessage:"",
                 AlarmClearMessage : (typeof item.AlarmClearMessage!="undefined")?item.AlarmClearMessage:"",
+                alarmConfirmDelayEnable: (parseInt(item.alarmConfirmDelaySec, 10) || 0) > 0,
+                alarmConfirmDelaySec: (parseInt(item.alarmConfirmDelaySec, 10) || 0) > 0 ? parseInt(item.alarmConfirmDelaySec, 10) : 5,
               })
         }
         else  if (item.record==1)
@@ -910,6 +920,7 @@ export default {
               alarmLevel:parseInt(this.EditForm.getFieldValue('AlarmLevel')),
               AlarmMessage:this.EditForm.getFieldValue('AlarmMessage'),
               AlarmClearMessage:this.EditForm.getFieldValue('AlarmClearMessage'),
+              alarmConfirmDelaySec: this.EditForm.getFieldValue('alarmConfirmDelayEnable') ? (parseInt(this.EditForm.getFieldValue('alarmConfirmDelaySec') || '0') || 0) : 0,
               conversionExpression:this.EditForm.getFieldValue('ConversionExpression'),
               record:this.EditForm.getFieldValue('dataRecord')?parseInt(this.EditForm.getFieldValue('dataRecord')):0,
               RecordType:this.EditForm.getFieldValue('dataRecordType')?parseInt(this.EditForm.getFieldValue('dataRecordType')):0,
@@ -934,6 +945,7 @@ export default {
                     target.alarmLevel=parseInt(_t.EditForm.getFieldValue('AlarmLevel'))
                     target.AlarmMessage = _t.EditForm.getFieldValue('AlarmMessage')
                     target.AlarmClearMessage = _t.EditForm.getFieldValue('AlarmClearMessage')
+                target.alarmConfirmDelaySec = _t.EditForm.getFieldValue('alarmConfirmDelayEnable') ? (parseInt(_t.EditForm.getFieldValue('alarmConfirmDelaySec') || '0') || 0) : 0
                     target.record=parseInt(_t.EditForm.getFieldValue('dataRecord'))
                     target.recordInterval=parseInt(_t.EditForm.getFieldValue('dataRecordTime'))
                     target.RecordType=parseInt(_t.EditForm.getFieldValue('dataRecordType'))
@@ -954,8 +966,36 @@ export default {
         }
       })
     },
+    isImportableMibNode(node){
+      if (!node || node.Oid == null || !node.Oid.length) {
+        return false
+      }
+      const access = node.Access
+      if (access && access !== 'Unknown' && access !== 'NotImplemented') {
+        return true
+      }
+      const decl = node.Decl || ''
+      const kind = node.Kind || ''
+      const objectDecls = ['ObjectType', 'Scalar', 'Column', 'NotificationType', 'TrapType', 'Notification']
+      const objectKinds = ['Scalar', 'Column', 'Notification']
+      return objectDecls.indexOf(decl) >= 0 || objectKinds.indexOf(kind) >= 0
+    },
+    isFallbackMibNode(node){
+      if (!node || node.Oid == null || !node.Oid.length) {
+        return false
+      }
+      const skipDecls = [
+        'ModuleIdentity', 'ObjectGroup', 'NotificationGroup', 'ModuleCompliance',
+        'AgentCapabilities', 'Macro', 'TextualConvention', 'Unknown'
+      ]
+      return skipDecls.indexOf(node.Decl || '') < 0
+    },
     saveMibData(){
       let saveParams=[]
+      if (!this.dataSource || this.dataSource.length === 0) {
+        this.$message.warning(this.$t("dataModel.saveMibEmpty"))
+        return
+      }
       this.messageShowLoad = true
       for(let i=0;i<this.dataSource.length;i++)
       {
@@ -980,6 +1020,7 @@ export default {
         temp.AlarmClearMessage = (typeof this.dataSource[i].AlarmClearMessage!="undefined")?this.dataSource[i].AlarmClearMessage:""
         temp.AlarmMessage =  (typeof this.dataSource[i].AlarmMessage!="undefined")?this.dataSource[i].AlarmMessage:""
         temp.alarm=(typeof this.dataSource[i].alarm!="undefined")?parseInt(this.dataSource[i].alarm):0
+        temp.alarmConfirmDelaySec=(typeof this.dataSource[i].alarmConfirmDelaySec!="undefined")?parseInt(this.dataSource[i].alarmConfirmDelaySec)||0:0
 
         temp.record=(typeof this.dataSource[i].record!="undefined")?parseInt(this.dataSource[i].record):0
         temp.recordInterval=(typeof this.dataSource[i].recordInterval!="undefined")?parseInt(this.dataSource[i].recordInterval):0
@@ -1014,30 +1055,45 @@ export default {
         if(result.Code==0) {
           let tempData = {}
           if (result.Nodes != null) {
-            this.$message.success(`${info.file.name} `+this.$t("dataModel.parseSuccess"));
+            let picked = []
             for (let i = 0; i < result.Nodes.length; i++) {
-              if ((result.Nodes[i].Access != 'Unknown')&&(result.Nodes[i].Oid!=null)) {
-                tempData.key = i.toString()
-                tempData.oidName = result.Nodes[i].Name
-                tempData.oidPath = result.Nodes[i].Oid.join(".")+'.0'
-                if(result.Nodes[i].Type==null)
-                {
-                  tempData.oidType = result.Nodes[i].Decl
-                }
-                else {
-                  tempData.oidType = result.Nodes[i].Type.BaseType
-                }
-
-                tempData.oidAuth = result.Nodes[i].Access
-                tempData.uuid = ""
-                tempData.dataAlarm=0
-                tempData.dataRecord=0
-                tempData.dataRecordTime=0
-                this.dataSource.push(tempData)
-                tempData = {}
+              if (this.isImportableMibNode(result.Nodes[i])) {
+                picked.push(result.Nodes[i])
               }
             }
+            if (picked.length === 0) {
+              for (let i = 0; i < result.Nodes.length; i++) {
+                if (this.isFallbackMibNode(result.Nodes[i])) {
+                  picked.push(result.Nodes[i])
+                }
+              }
+            }
+            for (let i = 0; i < picked.length; i++) {
+              tempData.key = i.toString()
+              tempData.oidName = picked[i].Name
+              tempData.oidPath = picked[i].Oid.join(".")+'.0'
+              if(picked[i].Type==null)
+              {
+                tempData.oidType = picked[i].Decl
+              }
+              else {
+                tempData.oidType = picked[i].Type.BaseType
+              }
+
+              tempData.oidAuth = picked[i].Access && picked[i].Access !== 'Unknown' ? picked[i].Access : 'ReadOnly'
+              tempData.uuid = ""
+              tempData.dataAlarm=0
+              tempData.dataRecord=0
+              tempData.dataRecordTime=0
+              this.dataSource.push(tempData)
+              tempData = {}
+            }
             this.cacheData = this.dataSource.map(item => ({ ...item }));
+            if (this.dataSource.length === 0) {
+              this.$message.warning(`${info.file.name} `+this.$t("dataModel.parseNoPoints"));
+            } else {
+              this.$message.success(`${info.file.name} `+this.$t("dataModel.parseSuccess"));
+            }
           }
           else
           {

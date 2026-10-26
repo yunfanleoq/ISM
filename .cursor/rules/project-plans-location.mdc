@@ -1,0 +1,40 @@
+---
+description: ISM 项目计划/方案文档存放约定
+alwaysApply: true
+---
+
+# ISM 项目计划与方案存放约定
+
+所有 ISM 项目开发计划、方案、Plan 模式产出**必须保存在本仓库**，不要只留在 `~/.cursor/plans/`。
+
+## 存放路径
+
+| 用途 | 路径 | 说明 |
+|------|------|------|
+| 主文档（人类可读、可 git 管理） | `docs/*.md` | 团队查阅、评审、版本追踪 |
+| Cursor Plan 副本 | `.cursor/plans/*.plan.md` | 与 Cursor Plan 模式格式一致 |
+
+## 命名规范
+
+- `docs/`：`ISM-<主题>.md`（例：`ISM软件优化开发方案.md`）
+- `.cursor/plans/`：`ism-<主题>.plan.md`（例：`ism软件优化开发方案.plan.md`）
+
+## 创建新计划时的流程
+
+1. 在 Plan 模式或对话中完成方案撰写
+2. **立即同步到两处**：
+   - `docs/ISM-<主题>.md` — 人类可读正文（可简化 frontmatter）
+   - `.cursor/plans/ism-<主题>.plan.md` — 保留 Cursor plan frontmatter（`name`、`overview`、`todos`）
+3. 确认两处正文一致，再结束任务
+
+## 需求来源引用
+
+引用 `docs/ISM软件(1).doc` 作为需求来源时，对应方案主文档为：
+
+- `docs/ISM软件优化开发方案.md`
+- `.cursor/plans/ism软件优化开发方案.plan.md`
+
+## 禁止
+
+- 仅将方案保存在 `~/.cursor/plans/` 而不写入本仓库
+- 在仓库外维护与 ISM 开发相关的唯一方案副本

@@ -1,6 +1,7 @@
 import TabsView from '@/layouts/tabs/TabsView'
 // import PageView from '@/layouts/PageView'
 import BlankView from '@/layouts/BlankView'
+import {createHomeDashboardRedirect} from '@/config/homeDashboard'
 // 路由配置
 const options = {
   routes: [
@@ -70,15 +71,27 @@ const options = {
       component: () => import('@/pages/help/help')
     },
     {
+      path: '/hx-dcim',
+      name: '新大屏',
+      meta: {
+        icon: 'dashboard',
+        authority: {
+          role: ['Admin', 'Operator', 'User']
+        }
+      },
+      component: () => import('@/pages/hxDcim/HxDcimScreen')
+    },
+    {
       path: '/SCADAMonitor',
-      name: '电力监控大屏',
+      name: '监控大屏',
       meta: {
         icon: 'dashboard',
         authority: {
           role: ['Admin', 'Operator']
         }
       },
-      component: () => import('@/pages/SCADAMonitor/index')
+      // 菜单「监控大屏」直达当前项目的默认大屏（动态读取 store）
+      redirect: createHomeDashboardRedirect()
     },
     {
       path: '/DisPlayEditor/:uid',

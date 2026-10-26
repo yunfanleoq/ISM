@@ -317,64 +317,44 @@ func CheckLicense() bool {
 			}
 		}
 	}
-	if code != 0 {
-		protocolCommon.IsLicense = false
-	} else {
-		protocolCommon.IsLicense = true
-	}
-
+	// 源码企业版交付：不依赖 active.dat / license.lic，默认视为已授权企业版。
+	// 仍尝试读取 license.lic，仅用于覆盖页面/应用数量等可选配置。
+	_ = code
 	key := []byte("abcdsxyzhkj12345")
 	protocolCommon.IsLicense = true
+	protocolCommon.IsOem = true
+	protocolCommon.ConfigPageCount = 100000
+	protocolCommon.ConfigAppCount = 100000
+
 	content, errread := os.ReadFile("static/company/license.lic")
 	if errread != nil {
-		protocolCommon.ConfigPageCount = 2
-		protocolCommon.ConfigAppCount = 1
-		protocolCommon.IsOem = false
 		return protocolCommon.IsLicense
 	}
 	base64Content, base64err := base64.StdEncoding.DecodeString(string(content))
 	if base64err != nil {
-		protocolCommon.ConfigPageCount = 2
-		protocolCommon.ConfigAppCount = 1
-		protocolCommon.IsOem = false
 		return protocolCommon.IsLicense
 	}
 	deLiscese, deErr := openssl.AesECBDecrypt(base64Content, key, openssl.PKCS7_PADDING)
 	if deErr != nil {
-		protocolCommon.ConfigPageCount = 2
-		protocolCommon.ConfigAppCount = 1
-		protocolCommon.IsOem = false
 		return protocolCommon.IsLicense
 	}
 	jsonErr := json.Unmarshal(deLiscese, &lisceseAuth)
 	if jsonErr != nil {
-		protocolCommon.ConfigPageCount = 2
-		protocolCommon.ConfigAppCount = 1
-		protocolCommon.IsOem = false
 		return protocolCommon.IsLicense
 	}
 	if lisceseAuth["ConfigPageCount"] != nil {
-		protocolCommon.ConfigPageCount = int(lisceseAuth["ConfigPageCount"].(float64))
-	} else if lisceseAuth["systemUrl"] != "www.ismctl.com" {
-		protocolCommon.ConfigPageCount = 1000
-	} else {
-		protocolCommon.ConfigPageCount = 2
+		if n := int(lisceseAuth["ConfigPageCount"].(float64)); n > 0 {
+			protocolCommon.ConfigPageCount = n
+		}
 	}
 	if lisceseAuth["ConfigAppCount"] != nil {
-		protocolCommon.ConfigAppCount = int(lisceseAuth["ConfigAppCount"].(float64))
-	} else if lisceseAuth["systemUrl"] != "www.ismctl.com" {
-		protocolCommon.ConfigAppCount = 1000
-	} else {
-		protocolCommon.ConfigAppCount = 1
+		if n := int(lisceseAuth["ConfigAppCount"].(float64)); n > 0 {
+			protocolCommon.ConfigAppCount = n
+		}
 	}
-	if lisceseAuth["systemUrl"] != "www.ismctl.com" {
-		protocolCommon.IsOem = true
-		return protocolCommon.IsLicense
-	} else if (lisceseAuth["isAuth"] != nil) && int(lisceseAuth["isAuth"].(float64)) == 1 {
-		protocolCommon.IsOem = true
-		return protocolCommon.IsLicense
-	}
-
+	// 无论 license.lic 内容如何，源码企业版始终保持已授权 OEM
+	protocolCommon.IsLicense = true
+	protocolCommon.IsOem = true
 	return protocolCommon.IsLicense
 }
 

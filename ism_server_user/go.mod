@@ -225,4 +225,5 @@ require (
 
 replace dm v1.8.1 => ./dmgorm2
 
+// IEC61850: vendor build tags = macOS stub / Linux+CGO real libiec61850
 replace github.com/jifanchn/go-libiec61850/iec61850 => ./libiec61850stub/iec61850

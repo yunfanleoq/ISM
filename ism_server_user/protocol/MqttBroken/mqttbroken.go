@@ -36,12 +36,15 @@ func MqttBrokenServer() {
 
 	configBytes, err1 := os.ReadFile("conf/mqtt_broken_config.json")
 	if err1 != nil {
-		logs.Error("MQTT Broker启动失败", err1)
+		// 配置缺失时必须直接返回，禁止继续用 nil options（会 panic 拖垮整个 ism_server）
+		logs.Error("MQTT Broker启动失败: 缺少 conf/mqtt_broken_config.json: %v（可设 enablemqttbreoken=false 关闭）", err1)
+		return
 	}
 
 	options, err1 := config.FromBytes(configBytes)
-	if err1 != nil {
-		logs.Error("MQTT Broker启动失败", err1)
+	if err1 != nil || options == nil {
+		logs.Error("MQTT Broker启动失败: 解析 conf/mqtt_broken_config.json 失败: %v", err1)
+		return
 	}
 
 	options.InlineClient = true

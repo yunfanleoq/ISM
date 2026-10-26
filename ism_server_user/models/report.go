@@ -10,6 +10,7 @@ package models
 
 import (
 	protocol_common "ISMServer/protocol/common"
+	"ISMServer/utils/diyreport"
 	"ISMServer/utils/errmsg"
 	"bytes"
 	"context"
@@ -348,11 +349,11 @@ func GetDataHistoryList(projectuuid string, params map[string]interface{}) ([]De
 			}
 		}
 	}
-	StartTime, ee := time.Parse("2006-01-02 15:04:05", queryStartTime)
+	StartTime, ee := time.ParseInLocation("2006-01-02 15:04:05", queryStartTime, time.Local)
 	if ee != nil {
 		return getDataHistorys, errmsg.ERROR_DATABASE
 	}
-	EndTime, ww := time.Parse("2006-01-02 15:04:05", queryEndTime)
+	EndTime, ww := time.ParseInLocation("2006-01-02 15:04:05", queryEndTime, time.Local)
 	if ww != nil {
 		return getDataHistorys, errmsg.ERROR_DATABASE
 	}
@@ -700,11 +701,11 @@ func GetDataHistoryReport(projectuuid string, params map[string]interface{}) ([]
 		}
 	}
 
-	StartTime, ee := time.Parse("2006-01-02 15:04:05", queryStartTime)
+	StartTime, ee := time.ParseInLocation("2006-01-02 15:04:05", queryStartTime, time.Local)
 	if ee != nil {
 		return getDataHistorys, errmsg.ERROR_DATABASE
 	}
-	EndTime, ww := time.Parse("2006-01-02 15:04:05", queryEndTime)
+	EndTime, ww := time.ParseInLocation("2006-01-02 15:04:05", queryEndTime, time.Local)
 	if ww != nil {
 		return getDataHistorys, errmsg.ERROR_DATABASE
 	}
@@ -1071,37 +1072,24 @@ func GetDataTsHistoryList(projectuuid string, params map[string]interface{}, dbC
 			}
 		}
 	}
+	// 前端传入的是本地墙钟；TDengine 无时区字面量按 UTC 解释，查询边界需转 UTC
+	queryStartTime, queryEndTime = tdengineBoundStrings(queryStartTime, queryEndTime)
+
 	var queryRows *sql.Rows
-	if (len(deviceList) == 0) && (len(dataList) == 0) {
-		querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where project_uuid ='%s' and  record_time>='%s' and record_time<='%s' order by record_time asc", projectuuid, queryStartTime, queryEndTime)
-		queryRows, err = dbClient.Query(querySql)
-	} else {
-
-		deviceListStr := "(" + StringJoin(deviceList, ",") + ")"
-
-		dataListStr := "(" + StringJoin(dataList, ",") + ")"
-
-		if (len(deviceList) != 0) && (len(dataList) != 0) {
-
-			querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where project_uuid ='%s' and  device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", projectuuid, deviceListStr, dataListStr, queryStartTime, queryEndTime)
-			queryRows, err = dbClient.Query(querySql)
-			// err = Db.Model(&DevicesHistoryDataList{}).Where("device_uuid in ? AND model_data_uuid in ? AND record_time>=? AND record_time<=? ", deviceList, dataList, queryStartTime, queryEndTime).Select("*").Limit(1000000).Find(&getDataHistorys).Error
-		} else if len(deviceList) != 0 {
-			querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where project_uuid ='%s' and   device_uuid in %s AND record_time>='%s' and record_time<='%s' order by record_time asc", projectuuid, deviceListStr, queryStartTime, queryEndTime)
-			queryRows, err = dbClient.Query(querySql)
-			// err = Db.Model(&DevicesHistoryDataList{}).Where("device_uuid in ? AND  record_time>=? AND record_time<=?", deviceList, queryStartTime, queryEndTime).Select("*").Limit(1000000).Find(&getDataHistorys).Error
-		} else if len(dataList) != 0 {
-			querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where project_uuid ='%s' and   model_data_uuid in %s AND record_time>='%s' and record_time<='%s' order by record_time asc", projectuuid, dataListStr, queryStartTime, queryEndTime)
-			queryRows, err = dbClient.Query(querySql)
-			// err = Db.Model(&DevicesHistoryDataList{}).Where("model_data_uuid in ? AND record_time>=? AND record_time<=?", dataList, queryStartTime, queryEndTime).Select("*").Limit(1000000).Find(&getDataHistorys).Error
-		}
-	}
+	rowLimit := historyQueryRowLimit(params)
+	querySql := buildDataTsHistoryQuerySQL(projectuuid, deviceList, dataList, queryStartTime, queryEndTime, rowLimit)
+	queryRows, err = dbClient.Query(querySql)
 	if err != nil {
 		fmt.Print(err)
 		return getDataHistorys, errmsg.ERROR_DATABASE
 	}
+	defer queryRows.Close()
 
 	for queryRows.Next() {
+		if rowLimit > 0 && len(getDataHistorys) >= rowLimit {
+			params["truncated"] = true
+			break
+		}
 		var r DevicesHistoryDataList
 
 		err := queryRows.Scan(&r.RecordTime, &r.DataName, &r.DeviceUuid, &r.ProjectUuid, &r.DeviceName, &r.DataUuid, &r.ModelDataUuid, &r.DataUnit, &r.DataValue)
@@ -1329,6 +1317,22 @@ func MinNum(arr []float64) (min float64, minIndex int) {
 	}
 	return min, minIndex
 }
+
+func openDiyReportTemplate(path string) (*xlst.Xlst, []string, string) {
+	doc := xlst.New()
+	if err := doc.ReadTemplate(path); err != nil {
+		return nil, nil, diyreport.ReadFailMsg
+	}
+	names, err := diyreport.PointNamesFromXlsx(path)
+	if err != nil {
+		return nil, nil, diyreport.ReadFailMsg
+	}
+	if len(names) == 0 {
+		return doc, nil, diyreport.NoPointMsg
+	}
+	return doc, names, ""
+}
+
 func GetDiyDataClickHouseHistoryList(projectuuid string, params map[string]interface{}) (string, int, map[string]interface{}) {
 
 	var queryStartTime string
@@ -1342,11 +1346,10 @@ func GetDiyDataClickHouseHistoryList(projectuuid string, params map[string]inter
 
 	sheetDataTempleteUuid := params["tUuid"]
 	sheetDataTempletePath := "static/reportTemplete/" + sheetDataTempleteUuid.(string) + ".xlsx"
-	doc := xlst.New()
-	err4 := doc.ReadTemplate(sheetDataTempletePath)
-	HistoryName := []string{}
-	if len(HistoryName) <= 0 {
-		return "", errmsg.ERROR_DATABASE, nil
+	doc, HistoryName, failMsg := openDiyReportTemplate(sheetDataTempletePath)
+	var err4 error
+	if failMsg != "" {
+		return "", errmsg.ERROR, map[string]interface{}{"msg": failMsg}
 	}
 	var buildStart strings.Builder
 	var buildEnd strings.Builder
@@ -1430,6 +1433,7 @@ func GetDiyDataClickHouseHistoryList(projectuuid string, params map[string]inter
 	var findHistoryDataModel []DeviceRealData
 	err = Db.Model(&DeviceRealData{}).Where("project_uuid =? and device_uuid = ? and is_record = 1", projectuuid, deviceList).Select("*").Find(&findHistoryDataModel).Error
 	if err != nil || len(findHistoryDataModel) <= 0 {
+		ctx["msg"] = diyreport.QueryFailMsg
 		return "", errmsg.ERROR_DATABASE, ctx
 	}
 	ctx["DeviceName"] = findHistoryDataModel[0].DeviceName
@@ -1521,14 +1525,17 @@ func GetDiyDataClickHouseHistoryList(projectuuid string, params map[string]inter
 	if err4 == nil {
 		err = doc.Render(ctx)
 		if err != nil {
+			ctx["msg"] = diyreport.RenderFailMsg
 			return "", errmsg.ERROR, ctx
 		}
 
 		err = doc.Save(saveFilePath)
 		if err != nil {
+			ctx["msg"] = diyreport.RenderFailMsg
 			return "", errmsg.ERROR, ctx
 		}
 	} else {
+		ctx["msg"] = diyreport.ReadFailMsg
 		return "", errmsg.ERROR, ctx
 	}
 	return saveFilePath, errmsg.SUCCSECODE, ctx
@@ -1544,11 +1551,10 @@ func GetDiyDataHistoryList(projectuuid string, params map[string]interface{}) (s
 
 	sheetDataTempleteUuid := params["tUuid"]
 	sheetDataTempletePath := "static/reportTemplete/" + sheetDataTempleteUuid.(string) + ".xlsx"
-	doc := xlst.New()
-	err4 := doc.ReadTemplate(sheetDataTempletePath)
-	HistoryName := []string{}
-	if len(HistoryName) <= 0 {
-		return "", errmsg.ERROR_DATABASE, nil
+	doc, HistoryName, failMsg := openDiyReportTemplate(sheetDataTempletePath)
+	var err4 error
+	if failMsg != "" {
+		return "", errmsg.ERROR, map[string]interface{}{"msg": failMsg}
 	}
 
 	dateType := params["dateType"]
@@ -1634,6 +1640,7 @@ func GetDiyDataHistoryList(projectuuid string, params map[string]interface{}) (s
 	var findHistoryDataModel []DeviceRealData
 	err = Db.Model(&DeviceRealData{}).Where("project_uuid =? and device_uuid = ? and is_record = 1", projectuuid, deviceList).Select("*").Find(&findHistoryDataModel).Error
 	if err != nil || len(findHistoryDataModel) <= 0 {
+		ctx["msg"] = diyreport.QueryFailMsg
 		return "", errmsg.ERROR_DATABASE, ctx
 	}
 	ctx["DeviceName"] = findHistoryDataModel[0].DeviceName
@@ -1650,11 +1657,11 @@ func GetDiyDataHistoryList(projectuuid string, params map[string]interface{}) (s
 	// 	return "", errmsg.ERROR, ctx
 	// }
 
-	StartTime, ee := time.Parse("2006-01-02 15:04:05", queryStartTime)
+	StartTime, ee := time.ParseInLocation("2006-01-02 15:04:05", queryStartTime, time.Local)
 	if ee != nil {
 		return "", errmsg.ERROR, ctx
 	}
-	EndTime, ww := time.Parse("2006-01-02 15:04:05", queryEndTime)
+	EndTime, ww := time.ParseInLocation("2006-01-02 15:04:05", queryEndTime, time.Local)
 	if ww != nil {
 		return "", errmsg.ERROR, ctx
 	}
@@ -1809,14 +1816,17 @@ func GetDiyDataHistoryList(projectuuid string, params map[string]interface{}) (s
 	if err4 == nil {
 		err = doc.Render(ctx)
 		if err != nil {
+			ctx["msg"] = diyreport.RenderFailMsg
 			return "", errmsg.ERROR, ctx
 		}
 
 		err = doc.Save(saveFilePath)
 		if err != nil {
+			ctx["msg"] = diyreport.RenderFailMsg
 			return "", errmsg.ERROR, ctx
 		}
 	} else {
+		ctx["msg"] = diyreport.ReadFailMsg
 		return "", errmsg.ERROR, ctx
 	}
 	return saveFilePath, errmsg.SUCCSECODE, ctx
@@ -1832,11 +1842,10 @@ func GetDiyDataTsHistoryList(projectuuid string, params map[string]interface{}, 
 
 	sheetDataTempleteUuid := params["tUuid"]
 	sheetDataTempletePath := "static/reportTemplete/" + sheetDataTempleteUuid.(string) + ".xlsx"
-	doc := xlst.New()
-	err4 := doc.ReadTemplate(sheetDataTempletePath)
-	HistoryName := []string{}
-	if len(HistoryName) <= 0 {
-		return "", errmsg.ERROR_DATABASE, nil
+	doc, HistoryName, failMsg := openDiyReportTemplate(sheetDataTempletePath)
+	var err4 error
+	if failMsg != "" {
+		return "", errmsg.ERROR, map[string]interface{}{"msg": failMsg}
 	}
 
 	dateType := params["dateType"]
@@ -1922,6 +1931,7 @@ func GetDiyDataTsHistoryList(projectuuid string, params map[string]interface{}, 
 	var findHistoryDataModel []DeviceRealData
 	err = Db.Model(&DeviceRealData{}).Where("project_uuid =? and device_uuid = ? and is_record = 1", projectuuid, deviceList).Select("*").Find(&findHistoryDataModel).Error
 	if err != nil || len(findHistoryDataModel) <= 0 {
+		ctx["msg"] = diyreport.QueryFailMsg
 		return "", errmsg.ERROR_DATABASE, ctx
 	}
 	ctx["DeviceName"] = findHistoryDataModel[0].DeviceName
@@ -1934,12 +1944,21 @@ func GetDiyDataTsHistoryList(projectuuid string, params map[string]interface{}, 
 	// var getAllDataHistorys []DevicesHistoryDataList
 	var AllDataHistorysMap = make(map[string][]DevicesHistoryDataList, 0)
 
-	dataListStr := "(" + StringJoin(HistoryName, ",") + ")"
-	querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where project_uuid ='%s' and device_uuid = '%s' AND data_name in %s and record_time>='%s' and record_time<='%s' order by record_time asc", projectuuid, deviceList, dataListStr, queryStartTime, queryEndTime)
+	tdStart, tdEnd := tdengineBoundStrings(queryStartTime, queryEndTime)
+	querySql, sqlErr := diyreport.BuildTsHistoryQuerySQL(projectuuid, deviceList, HistoryName, tdStart, tdEnd)
+	if sqlErr != nil {
+		ctx["msg"] = sqlErr.Error()
+		return "", errmsg.ERROR, ctx
+	}
+	if dbClient == nil {
+		ctx["msg"] = diyreport.QueryFailMsg
+		return "", errmsg.ERROR, ctx
+	}
 	queryRows, err := dbClient.Query(querySql)
 	// err = Db.Model(&DevicesHistoryDataList{}).Where("device_uuid = ? AND model_data_uuid in ? and record_time>=? AND record_time<=? ", deviceList, ModelDataUuid, queryStartTime, queryEndTime).Select("data_name,device_uuid,device_name,model_data_uuid,record_time,data_value").Order("record_time asc ").Limit(1000000).Find(&getAllDataHistorys).Error
 	if err != nil {
 		fmt.Println(err)
+		ctx["msg"] = diyreport.QueryFailMsg
 		return "", errmsg.ERROR, ctx
 	}
 	for queryRows.Next() {
@@ -2025,14 +2044,17 @@ func GetDiyDataTsHistoryList(projectuuid string, params map[string]interface{}, 
 	if err4 == nil {
 		err = doc.Render(ctx)
 		if err != nil {
+			ctx["msg"] = diyreport.RenderFailMsg
 			return "", errmsg.ERROR, ctx
 		}
 
 		err = doc.Save(saveFilePath)
 		if err != nil {
+			ctx["msg"] = diyreport.RenderFailMsg
 			return "", errmsg.ERROR, ctx
 		}
 	} else {
+		ctx["msg"] = diyreport.ReadFailMsg
 		return "", errmsg.ERROR, ctx
 	}
 	return saveFilePath, errmsg.SUCCSECODE, ctx
@@ -2129,6 +2151,7 @@ func GetDiyDataInfluxHistoryList(projectuuid string, params map[string]interface
 	var findHistoryDataModel []DeviceRealData
 	err = Db.Model(&DeviceRealData{}).Where("project_uuid =? and device_uuid = ? and is_record = 1", projectuuid, deviceList).Select("*").Find(&findHistoryDataModel).Error
 	if err != nil || len(findHistoryDataModel) <= 0 {
+		ctx["msg"] = diyreport.QueryFailMsg
 		return "", errmsg.ERROR_DATABASE, ctx
 	}
 	ctx["DeviceName"] = findHistoryDataModel[0].DeviceName
@@ -2265,14 +2288,17 @@ func GetDiyDataInfluxHistoryList(projectuuid string, params map[string]interface
 	if err4 == nil {
 		err = doc.Render(ctx)
 		if err != nil {
+			ctx["msg"] = diyreport.RenderFailMsg
 			return "", errmsg.ERROR, ctx
 		}
 
 		err = doc.Save(saveFilePath)
 		if err != nil {
+			ctx["msg"] = diyreport.RenderFailMsg
 			return "", errmsg.ERROR, ctx
 		}
 	} else {
+		ctx["msg"] = diyreport.ReadFailMsg
 		return "", errmsg.ERROR, ctx
 	}
 	return saveFilePath, errmsg.SUCCSECODE, ctx
@@ -2457,7 +2483,7 @@ func GetChartDataHistoryList(params []byte) (int, []map[string]interface{}) {
 		} else {
 			continue
 		}
-		record_time, terr = time.Parse("2006-01-02 15:04:05", hour_time_str)
+		record_time, terr = time.ParseInLocation("2006-01-02 15:04:05", hour_time_str, time.Local)
 		if terr != nil {
 			continue
 		}
@@ -2520,12 +2546,13 @@ func GetChartDataTsHistoryList(params []byte, dbClient *sql.DB) (int, []map[stri
 	startTimeBe := endTimeBe.Add(time.Duration(parseParams.HistoryTime) * time.Minute)
 	endTimeBeStr := endTimeBe.Format("2006-01-02 15:04:05")
 	startTimeBeStr := startTimeBe.Format("2006-01-02 15:04:05")
+	startTimeBeStr, endTimeBeStr = tdengineBoundStrings(startTimeBeStr, endTimeBeStr)
 
 	deviceListStr := "(" + StringJoin(deviceList, ",") + ")"
 
 	dataListStr := "(" + StringJoin(modelDataUuidList, ",") + ")"
 
-	querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceListStr, dataListStr, startTimeBeStr, endTimeBeStr)
+	querySql := fmt.Sprintf(""+tdengineHistorySelectFrom("ISMHistoryDb.TempleteHistoryDatas")+" where device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceListStr, dataListStr, startTimeBeStr, endTimeBeStr)
 	queryRows, err := dbClient.Query(querySql)
 
 	// err = Db.Model(&DevicesHistoryDataList{}).Where("device_uuid in ? AND model_data_uuid in ? and record_time>=? AND record_time<=? ", deviceList, modelDataUuidList, startTimeBe, endTimeBe).Select("data_name,device_uuid,device_name,model_data_uuid,record_time,data_value").Limit(1000000).Find(&getAllDataHistorys).Error
@@ -2968,12 +2995,13 @@ func GetTsTrendChartData(params []byte, dbClient *sql.DB) (int, []DevicesHistory
 	startTimeBe := endTimeBe.Add(time.Duration(parseParams.HistoryTime) * time.Minute)
 	endTimeBeStr := endTimeBe.Format("2006-01-02 15:04:05")
 	startTimeBeStr := startTimeBe.Format("2006-01-02 15:04:05")
+	startTimeBeStr, endTimeBeStr = tdengineBoundStrings(startTimeBeStr, endTimeBeStr)
 
 	deviceListStr := "(" + StringJoin(deviceList, ",") + ")"
 
 	dataListStr := "(" + StringJoin(modelDataUuidList, ",") + ")"
 
-	querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceListStr, dataListStr, startTimeBeStr, endTimeBeStr)
+	querySql := fmt.Sprintf(""+tdengineHistorySelectFrom("ISMHistoryDb.TempleteHistoryDatas")+" where device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceListStr, dataListStr, startTimeBeStr, endTimeBeStr)
 	queryRows, err := dbClient.Query(querySql)
 
 	// err = Db.Model(&DevicesHistoryDataList{}).Where("device_uuid in ? AND model_data_uuid in ? and record_time>=? AND record_time<=? ", deviceList, modelDataUuidList, startTimeBe, endTimeBe).Select("data_name,device_uuid,device_name,model_data_uuid,record_time,data_value").Limit(1000000).Find(&getAllDataHistorys).Error
@@ -3089,11 +3117,11 @@ func GetMysqlHourData(deviceName, dataname string, startDate, endDate string) (i
 	var getAllDataHistorys []DevicesHistoryDataList
 
 	// 时间解析
-	StartTime, err := time.Parse("2006-01-02 15:04:05", startDate)
+	StartTime, err := time.ParseInLocation("2006-01-02 15:04:05", startDate, time.Local)
 	if err != nil {
 		return errmsg.ERROR_DATABASE, nil
 	}
-	EndTime, err := time.Parse("2006-01-02 15:04:05", endDate)
+	EndTime, err := time.ParseInLocation("2006-01-02 15:04:05", endDate, time.Local)
 	if err != nil {
 		return errmsg.ERROR_DATABASE, nil
 	}
@@ -3223,11 +3251,11 @@ func GetMysqlHourDataBatch(pairs []HourDataPair, startDate, endDate string) (int
 		return errmsg.SUCCSECODE, nil
 	}
 
-	_, err := time.Parse("2006-01-02 15:04:05", startDate)
+	_, err := time.ParseInLocation("2006-01-02 15:04:05", startDate, time.Local)
 	if err != nil {
 		return errmsg.ERROR_DATABASE, nil
 	}
-	_, err = time.Parse("2006-01-02 15:04:05", endDate)
+	_, err = time.ParseInLocation("2006-01-02 15:04:05", endDate, time.Local)
 	if err != nil {
 		return errmsg.ERROR_DATABASE, nil
 	}
@@ -3240,29 +3268,29 @@ func GetMysqlHourDataBatch(pairs []HourDataPair, startDate, endDate string) (int
 	if (protocol_common.InsideDbType == 1 || protocol_common.InsideDbType == 3) && protocol_common.HistoryRecordDbType == 1 {
 		tableName = append(tableName, "devices_history_data_list")
 	} else if protocol_common.HistoryPartitionType == 1 {
-		StartTime, _ := time.Parse("2006-01-02 15:04:05", startDate)
-		EndTime, _ := time.Parse("2006-01-02 15:04:05", endDate)
+		StartTime, _ := time.ParseInLocation("2006-01-02 15:04:05", startDate, time.Local)
+		EndTime, _ := time.ParseInLocation("2006-01-02 15:04:05", endDate, time.Local)
 		for t := StartTime; t.Before(EndTime.AddDate(1, 0, 0)); t = t.AddDate(1, 0, 0) {
 			tempTableName := fmt.Sprintf("devices_history_data_%s", t.Format("2006"))
 			tableName = append(tableName, tempTableName)
 		}
 	} else if protocol_common.HistoryPartitionType == 2 {
-		StartTime, _ := time.Parse("2006-01-02 15:04:05", startDate)
-		EndTime, _ := time.Parse("2006-01-02 15:04:05", endDate)
+		StartTime, _ := time.ParseInLocation("2006-01-02 15:04:05", startDate, time.Local)
+		EndTime, _ := time.ParseInLocation("2006-01-02 15:04:05", endDate, time.Local)
 		for t := StartTime; t.Before(EndTime.AddDate(0, 1, 0)); t = t.AddDate(0, 1, 0) {
 			tempTableName := fmt.Sprintf("devices_history_data_%s", t.Format("200601"))
 			tableName = append(tableName, tempTableName)
 		}
 	} else if protocol_common.HistoryPartitionType == 3 {
-		StartTime, _ := time.Parse("2006-01-02 15:04:05", startDate)
-		EndTime, _ := time.Parse("2006-01-02 15:04:05", endDate)
+		StartTime, _ := time.ParseInLocation("2006-01-02 15:04:05", startDate, time.Local)
+		EndTime, _ := time.ParseInLocation("2006-01-02 15:04:05", endDate, time.Local)
 		for t := StartTime; t.Before(EndTime.AddDate(0, 0, 1)); t = t.AddDate(0, 0, 1) {
 			tempTableName := fmt.Sprintf("devices_history_data_%s", t.Format("20060102"))
 			tableName = append(tableName, tempTableName)
 		}
 	} else if protocol_common.HistoryPartitionType == 4 {
-		StartTime, _ := time.Parse("2006-01-02 15:04:05", startDate)
-		EndTime, _ := time.Parse("2006-01-02 15:04:05", endDate)
+		StartTime, _ := time.ParseInLocation("2006-01-02 15:04:05", startDate, time.Local)
+		EndTime, _ := time.ParseInLocation("2006-01-02 15:04:05", endDate, time.Local)
 		for t := StartTime; t.Before(EndTime.Add(1 * time.Hour)); t = t.Add(1 * time.Hour) {
 			tempTableName := fmt.Sprintf("devices_history_data_%s", t.Format("20060102_15"))
 			tableName = append(tableName, tempTableName)
@@ -3343,11 +3371,11 @@ func GetClickHouseHourDataBatch(pairs []HourDataPair, startTimeStr, endTimeStr s
 		return errmsg.SUCCSECODE, nil
 	}
 
-	startTime, err := time.Parse("2006-01-02 15:04:05", startTimeStr)
+	startTime, err := time.ParseInLocation("2006-01-02 15:04:05", startTimeStr, time.Local)
 	if err != nil {
 		return errmsg.ERROR_DATABASE, nil
 	}
-	endTime, err := time.Parse("2006-01-02 15:04:05", endTimeStr)
+	endTime, err := time.ParseInLocation("2006-01-02 15:04:05", endTimeStr, time.Local)
 	if err != nil {
 		return errmsg.ERROR_DATABASE, nil
 	}
@@ -3374,23 +3402,24 @@ func GetTsHourDataBatch(pairs []HourDataPair, startDate, endDate string, dbClien
 	if len(pairs) == 0 {
 		return errmsg.SUCCSECODE, nil
 	}
-	_, err := time.Parse("2006-01-02 15:04:05", startDate)
+	_, err := time.ParseInLocation("2006-01-02 15:04:05", startDate, time.Local)
 	if err != nil {
 		return errmsg.ERROR_DATABASE, nil
 	}
-	_, err = time.Parse("2006-01-02 15:04:05", endDate)
+	_, err = time.ParseInLocation("2006-01-02 15:04:05", endDate, time.Local)
 	if err != nil {
 		return errmsg.ERROR_DATABASE, nil
 	}
 
 	wherePairs, args := buildHourBatchWhereClause(pairs)
+	tdStart, tdEnd := tdengineBoundStrings(startDate, endDate)
 	querySql := fmt.Sprintf(`
 SELECT record_time, data_name, device_uuid, project_uuid, device_name, data_uuid, model_data_uuid, data_unit, data_value
-FROM ISMHistoryDb.HistoryDatas
+FROM ISMHistoryDb.TempleteHistoryDatas
 WHERE (%s) AND record_time >= ? AND record_time <= ?
 ORDER BY record_time ASC
 `, wherePairs)
-	args = append(args, startDate, endDate)
+	args = append(args, tdStart, tdEnd)
 
 	rows, err := dbClient.Query(querySql, args...)
 	if err != nil {
@@ -4471,11 +4500,11 @@ func GetClickHouseHourData(deviceName, dataname string, startTimeStr, endTimeStr
 	var dataList []DevicesCHHistoryData
 
 	// 时间格式化
-	startTime, err := time.Parse("2006-01-02 15:04:05", startTimeStr)
+	startTime, err := time.ParseInLocation("2006-01-02 15:04:05", startTimeStr, time.Local)
 	if err != nil {
 		return errmsg.ERROR_DATABASE, nil
 	}
-	endTime, err := time.Parse("2006-01-02 15:04:05", endTimeStr)
+	endTime, err := time.ParseInLocation("2006-01-02 15:04:05", endTimeStr, time.Local)
 	if err != nil {
 		return errmsg.ERROR_DATABASE, nil
 	}
@@ -4498,25 +4527,26 @@ func GetTsHourData(deviceName, dataname string, startDate, endDate string, dbCli
 	var getAllHistory []DevicesHistoryDataList
 
 	// 1. 使用传入的起止时间，替换你错误的当前时间逻辑
-	startTime, err := time.Parse("2006-01-02 15:04:05", startDate)
+	startTime, err := time.ParseInLocation("2006-01-02 15:04:05", startDate, time.Local)
 	if err != nil {
 		return errmsg.ERROR_DATABASE, nil
 	}
-	endTime, err := time.Parse("2006-01-02 15:04:05", endDate)
+	endTime, err := time.ParseInLocation("2006-01-02 15:04:05", endDate, time.Local)
 	if err != nil {
 		return errmsg.ERROR_DATABASE, nil
 	}
 
-	// 2. 安全 SQL 查询（防止注入，不用字符串拼接）
+	// 2. 安全 SQL 查询（防止注入，不用字符串拼接）；边界转 UTC
 	querySql := `
 	SELECT record_time, data_name, device_uuid, project_uuid, device_name, data_uuid, model_data_uuid, data_unit, data_value
-	FROM ISMHistoryDb.HistoryDatas
+	FROM ISMHistoryDb.TempleteHistoryDatas
 	WHERE device_name = ? AND data_name = ? AND record_time >= ? AND record_time <= ?
 	ORDER BY record_time ASC
 `
+	startUTC, endUTC := tdengineBoundTimes(startTime, endTime)
 
 	// 3. 执行查询
-	rows, err := dbClient.Query(querySql, deviceName, dataname, startTime, endTime)
+	rows, err := dbClient.Query(querySql, deviceName, dataname, startUTC, endUTC)
 	if err != nil {
 		return errmsg.ERROR_DATABASE, nil
 	}
@@ -4629,7 +4659,7 @@ func GetMysqlTrendChartDataByDate(params []byte) (int, []DevicesHistoryDataList)
 	var getAllDataHistorys []DevicesHistoryDataList
 
 	// 解析日期字符串，查询该日期从00:00:00到23:59:59的时间段
-	queryDate, err := time.Parse("2006-01-02", parseParams.HistoryTime)
+	queryDate, err := time.ParseInLocation("2006-01-02", parseParams.HistoryTime, time.Local)
 	if err != nil {
 		return errmsg.ERROR, nil
 	}
@@ -4742,7 +4772,7 @@ func GetClickHouseTrendChartDataByDate(params []byte) (int, []DevicesCHHistoryDa
 		deviceList = append(deviceList, device.DeviceUuid)
 		modelDataUuidList = append(modelDataUuidList, device.ModelDataUuid)
 	}
-	queryDate, err := time.Parse("2006-01-02", parseParams.HistoryTime)
+	queryDate, err := time.ParseInLocation("2006-01-02", parseParams.HistoryTime, time.Local)
 	if err != nil {
 		return errmsg.ERROR, nil
 	}
@@ -4783,7 +4813,7 @@ func GetTsTrendChartDataByDate(params []byte, dbClient *sql.DB) (int, []DevicesH
 		modelDataUuidList = append(modelDataUuidList, device.ModelDataUuid)
 	}
 
-	queryDate, err := time.Parse("2006-01-02", parseParams.HistoryTime)
+	queryDate, err := time.ParseInLocation("2006-01-02", parseParams.HistoryTime, time.Local)
 	if err != nil {
 		return errmsg.ERROR, nil
 	}
@@ -4792,12 +4822,13 @@ func GetTsTrendChartDataByDate(params []byte, dbClient *sql.DB) (int, []DevicesH
 
 	endTimeBeStr := endTimeBe.Format("2006-01-02 15:04:05")
 	startTimeBeStr := startTimeBe.Format("2006-01-02 15:04:05")
+	startTimeBeStr, endTimeBeStr = tdengineBoundStrings(startTimeBeStr, endTimeBeStr)
 
 	deviceListStr := "(" + StringJoin(deviceList, ",") + ")"
 
 	dataListStr := "(" + StringJoin(modelDataUuidList, ",") + ")"
 
-	querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceListStr, dataListStr, startTimeBeStr, endTimeBeStr)
+	querySql := fmt.Sprintf(""+tdengineHistorySelectFrom("ISMHistoryDb.TempleteHistoryDatas")+" where device_uuid in %s AND model_data_uuid in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceListStr, dataListStr, startTimeBeStr, endTimeBeStr)
 	queryRows, err := dbClient.Query(querySql)
 
 	// err = Db.Model(&DevicesHistoryDataList{}).Where("device_uuid in ? AND model_data_uuid in ? and record_time>=? AND record_time<=? ", deviceList, modelDataUuidList, startTimeBe, endTimeBe).Select("data_name,device_uuid,device_name,model_data_uuid,record_time,data_value").Limit(1000000).Find(&getAllDataHistorys).Error
@@ -4838,7 +4869,7 @@ func GetInfluxTrendChartDataByDate(params []byte) (int, []DevicesHistoryDataList
 		return errmsg.ERROR, nil
 	}
 
-	queryDate, err := time.Parse("2006-01-02", parseParams.HistoryTime)
+	queryDate, err := time.ParseInLocation("2006-01-02", parseParams.HistoryTime, time.Local)
 	if err != nil {
 		return errmsg.ERROR, nil
 	}

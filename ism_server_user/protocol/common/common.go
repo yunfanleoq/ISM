@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"reflect"
 	"strconv"
 	"sync"
 	"time"
@@ -43,7 +44,12 @@ var HistoryRecordInfluxdbBucket string
 var HistoryRecordClickHouseDb *gorm.DB
 var InsideDbType int
 var ClearAlarmType int
-var HistoryKeepDays int = 7 // 默认保留7天历史数据
+var HistoryKeepDays int = 7 // 默认保留7天历史测点数据
+// AlarmKeepDays 已消除告警硬删保留天数；0 表示不自动硬删告警。默认 90。
+var AlarmKeepDays int = 90
+// ActiveAlarmClearThreshold：clear_time 严格小于该值视为「未消除」实时告警（协议写入哨兵为 2006-01-02）。
+// 自动硬删只允许 clear_time >= 该阈值（已人工/恢复消除）且早于保留截止日。
+const ActiveAlarmClearThreshold = "2007-01-02 15:04:05"
 
 var HistoryRecordPG *gorm.DB
 
@@ -76,11 +82,11 @@ var RecordPath string
 
 var ModbusDebug bool = false
 var IEC104Debug bool = false
-var IsLicense = false
-var IsOem = false
+var IsLicense = true
+var IsOem = true
 var ISMProtectedID = ""
-var ConfigPageCount int = 2
-var ConfigAppCount int = 1
+var ConfigPageCount int = 100000
+var ConfigAppCount int = 100000
 var IsAuthLimit bool = false
 var IsAuthTimeLimit bool = false
 var AuthorizationDays int = 30
@@ -135,7 +141,27 @@ type PushAlarm struct {
 	AlarmLevel        int
 	AlarmMessage      string
 	AlarmClearMessage string
+	AlarmOnValue      int // 0 或 1：实时值等于该字符串时触发告警，默认 1
+	SuppressNotice    bool
 }
+
+// ResolveAlarmOnValue 未配置时默认 1 报警
+func ResolveAlarmOnValue(v int) int {
+	if v == 0 || v == 1 {
+		return v
+	}
+	return 1
+}
+
+// IsAlarmValueActive 判断当前值是否处于告警态
+func IsAlarmValueActive(value string, alarmOnValue int) bool {
+	trigger := ResolveAlarmOnValue(alarmOnValue)
+	if trigger == 0 {
+		return value == "0"
+	}
+	return value == "1"
+}
+
 type TriggerRealData struct {
 	DeviceName        string
 	DataName          string
@@ -187,6 +213,16 @@ var HistoryCacheCount int
 var DTUConnCache int
 var HistoryPartitionType int = 0
 var DataFloatNumberFunc map[string]govaluate.ExpressionFunction
+
+// RealDataFrontendPush 由 websocket 包注册，供 models 等避免循环依赖地推送实时值到前端。
+var RealDataFrontendPush func(msg PushRealDataWebData)
+
+// NotifyRealDataFrontend 推送 RealData 到前端（经合并窗）；未注册时为 no-op。
+func NotifyRealDataFrontend(msg PushRealDataWebData) {
+	if RealDataFrontendPush != nil {
+		RealDataFrontendPush(msg)
+	}
+}
 
 var ISMNodeProjectConn sync.Map
 var ISMNodeServerProjectConn sync.Map
@@ -248,17 +284,51 @@ func flushHistoryDataBuffer() {
 }
 
 // HistoryDataWrite 写入历史数据（批量写入版本）
-// 数据会先进入内存缓冲区，达到一定数量或时间后批量写入LevelDB
+// 数据会先进入内存缓冲区，达到一定数量或时间后批量写入LevelDB。
+// RecordType==1（定时存储）由实时库快照任务独占，采集路径调用本函数会被忽略。
 func HistoryDataWrite(HistoryData any) {
+	if isTimedRecordOwnedBySnapshot(HistoryData) {
+		return
+	}
+	historyDataWriteInternal(HistoryData)
+}
+
+// HistoryDataWriteSnapshot 仅供定时快照任务写入 RecordType==1。
+func HistoryDataWriteSnapshot(HistoryData any) {
+	historyDataWriteInternal(HistoryData)
+}
+
+func isTimedRecordOwnedBySnapshot(sample interface{}) bool {
+	if sample == nil {
+		return false
+	}
+	v := reflect.ValueOf(sample)
+	for v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return false
+		}
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return false
+	}
+	f := v.FieldByName("RecordType")
+	if !f.IsValid() {
+		return false
+	}
+	switch f.Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		return f.Int() == 1
+	}
+	return false
+}
+
+func historyDataWriteInternal(HistoryData any) {
 	historyDataMutex.Lock()
 	defer historyDataMutex.Unlock()
 
-	// 将数据添加到缓冲区
 	historyDataBuffer = append(historyDataBuffer, HistoryData)
-
-	// 如果缓冲区达到阈值，立即刷新
 	if len(historyDataBuffer) >= historyDataBufferSize {
-		// 异步刷新，避免阻塞
 		go flushHistoryDataBuffer()
 	}
 }
@@ -308,20 +378,21 @@ func ProtocolCommonInit() {
 
 	GSaveHistoryDataQueue = middleware.NewQueue(GSaveHistoryDataQueueLength)
 
-	// 初始化历史数据批量写入缓冲区
+	// 初始化历史数据批量写入缓冲区（正式环境默认更大批量、更长间隔，降低刷盘）
 	historyDataBufferSize, err := config.Int("HistoryDataBufferSize")
 	if err != nil {
-		historyDataBufferSize = 50000 // 默认缓冲区大小
+		historyDataBufferSize = 10000
 	}
 	historyDataFlushInterval, err := config.Int("HistoryDataFlushInterval")
 	if err != nil {
-		historyDataFlushInterval = 500 // 默认刷新间隔（毫秒）
+		historyDataFlushInterval = 2000
 	}
 	initHistoryDataBuffer(historyDataBufferSize, historyDataFlushInterval)
 
 	RealDataChanelCache, err = config.Int("RealDataChanelCache")
-	if err != nil {
-		RealDataChanelCache = 1000
+	if err != nil || RealDataChanelCache <= 0 {
+		// 默认加大缓冲，降低采集风暴时 RealDataChanel full 丢包概率
+		RealDataChanelCache = 10000
 	}
 	NetworkNodePushDataChanel = make(chan interface{}, RealDataChanelCache)
 

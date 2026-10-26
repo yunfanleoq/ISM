@@ -1,0 +1,295 @@
+# 航信机房 SCADA 大屏 — 变更记录 & 恢复手册
+
+> 目标：让本项目「可一键恢复 + 变更可追溯」，杜绝再次误删丢失。
+> 本文件随每轮大屏改动持续追加，是该项目的**单一事实来源**。
+
+---
+
+## 0. 关键常量（恢复/排障必备）
+
+| 名称 | 值 | 说明 |
+|---|---|---|
+| projectUUID | `31bc90be-ebc4-dd61-ba9d-ce6e075e40e2` | `project_lists.uuid` |
+| displayUUID / MODEL_ID | `043135ad-44be-e5d8-89be-3e54883c23a8` | `display_models.display_model_uid`、`display_model_layer.model_id`、首页 `page_id` |
+| 项目名称 | 航信机房电力监控大屏 | `display_models.name` |
+| 数据库 | OceanBase（`dbtype=4`） | 127.0.0.1:2881，库 `ism`，用 pymysql 连接（MySQL 兼容协议） |
+| 首页 page | `page_name='main'`、`is_home=1`、`page_id=MODEL_ID` | Level 0 总览页 |
+| 设备总数 | **76 台**（`monitor_list` 中 `type=1`） | 早期为 91，本轮修正为 76 |
+
+### 设备层级（3 柜 + 18 设备组 + 76 设备）
+
+| 机柜（`type=0`） | sid | 设备数 | 设备组（按名称第 3 段聚合） |
+|---|---|---|---|
+| 1A1_U11柜 | 1083784365 | 43 | S11×2, S12×2, S13×1, S14×1, S15×1, S16×9, S17×9, S18×9, S19×9 |
+| 1A3_U11柜 | 170900667 | 26 | D01×6, D11×2, D12×2, D13×9, D14×7 |
+| UPS柜 | 1603862331 | 7 | U11×2, U12×2, U13×2, U14×1 |
+| **合计** | | **76** | **18 组** |
+
+> 设备引用的 modbus 模型 muid（`monitor_list.muid`，3 个）：
+> `13b6fe72-1ad2-969e-499c-a85d7cefdb6f`、`3d734984-56f6-5494-ad4c-dfc67ca28ac8`、`6a34f292-8813-362e-7028-339a7c8da678`。
+
+### 多页面钻探（display_model_layer）
+
+```
+Level 0  overview   page_name='main'         总览（左侧导航树 + KPI + 拓扑 + 趋势 + 设备网格）
+Level 1  building-*  每个机柜一页（page_id_building = uuid5('ncc-dash-bldg-{sid}')）→ 3 页
+Level 2  floor-*     每个设备组一页（page_id_floor = uuid5('ncc-dash-floor-{bsid}-{key}')）→ 18 页
+Level 3  device-*    每台设备一页（page_id_device = uuid5('ncc-dash-dev-{sid}')）→ 76 页
+                     另保留兼容页 device-detail（page_id 来自 'ncc-dash-device-detail'）
+```
+
+页面 UUID 由 `uuid5(NAMESPACE_DNS, seed)` **确定性派生**（见 `build_ncc_dashboard.py`），
+因此重建脚本可反复运行而 page_id 稳定不变，导航 link 不会失效。
+
+---
+
+## 1. 本轮改动清单
+
+| 类别 | 改动 | 位置 |
+|---|---|---|
+| 数据修正 | 设备数 **91 → 76**：仅统计本项目 `type=1` 实际设备，不再混入全库 `monitor_list` 计数 | `build_ncc_dashboard.py`（`TOTAL_DEVICES` 计算）|
+| 信息架构 | 由单页改为**多页钻探**：总览 → 机柜（3）→ 设备组（18）→ 设备（76），面包屑 + 左侧导航树逐级下钻 | `build_ncc_dashboard.py`（`build_building_detail_cells` / `build_floor_detail_cells` / `build_device_detail_cells`）|
+| 视觉 | **去闪烁 + 科技感**：移除会自旋的 box8 跑马灯，改用静态 box13 霓虹边框；表头/分隔线用静态 HUD；深空蓝配色 `#0a0e17` + 青/蓝/绿/橙点缀 | `build_ncc_dashboard.py`（`make_box13`、`build_header_cells`、调色板常量）|
+| 实时时间 | 接入 `view-svg-time` 组件（AppRun 中每 500ms 刷新），替代静态文字时间 | `make_svg_time` → 前端 `ViewSvgText.vue` 同族时间组件 |
+| 路由 | **DisPlayRunApp 重定向**：运行态大屏走 AppRun 路由，`#/AppRun/{MODEL_ID}` 直达首页 | `ism-front-end-v2/src/router/`（`config.js` / `async/*` / `guards.js`）|
+| 渲染 | **ViewSvgText 渲染 + GoPage 跳转**：文字/面板单元用 `view-svg-text`，点击携带 `action.link.Inside.pageUUID` 触发页内跳转（GoPage） | `ism-front-end-v2/src/pages/ISMDisPlay/ISMComponents/standard/ViewSvgText.vue`、`ISMRender.vue` |
+| 每设备实时绑定 | 每台设备按**自身 muid** 解析数据点 uuid，避免「张冠李戴」（所有设备显示同一台样本值） | `build_ncc_dashboard.py`（`MODEL_DP` / `dp_map_for` / `_make_active`）|
+| 渲染崩溃防护 | `animate.selected` 等缺省字段补 fallback，防止 `undefined.includes` 致 `$el=#comment` 空白 | 见 `.cursor/rules/ism-display-crash.mdc` |
+
+### 误删恢复经过（背景）
+
+- 后端删除项目用 `Unscoped().Delete`（物理删除，**无回收站**），该项目曾被整体误删。
+- 当时靠 **SQLite 快照定向回填**临时恢复，但只恢复了**旧版本**，且数据层不完整。
+- 现状（本轮基线备份记录）：`project_lists`/`display_models`/`display_model_layer`(101)/`monitor_list`(76 台) 完好，
+  但 `devices_model`/`modbus_devices_data_model`/`device_real_data` 在本项目作用域下为空、
+  实时数据链路尚需另一任务（重建 display + 回填数据）补齐。
+- **为防再次丢失**，本轮新增 `scripts/backup_project.py` / `scripts/restore_project.py`（见下）。
+
+---
+
+## 2. 如何恢复（标准流程）
+
+恢复分两条腿：**display 画面**由重建脚本生成，**项目数据**由备份回填。
+
+### 路线 A：有完整备份目录（推荐，最快）
+
+```bash
+cd /Users/yunfanleo/cursorProjects/ISM源码
+# 1) 回填该项目所有数据（含 display_model_layer 全部页面），幂等、只动本项目
+python3 scripts/restore_project.py backups/航信机房_<时间戳>
+# 2) （可选）如需重生成最新版 display 画面，再跑重建脚本
+python3 build_ncc_dashboard.py
+```
+
+### 路线 B：只有 git 里的精简骨架（云端/异机恢复）
+
+```bash
+cd /Users/yunfanleo/cursorProjects/ISM源码
+# 1) 用 git 跟踪的精简包回填数据骨架（项目/设备/模型，体积 ~112K，不含 display 画面）
+python3 scripts/restore_project.py backups/航信机房_<时间戳>/minimal_bundle.json
+# 2) 重建 display 全部页面（确定性 page_id，反复可跑）
+python3 build_ncc_dashboard.py
+```
+
+### 恢复后自检（restore 脚本自动执行并打印）
+
+- ✅ 项目可见（`project_lists` 该 uuid 且 `deleted_at IS NULL`）
+- ✅ display 页面数 ≥ 4（实际 99，含首页 1）
+- ✅ `monitor_list` `type=1` 设备 = 76
+- 浏览器验证：`http://localhost:7080/#/AppRun/043135ad-44be-e5d8-89be-3e54883c23a8`
+
+> 安全保证：restore 仅按 `project_uuid` / `model_id` / `muid` / `device_uuid` **精确作用域**先删冲突行再插入，
+> **绝不触碰其它项目**（已用内存 SQLite round-trip 测试验证「他项目行存活 + 幂等」）。
+
+---
+
+## 3. 备份机制（变更可追溯）
+
+### 备份
+
+```bash
+python3 scripts/backup_project.py                 # 用默认 project/display
+python3 scripts/backup_project.py --out-root /x   # 自定义输出根目录
+```
+
+- 自动读 `app.conf` 判 `dbtype`（4=OceanBase→pymysql，1=SQLite→sqlite3）。
+- 产物落到 `backups/航信机房_<yyyymmddHHMM>/`：
+  - `tables/<表名>.json`：逐表全行导出（**18M 主要来自 `display_model_layer`**）
+  - `manifest.json`：每表行数、分类、作用域、`monitor_list_type1` 等
+  - `minimal_bundle.json`：自包含的**数据骨架精简包**（~112K，含真实行，**不含** `display_model_layer`）
+- 控制台打印每表行数，并在设备数 ≠ 76 时告警。
+
+### 作用域如何圈定（核心库 `scripts/ism_project_backup_core.py`）
+
+| 作用域类型 | 表 | WHERE |
+|---|---|---|
+| `uuid_eq_project` | `project_lists` | `uuid = projectUUID` |
+| `project_uuid` | `display_models`、`monitor_list`、`alarm_*`、`*_templete` 等 | `project_uuid = projectUUID` |
+| `model_id` | `display_model_layer` | `model_id = displayUUID` |
+| `muid` | `modbus_devices_data_model`、`*_register_group`、各协议 `*_devices_data_model` | `muid IN (项目设备引用的 muid ∪ 项目自有 devices_model.uuid)` |
+| `devices_model` | `devices_model` | `project_uuid=P OR uuid IN (muid 集合)` |
+| `device_real` | `device_real_data` | `project_uuid=P OR device_uuid IN (项目设备 uuid)` |
+
+> 因该项目曾误删后部分回填、数据层可能不自洽，作用域刻意取**并集**，尽量把相关行都纳入。
+
+---
+
+## 4. Git 跟踪策略
+
+`.gitignore` 规则（已落地）：
+
+```gitignore
+backups/*/tables/        # 完整逐表导出（含 18M display_model_layer）不入 git
+# manifest.json (~6K) + minimal_bundle.json (~112K) 默认被跟踪，可追溯
+```
+
+- **纳入 git**：每次备份的 `manifest.json` + `minimal_bundle.json` —— 小体积、可云端恢复、形成变更历史。
+- **不纳入 git**：`tables/`（尤其 `display_model_layer.json` 18M，且画面可由 `build_ncc_dashboard.py` 重建）。
+- 提交建议：每次重大改动后跑一次 `backup_project.py`，把新生成的 `manifest.json` + `minimal_bundle.json` 一并 commit，commit message 记录改了什么。
+
+---
+
+## 5. 涉及文件索引
+
+| 文件 | 作用 |
+|---|---|
+| `build_ncc_dashboard.py` | 重建 display 全部页面（Level 0~3），确定性 page_id |
+| `scripts/backup_project.py` | 项目级备份导出（逐表 JSON + manifest + 精简包）|
+| `scripts/restore_project.py` | 一键幂等恢复（支持备份目录或 minimal_bundle.json）|
+| `scripts/ism_project_backup_core.py` | 备份/恢复共享核心（conf 解析、DB 抽象、作用域、序列化）|
+| `.cursor/rules/ism-display-crash.mdc` | 组件渲染崩溃（`$el=#comment`）速查 |
+| `.cursor/rules/password-chain.mdc` | 密码链路（误改会全员登录失败）|
+
+---
+
+## 坑点：AppRun 整屏白屏 = 首页 cells 被清空
+
+**现象**：`#/AppRun/{MODEL_ID}` 打开后整屏白，左侧树/KPI/拓扑全无；前端能编译、能登录、其它明细页都正常。
+
+**根因**：`display_model_layer` 中**首页行**（`is_home=1`、`page_name='main'`、`page_id=MODEL_ID`）
+的 `components` 被写成空数组 —— base64 解出来是 `{"cells":[]}`（仅 16 字节），
+而 building/floor/device 明细页都是满的（17万~26万字节）。前端首页无 cell 可渲染，故白屏。
+（与前端 `comp.default.data` 容错回归是两码事；那个已修，这个是**数据层**问题。）
+
+**一分钟定位**（OceanBase：`root@ism_tenant`/`ism2024!`@127.0.0.1:2881，库 `ism`）：
+```python
+# 查首页 cells 长度；≈16 即空 → 白屏
+select is_home, page_name, length(components) from display_model_layer
+where model_id='043135ad-44be-e5d8-89be-3e54883c23a8' and is_home=1;
+```
+
+**修复（一条命令）**：
+```bash
+python3 build_ncc_dashboard.py   # 重新生成总览(104 cells)并 UPDATE 写回首页行
+```
+> 跑完应看到 "Level 0 (overview): 104 cells"，首页 `length(components)` 由 16 → ~170832。
+> 验证：`http://localhost:7080/#/AppRun/043135ad-44be-e5d8-89be-3e54883c23a8` 出现 76/76 在线、左侧树、拓扑、趋势。
+
+## 坑点：左侧树点击钻探 = 右侧白屏（page not found）
+
+**现象**：左侧导航树能展开/收起，但点任意节点右侧整屏白；`currentPageUUID` 被清空。
+
+**根因**：`ISMRunTreeNav.vue` 的 `transform()` 用 `v.Sid`（大写）取机柜/设备 sid，但
+`monitortree` 接口返回的节点 `value` 字段是**小写 `sid`** —— `v.Sid` 恒为 `undefined`，
+导致所有 page_id 退化成 `uuid5('ncc-dash-bldg/floor/dev-undefined')`，与 `build_ncc_dashboard.py`
+写入的 page_id 全部错位。前端取页是在 Vuex `ISMDisPlayEditorTool.PCPageList` 里按 `pageUuid`
+精确匹配，匹配不到就 `isFound=false`→`showPage` 走 "page not found" 分支并清空画布 → 白屏。
+
+**定位要点**：
+- `currentPageUUID===""` + 画布 HTML≈空 = 命中 `isFound===false` 分支（ISMRender `showPage`）。
+- 直接 `$EventBus.$emit('GoPage',{ModelId, PageUuid:<库里真实page_id>})` 能正常渲染 → 证明
+  showPage/渲染没问题，是树算的 page_id 不对。
+- 反查：`uuid5('ncc-dash-bldg-undefined').hex == 树算出的值` → 实锤 sid 取成了 undefined。
+- monitortree 节点 `value` 真实字段：小写 `sid`/`type`/`muid`/`name`/`uuid`，大写 `Status`。
+
+**修复**：`ISMRunTreeNav.vue` `transform()` 中 `const sid = v.Sid` → `const sid = v.sid`
+（一处，sid 流向 building/floor/device 全部 page_id）。改后机柜/设备组/设备 pageId 全部
+`inList:true`，点击逐级下钻正常（面包屑 航信机房>1楼配电室>1A1_U11柜，右侧出 9 个设备组）。
+
+## 6. 删除安全机制（软删除 + 确认弹窗 + 回收站）
+
+> 背景：大屏(display)曾被整体误删，且后端删除是**物理删除、无回收站**。本轮为大屏删除链路加上「确认 + 软删 + 可恢复」三道防线。
+
+### 调研结论（改之前的真实链路）
+
+- 前端入口：`ism-front-end-v2/src/pages/disPlayModel/displayModelList.vue` → `delModel()`（已有 `$confirm`）→ `displayModelDelete()` → `POST /api/displayModelDel`。
+- 后端：`routers/router.go` `displayModelDel` → `controllers/displayModelCtl.go::ModelDel` → `models/displayModel.go::DisplayModelDel`。
+- **原实现是物理删除**：`Db.Unscoped().Delete()` 同时硬删 `display_models`（按 `display_model_uid`）与 `display_model_layer`（按 `model_id`），删完无法恢复。
+- 注：`display_model_layer` 的多处读取已带 `deleted_at IS NULL`，且两张表都内嵌 `gorm.Model`（含 `DeletedAt`），具备软删除的字段基础，只是删除时被 `Unscoped()` 跳过了。
+
+### 改动（软删除）
+
+| 层 | 文件 | 改动 |
+|---|---|---|
+| 模型 | `models/displayModel.go` | `DisplayModelDel` **去掉 `Unscoped()`** → GORM 自动写 `deleted_at`（软删）；默认查询（`DisplayModelList`/`DisplayModelGet`）会自动过滤已删项，AppRun 也读不到已删大屏 |
+| 模型 | `models/displayModel.go` | 新增 `DisplayModelDeletedList(projectUUID)`（Unscoped 查 `deleted_at IS NOT NULL`）、`DisplayModelRestore(uid)`（清空两表 `deleted_at`）、`DisplayModelForceDel(uid)`（Unscoped 物理删，回收站二次确认后才走）|
+| 控制器 | `controllers/displayModelCtl.go` | 新增 `ModelDeletedList` / `ModelRestore` / `ModelForceDel`，并写操作日志（彻底删用 Warning 级）|
+| 路由 | `routers/router.go` | 新增 `/displayModelDeletedList`、`/displayModelRestore`、`/displayModelForceDel`（均 `DisplayModelController`）|
+
+> **改后端 Go 必须重编译**：`cd ism_server_user && go build -o ism_server .`（本轮已编译通过，仅 cgo 指针告警，无错误），kill 旧进程后重启 `./ism_server`，`curl http://127.0.0.1:8081/GetSystemParams` 确认 `IsLicense:true`。
+
+### 改动（前端：确认弹窗 + 回收站）
+
+| 文件 | 改动 |
+|---|---|
+| `src/services/api.js` | 新增 `DISPLAYMODELDELETEDLIST` / `DISPLAYMODELRESTORE` / `DISPLAYMODELFORCEDEL` 三个 endpoint |
+| `src/services/displayModel.js` | 新增 `displayModelDeletedList` / `displayModelRestore` / `displayModelForceDelete` |
+| `src/pages/disPlayModel/displayModelList.vue` | 删除 `$confirm` 增加 `content`「删除后可在回收站恢复」+ `okType:'danger'`；列表头加「回收站」按钮 → 弹窗列出已删大屏（名称/描述/删除时间），每项「恢复」「彻底删除」（彻底删除二次确认 danger）|
+| `src/i18n/language.js` | `displayModel` 块新增 zh/en/tw：`DelModelConfirmTips`、`RecycleBin`、`RecycleBinTitle`、`RecycleBinEmpty`、`DeletedTime`、`Restore`/`RestoreSuccess`/`RestoreFailed`、`ForceDelete`/`ForceDelConfirm`/`ForceDelSuccess`/`ForceDelFailed` |
+
+### 接口契约（请求均带 `ProjectUuid` 请求头，与 `displayModelList` 一致）
+
+| 路由 | body | 返回 | 说明 |
+|---|---|---|---|
+| `POST /displayModelDeletedList` | `{}` | `{code:200, list:[{name,description,displayUid,DisplayImage,DisplayType,deletedAt}]}` | 当前项目已软删大屏，按删除时间倒序 |
+| `POST /displayModelRestore` | `{displayUid}` | `{code:200}` | 清空 `display_models`+`display_model_layer` 的 `deleted_at` |
+| `POST /displayModelForceDel` | `{displayUid}` | `{code:200}` | 物理删除，不可恢复 |
+
+### 恢复手段对照（误删后如何找回）
+
+1. **当天误删、还没彻底删** → 应用列表右上「回收站」→ 找到大屏 → 「恢复」（一键，最快）。
+2. **回收站里被彻底删 / 跨机** → 用 §2 的备份恢复：`python3 scripts/restore_project.py backups/航信机房_<时间戳>`，再按需 `python3 build_ncc_dashboard.py` 重建画面。
+3. 备份脚本 `scripts/backup_project.py`、`restore_project.py`、`scripts/ism_project_backup_core.py` 本轮已 `--help` 验证可用，用法见 §2、§3。
+
+---
+
+## 变更历史
+
+- **2026-06-17（大屏绑点按模型选点 + 模拟器数值换算）**：
+  - **绑点按模型选点**：`build_ncc_dashboard.py` 新增/确认 `dp_map_for(muid)`、`detail_params_for(muid)`、`floor_col_dp(muid)`、
+    `_oneline_points_for(muid)` —— 一律按设备模型 muid 取点，UPS（施耐德）与标准电表点名完全不同时分支选点，
+    杜绝"写死电表点名导致 UPS 实时格恒显「—」"。详情页/设备组表/一次系统总图均按模型绑值。坑点沉淀见 `references/pitfalls.md §F1`。
+  - **模拟器数值换算（本轮重点）**：`scripts/modbus_simulator.py` 由"写死原始 uint16 寄存器值"重写为 **DB 驱动 + 反演后端解码**（v9-db-driven）：
+    从 `modbus_devices_data_model` 读每点 `register_address/type/byte_order/conversion_expression`、按 `data_format` 反推字节序，
+    `phys_target()` 按点名给合理物理量（线电压~380V、相电流合理 A、功率为正、频率~50Hz、电池电压~540V/剩余~120min、温度~30℃），
+    `encode_point()` 反演后端解码（Short/Unsigned short 按 `short_is_byteswap` 做 `byteswap16`；Long/Float 按 `CDAB` 重排；系数 K 取自 `{val}*K` 反求寄存器值）。
+    避免逐点硬编码（DRY）。受 `scripts/watchdog.py` 守护，杀旧 PID 自动按新代码拉起，**只重启模拟器、不动 dev server(7080)/后端(8081)**。
+  - **后端 int32 截断规避**：`modbusPthread.go` 对非 Float 整数型点把换算结果 `int32()` 强转截断 → 功率因数 0.95→0。
+    本轮在模拟器侧取功率因数目标 1.0（显示 "1"，合理且非误导）。根因/对策见 `references/pitfalls.md §F2/§F3`。
+  - **浏览器实测（对照 1A1/1A3）**：UPS 详情页设备类型「UPS（施耐德）」、运行中、24h 功率曲线 57~62kW；一次图 1A1_U11 母线电压 381V、A相电流 7A、有功 57kW；
+    `device_real_data` 复核：UPS 输出AB线电压 379V / 输出A相电流 94A / 输出总有功 +56kW / 视在 60kVA / 功率因数 1 / 电池电压 540V / 剩余 120min / 电池温度 31℃ / 频率 50Hz；
+    电表 AB线电压 380V / A相电流 7~8A / 总有功 +57~58kW / 功率因数 1 / 频率 49~50Hz / 正有功电度 12000kWh / A相电流谐波畸变率 2~3%。数值均落到合理量程。
+
+- **2026-06-17（光效增强 + 一次系统总图）**：
+  - **任务 A · 克制流动光效**：前端 `ISMDisPlay/ISMRender.vue` 的 DataV 面板流光（`dv-border-box-13/12::after` 边框扫光）
+    + 呼吸 drop-shadow（`ismPanelBreath`），`pageView.vue` 的全屏漂移光晕（`ismHaloDrift`）+ 斜扫描光带（`ismScanSweep`）。
+    本轮**调克制**：周期拉长（边框/呼吸 ≥8s、扫描带 9s→14s）、峰值透明度压到 0.1~0.3（扫描带 0.75→0.3、边框流 0.55→0.3、呼吸 0.24→0.16），
+    `pointer-events:none` 不拦钻探。浏览器实测「有科技感、缓慢流动、不闪不乱、数据清晰」。套路见 `build-internals.md §7`。
+  - **任务 B · 变电所一次系统总图**：`build_ncc_dashboard.py` 新增 `make_electric()/make_conn_line()/make_move_line()/_oneline_points_for()/build_oneline_cells()`，
+    派生 `page_id_oneline(room_sid)=uuid5('ncc-dash-oneline-{room_sid}')`（挂设备最多的 1楼配电室，page `oneline` id≈137）。
+    画面：进线柜 → 10kV I 段母线（亮线 + `ViewCanvasMoveLineArrow` 横向潮流）→ 1A1/1A3/UPS 三路馈线（竖向连线 + 电气符号 + 实时电气量卡片）。
+    每路按各自 muid 用 `_oneline_points_for` 选点绑值（标准电表：母线电压/A相电流/总有功/合分闸；UPS：输出电压/输出电流/输出有功/运行模式），**不张冠李戴**。
+    入口：总览页 header 右侧「🔌 一次系统总图」按钮（`_nav_action(PAGE_ID_ONELINE)`）；面包屑「全局总览 › 一次系统总图」+「← 返回总览」；
+    各路符号/卡片挂 `_nav_action(page_id_building)` 可下钻到对应机柜。浏览器实测：进入/返回/下钻/实时值/流动均正常，全页 `report_overlaps` 无重叠、`_verify_ncc.py` 边界通过。
+    详细实现（函数/行号/绑点/入口）见 `references/advanced-electric.md`（已由「尚未实现」更新为实现说明）。
+
+- **2026-06-17（删除安全）**：大屏删除链路由**物理删除**改为**软删除 + 回收站**。后端 `DisplayModelDel` 去掉 `Unscoped()` 走 GORM 软删，新增「已删列表/恢复/彻底删」模型函数、控制器方法与三条路由（已 `go build` 通过并重启验证 `IsLicense:true`）；前端删除弹窗加「可在回收站恢复」提示，应用列表新增「回收站」入口（恢复 / 彻底删除二次确认）。备份脚本 `backup_project.py`/`restore_project.py` 复核可用。详见 §6。
+
+- **2026-06-17**：定位并修复 AppRun 整屏白屏 —— 首页 `is_home=1` 行 `components` 为空 `{"cells":[]}`，
+  重跑 `build_ncc_dashboard.py` 写回 104-cell 总览即恢复（KPI 76/76、左侧折叠树、拓扑/趋势/设备总览全部正常）。
+  另确认此前的"启动卡 68%"是误用双重后台（`nohup ... &` 叠加工具后台）导致进程被回收，**非内存问题**；
+  正确启动用工具自身后台（不带内层 `&`），20G 内存约 20s 即 "Compiled successfully"。
+
+- **2026-06-16**：建立备份/恢复机制，生成首个基线备份 `backups/航信机房_202606161758`
+  （377 行，其中 `display_model_layer` 101、`monitor_list` 81（76 台 `type=1`）、`system_journal` 191）。
+  记录本轮大屏改动（设备数 91→76、多页钻探、去闪烁科技感、view-svg-time、AppRun 路由、ViewSvgText/GoPage、误删恢复经过）。

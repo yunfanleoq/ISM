@@ -1,0 +1,6167 @@
+{
+  "project": "中航信数据中心电力监控系统",
+  "devices": [
+    {
+      "name": "1B1_U11_S14_1",
+      "display": "1B1_U11_S14_1",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 1
+    },
+    {
+      "name": "1B1_U11_S15_1",
+      "display": "1B1_U11_S15_1",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 2
+    },
+    {
+      "name": "1B1_U11_S17_1",
+      "display": "1B1_U11_S17_1",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 3
+    },
+    {
+      "name": "1B1_U11_S17_2",
+      "display": "1B1_U11_S17_2",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 4
+    },
+    {
+      "name": "1B1_U11_S17_3",
+      "display": "1B1_U11_S17_3",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 5
+    },
+    {
+      "name": "1B1_U11_S17_4",
+      "display": "1B1_U11_S17_4",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 6
+    },
+    {
+      "name": "1B1_U11_S17_5",
+      "display": "1B1_U11_S17_5",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 7
+    },
+    {
+      "name": "1B1_U11_S17_6",
+      "display": "1B1_U11_S17_6",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 8
+    },
+    {
+      "name": "1B1_U11_S17_7",
+      "display": "1B1_U11_S17_7",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 9
+    },
+    {
+      "name": "1B1_U11_S17_8",
+      "display": "1B1_U11_S17_8",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 10
+    },
+    {
+      "name": "1B1_U11_S17_9",
+      "display": "1B1_U11_S17_9",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 11
+    },
+    {
+      "name": "1B1_U11_S19_1",
+      "display": "1B1_U11_S19_1",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 12
+    },
+    {
+      "name": "1B1_U11_S19_2",
+      "display": "1B1_U11_S19_2",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 13
+    },
+    {
+      "name": "1B1_U11_S19_3",
+      "display": "1B1_U11_S19_3",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 14
+    },
+    {
+      "name": "1B1_U11_S19_4",
+      "display": "1B1_U11_S19_4",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 15
+    },
+    {
+      "name": "1B1_U11_S19_5",
+      "display": "1B1_U11_S19_5",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 16
+    },
+    {
+      "name": "1B1_U11_S19_6",
+      "display": "1B1_U11_S19_6",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 17
+    },
+    {
+      "name": "1B1_U11_S19_7",
+      "display": "1B1_U11_S19_7",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 18
+    },
+    {
+      "name": "1B1_U11_S19_8",
+      "display": "1B1_U11_S19_8",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 19
+    },
+    {
+      "name": "1B1_U11_S19_9",
+      "display": "1B1_U11_S19_9",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 20
+    },
+    {
+      "name": "1B1_U11_S18_1",
+      "display": "1B1_U11_S18_1",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 21
+    },
+    {
+      "name": "1B1_U11_S18_2",
+      "display": "1B1_U11_S18_2",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 22
+    },
+    {
+      "name": "1B1_U11_S18_3",
+      "display": "1B1_U11_S18_3",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 23
+    },
+    {
+      "name": "1B1_U11_S18_4",
+      "display": "1B1_U11_S18_4",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 24
+    },
+    {
+      "name": "1B1_U11_S18_5",
+      "display": "1B1_U11_S18_5",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 25
+    },
+    {
+      "name": "1B1_U11_S18_6",
+      "display": "1B1_U11_S18_6",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 26
+    },
+    {
+      "name": "1B1_U11_S18_7",
+      "display": "1B1_U11_S18_7",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 27
+    },
+    {
+      "name": "1B1_U11_S18_8",
+      "display": "1B1_U11_S18_8",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 28
+    },
+    {
+      "name": "1B1_U11_S18_9",
+      "display": "1B1_U11_S18_9",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 29
+    },
+    {
+      "name": "1B1_U11_S16_1",
+      "display": "1B1_U11_S16_1",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 30
+    },
+    {
+      "name": "1B1_U11_S16_2",
+      "display": "1B1_U11_S16_2",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 31
+    },
+    {
+      "name": "1B1_U11_S16_3",
+      "display": "1B1_U11_S16_3",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 32
+    },
+    {
+      "name": "1B1_U11_S16_4",
+      "display": "1B1_U11_S16_4",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 33
+    },
+    {
+      "name": "1B1_U11_S16_5",
+      "display": "1B1_U11_S16_5",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 34
+    },
+    {
+      "name": "1B1_U11_S16_6",
+      "display": "1B1_U11_S16_6",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 35
+    },
+    {
+      "name": "1B1_U11_S16_7",
+      "display": "1B1_U11_S16_7",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 36
+    },
+    {
+      "name": "1B1_U11_S16_8",
+      "display": "1B1_U11_S16_8",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 37
+    },
+    {
+      "name": "1B1_U11_S16_9",
+      "display": "1B1_U11_S16_9",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 38
+    },
+    {
+      "name": "1B3_U11_D13_1",
+      "display": "1B3_U11_D13_1",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 39
+    },
+    {
+      "name": "1B3_U11_D13_2",
+      "display": "1B3_U11_D13_2",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 40
+    },
+    {
+      "name": "1B3_U11_D13_3",
+      "display": "1B3_U11_D13_3",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 41
+    },
+    {
+      "name": "1B3_U11_D13_4",
+      "display": "1B3_U11_D13_4",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 42
+    },
+    {
+      "name": "1B3_U11_D13_5",
+      "display": "1B3_U11_D13_5",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 43
+    },
+    {
+      "name": "1B3_U11_D13_6",
+      "display": "1B3_U11_D13_6",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 44
+    },
+    {
+      "name": "1B3_U11_D13_7",
+      "display": "1B3_U11_D13_7",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 45
+    },
+    {
+      "name": "1B3_U11_D14_1",
+      "display": "1B3_U11_D14_1",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 46
+    },
+    {
+      "name": "1B3_U11_D14_2",
+      "display": "1B3_U11_D14_2",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 47
+    },
+    {
+      "name": "1B3_U11_D14_3",
+      "display": "1B3_U11_D14_3",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 48
+    },
+    {
+      "name": "1B3_U11_D14_4",
+      "display": "1B3_U11_D14_4",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 49
+    },
+    {
+      "name": "1B3_U11_D14_5",
+      "display": "1B3_U11_D14_5",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 50
+    },
+    {
+      "name": "1B3_U11_D14_6",
+      "display": "1B3_U11_D14_6",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 51
+    },
+    {
+      "name": "1B3_U11_D14_7",
+      "display": "1B3_U11_D14_7",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 52
+    },
+    {
+      "name": "1B3_U11_D14_8",
+      "display": "1B3_U11_D14_8",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 53
+    },
+    {
+      "name": "1B3_U11_D14_9",
+      "display": "1B3_U11_D14_9",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 54
+    },
+    {
+      "name": "1B3_U11_D15_1",
+      "display": "1B3_U11_D15_1",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 55
+    },
+    {
+      "name": "1B3_U11_D15_2",
+      "display": "1B3_U11_D15_2",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 56
+    },
+    {
+      "name": "1B3_U11_D15_3",
+      "display": "1B3_U11_D15_3",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 57
+    },
+    {
+      "name": "1B3_U11_D15_4",
+      "display": "1B3_U11_D15_4",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 58
+    },
+    {
+      "name": "1B3_U11_D15_5",
+      "display": "1B3_U11_D15_5",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 59
+    },
+    {
+      "name": "1B3_U11_D15_6",
+      "display": "1B3_U11_D15_6",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 60
+    },
+    {
+      "name": "1B3_U11_D15_7",
+      "display": "1B3_U11_D15_7",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 61
+    },
+    {
+      "name": "1B3_U11_D15_8",
+      "display": "1B3_U11_D15_8",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 62
+    },
+    {
+      "name": "1B3_U11_D15_9",
+      "display": "1B3_U11_D15_9",
+      "modelName": "A20",
+      "templateType": "A20",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 63
+    },
+    {
+      "name": "1B1_U11_S11_1",
+      "display": "1B1_U11_S11_1",
+      "modelName": "A40",
+      "templateType": "A40",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 64
+    },
+    {
+      "name": "1B1_U11_S11_2",
+      "display": "1B1_U11_S11_2",
+      "modelName": "A40",
+      "templateType": "A40",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 65
+    },
+    {
+      "name": "1B1_U11_S12_1",
+      "display": "1B1_U11_S12_1",
+      "modelName": "A40",
+      "templateType": "A40",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 66
+    },
+    {
+      "name": "1B1_U11_S12_2",
+      "display": "1B1_U11_S12_2",
+      "modelName": "A40",
+      "templateType": "A40",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 67
+    },
+    {
+      "name": "1B1_U11_S13_1",
+      "display": "1B1_U11_S13_1",
+      "modelName": "A40",
+      "templateType": "A40",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 68
+    },
+    {
+      "name": "1B3_U11_D11_1",
+      "display": "1B3_U11_D11_1",
+      "modelName": "A40",
+      "templateType": "A40",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 69
+    },
+    {
+      "name": "1B3_U11_D11_2",
+      "display": "1B3_U11_D11_2",
+      "modelName": "A40",
+      "templateType": "A40",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 70
+    },
+    {
+      "name": "1B3_U12_D11_1",
+      "display": "1B3_U12_D11_1",
+      "modelName": "A40",
+      "templateType": "A40",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U12柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 71
+    },
+    {
+      "name": "1B3_U12_D11_2",
+      "display": "1B3_U12_D11_2",
+      "modelName": "A40",
+      "templateType": "A40",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U12柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 72
+    },
+    {
+      "name": "1B3_U11",
+      "display": "1B3_U11",
+      "modelName": "施耐德UPS",
+      "templateType": "施耐德UPS",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 73
+    },
+    {
+      "name": "1B3_U12",
+      "display": "1B3_U12",
+      "modelName": "施耐德UPS",
+      "templateType": "施耐德UPS",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U12柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 74
+    },
+    {
+      "name": "1B3_U13",
+      "display": "1B3_U13",
+      "modelName": "施耐德UPS",
+      "templateType": "施耐德UPS",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B3_U13柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 75
+    },
+    {
+      "name": "1B1_U11",
+      "display": "1B1_U11",
+      "modelName": "伊顿UPS",
+      "templateType": "伊顿UPS",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U11柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 76
+    },
+    {
+      "name": "1B1_U12",
+      "display": "1B1_U12",
+      "modelName": "伊顿UPS",
+      "templateType": "伊顿UPS",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U12柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 77
+    },
+    {
+      "name": "1B1_U13",
+      "display": "1B1_U13",
+      "modelName": "伊顿UPS",
+      "templateType": "伊顿UPS",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U13柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 78
+    },
+    {
+      "name": "1B1_U14",
+      "display": "1B1_U14",
+      "modelName": "伊顿UPS",
+      "templateType": "伊顿UPS",
+      "building": "1B",
+      "room": "1B配电室",
+      "cabinet": "1B1_U14柜",
+      "gatewayIP": "172.31.4.15",
+      "gatewayBackup": "172.20.255.15",
+      "port": 502,
+      "slaveId": 79
+    },
+    {
+      "name": "SJJF2A3_1A",
+      "display": "断路器-后沙峪AZP-2A3机房模块-（2A3-A列头）",
+      "modelName": "列头柜",
+      "templateType": "列头柜",
+      "building": "2A",
+      "room": "2A3模块",
+      "cabinet": "2A3模块-1列",
+      "gatewayIP": "172.20.255.25",
+      "gatewayBackup": "172.20.255.25",
+      "port": 502,
+      "slaveId": 80
+    },
+    {
+      "name": "SJJF2A3_1B",
+      "display": "断路器-后沙峪AZP-2A3机房模块-（2A3-A列尾）",
+      "modelName": "列头柜",
+      "templateType": "列头柜",
+      "building": "2A",
+      "room": "2A3模块",
+      "cabinet": "2A3模块-1列",
+      "gatewayIP": "172.20.255.25",
+      "gatewayBackup": "172.20.255.25",
+      "port": 502,
+      "slaveId": 81
+    },
+    {
+      "name": "SJJF2A3_2A",
+      "display": "断路器-后沙峪AZP-2A3机房模块-（2A3-B列头）",
+      "modelName": "列头柜",
+      "templateType": "列头柜",
+      "building": "2A",
+      "room": "2A3模块",
+      "cabinet": "2A3模块-2列",
+      "gatewayIP": "172.20.255.25",
+      "gatewayBackup": "172.20.255.25",
+      "port": 502,
+      "slaveId": 82
+    },
+    {
+      "name": "SJJF2A3_2B",
+      "display": "断路器-后沙峪AZP-2A3机房模块-（2A3-B列尾）",
+      "modelName": "列头柜",
+      "templateType": "列头柜",
+      "building": "2A",
+      "room": "2A3模块",
+      "cabinet": "2A3模块-2列",
+      "gatewayIP": "172.20.255.25",
+      "gatewayBackup": "172.20.255.25",
+      "port": 502,
+      "slaveId": 83
+    },
+    {
+      "name": "SJJF2A3_3A",
+      "display": "断路器-后沙峪AZP-2A3机房模块-（2A3-C列头）",
+      "modelName": "列头柜",
+      "templateType": "列头柜",
+      "building": "2A",
+      "room": "2A3模块",
+      "cabinet": "2A3模块-3列",
+      "gatewayIP": "172.20.255.25",
+      "gatewayBackup": "172.20.255.25",
+      "port": 502,
+      "slaveId": 84
+    },
+    {
+      "name": "SJJF2A3_3B",
+      "display": "断路器-后沙峪AZP-2A3机房模块-（2A3-C列尾）",
+      "modelName": "列头柜",
+      "templateType": "列头柜",
+      "building": "2A",
+      "room": "2A3模块",
+      "cabinet": "2A3模块-3列",
+      "gatewayIP": "172.20.255.25",
+      "gatewayBackup": "172.20.255.25",
+      "port": 502,
+      "slaveId": 85
+    },
+    {
+      "name": "SJJF2A3_4A",
+      "display": "断路器-后沙峪AZP-2A3机房模块-（2A3-D列头）",
+      "modelName": "列头柜",
+      "templateType": "列头柜",
+      "building": "2A",
+      "room": "2A3模块",
+      "cabinet": "2A3模块-4列",
+      "gatewayIP": "172.20.255.25",
+      "gatewayBackup": "172.20.255.25",
+      "port": 502,
+      "slaveId": 86
+    },
+    {
+      "name": "SJJF2A3_4B",
+      "display": "断路器-后沙峪AZP-2A3机房模块-（2A3-D列尾）",
+      "modelName": "列头柜",
+      "templateType": "列头柜",
+      "building": "2A",
+      "room": "2A3模块",
+      "cabinet": "2A3模块-4列",
+      "gatewayIP": "172.20.255.25",
+      "gatewayBackup": "172.20.255.25",
+      "port": 502,
+      "slaveId": 87
+    },
+    {
+      "name": "SJJF2A3_5A",
+      "display": "断路器-后沙峪AZP-2A3机房模块-（2A3-E列头）",
+      "modelName": "列头柜",
+      "templateType": "列头柜",
+      "building": "2A",
+      "room": "2A3模块",
+      "cabinet": "2A3模块-5列",
+      "gatewayIP": "172.20.255.25",
+      "gatewayBackup": "172.20.255.25",
+      "port": 502,
+      "slaveId": 88
+    },
+    {
+      "name": "SJJF2A3_5B",
+      "display": "断路器-后沙峪AZP-2A3机房模块-（2A3-E列尾）",
+      "modelName": "列头柜",
+      "templateType": "列头柜",
+      "building": "2A",
+      "room": "2A3模块",
+      "cabinet": "2A3模块-5列",
+      "gatewayIP": "172.20.255.25",
+      "gatewayBackup": "172.20.255.25",
+      "port": 502,
+      "slaveId": 89
+    },
+    {
+      "name": "SJJF2A3_6A",
+      "display": "断路器-后沙峪AZP-2A3机房模块-（2A3-F列头）",
+      "modelName": "列头柜",
+      "templateType": "列头柜",
+      "building": "2A",
+      "room": "2A3模块",
+      "cabinet": "2A3模块-6列",
+      "gatewayIP": "172.20.255.25",
+      "gatewayBackup": "172.20.255.25",
+      "port": 502,
+      "slaveId": 90
+    },
+    {
+      "name": "SJJF2A3_6B",
+      "display": "断路器-后沙峪AZP-2A3机房模块-（2A3-F列尾）",
+      "modelName": "列头柜",
+      "templateType": "列头柜",
+      "building": "2A",
+      "room": "2A3模块",
+      "cabinet": "2A3模块-6列",
+      "gatewayIP": "172.20.255.25",
+      "gatewayBackup": "172.20.255.25",
+      "port": 502,
+      "slaveId": 91
+    },
+    {
+      "name": "SJJF2A3_7A",
+      "display": "断路器-后沙峪AZP-2A3机房模块-（2A3-G列头）",
+      "modelName": "列头柜",
+      "templateType": "列头柜",
+      "building": "2A",
+      "room": "2A3模块",
+      "cabinet": "2A3模块-7列",
+      "gatewayIP": "172.20.255.25",
+      "gatewayBackup": "172.20.255.25",
+      "port": 502,
+      "slaveId": 92
+    },
+    {
+      "name": "SJJF2A3_7B",
+      "display": "断路器-后沙峪AZP-2A3机房模块-（2A3-G列尾）",
+      "modelName": "列头柜",
+      "templateType": "列头柜",
+      "building": "2A",
+      "room": "2A3模块",
+      "cabinet": "2A3模块-7列",
+      "gatewayIP": "172.20.255.25",
+      "gatewayBackup": "172.20.255.25",
+      "port": 502,
+      "slaveId": 93
+    },
+    {
+      "name": "SJJF2A3_8A",
+      "display": "断路器-后沙峪AZP-2A3机房模块-（2A3-H列头）",
+      "modelName": "列头柜",
+      "templateType": "列头柜",
+      "building": "2A",
+      "room": "2A3模块",
+      "cabinet": "2A3模块-8列",
+      "gatewayIP": "172.20.255.25",
+      "gatewayBackup": "172.20.255.25",
+      "port": 502,
+      "slaveId": 94
+    },
+    {
+      "name": "SJJF2A3_8B",
+      "display": "断路器-后沙峪AZP-2A3机房模块-（2A3-H列尾）",
+      "modelName": "列头柜",
+      "templateType": "列头柜",
+      "building": "2A",
+      "room": "2A3模块",
+      "cabinet": "2A3模块-8列",
+      "gatewayIP": "172.20.255.25",
+      "gatewayBackup": "172.20.255.25",
+      "port": 502,
+      "slaveId": 95
+    },
+    {
+      "name": "2A1_U2_DX17_1",
+      "display": "2A1_U2_DX17_1",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 96
+    },
+    {
+      "name": "2A1_U2_DX17_2",
+      "display": "2A1_U2_DX17_2",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 97
+    },
+    {
+      "name": "2A1_U2_DX17_3",
+      "display": "2A1_U2_DX17_3",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 98
+    },
+    {
+      "name": "2A1_U2_DX17_4",
+      "display": "2A1_U2_DX17_4",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 99
+    },
+    {
+      "name": "2A1_U2_DX18_1",
+      "display": "2A1_U2_DX18_1",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 100
+    },
+    {
+      "name": "2A1_U2_DX18_2",
+      "display": "2A1_U2_DX18_2",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 101
+    },
+    {
+      "name": "2A1_U2_DX18_3",
+      "display": "2A1_U2_DX18_3",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 102
+    },
+    {
+      "name": "2A1_U2_DX18_4",
+      "display": "2A1_U2_DX18_4",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 103
+    },
+    {
+      "name": "2A1_U2_DX19_1",
+      "display": "2A1_U2_DX19_1",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 104
+    },
+    {
+      "name": "2A1_U2_DX19_2",
+      "display": "2A1_U2_DX19_2",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 105
+    },
+    {
+      "name": "2A1_U2_DX19_3",
+      "display": "2A1_U2_DX19_3",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 106
+    },
+    {
+      "name": "2A1_U2_DX19_4",
+      "display": "2A1_U2_DX19_4",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 107
+    },
+    {
+      "name": "2A1_U2_DX13_1",
+      "display": "2A1_U2_DX13_1",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 108
+    },
+    {
+      "name": "2A1_U2_DX13_2",
+      "display": "2A1_U2_DX13_2",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 109
+    },
+    {
+      "name": "2A1_U2_DX13_3",
+      "display": "2A1_U2_DX13_3",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 110
+    },
+    {
+      "name": "2A1_U2_DX13_4",
+      "display": "2A1_U2_DX13_4",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 111
+    },
+    {
+      "name": "2A1_U2_DX14_1",
+      "display": "2A1_U2_DX14_1",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 112
+    },
+    {
+      "name": "2A1_U2_DX14_2",
+      "display": "2A1_U2_DX14_2",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 113
+    },
+    {
+      "name": "2A1_U2_DX14_3",
+      "display": "2A1_U2_DX14_3",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 114
+    },
+    {
+      "name": "2A1_U2_DX14_4",
+      "display": "2A1_U2_DX14_4",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 115
+    },
+    {
+      "name": "2A1_U2_DX110_1",
+      "display": "2A1_U2_DX110_1",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 116
+    },
+    {
+      "name": "2A1_U2_DX110_2",
+      "display": "2A1_U2_DX110_2",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 117
+    },
+    {
+      "name": "2A1_U2_DX110_3",
+      "display": "2A1_U2_DX110_3",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 118
+    },
+    {
+      "name": "2A1_U2_DX110_4",
+      "display": "2A1_U2_DX110_4",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 119
+    },
+    {
+      "name": "2A1_U2_D14_1",
+      "display": "2A1_U2_D14_1",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 120
+    },
+    {
+      "name": "2A1_U2_D15_1",
+      "display": "2A1_U2_D15_1",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 121
+    },
+    {
+      "name": "2A1_U2_D16_1",
+      "display": "2A1_U2_D16_1",
+      "modelName": "仪表",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 122
+    },
+    {
+      "name": "2A1_U2_DX15_1",
+      "display": "2A1_U2_DX15_1",
+      "modelName": "仪表_2",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 123
+    },
+    {
+      "name": "2A1_U2_DX16_1",
+      "display": "2A1_U2_DX16_1",
+      "modelName": "仪表_2",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 124
+    },
+    {
+      "name": "2A1_U2_DX11_1",
+      "display": "2A1_U2_DX11_1",
+      "modelName": "仪表_2",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 125
+    },
+    {
+      "name": "2A1_U2_DX12_1",
+      "display": "2A1_U2_DX12_1",
+      "modelName": "仪表_2",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 126
+    },
+    {
+      "name": "2A1_U2_D11_1",
+      "display": "2A1_U2_D11_1",
+      "modelName": "仪表_2",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 127
+    },
+    {
+      "name": "2A1_U2_D12_1",
+      "display": "2A1_U2_D12_1",
+      "modelName": "仪表_2",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 128
+    },
+    {
+      "name": "2A1_U2_D13_1",
+      "display": "2A1_U2_D13_1",
+      "modelName": "仪表_2",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 129
+    },
+    {
+      "name": "2A1_U2_D11_2",
+      "display": "2A1_U2_D11_2",
+      "modelName": "仪表_2",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 130
+    },
+    {
+      "name": "2A1_U2_D12_2",
+      "display": "2A1_U2_D12_2",
+      "modelName": "仪表_2",
+      "templateType": "仪表",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "U2柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 131
+    },
+    {
+      "name": "2A1_P21",
+      "display": "2A1_P21",
+      "modelName": "UPS",
+      "templateType": "UPS",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "P21柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 132
+    },
+    {
+      "name": "2A1_P22",
+      "display": "2A1_P22",
+      "modelName": "UPS",
+      "templateType": "UPS",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "P22柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 133
+    },
+    {
+      "name": "2A1_P23",
+      "display": "2A1_P23",
+      "modelName": "UPS",
+      "templateType": "UPS",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "P23柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 134
+    },
+    {
+      "name": "2A1_P24",
+      "display": "2A1_P24",
+      "modelName": "UPS",
+      "templateType": "UPS",
+      "building": "2A",
+      "room": "2A2配电室",
+      "cabinet": "P24柜",
+      "gatewayIP": "172.31.4.24",
+      "gatewayBackup": "",
+      "port": 502,
+      "slaveId": 135
+    }
+  ],
+  "models": {
+    "A20": {
+      "name": "A20",
+      "modelType": "A20",
+      "aiCount": 31,
+      "diCount": 4,
+      "aiPoints": [
+        {
+          "name": "AB线电压",
+          "offset": 0,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "BC线电压",
+          "offset": 2,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "CA线电压",
+          "offset": 4,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "频率",
+          "offset": 6,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "A相电流",
+          "offset": 8,
+          "factor": 0.001,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "B相电流",
+          "offset": 10,
+          "factor": 0.001,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "C相电流",
+          "offset": 12,
+          "factor": 0.001,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "中性线电流",
+          "offset": 14,
+          "factor": 0.001,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "总有功功率",
+          "offset": 16,
+          "factor": 0.01,
+          "parseMode": 179,
+          "span": 2
+        },
+        {
+          "name": "总无功功率",
+          "offset": 18,
+          "factor": 0.01,
+          "parseMode": 179,
+          "span": 2
+        },
+        {
+          "name": "总视在功率",
+          "offset": 20,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "总功率因数",
+          "offset": 22,
+          "factor": 0.001,
+          "parseMode": 179,
+          "span": 2
+        },
+        {
+          "name": "正有功电度",
+          "offset": 24,
+          "factor": 1,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "A相电流谐波畸变率",
+          "offset": 26,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "B相电流谐波畸变率",
+          "offset": 27,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "C相电流谐波畸变率",
+          "offset": 28,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "中性线电流谐波畸变率",
+          "offset": 29,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": null
+        }
+      ],
+      "diPoints": [
+        {
+          "name": "输入状态2故障状态",
+          "offset": 1,
+          "bit": null
+        },
+        {
+          "name": "输入状态1合分闸状态",
+          "offset": 2,
+          "bit": null
+        },
+        {
+          "name": "主通讯状态",
+          "offset": 3,
+          "bit": null
+        }
+      ]
+    },
+    "A40": {
+      "name": "A40",
+      "modelType": "A40",
+      "aiCount": 42,
+      "diCount": 3,
+      "aiPoints": [
+        {
+          "name": "A相电流",
+          "offset": 0,
+          "factor": 0.001,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "B相电流",
+          "offset": 2,
+          "factor": 0.001,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "C相电流",
+          "offset": 4,
+          "factor": 0.001,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "中性线电流",
+          "offset": 6,
+          "factor": 0.001,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "AB线电压",
+          "offset": 8,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "BC线电压",
+          "offset": 10,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "CA线电压",
+          "offset": 12,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "A相电压",
+          "offset": 14,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "B相电压",
+          "offset": 16,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "C相电压",
+          "offset": 18,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "频率",
+          "offset": 20,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "总有功功率",
+          "offset": 22,
+          "factor": 0.01,
+          "parseMode": 179,
+          "span": 2
+        },
+        {
+          "name": "总无功功率",
+          "offset": 24,
+          "factor": 0.01,
+          "parseMode": 179,
+          "span": 2
+        },
+        {
+          "name": "总视在功率",
+          "offset": 26,
+          "factor": 0.01,
+          "parseMode": 179,
+          "span": 2
+        },
+        {
+          "name": "总功率因数",
+          "offset": 28,
+          "factor": 0.001,
+          "parseMode": 179,
+          "span": 2
+        },
+        {
+          "name": "正有功电度",
+          "offset": 30,
+          "factor": 177,
+          "parseMode": 1,
+          "span": 2
+        },
+        {
+          "name": "负有功电度",
+          "offset": 32,
+          "factor": 177,
+          "parseMode": 1,
+          "span": 2
+        },
+        {
+          "name": "A相电流谐波畸变率",
+          "offset": 34,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "B相电流谐波畸变率",
+          "offset": 35,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "C相电流谐波畸变率",
+          "offset": 36,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "中性电流谐波畸变率",
+          "offset": 37,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "UAB线电压谐波畸变率",
+          "offset": 38,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "UBC线电压谐波畸变率",
+          "offset": 39,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "UCA线电压谐波畸变率",
+          "offset": 40,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": null
+        }
+      ],
+      "diPoints": [
+        {
+          "name": "输入状态1合分闸状态",
+          "offset": 0,
+          "bit": null
+        },
+        {
+          "name": "输入状态2故障状态",
+          "offset": 1,
+          "bit": null
+        },
+        {
+          "name": "主通讯状态",
+          "offset": 2,
+          "bit": null
+        }
+      ]
+    },
+    "施耐德UPS": {
+      "name": "施耐德UPS",
+      "modelType": "施耐德UPS",
+      "aiCount": 45,
+      "diCount": 1,
+      "aiPoints": [
+        {
+          "name": "UPS使用模式",
+          "offset": 0,
+          "factor": null,
+          "parseMode": null,
+          "span": 1
+        },
+        {
+          "name": "UPS逆变器内部故障",
+          "offset": 1,
+          "factor": null,
+          "parseMode": null,
+          "span": 1
+        },
+        {
+          "name": "UPS电池开关状态",
+          "offset": 2,
+          "factor": null,
+          "parseMode": null,
+          "span": 1
+        },
+        {
+          "name": "UPS主路开关状态",
+          "offset": 3,
+          "factor": null,
+          "parseMode": null,
+          "span": 1
+        },
+        {
+          "name": "UPS旁路状态",
+          "offset": 4,
+          "factor": null,
+          "parseMode": null,
+          "span": 1
+        },
+        {
+          "name": "UPS旁路内部硬件错误",
+          "offset": 5,
+          "factor": null,
+          "parseMode": null,
+          "span": 1
+        },
+        {
+          "name": "UPS充电状态",
+          "offset": 6,
+          "factor": null,
+          "parseMode": null,
+          "span": 1
+        },
+        {
+          "name": "主路A相电流",
+          "offset": 7,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "主路B相电流",
+          "offset": 8,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "主路C相电流",
+          "offset": 9,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "旁路A相电流",
+          "offset": 10,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "旁路B相电流",
+          "offset": 11,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "旁路C相电流",
+          "offset": 12,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "输出A相电流",
+          "offset": 13,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "输出B相电流",
+          "offset": 14,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "输出C相电流",
+          "offset": 15,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "电池电流",
+          "offset": 16,
+          "factor": 73,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "主路输入AB线电压",
+          "offset": 17,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "主路输入BC线电压",
+          "offset": 18,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "主路输入CA线电压",
+          "offset": 19,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "旁路输入A相电压",
+          "offset": 20,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "旁路输入B相电压",
+          "offset": 21,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "旁路输入C相电压",
+          "offset": 22,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "旁路输入AB线电压",
+          "offset": 23,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "旁路输入BC线电压",
+          "offset": 24,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "旁路输入CA线电压",
+          "offset": 25,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "输出A相电压",
+          "offset": 26,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "输出B相电压",
+          "offset": 27,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "输出C相电压",
+          "offset": 28,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "输出AB线电压",
+          "offset": 29,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "输出BC线电压",
+          "offset": 30,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "输出CA线电压",
+          "offset": 31,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "电池电压",
+          "offset": 32,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "输出总有功功率",
+          "offset": 33,
+          "factor": 73,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "输出视在功率",
+          "offset": 34,
+          "factor": 73,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "输出功率因数",
+          "offset": 35,
+          "factor": 0.01,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "主路输入频率",
+          "offset": 36,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "旁路输入频率",
+          "offset": 37,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输出频率",
+          "offset": 38,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "电池剩余运行时间",
+          "offset": 39,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "电池温度",
+          "offset": 40,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "主路输入A相电压",
+          "offset": 41,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "主路输入B相电压",
+          "offset": 42,
+          "factor": 71,
+          "parseMode": 1,
+          "span": 1
+        },
+        {
+          "name": "主路输入C相电压",
+          "offset": 43,
+          "factor": 71,
+          "parseMode": 1,
+          "span": null
+        }
+      ],
+      "diPoints": [
+        {
+          "name": "通讯状态",
+          "offset": 0,
+          "bit": null
+        }
+      ]
+    },
+    "伊顿UPS": {
+      "name": "伊顿UPS",
+      "modelType": "伊顿UPS",
+      "aiCount": 29,
+      "diCount": 23,
+      "aiPoints": [
+        {
+          "name": "输入A相电流",
+          "offset": 0,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输入B相电流",
+          "offset": 1,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输入C相电流",
+          "offset": 2,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输出有功功率",
+          "offset": 3,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "输入有功功率",
+          "offset": 4,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "输出视在功率",
+          "offset": 5,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输入视在功率",
+          "offset": 6,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输出功率因数",
+          "offset": 7,
+          "factor": 0.01,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "输入功率因数",
+          "offset": 8,
+          "factor": 0.01,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "输出频率",
+          "offset": 9,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输入频率",
+          "offset": 10,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "旁路频率",
+          "offset": 11,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "电池电流",
+          "offset": 12,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "电池电压",
+          "offset": 13,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "电池剩余容量百分比",
+          "offset": 14,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "电池后备时间",
+          "offset": 15,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "旁路线电压UCA",
+          "offset": 16,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "旁路线电压UBC",
+          "offset": 17,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "旁路线电压UCA",
+          "offset": 18,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输入线电压UAB",
+          "offset": 19,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输入线电压UBC",
+          "offset": 20,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输入线电压UCA",
+          "offset": 21,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "负载A相电流",
+          "offset": 22,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "负载B相电流",
+          "offset": 23,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "负载C相电流",
+          "offset": 24,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输出线电压UAB",
+          "offset": 25,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输出线电压UBC",
+          "offset": 26,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输出线电压UCA",
+          "offset": 27,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": null
+        }
+      ],
+      "diPoints": [
+        {
+          "name": "电池模式",
+          "offset": 0,
+          "bit": 0
+        },
+        {
+          "name": "旁路模式",
+          "offset": 1,
+          "bit": 0
+        },
+        {
+          "name": "正常模式",
+          "offset": 2,
+          "bit": 0
+        },
+        {
+          "name": "逆变过压",
+          "offset": 3,
+          "bit": 0
+        },
+        {
+          "name": "逆变欠压",
+          "offset": 4,
+          "bit": 0
+        },
+        {
+          "name": "旁路过压",
+          "offset": 5,
+          "bit": 0
+        },
+        {
+          "name": "旁路欠压",
+          "offset": 6,
+          "bit": 0
+        },
+        {
+          "name": "输入过压",
+          "offset": 7,
+          "bit": 0
+        },
+        {
+          "name": "输入欠压",
+          "offset": 8,
+          "bit": 0
+        },
+        {
+          "name": "输出过压",
+          "offset": 9,
+          "bit": 0
+        },
+        {
+          "name": "输出欠压",
+          "offset": 10,
+          "bit": 0
+        },
+        {
+          "name": "逆变过温",
+          "offset": 11,
+          "bit": 0
+        },
+        {
+          "name": "输出过载",
+          "offset": 12,
+          "bit": 0
+        },
+        {
+          "name": "逆变故障",
+          "offset": 13,
+          "bit": 0
+        },
+        {
+          "name": "电池欠压",
+          "offset": 14,
+          "bit": 0
+        },
+        {
+          "name": "电池过压",
+          "offset": 15,
+          "bit": 0
+        },
+        {
+          "name": "电池接触器状态",
+          "offset": 16,
+          "bit": 0
+        },
+        {
+          "name": "旁路开关状态",
+          "offset": 17,
+          "bit": 0
+        },
+        {
+          "name": "输出开关状态",
+          "offset": 18,
+          "bit": 0
+        },
+        {
+          "name": "风扇故障",
+          "offset": 19,
+          "bit": 0
+        },
+        {
+          "name": "UPS机柜过温",
+          "offset": 20,
+          "bit": 0
+        },
+        {
+          "name": "输入开关状态",
+          "offset": 21,
+          "bit": 0
+        },
+        {
+          "name": "主通讯状态",
+          "offset": 22,
+          "bit": 0
+        }
+      ]
+    },
+    "列头柜": {
+      "name": "列头柜",
+      "modelType": "列头柜",
+      "aiCount": 478,
+      "diCount": 117,
+      "aiPoints": [
+        {
+          "name": "主回路A相电压",
+          "offset": 2,
+          "factor": 0.01,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主回路B相电压",
+          "offset": 3,
+          "factor": 0.01,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主回路C相电压",
+          "offset": 4,
+          "factor": 0.01,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主回路AB线电压",
+          "offset": 5,
+          "factor": 0.01,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主回路BC线电压",
+          "offset": 6,
+          "factor": 0.01,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主回路CA线电压",
+          "offset": 7,
+          "factor": 0.01,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主回路A相电流",
+          "offset": 8,
+          "factor": 0.08,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主回路B相电流",
+          "offset": 9,
+          "factor": 0.08,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主回路C相电流",
+          "offset": 10,
+          "factor": 0.08,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主回路有功功率",
+          "offset": 11,
+          "factor": 0.008,
+          "parseMode": 133,
+          "span": 2
+        },
+        {
+          "name": "主回路无功功率",
+          "offset": 13,
+          "factor": 0.008,
+          "parseMode": 73,
+          "span": 2
+        },
+        {
+          "name": "主回路功率因数总和",
+          "offset": 15,
+          "factor": 0.001,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "主回路A相有功",
+          "offset": 16,
+          "factor": 0.008,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "主回路B相有功",
+          "offset": 17,
+          "factor": 0.008,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "主回路C相有功",
+          "offset": 18,
+          "factor": 0.008,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "主回路A相无功",
+          "offset": 19,
+          "factor": 0.008,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "主回路B相无功",
+          "offset": 20,
+          "factor": 0.008,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "主回路C相无功",
+          "offset": 21,
+          "factor": 0.008,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "主回路A相功率因数",
+          "offset": 22,
+          "factor": 0.001,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "主回路B相功率因数",
+          "offset": 23,
+          "factor": 0.001,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "主回路C相功率因数",
+          "offset": 24,
+          "factor": 0.001,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "主回路频率",
+          "offset": 25,
+          "factor": 0.01,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主回路有功电度总和",
+          "offset": 26,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "主回路无功电度总和",
+          "offset": 28,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 3
+        },
+        {
+          "name": "主回路A相电压谐波畸变率",
+          "offset": 31,
+          "factor": 0.02,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主回路B相电压谐波畸变率",
+          "offset": 32,
+          "factor": 0.02,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主回路C相电压谐波畸变率",
+          "offset": 33,
+          "factor": 0.02,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主回路A相电流谐波畸变率",
+          "offset": 34,
+          "factor": 0.02,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主回路B相电流谐波畸变率",
+          "offset": 35,
+          "factor": 0.02,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主回路C相电流谐波畸变率",
+          "offset": 36,
+          "factor": 0.02,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主回路中性线电流",
+          "offset": 37,
+          "factor": 0.08,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主回路线电压均值",
+          "offset": 38,
+          "factor": 0.01,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主回路相电压均值",
+          "offset": 39,
+          "factor": 0.01,
+          "parseMode": 71,
+          "span": 5
+        },
+        {
+          "name": "主回路零地电压",
+          "offset": 44,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 73
+        },
+        {
+          "name": "支路电流101A",
+          "offset": 117,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流101B",
+          "offset": 118,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流101C",
+          "offset": 119,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流102A",
+          "offset": 120,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流102B",
+          "offset": 121,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流102C",
+          "offset": 122,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流103A",
+          "offset": 123,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流103B",
+          "offset": 124,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流103C",
+          "offset": 125,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流104A",
+          "offset": 126,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流104B",
+          "offset": 127,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流104C",
+          "offset": 128,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流105A",
+          "offset": 129,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流105B",
+          "offset": 130,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流105C",
+          "offset": 131,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流106A",
+          "offset": 132,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流106B",
+          "offset": 133,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流106C",
+          "offset": 134,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流201A",
+          "offset": 135,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流201B",
+          "offset": 136,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流201C",
+          "offset": 137,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流202A",
+          "offset": 138,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流202B",
+          "offset": 139,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流202C",
+          "offset": 140,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流203A",
+          "offset": 141,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流203B",
+          "offset": 142,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流203C",
+          "offset": 143,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流204A",
+          "offset": 144,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流204B",
+          "offset": 145,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流204C",
+          "offset": 146,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流205A",
+          "offset": 147,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流205B",
+          "offset": 148,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流205C",
+          "offset": 149,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流206A",
+          "offset": 150,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流206B",
+          "offset": 151,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流206C",
+          "offset": 152,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流301A",
+          "offset": 153,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流301B",
+          "offset": 154,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流301C",
+          "offset": 155,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流302A",
+          "offset": 156,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流302B",
+          "offset": 157,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流302C",
+          "offset": 158,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流303A",
+          "offset": 159,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流303B",
+          "offset": 160,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流303C",
+          "offset": 161,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流304A",
+          "offset": 162,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流304B",
+          "offset": 163,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流304C",
+          "offset": 164,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流305A",
+          "offset": 165,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流305B",
+          "offset": 166,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流305C",
+          "offset": 167,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流306A",
+          "offset": 168,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流306B",
+          "offset": 169,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流306C",
+          "offset": 170,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流401A",
+          "offset": 171,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流401B",
+          "offset": 172,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流401C",
+          "offset": 173,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流402A",
+          "offset": 174,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流402B",
+          "offset": 175,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流402C",
+          "offset": 176,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流403A",
+          "offset": 177,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流403B",
+          "offset": 178,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流403C",
+          "offset": 179,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流404A",
+          "offset": 180,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流404B",
+          "offset": 181,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流404C",
+          "offset": 182,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流405A",
+          "offset": 183,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流405B",
+          "offset": 184,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流405C",
+          "offset": 185,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流406A",
+          "offset": 186,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流406B",
+          "offset": 187,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路电流406C",
+          "offset": 188,
+          "factor": 0.001,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率101A",
+          "offset": 189,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率101B",
+          "offset": 190,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率101C",
+          "offset": 191,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率102A",
+          "offset": 192,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率102B",
+          "offset": 193,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率102C",
+          "offset": 194,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率103A",
+          "offset": 195,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率103B",
+          "offset": 196,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率103C",
+          "offset": 197,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率104A",
+          "offset": 198,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率104B",
+          "offset": 199,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率104C",
+          "offset": 200,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率105A",
+          "offset": 201,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率105B",
+          "offset": 202,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率105C",
+          "offset": 203,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率106A",
+          "offset": 204,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率106B",
+          "offset": 205,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率106C",
+          "offset": 206,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率201A",
+          "offset": 207,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率201B",
+          "offset": 208,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率201C",
+          "offset": 209,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率202A",
+          "offset": 210,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率202B",
+          "offset": 211,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率202C",
+          "offset": 212,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率203A",
+          "offset": 213,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率203B",
+          "offset": 214,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率203C",
+          "offset": 215,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率204A",
+          "offset": 216,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率204B",
+          "offset": 217,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率204C",
+          "offset": 218,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率205A",
+          "offset": 219,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率205B",
+          "offset": 220,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率205C",
+          "offset": 221,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率206A",
+          "offset": 222,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率206B",
+          "offset": 223,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率206C",
+          "offset": 224,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率301A",
+          "offset": 225,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率301B",
+          "offset": 226,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率301C",
+          "offset": 227,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率302A",
+          "offset": 228,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率302B",
+          "offset": 229,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率302C",
+          "offset": 230,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率303A",
+          "offset": 231,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率303B",
+          "offset": 232,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率303C",
+          "offset": 233,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率304A",
+          "offset": 234,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率304B",
+          "offset": 235,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率304C",
+          "offset": 236,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率305A",
+          "offset": 237,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率305B",
+          "offset": 238,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率305C",
+          "offset": 239,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率306A",
+          "offset": 240,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率306B",
+          "offset": 241,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率306C",
+          "offset": 242,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率401A",
+          "offset": 243,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率401B",
+          "offset": 244,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率401C",
+          "offset": 245,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率402A",
+          "offset": 246,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率402B",
+          "offset": 247,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率402C",
+          "offset": 248,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率403A",
+          "offset": 249,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率403B",
+          "offset": 250,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率403C",
+          "offset": 251,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率404A",
+          "offset": 252,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率404B",
+          "offset": 253,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率404C",
+          "offset": 254,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率405A",
+          "offset": 255,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率405B",
+          "offset": 256,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率405C",
+          "offset": 257,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率406A",
+          "offset": 258,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率406B",
+          "offset": 259,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功功率406C",
+          "offset": 260,
+          "factor": 0.01,
+          "parseMode": 133,
+          "span": 1
+        },
+        {
+          "name": "支路有功电度101A",
+          "offset": 261,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度101B",
+          "offset": 263,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度101C",
+          "offset": 265,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度102A",
+          "offset": 267,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度102B",
+          "offset": 269,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度102C",
+          "offset": 271,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度103A",
+          "offset": 273,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度103B",
+          "offset": 275,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度103C",
+          "offset": 277,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度104A",
+          "offset": 279,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度104B",
+          "offset": 281,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度104C",
+          "offset": 283,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度105A",
+          "offset": 285,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度105B",
+          "offset": 287,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度105C",
+          "offset": 289,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度106A",
+          "offset": 291,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度106B",
+          "offset": 293,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度106C",
+          "offset": 295,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度201A",
+          "offset": 297,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度201B",
+          "offset": 299,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度201C",
+          "offset": 301,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度202A",
+          "offset": 303,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度202B",
+          "offset": 305,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度202C",
+          "offset": 307,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度203A",
+          "offset": 309,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度203B",
+          "offset": 311,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度203C",
+          "offset": 313,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度204A",
+          "offset": 315,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度204B",
+          "offset": 317,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度204C",
+          "offset": 319,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度205A",
+          "offset": 321,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度205B",
+          "offset": 323,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度205C",
+          "offset": 325,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度206A",
+          "offset": 327,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度206B",
+          "offset": 329,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度206C",
+          "offset": 331,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度301A",
+          "offset": 333,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度301B",
+          "offset": 335,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度301C",
+          "offset": 337,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度302A",
+          "offset": 339,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度302B",
+          "offset": 341,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度302C",
+          "offset": 343,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度303A",
+          "offset": 345,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度303B",
+          "offset": 347,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度303C",
+          "offset": 349,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度304A",
+          "offset": 351,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度304B",
+          "offset": 353,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度304C",
+          "offset": 355,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度305A",
+          "offset": 357,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度305B",
+          "offset": 359,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度305C",
+          "offset": 361,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度306A",
+          "offset": 363,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度306B",
+          "offset": 365,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度306C",
+          "offset": 367,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度401A",
+          "offset": 369,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度401B",
+          "offset": 371,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度401C",
+          "offset": 373,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度402A",
+          "offset": 375,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度402B",
+          "offset": 377,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度402C",
+          "offset": 379,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度403A",
+          "offset": 381,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度403B",
+          "offset": 383,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度403C",
+          "offset": 385,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度404A",
+          "offset": 387,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度404B",
+          "offset": 389,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度404C",
+          "offset": 391,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度405A",
+          "offset": 393,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度405B",
+          "offset": 395,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度405C",
+          "offset": 397,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度406A",
+          "offset": 399,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度406B",
+          "offset": 401,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路有功电度406C",
+          "offset": 403,
+          "factor": 0.1,
+          "parseMode": 171,
+          "span": 2
+        },
+        {
+          "name": "支路报警类型101A",
+          "offset": 405,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型101B",
+          "offset": 406,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型101C",
+          "offset": 407,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型102A",
+          "offset": 408,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型102B",
+          "offset": 409,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型102C",
+          "offset": 410,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型103A",
+          "offset": 411,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型103B",
+          "offset": 412,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型103C",
+          "offset": 413,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型104A",
+          "offset": 414,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型104B",
+          "offset": 415,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型104C",
+          "offset": 416,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型105A",
+          "offset": 417,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型105B",
+          "offset": 418,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型105C",
+          "offset": 419,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型106A",
+          "offset": 420,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型106B",
+          "offset": 421,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型106C",
+          "offset": 422,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型201A",
+          "offset": 423,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型201B",
+          "offset": 424,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型201C",
+          "offset": 425,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型202A",
+          "offset": 426,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型202B",
+          "offset": 427,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型202C",
+          "offset": 428,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型203A",
+          "offset": 429,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型203B",
+          "offset": 430,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型203C",
+          "offset": 431,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型204A",
+          "offset": 432,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型204B",
+          "offset": 433,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型204C",
+          "offset": 434,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型205A",
+          "offset": 435,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型205B",
+          "offset": 436,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型205C",
+          "offset": 437,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型206A",
+          "offset": 438,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型206B",
+          "offset": 439,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型206C",
+          "offset": 440,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型301A",
+          "offset": 441,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型301B",
+          "offset": 442,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型301C",
+          "offset": 443,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型302A",
+          "offset": 444,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型302B",
+          "offset": 445,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型302C",
+          "offset": 446,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型303A",
+          "offset": 447,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型303B",
+          "offset": 448,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型303C",
+          "offset": 449,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型304A",
+          "offset": 450,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型304B",
+          "offset": 451,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型304C",
+          "offset": 452,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型305A",
+          "offset": 453,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型305B",
+          "offset": 454,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型305C",
+          "offset": 455,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型306A",
+          "offset": 456,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型306B",
+          "offset": 457,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型306C",
+          "offset": 458,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型401A",
+          "offset": 459,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型401B",
+          "offset": 460,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型401C",
+          "offset": 461,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型402A",
+          "offset": 462,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型402B",
+          "offset": 463,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型402C",
+          "offset": 464,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型403A",
+          "offset": 465,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型403B",
+          "offset": 466,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型403C",
+          "offset": 467,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型404A",
+          "offset": 468,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型404B",
+          "offset": 469,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型404C",
+          "offset": 470,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型405A",
+          "offset": 471,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型405B",
+          "offset": 472,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型405C",
+          "offset": 473,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型406A",
+          "offset": 474,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型406B",
+          "offset": 475,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "支路报警类型406C",
+          "offset": 476,
+          "factor": 1,
+          "parseMode": 71,
+          "span": null
+        }
+      ],
+      "diPoints": [
+        {
+          "name": "外部报警灯",
+          "offset": 0,
+          "bit": 8
+        },
+        {
+          "name": "外部蜂鸣器",
+          "offset": 1,
+          "bit": 8
+        },
+        {
+          "name": "主开关断路器状态",
+          "offset": 30,
+          "bit": 8
+        },
+        {
+          "name": "主回路A相电压报警",
+          "offset": 40,
+          "bit": 8
+        },
+        {
+          "name": "主回路B相电压报警",
+          "offset": 41,
+          "bit": 8
+        },
+        {
+          "name": "主回路C相电压报警",
+          "offset": 42,
+          "bit": 8
+        },
+        {
+          "name": "主回路零地电压报警",
+          "offset": 43,
+          "bit": 8
+        },
+        {
+          "name": "支路状态101A",
+          "offset": 45,
+          "bit": 8
+        },
+        {
+          "name": "支路状态101B",
+          "offset": 46,
+          "bit": 8
+        },
+        {
+          "name": "支路状态101C",
+          "offset": 47,
+          "bit": 8
+        },
+        {
+          "name": "支路状态102A",
+          "offset": 48,
+          "bit": 8
+        },
+        {
+          "name": "支路状态102B",
+          "offset": 49,
+          "bit": 8
+        },
+        {
+          "name": "支路状态102C",
+          "offset": 50,
+          "bit": 8
+        },
+        {
+          "name": "支路状态103A",
+          "offset": 51,
+          "bit": 8
+        },
+        {
+          "name": "支路状态103B",
+          "offset": 52,
+          "bit": 8
+        },
+        {
+          "name": "支路状态103C",
+          "offset": 53,
+          "bit": 8
+        },
+        {
+          "name": "支路状态104A",
+          "offset": 54,
+          "bit": 8
+        },
+        {
+          "name": "支路状态104B",
+          "offset": 55,
+          "bit": 8
+        },
+        {
+          "name": "支路状态104C",
+          "offset": 56,
+          "bit": 8
+        },
+        {
+          "name": "支路状态105A",
+          "offset": 57,
+          "bit": 8
+        },
+        {
+          "name": "支路状态105B",
+          "offset": 58,
+          "bit": 8
+        },
+        {
+          "name": "支路状态105C",
+          "offset": 59,
+          "bit": 8
+        },
+        {
+          "name": "支路状态106A",
+          "offset": 60,
+          "bit": 8
+        },
+        {
+          "name": "支路状态106B",
+          "offset": 61,
+          "bit": 8
+        },
+        {
+          "name": "支路状态106C",
+          "offset": 62,
+          "bit": 8
+        },
+        {
+          "name": "支路状态201A",
+          "offset": 63,
+          "bit": 8
+        },
+        {
+          "name": "支路状态201B",
+          "offset": 64,
+          "bit": 8
+        },
+        {
+          "name": "支路状态201C",
+          "offset": 65,
+          "bit": 8
+        },
+        {
+          "name": "支路状态202A",
+          "offset": 66,
+          "bit": 8
+        },
+        {
+          "name": "支路状态202B",
+          "offset": 67,
+          "bit": 8
+        },
+        {
+          "name": "支路状态202C",
+          "offset": 68,
+          "bit": 8
+        },
+        {
+          "name": "支路状态203A",
+          "offset": 69,
+          "bit": 8
+        },
+        {
+          "name": "支路状态203B",
+          "offset": 70,
+          "bit": 8
+        },
+        {
+          "name": "支路状态203C",
+          "offset": 71,
+          "bit": 8
+        },
+        {
+          "name": "支路状态204A",
+          "offset": 72,
+          "bit": 8
+        },
+        {
+          "name": "支路状态204B",
+          "offset": 73,
+          "bit": 8
+        },
+        {
+          "name": "支路状态204C",
+          "offset": 74,
+          "bit": 8
+        },
+        {
+          "name": "支路状态205A",
+          "offset": 75,
+          "bit": 8
+        },
+        {
+          "name": "支路状态205B",
+          "offset": 76,
+          "bit": 8
+        },
+        {
+          "name": "支路状态205C",
+          "offset": 77,
+          "bit": 8
+        },
+        {
+          "name": "支路状态206A",
+          "offset": 78,
+          "bit": 8
+        },
+        {
+          "name": "支路状态206B",
+          "offset": 79,
+          "bit": 8
+        },
+        {
+          "name": "支路状态206C",
+          "offset": 80,
+          "bit": 8
+        },
+        {
+          "name": "支路状态301A",
+          "offset": 81,
+          "bit": 8
+        },
+        {
+          "name": "支路状态301B",
+          "offset": 82,
+          "bit": 8
+        },
+        {
+          "name": "支路状态301C",
+          "offset": 83,
+          "bit": 8
+        },
+        {
+          "name": "支路状态302A",
+          "offset": 84,
+          "bit": 8
+        },
+        {
+          "name": "支路状态302B",
+          "offset": 85,
+          "bit": 8
+        },
+        {
+          "name": "支路状态302C",
+          "offset": 86,
+          "bit": 8
+        },
+        {
+          "name": "支路状态303A",
+          "offset": 87,
+          "bit": 8
+        },
+        {
+          "name": "支路状态303B",
+          "offset": 88,
+          "bit": 8
+        },
+        {
+          "name": "支路状态303C",
+          "offset": 89,
+          "bit": 8
+        },
+        {
+          "name": "支路状态304A",
+          "offset": 90,
+          "bit": 8
+        },
+        {
+          "name": "支路状态304B",
+          "offset": 91,
+          "bit": 8
+        },
+        {
+          "name": "支路状态304C",
+          "offset": 92,
+          "bit": 8
+        },
+        {
+          "name": "支路状态305A",
+          "offset": 93,
+          "bit": 8
+        },
+        {
+          "name": "支路状态305B",
+          "offset": 94,
+          "bit": 8
+        },
+        {
+          "name": "支路状态305C",
+          "offset": 95,
+          "bit": 8
+        },
+        {
+          "name": "支路状态306A",
+          "offset": 96,
+          "bit": 8
+        },
+        {
+          "name": "支路状态306B",
+          "offset": 97,
+          "bit": 8
+        },
+        {
+          "name": "支路状态306C",
+          "offset": 98,
+          "bit": 8
+        },
+        {
+          "name": "支路状态401A",
+          "offset": 99,
+          "bit": 8
+        },
+        {
+          "name": "支路状态401B",
+          "offset": 100,
+          "bit": 8
+        },
+        {
+          "name": "支路状态401C",
+          "offset": 101,
+          "bit": 8
+        },
+        {
+          "name": "支路状态402A",
+          "offset": 102,
+          "bit": 8
+        },
+        {
+          "name": "支路状态402B",
+          "offset": 103,
+          "bit": 8
+        },
+        {
+          "name": "支路状态402C",
+          "offset": 104,
+          "bit": 8
+        },
+        {
+          "name": "支路状态403A",
+          "offset": 105,
+          "bit": 8
+        },
+        {
+          "name": "支路状态403B",
+          "offset": 106,
+          "bit": 8
+        },
+        {
+          "name": "支路状态403C",
+          "offset": 107,
+          "bit": 8
+        },
+        {
+          "name": "支路状态404A",
+          "offset": 108,
+          "bit": 8
+        },
+        {
+          "name": "支路状态404B",
+          "offset": 109,
+          "bit": 8
+        },
+        {
+          "name": "支路状态404C",
+          "offset": 110,
+          "bit": 8
+        },
+        {
+          "name": "支路状态405A",
+          "offset": 111,
+          "bit": 8
+        },
+        {
+          "name": "支路状态405B",
+          "offset": 112,
+          "bit": 8
+        },
+        {
+          "name": "支路状态405C",
+          "offset": 113,
+          "bit": 8
+        },
+        {
+          "name": "支路状态406A",
+          "offset": 114,
+          "bit": 8
+        },
+        {
+          "name": "支路状态406B",
+          "offset": 115,
+          "bit": 8
+        },
+        {
+          "name": "支路状态406C",
+          "offset": 116,
+          "bit": 8
+        },
+        {
+          "name": "主通讯状态",
+          "offset": 0,
+          "bit": 0
+        }
+      ]
+    },
+    "仪表": {
+      "name": "仪表",
+      "modelType": "仪表",
+      "aiCount": 31,
+      "diCount": 4,
+      "aiPoints": [
+        {
+          "name": "AB线电压",
+          "offset": 0,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "BC线电压",
+          "offset": 2,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "CA线电压",
+          "offset": 4,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "频率",
+          "offset": 6,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "A相电流",
+          "offset": 8,
+          "factor": 0.001,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "B相电流",
+          "offset": 10,
+          "factor": 0.001,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "C相电流",
+          "offset": 12,
+          "factor": 0.001,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "中性线电流",
+          "offset": 14,
+          "factor": 0.001,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "总有功功率",
+          "offset": 16,
+          "factor": 0.01,
+          "parseMode": 179,
+          "span": 2
+        },
+        {
+          "name": "总无功功率",
+          "offset": 18,
+          "factor": 0.01,
+          "parseMode": 179,
+          "span": 2
+        },
+        {
+          "name": "总视在功率",
+          "offset": 20,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "总功率因数",
+          "offset": 22,
+          "factor": 0.001,
+          "parseMode": 179,
+          "span": 2
+        },
+        {
+          "name": "正有功电度",
+          "offset": 24,
+          "factor": 1,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "A相电流谐波畸变率",
+          "offset": 26,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "B相电流谐波畸变率",
+          "offset": 27,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "C相电流谐波畸变率",
+          "offset": 28,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "中性线电流谐波畸变率",
+          "offset": 29,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": null
+        }
+      ],
+      "diPoints": [
+        {
+          "name": "输入状态2（故障状态）",
+          "offset": 1,
+          "bit": 0
+        },
+        {
+          "name": "输入状态1（合分闸状态）",
+          "offset": 2,
+          "bit": 0
+        },
+        {
+          "name": "主通讯状态",
+          "offset": 3,
+          "bit": 0
+        }
+      ]
+    },
+    "仪表_2": {
+      "name": "仪表_2",
+      "modelType": "仪表",
+      "aiCount": 42,
+      "diCount": 3,
+      "aiPoints": [
+        {
+          "name": "A相电流",
+          "offset": 0,
+          "factor": 0.001,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "B相电流",
+          "offset": 2,
+          "factor": 0.001,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "C相电流",
+          "offset": 4,
+          "factor": 0.001,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "中性线电流",
+          "offset": 6,
+          "factor": 0.001,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "AB线电压",
+          "offset": 8,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "BC线电压",
+          "offset": 10,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "CA线电压",
+          "offset": 12,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "A相电压",
+          "offset": 14,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "B相电压",
+          "offset": 16,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "C相电压",
+          "offset": 18,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "频率",
+          "offset": 20,
+          "factor": 0.01,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "总有功功率",
+          "offset": 22,
+          "factor": 0.01,
+          "parseMode": 179,
+          "span": 2
+        },
+        {
+          "name": "总无功功率",
+          "offset": 24,
+          "factor": 0.01,
+          "parseMode": 179,
+          "span": 2
+        },
+        {
+          "name": "总视在功率",
+          "offset": 26,
+          "factor": 0.01,
+          "parseMode": 179,
+          "span": 2
+        },
+        {
+          "name": "总功率因数",
+          "offset": 28,
+          "factor": 0.001,
+          "parseMode": 179,
+          "span": 2
+        },
+        {
+          "name": "正有功电度",
+          "offset": 30,
+          "factor": 1,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "负有功电度",
+          "offset": 32,
+          "factor": 1,
+          "parseMode": 177,
+          "span": 2
+        },
+        {
+          "name": "A相电流谐波畸变率",
+          "offset": 34,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "B相电流谐波畸变率",
+          "offset": 35,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "C相电流谐波畸变率",
+          "offset": 36,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "中性电流谐波畸变率",
+          "offset": 37,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "UAB线电压谐波畸变率",
+          "offset": 38,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "UBC线电压谐波畸变率",
+          "offset": 39,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "UCA线电压谐波畸变率",
+          "offset": 40,
+          "factor": 0.1,
+          "parseMode": 73,
+          "span": null
+        }
+      ],
+      "diPoints": [
+        {
+          "name": "输入状态1（合分闸状态）",
+          "offset": 0,
+          "bit": 0
+        },
+        {
+          "name": "输入状态2（故障状态）",
+          "offset": 1,
+          "bit": 0
+        },
+        {
+          "name": "主通讯状态",
+          "offset": 2,
+          "bit": 0
+        }
+      ]
+    },
+    "UPS": {
+      "name": "UPS",
+      "modelType": "UPS",
+      "aiCount": 45,
+      "diCount": 7,
+      "aiPoints": [
+        {
+          "name": "UPS使用模式",
+          "offset": null,
+          "factor": null,
+          "parseMode": null,
+          "span": null
+        },
+        {
+          "name": "UPS逆变器内部故障",
+          "offset": null,
+          "factor": null,
+          "parseMode": null,
+          "span": null
+        },
+        {
+          "name": "UPS电池开关状态",
+          "offset": null,
+          "factor": null,
+          "parseMode": null,
+          "span": null
+        },
+        {
+          "name": "UPS主路开关状态",
+          "offset": null,
+          "factor": null,
+          "parseMode": null,
+          "span": null
+        },
+        {
+          "name": "UPS旁路状态",
+          "offset": null,
+          "factor": null,
+          "parseMode": null,
+          "span": null
+        },
+        {
+          "name": "UPS旁路内部硬件错误",
+          "offset": null,
+          "factor": null,
+          "parseMode": null,
+          "span": null
+        },
+        {
+          "name": "UPS充电状态",
+          "offset": null,
+          "factor": null,
+          "parseMode": null,
+          "span": null
+        },
+        {
+          "name": "主路输入A相电流",
+          "offset": 7,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主路输入B相电流",
+          "offset": 8,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主路输入C相电流",
+          "offset": 9,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "旁路输入A相电流",
+          "offset": 10,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "旁路输入B相电流",
+          "offset": 11,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "旁路输入C相电流",
+          "offset": 12,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输出A相电流",
+          "offset": 13,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输出B相电流",
+          "offset": 14,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输出C相电流",
+          "offset": 15,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "电池电流",
+          "offset": 16,
+          "factor": 1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "主路输入线电压UAB",
+          "offset": 17,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主路输入线电压UBC",
+          "offset": 18,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主路输入线电压UCA",
+          "offset": 19,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "旁路输入相电压VA",
+          "offset": 20,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "旁路输入相电压VB",
+          "offset": 21,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "旁路输入相电压VC",
+          "offset": 22,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "旁路输入线电压UAB",
+          "offset": 23,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "旁路输入线电压UBC",
+          "offset": 24,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "旁路输入线电压UCA",
+          "offset": 25,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输出相电压VA",
+          "offset": 26,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输出相电压VB",
+          "offset": 27,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输出相电压VC",
+          "offset": 28,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输出线电压UAB",
+          "offset": 29,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输出线电压UBC",
+          "offset": 30,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输出线电压UCA",
+          "offset": 31,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "UPS电池电压",
+          "offset": 32,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "输出总有功功率",
+          "offset": 33,
+          "factor": 1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "输出总视在功率",
+          "offset": 34,
+          "factor": 1,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "输出功率因数",
+          "offset": 35,
+          "factor": 0.01,
+          "parseMode": 73,
+          "span": 1
+        },
+        {
+          "name": "UPS主路输入频率",
+          "offset": 36,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "UPS旁路输入频率",
+          "offset": 37,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "UPS输出频率",
+          "offset": 38,
+          "factor": 0.1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "UPS电池剩余运行时间",
+          "offset": 39,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "UPS电池温度",
+          "offset": 40,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主路输入相电压VA",
+          "offset": 41,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主路输入相电压VB",
+          "offset": 42,
+          "factor": 1,
+          "parseMode": 71,
+          "span": 1
+        },
+        {
+          "name": "主路输入相电压VC",
+          "offset": 43,
+          "factor": 1,
+          "parseMode": 71,
+          "span": null
+        }
+      ],
+      "diPoints": [
+        {
+          "name": "正常模式",
+          "offset": 0,
+          "bit": 0
+        },
+        {
+          "name": "UPS内部硬件故障",
+          "offset": 0,
+          "bit": 2
+        },
+        {
+          "name": "电池模式",
+          "offset": 0,
+          "bit": 4
+        },
+        {
+          "name": "电池欠压",
+          "offset": 0,
+          "bit": 5
+        },
+        {
+          "name": "旁路模式",
+          "offset": 0,
+          "bit": 7
+        },
+        {
+          "name": "UPS过载",
+          "offset": 0,
+          "bit": 10
+        },
+        {
+          "name": "通风设备故障",
+          "offset": 0,
+          "bit": 14
+        },
+        {
+          "name": "维修旁路开关状态",
+          "offset": 1,
+          "bit": 6
+        },
+        {
+          "name": "电池开关状态",
+          "offset": 2,
+          "bit": 15
+        },
+        {
+          "name": "主路开关状态",
+          "offset": 3,
+          "bit": 3
+        },
+        {
+          "name": "主路电压状态",
+          "offset": 3,
+          "bit": 8
+        },
+        {
+          "name": "维修旁路模式",
+          "offset": 4,
+          "bit": 1
+        },
+        {
+          "name": "旁路过载告警",
+          "offset": 4,
+          "bit": 5
+        },
+        {
+          "name": "旁路频率告警",
+          "offset": 4,
+          "bit": 9
+        },
+        {
+          "name": "旁路电压告警",
+          "offset": 4,
+          "bit": 10
+        },
+        {
+          "name": "旁路开关状态",
+          "offset": 4,
+          "bit": 14
+        },
+        {
+          "name": "旁路内部硬件故障",
+          "offset": 5,
+          "bit": 0
+        },
+        {
+          "name": "输出开关状态",
+          "offset": 5,
+          "bit": 11
+        },
+        {
+          "name": "充电状态",
+          "offset": 6,
+          "bit": 3
+        },
+        {
+          "name": "主通讯状态",
+          "offset": 0,
+          "bit": 0
+        },
+        {
+          "name": "备通讯状态",
+          "offset": 1,
+          "bit": 0
+        }
+      ]
+    }
+  }
+}

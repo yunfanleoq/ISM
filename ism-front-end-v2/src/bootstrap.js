@@ -11,15 +11,20 @@ import interceptors from '@/utils/axios-interceptors'
  * @param i18n 应用的 vue-i18n 实例
  * @param i18n 应用的 message 实例
  */
-function bootstrap({router, store, i18n, message}) {
+async function bootstrap({router, store, i18n, message}) {
   // 设置应用配置
   setAppOptions({router, store, i18n})
   // 加载 axios 拦截器
   loadInterceptors(interceptors, {router, store, i18n, message})
-  // 加载路由
+  // 先注册动态路由（从 localStorage Menu），避免深链刷新先命中 * → 404。
+  // 首页配置接口可能很慢/超时，绝不能阻塞 loadRoutes。
   loadRoutes()
   // 加载路由守卫
   loadGuards(guards, {router, store, i18n, message})
+  // 拉取当前项目默认监控大屏配置；侧栏固定显示「监控大屏」，不再用大屏应用名覆盖
+  store.dispatch('setting/fetchSystemHomeDashboard').catch(e => {
+    console.warn('[bootstrap] fetchSystemHomeDashboard failed, using defaults', e)
+  })
 }
 
 export default bootstrap

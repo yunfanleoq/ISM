@@ -54,6 +54,21 @@ export default {
     })
   },
 
+  updated() {
+    this._ismApplySvgMirror()
+  },
+  mounted() {
+    this._ismApplySvgMirror()
+  },
+  methods: {
+    _ismApplySvgMirror() {
+      const el = this.$el
+      if (!el || el.nodeType !== 1 || !el.tagName || el.tagName.toLowerCase() !== 'svg') return
+      const style = this.detail && this.detail.style
+      const t = style && style.transform
+      el.style.transform = t == -1099 ? 'rotateY(180deg)' : t == -1098 ? 'rotateX(180deg)' : ''
+    },
+  },
   beforeDestroy() {
     // 1. 精确清理 EventBus（只移除当前组件的监听，不影响其他组件）
     const tracked = this._ismAutoTrackedHandlers

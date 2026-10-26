@@ -32,6 +32,7 @@ import (
 
 var AlarmConfigRWMutex sync.Mutex
 var AlarmConfig map[string][]models.AlarmNotice
+var startupAlarmInitOnce sync.Once
 
 func UpdateAlarmNoticeConfig(ProjectUuid string) int {
 
@@ -77,6 +78,48 @@ func GetAlarmNoticeConfig() int {
 }
 
 var DeviceAlarmTemp = make(map[string]protocol_common.PushAlarm, protocol_common.AlarmCacheCount)
+
+func configureStartupAlarmWindows() {
+	var projects []models.ProjectLists
+	if err := models.Db.Model(&models.ProjectLists{}).Select("uuid").Find(&projects).Error; err != nil {
+		logs.Error("读取启动告警项目失败: %v", err)
+		return
+	}
+
+	AlarmConfigRWMutex.Lock()
+	delays := make(map[string]int, len(projects))
+	for _, project := range projects {
+		delays[project.Uuid] = 10
+		for _, item := range AlarmConfig[project.Uuid] {
+			if item.AlarmNoticeType != "StartupAlarmDelay" {
+				continue
+			}
+			var startupDelay models.AlarmStartupDelay
+			if err := json.Unmarshal([]byte(item.AlarmNoticeParams), &startupDelay); err == nil {
+				delays[project.Uuid] = startupDelay.DelayMinutes
+			}
+			break
+		}
+	}
+	AlarmConfigRWMutex.Unlock()
+
+	for projectUuid, delayMinutes := range delays {
+		protocol_common.ConfigureStartupAlarmWindow(projectUuid, time.Duration(delayMinutes)*time.Minute)
+	}
+}
+
+func InitializeStartupAlarmGuard() {
+	startupAlarmInitOnce.Do(func() {
+		GetAlarmNoticeConfig()
+		configureStartupAlarmWindows()
+	})
+}
+
+// ReconfigureStartupAlarmWindows 采集批量重连/重启后重新打开启动抑警窗，避免首轮基线落库成告警风暴。
+func ReconfigureStartupAlarmWindows() {
+	GetAlarmNoticeConfig()
+	configureStartupAlarmWindows()
+}
 
 func SendDingDingMessage(config string, sendAlarm protocol_common.PushAlarm) int {
 
@@ -362,9 +405,50 @@ func SendAlarmNotice(alarm protocol_common.PushAlarm) int {
 	return 0
 }
 
+func commitRenderedAlarm(alarm protocol_common.PushAlarm) {
+	var updateAlarm models.DevicesAlarmList
+	updateAlarm.AlarmName = alarm.DataName
+	updateAlarm.DeviceUuid = alarm.DeviceUuid
+	updateAlarm.ProjectUuid = alarm.ProjectUuid
+	updateAlarm.DeviceName = alarm.DeviceName
+	updateAlarm.DataUuid = alarm.DataUuid
+	updateAlarm.ModelDataUuid = alarm.ModelDataUuid
+	updateAlarm.HappenTime = alarm.HappenTime
+	updateAlarm.AlarmLevel = alarm.AlarmLevel
+	updateAlarm.KeepTime = 0
+	updateAlarm.AlarmMessage = alarm.AlarmMessage
+	updateAlarm.AlarmClearMessage = alarm.AlarmClearMessage
+	ClearTime, _ := time.Parse("2006-01-02 15:04:05", "2006-01-02 15:04:05")
+	updateAlarm.ClearTime = ClearTime
+	models.Db.Model(&models.DevicesAlarmList{}).Create(&updateAlarm)
+	alarm.ID = updateAlarm.ID
+	alarm.Cmd = "RealAlarm"
+	protocol_common.PushGAlarmQueue.QueuePush(alarm)
+	if updateAlarm.DataUuid == deviceStatusDataUUID {
+		models.Db.Model(&models.MonitorList{}).Where("uuid = ?", alarm.DeviceUuid).Update("status", 0)
+	}
+	if !alarm.SuppressNotice {
+		go SendAlarmNotice(alarm)
+	}
+	DeviceAlarmTemp[alarmConfirmKey(alarm)] = alarm
+}
+
+// clearStuckRecovery 内存里已经是同一个恢复值时，仍要清掉库里卡住的实时告警。
+// 触发值为 0 且当前值也是 0 时仍处于告警态，不能清。
+func clearStuckRecovery(memoryValue, currentValue string, alarmOnValue int) bool {
+	if memoryValue != currentValue {
+		return false
+	}
+	return !protocol_common.IsAlarmValueActive(currentValue, alarmOnValue)
+}
+
 func DealWithAlarm() {
-	GetAlarmNoticeConfig()
+	InitializeStartupAlarmGuard()
 	for {
+		protocol_common.ExpireStartupAlarmWindows(time.Now())
+		for _, pending := range takeExpiredPendingAlarms(time.Now()) {
+			commitRenderedAlarm(pending)
+		}
 		data, code := protocol_common.GAlarmQueue.QueuePull()
 		if data == nil {
 			time.Sleep(time.Millisecond * 1000)
@@ -378,6 +462,25 @@ func DealWithAlarm() {
 			build.WriteString(alarm.DataUuid)
 			key := build.String()
 			alarmTemp, isExist := DeviceAlarmTemp[key]
+
+			isRaising := protocol_common.IsAlarmValueActive(alarm.Value, alarm.AlarmOnValue)
+			if protocol_common.ObserveStartupAlarm(alarm, isRaising) {
+				// 启动窗内不新建告警。已经恢复的值仍要把重启前卡住的实时告警送进历史。
+				if !isRaising && alarm.DataUuid != deviceStatusDataUUID {
+					if models.ClearActiveDeviceAlarm(0, alarm.DeviceUuid, alarm.DataUuid, alarm.HappenTime) > 0 {
+						protocol_common.PushGAlarmQueue.QueuePush(alarm)
+					}
+				}
+				DeviceAlarmTemp[key] = alarm
+				if alarm.DataUuid == "sys.suid.device.status" {
+					status := 1
+					if isRaising {
+						status = 0
+					}
+					models.Db.Model(&models.MonitorList{}).Where("uuid = ?", alarm.DeviceUuid).Update("status", status)
+				}
+				continue
+			}
 
 			updateAlarm.AlarmName = alarm.DataName
 			updateAlarm.DeviceUuid = alarm.DeviceUuid
@@ -421,66 +524,57 @@ func DealWithAlarm() {
 			alarm.AlarmClearMessage = updateAlarm.AlarmClearMessage
 			alarm.AlarmMessage = updateAlarm.AlarmMessage
 
+			alreadyActive := isExist && protocol_common.IsAlarmValueActive(alarmTemp.Value, alarmTemp.AlarmOnValue)
+			if isRaising && shouldDebounceAlarmRaise(alarm, alreadyActive) {
+				continue
+			}
+			if !isRaising {
+				cancelPendingAlarmConfirm(key)
+			}
+
 			if !isExist {
-				oldValue, isexit := protocol_common.DeviceRealDataMapByUUID.Load(alarm.DeviceUuid + alarm.DataUuid)
-				if alarm.Value == "1" {
+				if isRaising {
 					ClearTime, _ := time.Parse("2006-01-02 15:04:05", "2006-01-02 15:04:05")
 					updateAlarm.ClearTime = ClearTime
 					models.Db.Model(&models.DevicesAlarmList{}).Create(&updateAlarm)
 					alarm.ID = updateAlarm.ID
-					if isexit {
-						if oldValue != alarm.Value {
-							protocol_common.PushGAlarmQueue.QueuePush(alarm)
-							if updateAlarm.DataUuid == "sys.suid.device.status" {
-								models.Db.Model(&models.MonitorList{}).Where("uuid = ?", alarm.DeviceUuid).Update("status", 0)
-							}
-							go SendAlarmNotice(alarm)
-						}
-					} else {
-						protocol_common.PushGAlarmQueue.QueuePush(alarm)
-						if updateAlarm.DataUuid == "sys.suid.device.status" {
-							models.Db.Model(&models.MonitorList{}).Where("uuid = ?", alarm.DeviceUuid).Update("status", 0)
-						}
+					protocol_common.PushGAlarmQueue.QueuePush(alarm)
+					if updateAlarm.DataUuid == "sys.suid.device.status" {
+						models.Db.Model(&models.MonitorList{}).Where("uuid = ?", alarm.DeviceUuid).Update("status", 0)
+					}
+					if !alarm.SuppressNotice {
 						go SendAlarmNotice(alarm)
 					}
 				} else {
-					if isexit {
-						if oldValue != alarm.Value {
-							if updateAlarm.DataUuid == "sys.suid.device.status" {
-								protocol_common.PushGAlarmQueue.QueuePush(alarm)
-								go SendAlarmNotice(alarm)
-								models.Db.Model(&models.MonitorList{}).Where("uuid = ?", alarm.DeviceUuid).Update("status", 1)
-							}
-						}
-					} else {
-						if updateAlarm.DataUuid == "sys.suid.device.status" {
-							protocol_common.PushGAlarmQueue.QueuePush(alarm)
+					if updateAlarm.DataUuid == "sys.suid.device.status" {
+						protocol_common.PushGAlarmQueue.QueuePush(alarm)
+						if !alarm.SuppressNotice {
 							go SendAlarmNotice(alarm)
-							models.Db.Model(&models.MonitorList{}).Where("uuid = ?", alarm.DeviceUuid).Update("status", 1)
 						}
+						models.Db.Model(&models.MonitorList{}).Where("uuid = ?", alarm.DeviceUuid).Update("status", 1)
+					} else if models.ClearActiveDeviceAlarm(0, alarm.DeviceUuid, alarm.DataUuid, alarm.HappenTime) > 0 {
+						protocol_common.PushGAlarmQueue.QueuePush(alarm)
 					}
 				}
 				DeviceAlarmTemp[key] = alarm
 			} else {
 				if alarmTemp.Value != alarm.Value {
 					var status int = 0
-					if alarm.Value == "1" {
+					if isRaising {
 						ClearTime, _ := time.Parse("2006-01-02 15:04:05", "2006-01-02 15:04:05")
 						updateAlarm.ClearTime = ClearTime
 						models.Db.Model(&models.DevicesAlarmList{}).Create(&updateAlarm)
 						alarm.ID = updateAlarm.ID
 						status = 0
 						protocol_common.PushGAlarmQueue.QueuePush(alarm)
-						if alarm.AlarmMessage != "" {
+						if alarm.AlarmMessage != "" && !alarm.SuppressNotice {
 							go SendAlarmNotice(alarm)
 						}
 					} else {
-						updateAlarm.ClearTime = alarm.HappenTime
-						updateAlarm.KeepTime = (float64)((alarm.HappenTime.UnixMilli() - alarmTemp.HappenTime.UnixMilli()) / 1000.0)
 						status = 1
-						models.Db.Model(&models.DevicesAlarmList{}).Where("ID = ? AND device_uuid = ? AND data_uuid = ?", alarmTemp.ID, alarm.DeviceUuid, alarm.DataUuid).Updates(models.DevicesAlarmList{ClearTime: updateAlarm.ClearTime, KeepTime: updateAlarm.KeepTime})
+						models.ClearActiveDeviceAlarm(alarmTemp.ID, alarm.DeviceUuid, alarm.DataUuid, alarm.HappenTime)
 						protocol_common.PushGAlarmQueue.QueuePush(alarm)
-						if alarm.AlarmClearMessage != "" {
+						if alarm.AlarmClearMessage != "" && !alarm.SuppressNotice {
 							go SendAlarmNotice(alarm)
 						}
 					}
@@ -489,6 +583,13 @@ func DealWithAlarm() {
 					}
 
 					DeviceAlarmTemp[key] = alarm
+				} else if clearStuckRecovery(alarmTemp.Value, alarm.Value, alarm.AlarmOnValue) {
+					if models.ClearActiveDeviceAlarm(alarmTemp.ID, alarm.DeviceUuid, alarm.DataUuid, alarm.HappenTime) > 0 {
+						protocol_common.PushGAlarmQueue.QueuePush(alarm)
+						if alarm.AlarmClearMessage != "" && !alarm.SuppressNotice {
+							go SendAlarmNotice(alarm)
+						}
+					}
 				}
 			}
 		}

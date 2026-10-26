@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI 日常办公实战 · 先学会用 WorkBuddy</title>
+<style>
+  :root {
+    --bg: #0f1720;
+    --panel: #16202b;
+    --text: #e8eef4;
+    --muted: #93a4b5;
+    --accent: #2f9e8a;
+    --accent2: #d4a017;
+    --line: rgba(255,255,255,.08);
+    --danger: #c45c5c;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  }
+  body {
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(47,158,138,.18), transparent 55%),
+      radial-gradient(900px 500px at 100% 0%, rgba(212,160,23,.12), transparent 50%),
+      var(--bg);
+  }
+  .deck { height: 100%; display: flex; flex-direction: column; }
+  .slides { flex: 1; position: relative; overflow: hidden; }
+  .slide {
+    position: absolute; inset: 0;
+    padding: clamp(28px, 5vw, 64px);
+    display: none; flex-direction: column; justify-content: center;
+    opacity: 0; transform: translateY(12px);
+    transition: opacity .28s ease, transform .28s ease;
+  }
+  .slide.active { display: flex; opacity: 1; transform: none; }
+  h1 { font-size: clamp(28px, 4.2vw, 48px); margin: 0 0 12px; letter-spacing: .02em; }
+  h2 { font-size: clamp(24px, 3.2vw, 36px); margin: 0 0 20px; color: #fff; }
+  h3 { font-size: clamp(18px, 2.2vw, 24px); margin: 0 0 12px; color: var(--accent); font-weight: 600; }
+  p, li { font-size: clamp(16px, 1.7vw, 22px); line-height: 1.55; color: var(--text); }
+  .muted { color: var(--muted); }
+  .eyebrow {
+    color: var(--accent); font-size: 14px; letter-spacing: .16em;
+    text-transform: uppercase; margin-bottom: 14px; font-weight: 600;
+  }
+  .hero-sub { max-width: 48rem; color: var(--muted); font-size: clamp(16px, 1.8vw, 22px); }
+  .grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .card {
+    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+    border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 16px;
+  }
+  .card strong { display: block; margin-bottom: 8px; font-size: 18px; }
+  .card p, .card li { font-size: 15px; color: var(--muted); margin: 0; }
+  ul { margin: 0; padding-left: 1.15em; }
+  li + li { margin-top: 8px; }
+  table {
+    width: 100%; border-collapse: collapse; font-size: clamp(14px, 1.4vw, 18px);
+  }
+  th, td {
+    border-bottom: 1px solid var(--line); text-align: left;
+    padding: 10px 12px; vertical-align: top;
+  }
+  th { color: var(--accent); font-weight: 600; }
+  .quote {
+    border-left: 3px solid var(--accent); padding: 8px 0 8px 18px;
+    font-size: clamp(18px, 2vw, 26px); max-width: 48rem; color: #f2f7fb;
+  }
+  .tag {
+    display: inline-block; padding: 4px 10px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--muted); font-size: 13px; margin-right: 8px;
+  }
+  .bar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 10px 18px; border-top: 1px solid var(--line);
+    background: rgba(0,0,0,.25); backdrop-filter: blur(8px);
+    font-size: 13px; color: var(--muted);
+  }
+  .bar .nav { display: flex; gap: 8px; }
+  button {
+    background: transparent; color: var(--text); border: 1px solid var(--line);
+    border-radius: 8px; padding: 6px 12px; cursor: pointer; font: inherit;
+  }
+  button:hover { border-color: var(--accent); color: #fff; }
+  .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent2); }
+  .flow {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    font-size: clamp(14px, 1.5vw, 18px);
+  }
+  .flow span {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 14px;
+  }
+  .flow .arrow { color: var(--muted); background: none; border: none; padding: 0; }
+  .warn { color: #f0c9c9; }
+  .two-col { display: grid; grid-template-columns: 1.1fr .9fr; gap: 24px; align-items: start; }
+  @media (max-width: 860px) {
+    .two-col { grid-template-columns: 1fr; }
+    .slide { justify-content: flex-start; padding-top: 36px; overflow: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="slides" id="slides">
+
+    <section class="slide active" data-title="封面">
+      <div class="eyebrow">寻智元盛 · 周一上午 · 内部培训</div>
+      <h1>AI 日常办公实战</h1>
+      <p class="hero-sub">先学会用 WorkBuddy（沃克巴）—— 用途 · 专家/技能 · 再讲 Grok Bot · 微信 · EMS</p>
+      <p style="margin-top:28px">
+        <span class="tag">约 60–75 分钟</span>
+        <span class="tag">讲解 + 口述演示 + Q&amp;A</span>
+        <span class="tag">2026-10-26</span>
+      </p>
+    </section>
+
+    <section class="slide" data-title="议程">
+      <div class="eyebrow">Agenda</div>
+      <h2>今天六件事（WorkBuddy 第一）</h2>
+      <div class="grid grid-3">
+        <div class="card"><strong>01 WorkBuddy 上手</strong><p>用途清单 · 怎么用 · 专家/技能 · 演示</p></div>
+        <div class="card"><strong>02 Grok Bot</strong><p>主助手 + 专项助理 · 电脑 + 手机</p></div>
+        <div class="card"><strong>03 微信联动</strong><p>手机发令，电脑执行</p></div>
+        <div class="card"><strong>04 EMS</strong><p>合同 / 台账索引 / 软著 / 审批 · 部署怎么选</p></div>
+        <div class="card"><strong>05 红线</strong><p>敏感信息边界</p></div>
+        <div class="card"><strong>06 一人一实验</strong><p>优先 WorkBuddy 一件小事</p></div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="定调">
+      <div class="eyebrow">Opening · 3′</div>
+      <h2>先定调</h2>
+      <div class="quote">今天先学会用 WorkBuddy。<br/>AI 是「副驾驶」，方向盘还在你手里。</div>
+      <ul style="margin-top:28px; max-width:42rem">
+        <li>寻智元盛 ≈ 循安科技软件研发 / AI 部门（循安与寻联盛同集团）</li>
+        <li>不讲空泛替代论，不讲论文参数</li>
+        <li>不承诺「全员已开通所有能力」</li>
+        <li>不声称 EMS 已全量交付、已过等保、已开票</li>
+      </ul>
+    </section>
+
+    <section class="slide" data-title="WB是什么">
+      <div class="eyebrow">Part 1 · WorkBuddy · 主战场 25–30′</div>
+      <h2>WorkBuddy 是什么</h2>
+      <p class="hero-sub" style="margin-bottom:20px">腾讯出品的全场景 AI Agent 办公工作台 · 口语「沃克巴」</p>
+      <ul>
+        <li>自然语言下任务——一句话也能开工</li>
+        <li>自主规划、拆解步骤、调用工具执行</li>
+        <li>交付文档 / 表格 / PPT 等可验收成果</li>
+        <li>从「聊天问答」→「像同事一样把活干完」</li>
+      </ul>
+    </section>
+
+    <section class="slide" data-title="WB用途">
+      <div class="eyebrow">Part 1 · 工作用途（可投屏）</div>
+      <h2>WorkBuddy 在工作里能干啥</h2>
+      <div class="grid grid-3">
+        <div class="card"><strong>邮件 / 通知</strong><p>要点 → 正式稿 · 你改口径</p></div>
+        <div class="card"><strong>纪要 → 行动项</strong><p>杂记 → 决议与 Owner · 你删幻觉</p></div>
+        <div class="card"><strong>周报 / 月报</strong><p>任务列表 → 进展 · 风险 · 计划</p></div>
+        <div class="card"><strong>报销 / 填表</strong><p>票据信息 → 事由草稿 · 你点提交</p></div>
+        <div class="card"><strong>查资料 · 对比</strong><p>问题 → 摘要与待核实清单</p></div>
+        <div class="card"><strong>做表 / PPT · 研发点到为止</strong><p>大纲 → 骨架；报错 → 方案草稿</p></div>
+      </div>
+      <p class="muted" style="margin-top:16px">公式：输入 → AI 做什么 → 你验收什么</p>
+    </section>
+
+    <section class="slide" data-title="怎么用">
+      <div class="eyebrow">Part 1 · 怎么用</div>
+      <h2>五步上手</h2>
+      <div class="flow">
+        <span>打开</span><span class="arrow">→</span>
+        <span>开对话</span><span class="arrow">→</span>
+        <span>四件套指令</span><span class="arrow">→</span>
+        <span>验收草稿</span><span class="arrow">→</span>
+        <span>人点发送</span>
+      </div>
+      <div class="grid grid-2" style="margin-top:22px">
+        <div class="card"><strong>1 目标</strong><p>要交什么：表 / 邮件 / PPT</p></div>
+        <div class="card"><strong>2 材料</strong><p>看哪些文件、笔记；没有就说没有</p></div>
+        <div class="card"><strong>3 约束</strong><p>篇幅、语气、格式、不要改什么</p></div>
+        <div class="card"><strong>4 验收标准</strong><p>怎样算完成（页数、栏目、Owner）</p></div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="指令对比">
+      <div class="eyebrow">Part 1 · 指令</div>
+      <h2>差指令 vs 好指令</h2>
+      <table>
+        <tr><th style="width:22%">差</th><td>「帮我弄一下周报。」</td></tr>
+        <tr><th>好</th><td>「根据下面任务列表写周报：进展 / 风险 / 下周计划各三条以内；风险写影响；没有的完成项不要编。」</td></tr>
+      </table>
+      <p class="muted" style="margin-top:18px">AI 爱「补全」——你要删掉编出来的完成项。</p>
+    </section>
+
+    <section class="slide" data-title="专家技能三分">
+      <div class="eyebrow">Part 1 · 专家与技能</div>
+      <h2>Skill · 专家 · 专家团</h2>
+      <div class="grid grid-3">
+        <div class="card"><strong>Skill 技能</strong><p>工具能力：让 AI 能做某件事<br/>例：读表、出 PDF、连腾讯文档</p></div>
+        <div class="card"><strong>专家</strong><p>能力 + 经验：懂某个领域的 AI 角色<br/>单点专业问题直接召唤</p></div>
+        <div class="card"><strong>专家团</strong><p>多专家协作：团长拆解、并行、交货<br/>复杂任务再用</p></div>
+      </div>
+      <p style="margin-top:20px">口诀：<strong>Skill 是手；专家是脑+手；专家团是一支小队。</strong></p>
+      <p class="muted">入口：左侧「专家」/「专家·技能·连接器」</p>
+    </section>
+
+    <section class="slide" data-title="专家大类">
+      <div class="eyebrow">Part 1 · 可直接召唤</div>
+      <h2>专家常见大类（约 100–150+，持续更新）</h2>
+      <div class="grid grid-3">
+        <div class="card"><strong>研发工程</strong><p>前端 / 后端 / 架构 / DevOps</p></div>
+        <div class="card"><strong>产品设计</strong><p>PM / UI · 需求与原型说明</p></div>
+        <div class="card"><strong>数据分析</strong><p>清洗 · 汇总 · 可视化说明</p></div>
+        <div class="card"><strong>市场运营 / 文案</strong><p>文案 · 内容策划 · 对外说明</p></div>
+        <div class="card"><strong>效率工具 / 文档</strong><p>文档整理 · PPT · 纪要清单</p></div>
+        <div class="card"><strong class="warn">勿写死昵称</strong><p>只讲大类；具体名字以广场当日为准</p></div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="Skill安装">
+      <div class="eyebrow">Part 1 · Skill</div>
+      <h2>技能：优先官方 SkillHub</h2>
+      <div class="two-col">
+        <div class="card">
+          <strong>办公向常见方向</strong>
+          <ul>
+            <li>腾讯文档连接</li>
+            <li>Word / Excel / PDF / PPT 处理</li>
+            <li>本地文件整理（以市场上架为准）</li>
+          </ul>
+        </div>
+        <div class="card">
+          <strong>怎么装</strong>
+          <ul>
+            <li>技能页 → 卡片点 <strong>+</strong></li>
+            <li>对话：「帮我找一个能……的技能」</li>
+            <li>优先官方；第三方慎装</li>
+            <li>敏感客户 / 密钥勿丢</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="演示">
+      <div class="eyebrow">Part 1 · 口述演示</div>
+      <h2>现场可走的脚本（选 1–2 个）</h2>
+      <div class="grid grid-3">
+        <div class="card"><strong>① 纪要 → 行动项</strong><p>决议 / Owner / 日期 / 待确认</p></div>
+        <div class="card"><strong>② 杂记 → 周报</strong><p>进展 · 风险 · 下周；不编造</p></div>
+        <div class="card"><strong>③ PPT 骨架（可砍）</strong><p>每页标题 + 要点 + 下一步</p></div>
+      </div>
+      <p style="margin-top:22px">角色变化：<strong>打字员 → 主编</strong> · 需要专业视角时先召唤大类专家</p>
+    </section>
+
+    <section class="slide" data-title="WB适合">
+      <div class="eyebrow">Part 1 · 边界</div>
+      <h2>适合什么 / 要谨慎什么</h2>
+      <div class="two-col">
+        <div class="card">
+          <strong>更适合</strong>
+          <ul>
+            <li>多步办公：读材料 → 整理 → 交货</li>
+            <li>结构清晰的周报、清单、对比表、幻灯骨架</li>
+            <li>「帮我做完这件事」</li>
+          </ul>
+        </div>
+        <div class="card">
+          <strong class="warn">需谨慎</strong>
+          <ul>
+            <li>对客户承诺的最终决策</li>
+            <li>未脱敏的客户全量数据</li>
+            <li>期望「一次就对、不用验收」</li>
+            <li>开通听部门安排，勿承诺全员已开</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="Grok分工">
+      <div class="eyebrow">Part 2 · Grok Bot · 8–10′</div>
+      <h2>Grok Bot：一人指挥一套助手</h2>
+      <div class="grid grid-2">
+        <div class="card"><strong>主助手</strong><p>默认入口：问答、派活、汇总</p></div>
+        <div class="card"><strong>专项助手 / 项目助理</strong><p>盯某一类活或某一个项目，少重复交代背景</p></div>
+        <div class="card"><strong>电脑端</strong><p>长任务、多文件、持续跟进</p></div>
+        <div class="card"><strong>手机端</strong><p>路上补一句、催进度、看结果</p></div>
+      </div>
+      <p class="muted" style="margin-top:16px">口语「五克巴蒂」= Grok Bot · 常见：「WorkBuddy 交货，Grok Bot 跟线」</p>
+    </section>
+
+    <section class="slide" data-title="怎么配合">
+      <div class="eyebrow">Part 2 · 搭配</div>
+      <h2>WorkBuddy 与 Grok Bot</h2>
+      <div class="two-col">
+        <div class="card">
+          <strong>WorkBuddy</strong>
+          <p>办公工作台 / Agent 交货<br/>文档 · 表格 · PPT · 专家 / Skill</p>
+        </div>
+        <div class="card">
+          <strong>Grok Bot</strong>
+          <p>助手体系 · 跟项目 / 跟催<br/>电脑 + 手机一体指挥</p>
+        </div>
+      </div>
+      <p style="margin-top:20px" class="muted">不是二选一。账号开通按部门安排。</p>
+    </section>
+
+    <section class="slide" data-title="微信联动">
+      <div class="eyebrow">Part 3 · 微信指挥 · 5–6′</div>
+      <h2>目标形态：手机 ↔ 电脑</h2>
+      <div class="flow">
+        <span>微信发指令</span><span class="arrow">→</span>
+        <span>机器人桥接</span><span class="arrow">→</span>
+        <span>电脑侧执行</span><span class="arrow">→</span>
+        <span>结果回传验收</span>
+      </div>
+      <p style="margin-top:24px; max-width:42rem">人在手机上指挥，重活在电脑上干，两边不断档。</p>
+    </section>
+
+    <section class="slide" data-title="微信口径">
+      <div class="eyebrow">Part 3 · 诚实口径</div>
+      <h2>目标形态 ≠ 已全员上线</h2>
+      <ul>
+        <li>能演示到哪一步，以<strong>现场账号 / 绑定</strong>为准</li>
+        <li>部分同学需单独开通，不是人人一点即有</li>
+        <li>未开通：先练下指令习惯（WorkBuddy 同样适用）</li>
+      </ul>
+      <p class="muted" style="margin-top:18px">短指令示例：「整理三条行动项，Owner 先空着。」</p>
+    </section>
+
+    <section class="slide" data-title="EMS桥接">
+      <div class="eyebrow">Part 4 · EMS · 8–10′</div>
+      <h2>从「个人提速」到「工作被管起来」</h2>
+      <div class="quote">AI 帮你起草和催办；人确认之后，进 EMS——工作才真正被管起来。</div>
+      <ul style="margin-top:24px; max-width:44rem">
+        <li>WorkBuddy / Grok Bot / 微信：把活干快</li>
+        <li>EMS：合同、台账索引、软著资质、审批等逐渐有一本账</li>
+        <li><strong class="warn">今天讲方向与已能看见的能力，不声称已全量交付</strong></li>
+      </ul>
+    </section>
+
+    <section class="slide" data-title="EMS能管什么">
+      <div class="eyebrow">Part 4 · EMS</div>
+      <h2>能管什么（可讲范围）</h2>
+      <div class="grid grid-3">
+        <div class="card"><strong>相对方 / 合同</strong><p>登记 · 附件索引 · 状态与到期</p></div>
+        <div class="card"><strong>财务台账索引</strong><p>流水 / 凭证索引 · 非核算、非开票</p></div>
+        <div class="card"><strong>软著 / 资质</strong><p>进度 · 材料索引 · 证书台账</p></div>
+        <div class="card"><strong>文档索引</strong><p>标题 · 路径 · 关联对象 · 不搬文件</p></div>
+        <div class="card"><strong>审批中心（方向）</strong><p>待办与确认留痕</p></div>
+        <div class="card"><strong class="warn">勿讲成已交付</strong><p>项目仅占位；采购 / 交付写能力未就绪</p></div>
+      </div>
+      <p style="margin-top:18px" class="muted">公式：AI 起草 → 人确认 → 进 EMS</p>
+    </section>
+
+    <section class="slide" data-title="EMS接法">
+      <div class="eyebrow">Part 4 · EMS</div>
+      <h2>智能化怎么接进来</h2>
+      <div class="grid grid-3">
+        <div class="card"><strong>WorkBuddy</strong><p>日常交流互动 · 随手交货</p></div>
+        <div class="card"><strong>Grok 挂 EMS</strong><p>助手打开界面 · 查/填/催</p></div>
+        <div class="card"><strong>EMS 内嵌智能体</strong><p>系统里直接问与操作</p></div>
+      </div>
+      <p style="margin-top:18px">接法：<strong>EMS API → MCP / 工具门禁 → 助手</strong>（不直写库）</p>
+      <p class="muted">目标形态；勿称已全员开通。下一刀优先：项目 / 采购 / 交付（未交付）</p>
+    </section>
+
+    <section class="slide" data-title="EMS部署">
+      <div class="eyebrow">Part 4 · 部署</div>
+      <h2>公司要弄：外网怎么进？</h2>
+      <div class="two-col">
+        <div class="card">
+          <strong>外网给同事用</strong>
+          <ul>
+            <li>固定公网 IP（或域名 → IP）</li>
+            <li>HTTPS（证书）</li>
+            <li>优先：阿里云 ECS + 弹性公网 IP</li>
+          </ul>
+        </div>
+        <div class="card">
+          <strong>内网 / 本机 demo</strong>
+          <ul>
+            <li>办公室机器本地起即可</li>
+            <li>自建外网：运营商固定 IP + NAT / 端口映射 + 7×24 在线，更难运维</li>
+          </ul>
+        </div>
+      </div>
+      <p class="muted" style="margin-top:18px">内网先跑通；开外网优先云主机。权限与备份另定，本场不替 IT 拍板。</p>
+    </section>
+
+    <section class="slide" data-title="总览">
+      <div class="eyebrow">总览</div>
+      <h2>带走这一页</h2>
+      <div class="grid grid-3">
+        <div class="card"><strong>WorkBuddy</strong><p>用途 · 四件套 · 专家/Skill · 交货</p></div>
+        <div class="card"><strong>Grok Bot</strong><p>主助手 + 专项助理 · 电脑 + 手机</p></div>
+        <div class="card"><strong>微信机器人</strong><p>手机发令 · 电脑执行</p></div>
+        <div class="card"><strong>EMS</strong><p>合同 / 台账索引 / 软著 / 审批 · 人确认入库</p></div>
+        <div class="card"><strong>人负责</strong><p>判断 · 合规 · 对客户承诺 · 最终提交</p></div>
+        <div class="card"><strong>本周一件</strong><p>优先把 WorkBuddy 用顺</p></div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="红线">
+      <div class="eyebrow">合规提醒 · 3′</div>
+      <h2>敏感信息红线</h2>
+      <div class="two-col">
+        <div class="card">
+          <strong class="warn">不要乱贴</strong>
+          <ul>
+            <li>客户现场全量拓扑 / 未脱敏点位表</li>
+            <li>账号口令 / 密钥</li>
+            <li>合同报价等商务机密</li>
+          </ul>
+        </div>
+        <div class="card">
+          <strong>可脱敏后用</strong>
+          <ul>
+            <li>公开报错模式、通用流程</li>
+            <li>已公开文档结构</li>
+            <li>疑问先问主管 / 行政</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="小实验">
+      <div class="eyebrow">收尾</div>
+      <h2>本周「一人一实验」</h2>
+      <table>
+        <tr><th>选项</th><th>小实验</th><th>成功标准</th></tr>
+        <tr><td>A · WorkBuddy（优先）</td><td>纪要表 / 周报 / PPT 骨架；可选召唤大类专家</td><td>验收后发出或存档</td></tr>
+        <tr><td>B · Grok Bot</td><td>主助手或专项助理跟完一件事</td><td>说清指令 + 自己改了哪三处</td></tr>
+        <tr><td>C · 微信（可选）</td><td>一句完整指令催办或整理</td><td>结果可验收；未开通改 A/B</td></tr>
+        <tr><td>D · EMS 意识（可选）</td><td>想一件「该进系统」的活</td><td>说清：草稿 → 人确认 → EMS</td></tr>
+      </table>
+    </section>
+
+    <section class="slide" data-title="结束">
+      <div class="eyebrow">Thanks</div>
+      <h1>Q &amp; A</h1>
+      <div class="quote" style="margin-top:20px">AI 不会自动让人变强；<br/><strong>会下指令、会拆任务、会验收</strong> 的人，会先变强。<br/>本周先把 WorkBuddy 用顺；能定稿的，再往 EMS 里收一笔。</div>
+      <p class="muted" style="margin-top:28px">完整讲稿见同目录「周一上午」Markdown</p>
+    </section>
+
+  </div>
+  <div class="bar">
+    <div><span id="page">1</span> / <span id="total">1</span> · <span id="title">封面</span></div>
+    <div class="nav">
+      <span class="kbd">← →</span> 翻页 · <span class="kbd">F</span> 全屏
+      <button type="button" id="prev">上一页</button>
+      <button type="button" id="next">下一页</button>
+    </div>
+  </div>
+</div>
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  const pageEl = document.getElementById('page');
+  const totalEl = document.getElementById('total');
+  const titleEl = document.getElementById('title');
+  let i = 0;
+  totalEl.textContent = slides.length;
+  function show(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, idx) => s.classList.toggle('active', idx === i));
+    pageEl.textContent = i + 1;
+    titleEl.textContent = slides[i].dataset.title || '';
+  }
+  document.getElementById('prev').onclick = () => show(i - 1);
+  document.getElementById('next').onclick = () => show(i + 1);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(i + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i - 1); }
+    if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+      else document.exitFullscreen?.();
+    }
+  });
+  show(0);
+</script>
+</body>
+</html>

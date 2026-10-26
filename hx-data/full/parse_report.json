@@ -1,0 +1,1069 @@
+{
+  "files": [
+    {
+      "file": "1A配电室 172.31.4.14 172.20.255.14.xlsx",
+      "fmt": "A",
+      "building": "1A",
+      "room": "1A配电室",
+      "ip": "172.31.4.14",
+      "devices": 76,
+      "models": [
+        "A20",
+        "A40",
+        "施耐德UPS"
+      ]
+    },
+    {
+      "file": "1B配电室 172.31.4.15 172.20.255.15.xlsx",
+      "fmt": "A",
+      "building": "1B",
+      "room": "1B配电室",
+      "ip": "172.31.4.15",
+      "devices": 79,
+      "models": [
+        "A20_2",
+        "A40_2",
+        "施耐德UPS",
+        "伊顿UPS"
+      ]
+    },
+    {
+      "file": "2A1模块 172.31.4.91 172.20.255.91.xlsx",
+      "fmt": "A",
+      "building": "2A",
+      "room": "2A1模块",
+      "ip": "172.31.4.91",
+      "devices": 20,
+      "models": [
+        "全3P列头柜",
+        "单P模版"
+      ]
+    },
+    {
+      "file": "2A1配电室-1 172.31.4.90 172.20.255.90.xlsx",
+      "fmt": "A",
+      "building": "2A",
+      "room": "2A1配电室-1",
+      "ip": "172.31.4.90",
+      "devices": 56,
+      "models": [
+        "A20_3",
+        "A40_3",
+        "PM2225C",
+        "UPS",
+        "温控仪",
+        "光纤测温"
+      ]
+    },
+    {
+      "file": "2A2模块 172.31.4.93  172.20.255.93.xlsx",
+      "fmt": "A",
+      "building": "2A",
+      "room": "2A2模块",
+      "ip": "172.31.4.93",
+      "devices": 18,
+      "models": [
+        "列头柜"
+      ]
+    },
+    {
+      "file": "2A2配电室-1 172.31.4.92 172.20.255.92.xlsx",
+      "fmt": "A",
+      "building": "2A",
+      "room": "2A2配电室-1",
+      "ip": "172.31.4.92",
+      "devices": 56,
+      "models": [
+        "A20_3",
+        "A40_4",
+        "PM2225C",
+        "UPS_2",
+        "温控仪",
+        "光纤测温"
+      ]
+    },
+    {
+      "file": "2B2机房T 172.31.249.109.xlsx",
+      "fmt": "A",
+      "building": "2B",
+      "room": "2B2机房T",
+      "ip": "172.31.249.109",
+      "devices": 10,
+      "models": [
+        "机房"
+      ]
+    },
+    {
+      "file": "2B2机房W 172.31.249.110.xlsx",
+      "fmt": "A",
+      "building": "2B",
+      "room": "2B2机房W",
+      "ip": "172.31.249.110",
+      "devices": 10,
+      "models": [
+        "机房"
+      ]
+    },
+    {
+      "file": "3A1-172.31.4.197-P1.xlsx",
+      "fmt": "A",
+      "building": "3A",
+      "room": "3A1-",
+      "ip": "172.31.4.197",
+      "devices": 2,
+      "models": [
+        "机房_2"
+      ]
+    },
+    {
+      "file": "3A1-172.31.4.197-P2.xlsx",
+      "fmt": "A",
+      "building": "3A",
+      "room": "3A1-",
+      "ip": "172.31.4.197",
+      "devices": 12,
+      "models": [
+        "SJJF",
+        "SJJF_2"
+      ]
+    },
+    {
+      "file": "3A1配电室及3A1模块172.31.4.10.xlsx",
+      "fmt": "A",
+      "building": "3A",
+      "room": "3A1配电室及3A1模块",
+      "ip": "172.31.4.10",
+      "devices": 80,
+      "models": [
+        "A20",
+        "A40_5",
+        "UPS_3",
+        "SJJF"
+      ]
+    },
+    {
+      "file": "3A2配电室及3A2模块172.31.4.11.xlsx",
+      "fmt": "A",
+      "building": "3A",
+      "room": "3A2配电室及3A2模块",
+      "ip": "172.31.4.11",
+      "devices": 86,
+      "models": [
+        "A20",
+        "A40_5",
+        "UPS_3",
+        "SJJF"
+      ]
+    },
+    {
+      "file": "3A4 172.31.4.198.xlsx",
+      "fmt": "A",
+      "building": "3A",
+      "room": "3A4",
+      "ip": "172.31.4.198",
+      "devices": 10,
+      "models": [
+        "SJJF"
+      ]
+    },
+    {
+      "file": "4A1模块 172.31.4.33 172.20.255.33.xlsx",
+      "fmt": "A",
+      "building": "4A",
+      "room": "4A1模块",
+      "ip": "172.31.4.33",
+      "devices": 20,
+      "models": [
+        "SJJF_3"
+      ]
+    },
+    {
+      "file": "4A1配电室 172.31.4.32 172.20.255.32.xlsx",
+      "fmt": "A",
+      "building": "4A",
+      "room": "4A1配电室",
+      "ip": "172.31.4.32",
+      "devices": 89,
+      "models": [
+        "A20",
+        "A40",
+        "UPS_3"
+      ]
+    },
+    {
+      "file": "4A2模块 172.31.4.36 172.20.255.36.xlsx",
+      "fmt": "A",
+      "building": "4A",
+      "room": "4A2模块",
+      "ip": "172.31.4.36",
+      "devices": 20,
+      "models": [
+        "SJJF_3"
+      ]
+    },
+    {
+      "file": "4A2配电室 172.31.4.35 172.20.255.35.xlsx",
+      "fmt": "A",
+      "building": "4A",
+      "room": "4A2配电室",
+      "ip": "172.31.4.35",
+      "devices": 89,
+      "models": [
+        "A20",
+        "A40_5",
+        "UPS_3"
+      ]
+    },
+    {
+      "file": "4A3模块 172.31.4.34 172.20.255.34.xlsx",
+      "fmt": "A",
+      "building": "4A",
+      "room": "4A3模块",
+      "ip": "172.31.4.34",
+      "devices": 20,
+      "models": [
+        "SJJF_3"
+      ]
+    },
+    {
+      "file": "4A4模块 172.31.4.37 172.20.255.37.xlsx",
+      "fmt": "A",
+      "building": "4A",
+      "room": "4A4模块",
+      "ip": "172.31.4.37",
+      "devices": 20,
+      "models": [
+        "SJJF_3"
+      ]
+    },
+    {
+      "file": "5A1模块 172.31.4.97 172.20.255.97.xlsx",
+      "fmt": "A",
+      "building": "5A",
+      "room": "5A1模块",
+      "ip": "172.31.4.97",
+      "devices": 20,
+      "models": [
+        "机房"
+      ]
+    },
+    {
+      "file": "5A1配电室-1 172.31.4.94172.20.255.94.xlsx",
+      "fmt": "A",
+      "building": "5A",
+      "room": "5A1配电室-1",
+      "ip": "172.31.4.941",
+      "devices": 43,
+      "models": [
+        "A20_4",
+        "A40_3",
+        "UPS",
+        "温控仪"
+      ]
+    },
+    {
+      "file": "5A1配电室-2 172.31.4.95172.20.255.95.xlsx",
+      "fmt": "A",
+      "building": "5A",
+      "room": "5A1配电室-2",
+      "ip": "172.31.4.951",
+      "devices": 14,
+      "models": [
+        "PM2225C"
+      ]
+    },
+    {
+      "file": "5A1配电室-3 172.31.4.96 172.20.255.96.xlsx",
+      "fmt": "A",
+      "building": "5A",
+      "room": "5A1配电室-3",
+      "ip": "172.31.4.96",
+      "devices": 52,
+      "models": [
+        "PM2225C"
+      ]
+    },
+    {
+      "file": "5A2模块 172.31.4.102 172.20.255.102.xlsx",
+      "fmt": "A",
+      "building": "5A",
+      "room": "5A2模块",
+      "ip": "172.31.4.102",
+      "devices": 20,
+      "models": [
+        "全3P列头柜"
+      ]
+    },
+    {
+      "file": "5A2配电室-1 172.31.4.99 172.20.255.99.xlsx",
+      "fmt": "A",
+      "building": "5A",
+      "room": "5A2配电室-1",
+      "ip": "172.31.4.99",
+      "devices": 43,
+      "models": [
+        "A20_4",
+        "A40_3",
+        "PM2225C",
+        "UPS_2",
+        "温控仪"
+      ]
+    },
+    {
+      "file": "5A2配电室-2 172.31.4.100 172.20.255.100.xlsx",
+      "fmt": "A",
+      "building": "5A",
+      "room": "5A2配电室-2",
+      "ip": "172.31.4.100",
+      "devices": 0,
+      "models": [
+        "PM2225C"
+      ]
+    },
+    {
+      "file": "5A2配电室-3 172.31.4.101 172.20.255.101.xlsx",
+      "fmt": "A",
+      "building": "5A",
+      "room": "5A2配电室-3",
+      "ip": "172.31.4.101",
+      "devices": 52,
+      "models": [
+        "PM2225C"
+      ]
+    },
+    {
+      "file": "5A3模块 172.31.4.98 172.20.255.98.xlsx",
+      "fmt": "A",
+      "building": "5A",
+      "room": "5A3模块",
+      "ip": "172.31.4.98",
+      "devices": 20,
+      "models": [
+        "全3P列头柜"
+      ]
+    },
+    {
+      "file": "5A4模块 172.31.4.108 172.20.255.108.xlsx",
+      "fmt": "A",
+      "building": "5A",
+      "room": "5A4模块",
+      "ip": "172.31.4.108",
+      "devices": 20,
+      "models": [
+        "列头柜"
+      ]
+    },
+    {
+      "file": "ECC配电室 172.31.4.16 172.20.255.16.xlsx",
+      "fmt": "A",
+      "building": "ECC",
+      "room": "ECC配电室",
+      "ip": "172.31.4.16",
+      "devices": 38,
+      "models": [
+        "A20",
+        "A40_5",
+        "UPS_3"
+      ]
+    },
+    {
+      "file": "2A3模块172.20.255.25.xlsx",
+      "fmt": "模块",
+      "building": "2A",
+      "room": "2A3模块",
+      "ip": "172.20.255.25",
+      "devices": 16,
+      "models": [
+        "列头柜_2"
+      ]
+    },
+    {
+      "file": "2A4模块172.20.255.27.xlsx",
+      "fmt": "模块",
+      "building": "2A",
+      "room": "2A4模块",
+      "ip": "172.20.255.27",
+      "devices": 16,
+      "models": [
+        "列头柜_2"
+      ]
+    },
+    {
+      "file": "2B1-3模块172.31.4.20.xlsx",
+      "fmt": "模块",
+      "building": "2B",
+      "room": "2B1-3模块",
+      "ip": "172.31.4.20",
+      "devices": 40,
+      "models": [
+        "列头柜_3"
+      ]
+    },
+    {
+      "file": "2B4模块172.31.4.23.xlsx",
+      "fmt": "模块",
+      "building": "2B",
+      "room": "2B4模块",
+      "ip": "172.31.4.23",
+      "devices": 20,
+      "models": [
+        "列头柜_3"
+      ]
+    },
+    {
+      "file": "3B1_3B3模块172.31.4.28.xlsx",
+      "fmt": "模块",
+      "building": "3B",
+      "room": "3B1_3B3模块",
+      "ip": "172.31.4.28",
+      "devices": 30,
+      "models": [
+        "列头柜_4",
+        "列头柜_3"
+      ]
+    },
+    {
+      "file": "3B2_3B4模块172.31.4.29.xlsx",
+      "fmt": "模块",
+      "building": "3B",
+      "room": "3B2_3B4模块",
+      "ip": "172.31.4.29",
+      "devices": 27,
+      "models": [
+        "列头柜_4",
+        "列头柜_5",
+        "列头柜_6"
+      ]
+    },
+    {
+      "file": "4B1模块172.31.4.186.xlsx",
+      "fmt": "模块",
+      "building": "4B",
+      "room": "4B1模块",
+      "ip": "172.31.4.186",
+      "devices": 20,
+      "models": [
+        "列头柜_7"
+      ]
+    },
+    {
+      "file": "4B2模块172.31.4.189.xlsx",
+      "fmt": "模块",
+      "building": "4B",
+      "room": "4B2模块",
+      "ip": "172.31.4.189",
+      "devices": 20,
+      "models": [
+        "列头柜_7"
+      ]
+    },
+    {
+      "file": "4B3模块172.31.4.187.xlsx",
+      "fmt": "模块",
+      "building": "4B",
+      "room": "4B3模块",
+      "ip": "172.31.4.187",
+      "devices": 20,
+      "models": [
+        "列头柜_7"
+      ]
+    },
+    {
+      "file": "4B4模块172.31.4.190.xlsx",
+      "fmt": "模块",
+      "building": "4B",
+      "room": "4B4模块",
+      "ip": "172.31.4.190",
+      "devices": 20,
+      "models": [
+        "列头柜_8"
+      ]
+    },
+    {
+      "file": "5B1模块172.31.4.192.xlsx",
+      "fmt": "模块",
+      "building": "5B",
+      "room": "5B1模块",
+      "ip": "172.31.4.192",
+      "devices": 20,
+      "models": [
+        "列头柜_7"
+      ]
+    },
+    {
+      "file": "5B2模块172.31.4.195.xlsx",
+      "fmt": "模块",
+      "building": "5B",
+      "room": "5B2模块",
+      "ip": "172.31.4.195",
+      "devices": 20,
+      "models": [
+        "列头柜_7"
+      ]
+    },
+    {
+      "file": "5B2配电室172.31.4.194.xlsx",
+      "fmt": "模块",
+      "building": "5B",
+      "room": "5B2配电室",
+      "ip": "172.31.4.194",
+      "devices": 102,
+      "models": [
+        "列表",
+        "仪表",
+        "仪表_2",
+        "UPS_4"
+      ]
+    },
+    {
+      "file": "5B3模块172.31.4.193.xlsx",
+      "fmt": "模块",
+      "building": "5B",
+      "room": "5B3模块",
+      "ip": "172.31.4.193",
+      "devices": 20,
+      "models": [
+        "列头柜_7"
+      ]
+    },
+    {
+      "file": "5B4模块172.31.4.196.xlsx",
+      "fmt": "模块",
+      "building": "5B",
+      "room": "5B4模块",
+      "ip": "172.31.4.196",
+      "devices": 20,
+      "models": [
+        "列头柜_7"
+      ]
+    },
+    {
+      "file": "2A2配电室172.31.4.24.xlsx",
+      "fmt": "配电室",
+      "building": "2A",
+      "room": "2A2配电室",
+      "ip": "172.31.4.24",
+      "devices": 40,
+      "models": [
+        "仪表",
+        "仪表_2",
+        "UPS_5"
+      ]
+    },
+    {
+      "file": "2A2配电室172.31.4.26.xlsx",
+      "fmt": "配电室",
+      "building": "2A",
+      "room": "2A2配电室",
+      "ip": "172.31.4.26",
+      "devices": 40,
+      "models": [
+        "仪表",
+        "仪表_2",
+        "UPS_6"
+      ]
+    },
+    {
+      "file": "2B1配电室172.31.4.18.xlsx",
+      "fmt": "配电室",
+      "building": "2B",
+      "room": "2B1配电室",
+      "ip": "172.31.4.18",
+      "devices": 43,
+      "models": [
+        "AI",
+        "仪表 AI",
+        "UPS AI"
+      ]
+    },
+    {
+      "file": "2B1配电室172.31.4.19.xlsx",
+      "fmt": "配电室",
+      "building": "2B",
+      "room": "2B1配电室",
+      "ip": "172.31.4.19",
+      "devices": 43,
+      "models": [
+        "AI",
+        "仪表 AI",
+        "UPS AI"
+      ]
+    },
+    {
+      "file": "2B2配电室172.31.4.21.xlsx",
+      "fmt": "配电室",
+      "building": "2B",
+      "room": "2B2配电室",
+      "ip": "172.31.4.21",
+      "devices": 43,
+      "models": [
+        "AI",
+        "仪表 AI",
+        "UPS AI"
+      ]
+    },
+    {
+      "file": "2B2配电室172.31.4.22.xlsx",
+      "fmt": "配电室",
+      "building": "2B",
+      "room": "2B2配电室",
+      "ip": "172.31.4.22",
+      "devices": 43,
+      "models": [
+        "AI",
+        "仪表 AI",
+        "UPS AI"
+      ]
+    },
+    {
+      "file": "3B1配电室172.31.4.12(1).xlsx",
+      "fmt": "配电室",
+      "building": "3B",
+      "room": "3B1配电室",
+      "ip": "172.31.4.12",
+      "devices": 94,
+      "models": [
+        "AI",
+        "AI_2",
+        "AI_3",
+        "AI_4",
+        "AI_5",
+        "AI_6"
+      ]
+    },
+    {
+      "file": "3B2配电室172.31.4.13.xlsx",
+      "fmt": "配电室",
+      "building": "3B",
+      "room": "3B2配电室",
+      "ip": "172.31.4.13",
+      "devices": 94,
+      "models": [
+        "AI",
+        "AI_2",
+        "AI_3",
+        "AI_4",
+        "AI_5",
+        "AI_7"
+      ]
+    },
+    {
+      "file": "4B1配电室172.31.4.185.xlsx",
+      "fmt": "配电室",
+      "building": "4B",
+      "room": "4B1配电室",
+      "ip": "172.31.4.185",
+      "devices": 102,
+      "models": [
+        "AI_2",
+        "AI",
+        "AI_5"
+      ]
+    },
+    {
+      "file": "4B2配电室172.31.4.188(1).xlsx",
+      "fmt": "配电室",
+      "building": "4B",
+      "room": "4B2配电室",
+      "ip": "172.31.4.188",
+      "devices": 102,
+      "models": [
+        "AI_2",
+        "AI",
+        "AI_5"
+      ]
+    },
+    {
+      "file": "5B1配电室172.31.4.191(1).xlsx",
+      "fmt": "配电室",
+      "building": "5B",
+      "room": "5B1配电室",
+      "ip": "172.31.4.191",
+      "devices": 102,
+      "models": [
+        "AI_2",
+        "AI",
+        "AI_5"
+      ]
+    }
+  ],
+  "totalDevices": 2252,
+  "models": [
+    {
+      "name": "A20",
+      "type": "A20",
+      "ai": 17,
+      "di": 3,
+      "aiCount": 31,
+      "diCount": 4
+    },
+    {
+      "name": "A40",
+      "type": "A40",
+      "ai": 24,
+      "di": 3,
+      "aiCount": 42,
+      "diCount": 3
+    },
+    {
+      "name": "施耐德UPS",
+      "type": "施耐德UPS",
+      "ai": 44,
+      "di": 1,
+      "aiCount": 45,
+      "diCount": 1
+    },
+    {
+      "name": "A20_2",
+      "type": "A20",
+      "ai": 17,
+      "di": 3,
+      "aiCount": 31,
+      "diCount": 4
+    },
+    {
+      "name": "A40_2",
+      "type": "A40",
+      "ai": 24,
+      "di": 3,
+      "aiCount": 42,
+      "diCount": 3
+    },
+    {
+      "name": "伊顿UPS",
+      "type": "伊顿UPS",
+      "ai": 28,
+      "di": 23,
+      "aiCount": 29,
+      "diCount": 23
+    },
+    {
+      "name": "全3P列头柜",
+      "type": "全3P列头柜",
+      "ai": 234,
+      "di": 221,
+      "aiCount": 468,
+      "diCount": 221
+    },
+    {
+      "name": "单P模版",
+      "type": "单P模版",
+      "ai": 234,
+      "di": 221,
+      "aiCount": 468,
+      "diCount": 221
+    },
+    {
+      "name": "A20_3",
+      "type": "A20",
+      "ai": 20,
+      "di": 3,
+      "aiCount": 35,
+      "diCount": 3
+    },
+    {
+      "name": "A40_3",
+      "type": "A40",
+      "ai": 41,
+      "di": 7,
+      "aiCount": 69,
+      "diCount": 4
+    },
+    {
+      "name": "PM2225C",
+      "type": "PM2225C",
+      "ai": 42,
+      "di": 3,
+      "aiCount": 92,
+      "diCount": 3
+    },
+    {
+      "name": "UPS",
+      "type": "UPS",
+      "ai": 45,
+      "di": 88,
+      "aiCount": 46,
+      "diCount": 88
+    },
+    {
+      "name": "温控仪",
+      "type": "温控仪",
+      "ai": 4,
+      "di": 7,
+      "aiCount": 5,
+      "diCount": 7
+    },
+    {
+      "name": "光纤测温",
+      "type": "光纤测温",
+      "ai": 6,
+      "di": 1,
+      "aiCount": 7,
+      "diCount": 1
+    },
+    {
+      "name": "列头柜",
+      "type": "列头柜",
+      "ai": 232,
+      "di": 1,
+      "aiCount": 307,
+      "diCount": 1
+    },
+    {
+      "name": "A40_4",
+      "type": "A40",
+      "ai": 41,
+      "di": 7,
+      "aiCount": 69,
+      "diCount": 4
+    },
+    {
+      "name": "UPS_2",
+      "type": "UPS",
+      "ai": 61,
+      "di": 102,
+      "aiCount": 62,
+      "diCount": 102
+    },
+    {
+      "name": "机房",
+      "type": "机房",
+      "ai": 123,
+      "di": 117,
+      "aiCount": 246,
+      "diCount": 117
+    },
+    {
+      "name": "机房_2",
+      "type": "机房",
+      "ai": 397,
+      "di": 1,
+      "aiCount": 494,
+      "diCount": 1
+    },
+    {
+      "name": "SJJF",
+      "type": "SJJF",
+      "ai": 285,
+      "di": 1,
+      "aiCount": 288,
+      "diCount": 1
+    },
+    {
+      "name": "SJJF_2",
+      "type": "SJJF",
+      "ai": 246,
+      "di": 45,
+      "aiCount": 247,
+      "diCount": 45
+    },
+    {
+      "name": "A40_5",
+      "type": "A40",
+      "ai": 24,
+      "di": 3,
+      "aiCount": 42,
+      "diCount": 4
+    },
+    {
+      "name": "UPS_3",
+      "type": "UPS",
+      "ai": 44,
+      "di": 1,
+      "aiCount": 45,
+      "diCount": 1
+    },
+    {
+      "name": "SJJF_3",
+      "type": "SJJF",
+      "ai": 401,
+      "di": 1,
+      "aiCount": 478,
+      "diCount": 1
+    },
+    {
+      "name": "A20_4",
+      "type": "A20",
+      "ai": 20,
+      "di": 3,
+      "aiCount": 35,
+      "diCount": 3
+    },
+    {
+      "name": "列头柜_2",
+      "type": "列头柜",
+      "ai": 322,
+      "di": 80,
+      "aiCount": 478,
+      "diCount": 117
+    },
+    {
+      "name": "列头柜_3",
+      "type": "列头柜",
+      "ai": 105,
+      "di": 33,
+      "aiCount": 209,
+      "diCount": 47
+    },
+    {
+      "name": "列头柜_4",
+      "type": "列头柜",
+      "ai": 177,
+      "di": 57,
+      "aiCount": 355,
+      "diCount": 49
+    },
+    {
+      "name": "列头柜_5",
+      "type": "列头柜",
+      "ai": 105,
+      "di": 33,
+      "aiCount": 209,
+      "diCount": 47
+    },
+    {
+      "name": "列头柜_6",
+      "type": "列头柜",
+      "ai": 294,
+      "di": 57,
+      "aiCount": 589,
+      "diCount": 49
+    },
+    {
+      "name": "列头柜_7",
+      "type": "列头柜",
+      "ai": 177,
+      "di": 57,
+      "aiCount": 355,
+      "diCount": 49
+    },
+    {
+      "name": "列头柜_8",
+      "type": "列头柜",
+      "ai": 186,
+      "di": 43,
+      "aiCount": 307,
+      "diCount": 96
+    },
+    {
+      "name": "列表",
+      "type": "列表",
+      "ai": 17,
+      "di": 3,
+      "aiCount": 31,
+      "diCount": 4
+    },
+    {
+      "name": "仪表",
+      "type": "仪表",
+      "ai": 17,
+      "di": 3,
+      "aiCount": 31,
+      "diCount": 4
+    },
+    {
+      "name": "仪表_2",
+      "type": "仪表",
+      "ai": 24,
+      "di": 3,
+      "aiCount": 42,
+      "diCount": 3
+    },
+    {
+      "name": "UPS_4",
+      "type": "UPS",
+      "ai": 37,
+      "di": 20,
+      "aiCount": 45,
+      "diCount": 7
+    },
+    {
+      "name": "UPS_5",
+      "type": "UPS",
+      "ai": 44,
+      "di": 21,
+      "aiCount": 45,
+      "diCount": 7
+    },
+    {
+      "name": "UPS_6",
+      "type": "UPS",
+      "ai": 44,
+      "di": 21,
+      "aiCount": 45,
+      "diCount": 7
+    },
+    {
+      "name": "AI",
+      "type": "AI",
+      "ai": 24,
+      "di": 3,
+      "aiCount": 42,
+      "diCount": 3
+    },
+    {
+      "name": "仪表 AI",
+      "type": "仪表 AI",
+      "ai": 17,
+      "di": 3,
+      "aiCount": 31,
+      "diCount": 4
+    },
+    {
+      "name": "UPS AI",
+      "type": "UPS AI",
+      "ai": 44,
+      "di": 21,
+      "aiCount": 45,
+      "diCount": 7
+    },
+    {
+      "name": "AI_2",
+      "type": "AI",
+      "ai": 17,
+      "di": 3,
+      "aiCount": 31,
+      "diCount": 4
+    },
+    {
+      "name": "AI_3",
+      "type": "AI",
+      "ai": 28,
+      "di": 24,
+      "aiCount": 29,
+      "diCount": 24
+    },
+    {
+      "name": "AI_4",
+      "type": "AI",
+      "ai": 105,
+      "di": 32,
+      "aiCount": 109,
+      "diCount": 47
+    },
+    {
+      "name": "AI_5",
+      "type": "AI",
+      "ai": 37,
+      "di": 19,
+      "aiCount": 45,
+      "diCount": 7
+    },
+    {
+      "name": "AI_6",
+      "type": "AI",
+      "ai": 177,
+      "di": 56,
+      "aiCount": 119,
+      "diCount": 49
+    },
+    {
+      "name": "AI_7",
+      "type": "AI",
+      "ai": 177,
+      "di": 58,
+      "aiCount": 119,
+      "diCount": 49
+    }
+  ]
+}

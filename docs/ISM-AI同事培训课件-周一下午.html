@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI 赋能工作坊 · 趋势 · 能力 · 价值</title>
+<style>
+  :root {
+    --bg: #0f1720;
+    --panel: #16202b;
+    --text: #e8eef4;
+    --muted: #93a4b5;
+    --accent: #2f9e8a;
+    --accent2: #d4a017;
+    --line: rgba(255,255,255,.08);
+    --danger: #c45c5c;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  }
+  body {
+    background:
+      radial-gradient(1200px 600px at 10% -10%, rgba(47,158,138,.18), transparent 55%),
+      radial-gradient(900px 500px at 100% 0%, rgba(212,160,23,.12), transparent 50%),
+      var(--bg);
+  }
+  .deck { height: 100%; display: flex; flex-direction: column; }
+  .slides { flex: 1; position: relative; overflow: hidden; }
+  .slide {
+    position: absolute; inset: 0;
+    padding: clamp(28px, 5vw, 64px);
+    display: none; flex-direction: column; justify-content: center;
+    opacity: 0; transform: translateY(12px);
+    transition: opacity .28s ease, transform .28s ease;
+  }
+  .slide.active { display: flex; opacity: 1; transform: none; }
+  h1 { font-size: clamp(28px, 4.2vw, 48px); margin: 0 0 12px; letter-spacing: .02em; }
+  h2 { font-size: clamp(24px, 3.2vw, 36px); margin: 0 0 20px; color: #fff; }
+  h3 { font-size: clamp(18px, 2.2vw, 24px); margin: 0 0 12px; color: var(--accent); font-weight: 600; }
+  p, li { font-size: clamp(16px, 1.7vw, 22px); line-height: 1.55; color: var(--text); }
+  .muted { color: var(--muted); }
+  .eyebrow {
+    color: var(--accent); font-size: 14px; letter-spacing: .16em;
+    text-transform: uppercase; margin-bottom: 14px; font-weight: 600;
+  }
+  .hero-sub { max-width: 46rem; color: var(--muted); font-size: clamp(16px, 1.8vw, 22px); }
+  .grid { display: grid; gap: 16px; }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+  .grid-3 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .card {
+    background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+    border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 16px;
+  }
+  .card strong { display: block; margin-bottom: 8px; font-size: 18px; }
+  .card p, .card li { font-size: 15px; color: var(--muted); margin: 0; }
+  ul { margin: 0; padding-left: 1.15em; }
+  li + li { margin-top: 8px; }
+  table {
+    width: 100%; border-collapse: collapse; font-size: clamp(14px, 1.4vw, 18px);
+  }
+  th, td {
+    border-bottom: 1px solid var(--line); text-align: left;
+    padding: 10px 12px; vertical-align: top;
+  }
+  th { color: var(--accent); font-weight: 600; }
+  .quote {
+    border-left: 3px solid var(--accent); padding: 8px 0 8px 18px;
+    font-size: clamp(18px, 2vw, 26px); max-width: 48rem; color: #f2f7fb;
+  }
+  .tag {
+    display: inline-block; padding: 4px 10px; border-radius: 999px;
+    border: 1px solid var(--line); color: var(--muted); font-size: 13px; margin-right: 8px;
+  }
+  .bar {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; padding: 10px 18px; border-top: 1px solid var(--line);
+    background: rgba(0,0,0,.25); backdrop-filter: blur(8px);
+    font-size: 13px; color: var(--muted);
+  }
+  .bar .nav { display: flex; gap: 8px; }
+  button {
+    background: transparent; color: var(--text); border: 1px solid var(--line);
+    border-radius: 8px; padding: 6px 12px; cursor: pointer; font: inherit;
+  }
+  button:hover { border-color: var(--accent); color: #fff; }
+  .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--accent2); }
+  .flow {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    font-size: clamp(14px, 1.5vw, 18px);
+  }
+  .flow span {
+    background: var(--panel); border: 1px solid var(--line);
+    border-radius: 10px; padding: 10px 14px;
+  }
+  .flow .arrow { color: var(--muted); background: none; border: none; padding: 0; }
+  .warn { color: #f0c9c9; }
+  .two-col { display: grid; grid-template-columns: 1.1fr .9fr; gap: 24px; align-items: start; }
+  @media (max-width: 860px) {
+    .two-col { grid-template-columns: 1fr; }
+    .slide { justify-content: flex-start; padding-top: 36px; overflow: auto; }
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+  <div class="slides" id="slides">
+
+    <section class="slide active" data-title="封面">
+      <div class="eyebrow">内部培训 · 周一下午</div>
+      <h1>AI 赋能工作坊</h1>
+      <p class="hero-sub">趋势 · 能力 · 价值 —— 建立共同认知，带走可立刻试用的做法</p>
+      <p style="margin-top:28px">
+        <span class="tag">约 60–75 分钟</span>
+        <span class="tag">讲解 + 场景 + Q&A</span>
+      </p>
+    </section>
+
+    <section class="slide" data-title="议程">
+      <div class="eyebrow">Agenda</div>
+      <h2>今天三件事</h2>
+      <div class="grid grid-3">
+        <div class="card"><strong>01 发展趋势</strong><p>行业走到哪一步，和我们有什么关系</p></div>
+        <div class="card"><strong>02 能力具象化</strong><p>研发 / 流程 / 交付：输入→AI→你验收</p></div>
+        <div class="card"><strong>03 员工价值点</strong><p>报销减负、文档加速、日常可感收益</p></div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="定调">
+      <div class="eyebrow">Opening</div>
+      <h2>先定调</h2>
+      <div class="quote">AI 是「副驾驶」，方向盘还在你手里。<br/>用得好 = 更快、更稳、更少重复劳动。</div>
+      <ul style="margin-top:28px; max-width:40rem">
+        <li>不讲空泛替代论，不讲论文参数</li>
+        <li>不承诺「明天上线整套企业大系统」</li>
+        <li>讲清楚：能干什么、不能干什么、人负责什么</li>
+      </ul>
+    </section>
+
+    <section class="slide" data-title="三波演进">
+      <div class="eyebrow">Part 1 · 趋势</div>
+      <h2>三波演进（业务语言）</h2>
+      <div class="grid grid-3">
+        <div class="card"><strong>感知与识别</strong><p>图像 / 语音 / OCR<br/>图纸、票据、现场照片可「读」</p></div>
+        <div class="card"><strong>生成式（当下）</strong><p>会写、会改、会总结、会对话<br/>文档、代码、方案可加速</p></div>
+        <div class="card"><strong>Agent / 工作流</strong><p>不只聊天，还能按步骤干活<br/>报销、填表、查资料可半自动</p></div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="企业趋势">
+      <div class="eyebrow">Part 1 · 趋势</div>
+      <h2>企业侧看得见的变化</h2>
+      <ul>
+        <li><strong>聊天玩具 → 工作入口</strong>：目标从「问一句」变成「做完这件事」</li>
+        <li><strong>单次问答 → 多步任务</strong>：读表 → 清单 → 检查项</li>
+        <li><strong>通用模型 → 场景 + 工具</strong>：模型理解生成，系统负责落地</li>
+        <li><strong>治理成刚需</strong>：敏感数据、权限、客户资料要有边界</li>
+      </ul>
+    </section>
+
+    <section class="slide" data-title="趋势金句">
+      <div class="eyebrow">Part 1 · 小结</div>
+      <h2>记住这一句</h2>
+      <div class="quote">趋势不是「人人都会写 Prompt」，<br/>而是「重复脑力劳动会被工具吃掉」。<br/><br/>竞争力 = 会提需求 · 会验收 · 会接到真实流程。</div>
+    </section>
+
+    <section class="slide" data-title="能力原则">
+      <div class="eyebrow">Part 2 · 能力</div>
+      <h2>每个能力都按同一公式讲</h2>
+      <div class="flow">
+        <span>输入</span><span class="arrow">→</span>
+        <span>AI 做什么</span><span class="arrow">→</span>
+        <span>你验收什么</span>
+      </div>
+      <p class="muted" style="margin-top:24px; max-width:40rem">没有验收的「生成」，只是更快地制造错误。</p>
+    </section>
+
+    <section class="slide" data-title="研发A">
+      <div class="eyebrow">Part 2 · 软件开发</div>
+      <h2>场景 A：读懂陌生模块</h2>
+      <table>
+        <tr><th style="width:18%">输入</th><td>函数 / 接口文件 / 报错日志</td></tr>
+        <tr><th>AI 做</th><td>白话解释职责、调用链、风险；标出建议先看的文件</td></tr>
+        <tr><th>你验收</th><td>对照真实代码，排除幻觉，补业务背景</td></tr>
+      </table>
+      <p class="muted" style="margin-top:18px">例：登录密码对不上 → 拆前端 MD5 → 接口字段 → 后端比对链路</p>
+    </section>
+
+    <section class="slide" data-title="研发B">
+      <div class="eyebrow">Part 2 · 软件开发</div>
+      <h2>场景 B：小功能 / 小 bug</h2>
+      <div class="two-col">
+        <div>
+          <ul>
+            <li>输入：需求 + 相关片段 +「不要改无关代码」</li>
+            <li>AI：方案、补丁草稿、边界条件</li>
+            <li>你：Review 范围、回归、风格</li>
+          </ul>
+          <p style="margin-top:18px"><strong>角色变化</strong>：从打字员 → 主编</p>
+        </div>
+        <div class="card">
+          <strong>边界</strong>
+          <ul>
+            <li>擅长：样板、解释、日志归纳</li>
+            <li class="warn">不擅长：未文档化现场约定</li>
+            <li class="warn">上线决策与责任在人</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="流程">
+      <div class="eyebrow">Part 2 · 流程管理</div>
+      <h2>流程 / 项目里怎么用</h2>
+      <div class="grid grid-2">
+        <div class="card"><strong>周报汇总</strong><p>任务 + 问题 → 进展 / 风险 / 下周计划</p></div>
+        <div class="card"><strong>会议纪要</strong><p>笔记 → 决议、Owner、截止日期</p></div>
+        <div class="card"><strong>SOP 初稿</strong><p>部署 / 联调检查清单骨架，人补踩坑</p></div>
+        <div class="card"><strong>需求澄清</strong><p>口述 → 追问范围、验收、例外、依赖</p></div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="能力地图">
+      <div class="eyebrow">Part 2 · 总览</div>
+      <h2>能力地图</h2>
+      <div class="grid grid-2">
+        <div class="card"><strong>理解</strong><p>文档 / 代码 / 表格 / 票据</p></div>
+        <div class="card"><strong>生成</strong><p>文案 / 代码 / 清单 / 纪要 / 方案骨架</p></div>
+        <div class="card"><strong>转化</strong><p>口语→正式 · 长文→要点 · 表→结构</p></div>
+        <div class="card"><strong>协助流程</strong><p>填单草稿、分类、缺项提醒、串联步骤</p></div>
+      </div>
+      <p style="margin-top:18px" class="muted">人负责：判断 · 合规 · 对客户承诺 · 最终提交</p>
+    </section>
+
+    <section class="slide" data-title="价值分层">
+      <div class="eyebrow">Part 3 · 价值</div>
+      <h2>对员工可感知的三层收益</h2>
+      <table>
+        <tr><th>层级</th><th>例子</th><th>体感</th></tr>
+        <tr><td>每天</td><td>邮件、周报、纪要</td><td>省 15–40 分钟</td></tr>
+        <tr><td>每周</td><td>报销材料、方案初稿</td><td>少一次赶工</td></tr>
+        <tr><td>项目级</td><td>模块理解、排查辅助</td><td>缩短卡住时间</td></tr>
+      </table>
+    </section>
+
+    <section class="slide" data-title="报销">
+      <div class="eyebrow">Part 3 · 重点例子</div>
+      <h2>自动化报销：不是替你报，是少被退回</h2>
+      <table>
+        <tr><th>环节</th><th>AI 辅助</th><th>人仍要做</th></tr>
+        <tr><td>收票</td><td>OCR 金额/日期/商家</td><td>核对真伪与可报性</td></tr>
+        <tr><td>分类</td><td>建议科目</td><td>按制度确认</td></tr>
+        <tr><td>填写</td><td>事由、行程摘要草稿</td><td>删改不实信息</td></tr>
+        <tr><td>自检</td><td>缺附件清单</td><td>最终提交责任</td></tr>
+      </table>
+    </section>
+
+    <section class="slide" data-title="分角色">
+      <div class="eyebrow">Part 3 · 分角色</div>
+      <h2>你可能最先用到的点</h2>
+      <div class="grid grid-2">
+        <div class="card"><strong>研发</strong><p>卡壳先问 Top3 · Review 前清低级问题 · 变更说明草稿</p></div>
+        <div class="card"><strong>产品 / 项目</strong><p>聊天记录→需求条目 · 风险/验收模板</p></div>
+        <div class="card"><strong>实施 / 运维</strong><p>排查清单 · 故障问答草稿 · 邮件润色</p></div>
+        <div class="card"><strong>行政 / 全员</strong><p>报销 · 请假说明 · 制度问答 · 通知初稿</p></div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="落地条件">
+      <div class="eyebrow">Part 3 · 落地</div>
+      <h2>价值落地的三个条件</h2>
+      <div class="grid grid-3">
+        <div class="card"><strong>有边界</strong><p>什么能贴、什么不能贴</p></div>
+        <div class="card"><strong>有验收</strong><p>输出默认是草稿</p></div>
+        <div class="card"><strong>有习惯</strong><p>选 1 个高频场景练两周</p></div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="红线">
+      <div class="eyebrow">合规提醒</div>
+      <h2>敏感信息红线</h2>
+      <div class="two-col">
+        <div class="card">
+          <strong class="warn">不要上传</strong>
+          <ul>
+            <li>客户现场全量拓扑</li>
+            <li>未脱敏点位表</li>
+            <li>账号口令 / 密钥</li>
+            <li>合同报价等商务机密</li>
+          </ul>
+        </div>
+        <div class="card">
+          <strong>可脱敏后使用</strong>
+          <ul>
+            <li>公开报错模式</li>
+            <li>通用流程步骤</li>
+            <li>已公开文档结构</li>
+            <li>疑问先问主管 / 行政</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide" data-title="小实验">
+      <div class="eyebrow">收尾</div>
+      <h2>本周「一人一实验」</h2>
+      <table>
+        <tr><th>角色</th><th>小实验</th><th>成功标准</th></tr>
+        <tr><td>研发</td><td>解释一个陌生函数并自验</td><td>能讲给同事且无硬伤</td></tr>
+        <tr><td>产品/项目</td><td>纪要 → 行动项</td><td>发出去且有 Owner</td></tr>
+        <tr><td>实施</td><td>部署/排查步骤成清单</td><td>同事能按清单走通</td></tr>
+        <tr><td>全员</td><td>报销/请假说明打草稿</td><td>少一轮退回</td></tr>
+      </table>
+    </section>
+
+    <section class="slide" data-title="结束">
+      <div class="eyebrow">Thanks</div>
+      <h1>Q & A</h1>
+      <div class="quote" style="margin-top:20px">AI 不会自动让人变强；<br/><strong>会提问、会拆任务、会验收</strong> 的人，会先变强。</div>
+      <p class="muted" style="margin-top:28px">完整讲稿见同目录 Markdown 课件</p>
+    </section>
+
+  </div>
+  <div class="bar">
+    <div><span id="page">1</span> / <span id="total">1</span> · <span id="title">封面</span></div>
+    <div class="nav">
+      <span class="kbd">← →</span> 翻页 · <span class="kbd">F</span> 全屏
+      <button type="button" id="prev">上一页</button>
+      <button type="button" id="next">下一页</button>
+    </div>
+  </div>
+</div>
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  const pageEl = document.getElementById('page');
+  const totalEl = document.getElementById('total');
+  const titleEl = document.getElementById('title');
+  let i = 0;
+  totalEl.textContent = slides.length;
+  function show(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, idx) => s.classList.toggle('active', idx === i));
+    pageEl.textContent = i + 1;
+    titleEl.textContent = slides[i].dataset.title || '';
+  }
+  document.getElementById('prev').onclick = () => show(i - 1);
+  document.getElementById('next').onclick = () => show(i + 1);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); show(i + 1); }
+    if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(i - 1); }
+    if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen?.();
+      else document.exitFullscreen?.();
+    }
+  });
+  show(0);
+</script>
+</body>
+</html>

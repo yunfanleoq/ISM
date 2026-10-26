@@ -11,7 +11,7 @@ function hasPermission(authority, permissions) {
   } else if (typeof authority === 'object') {
     required = authority.permission
   }
-  return required === '*' || (permissions && permissions.findIndex(item => item === required || item.id === required) !== -1)
+  return required === '*' || ((permissions || []).findIndex(item => item === required || item.id === required) !== -1)
 }
 
 /**
@@ -34,14 +34,15 @@ function hasRole(authority, roles) {
  * @returns {boolean}
  */
 function hasAnyRole(required, roles) {
+  const owned = roles || []
   if (!required) {
     return false
   } else if(Array.isArray(required)) {
-    return roles.findIndex(role => {
+    return owned.findIndex(role => {
       return required.findIndex(item => item === role || item === role.id) !== -1
     }) !== -1
   } else {
-    return roles.findIndex(role => role === required || role.id === required) !== -1
+    return owned.findIndex(role => role === required || role.id === required) !== -1
   }
 }
 

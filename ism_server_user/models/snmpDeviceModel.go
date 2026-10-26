@@ -14,6 +14,7 @@ import (
 	"ISMServer/utils/errmsg"
 	"errors"
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/beego/beego/v2/core/logs"
@@ -47,6 +48,7 @@ type SnmpDevicesDataModel struct {
 	DataUnit             string `gorm:"type:varchar(250);" json:"unit" validate:"required" label:"数据单位"`
 	ConversionExpression string `gorm:"type:varchar(250);" json:"conversionExpression" validate:"required" label:"转换表达式"`
 	IsAlarm              int    `gorm:"index;type:int;" json:"alarm" validate:"required" label:"是否是告警"`
+	AlarmConfirmDelaySec int    `gorm:"type:int;default:0" json:"alarmConfirmDelaySec" label:"告警确认防抖秒数,0关闭"`
 	AlarmLevel           int    `gorm:"index;type:int;" json:"alarmLevel" validate:"required" label:"告警等级 0:提示,1:次要,2:重要,3:严重,4:致命"`
 	AlarmMessage         string `gorm:"type:text;" json:"AlarmMessage" validate:"required" label:"告警显示信息"`
 	AlarmClearMessage    string `gorm:"type:text;" json:"AlarmClearMessage" validate:"required" label:"消除显示信息"`
@@ -57,13 +59,18 @@ type SnmpDevicesDataModel struct {
 }
 
 // 实时数据
+// 注意：UUID/项目等过滤列必须保持 varchar(250)，禁止落成 LONGTEXT，
+// 否则 OceanBase 无法有效建索引，GetSystemAnalysis COUNT 会全表扫描超时（Error 4012）。
+// 复合索引 idx_drd_project_deleted 由 ensureDeviceRealDataQueryIndexes 保证创建。
 type DeviceRealData struct {
 	gorm.Model
 
-	Name                 string `gorm:"index;type:varchar(250);not null"  json:"name" validate:"required,min=4,max=250" label:"OID名称"`
-	DeviceName           string `gorm:"index;type:varchar(250);not null"  json:"DeviceName" validate:"required,min=4,max=250" label:"设备名称"`
-	Oid                  string `gorm:"index;type:varchar(250);" json:"oid" validate:"required,min=2,max=250" label:"OID"`
-	Uuid                 string `gorm:"index;type:varchar(250);not null" json:"uuid" validate:"required,min=2,max=250" label:"数据标识"`
+	Name       string `gorm:"index;type:varchar(250);not null"  json:"name" validate:"required,min=4,max=250" label:"OID名称"`
+	DeviceName string `gorm:"index;type:varchar(250);not null"  json:"DeviceName" validate:"required,min=4,max=250" label:"设备名称"`
+	Oid        string `gorm:"index;type:varchar(250);" json:"oid" validate:"required,min=2,max=250" label:"OID"`
+	Uuid       string `gorm:"index:idx_drd_uuid,priority:1;type:varchar(250);not null" json:"uuid" validate:"required,min=2,max=250" label:"数据标识"`
+	// 复合索引 idx_drd_project_deleted(project_uuid, deleted_at) 仅由 ensureDeviceRealDataQueryIndexes 创建，
+	// 此处勿用同名单列 index，否则 AutoMigrate 会占名导致复合索引被跳过。
 	ProjectUuid          string `gorm:"index;type:varchar(250);not null" json:"project_uuid" validate:"required" label:"项目的UUID"`
 	Auth                 int    `gorm:"type:int;not null" json:"auth" validate:"required" label:"读写权限"`
 	Type                 int    `gorm:"type:int;not null" json:"type" validate:"required" label:"数据类型"`
@@ -71,10 +78,12 @@ type DeviceRealData struct {
 	Muid                 string `gorm:"index;type:varchar(250);not null" json:"muid" validate:"required" label:"模型的id"`
 	ModelDataUuid        string `gorm:"index;type:varchar(250);not null" json:"mduid" validate:"required" label:"模型的数据id"`
 	ConversionExpression string `gorm:"type:varchar(250);" json:"conversionExpression" validate:"required" label:"转换表达式"`
-	DeviceUuid           string `gorm:"index;type:varchar(250);not null" json:"duid" validate:"required" label:"设备uuid"`
+	DeviceUuid           string `gorm:"index:idx_drd_device_uuid,priority:1;type:varchar(250);not null" json:"duid" validate:"required" label:"设备uuid"`
 	DeviceType           int    `gorm:"type:int;not null"  validate:"required" label:"设备类型"`
 	DataUnit             string `gorm:"type:varchar(250);" json:"unit" validate:"required" label:"数据单位"`
 	IsAlarm              int    `gorm:"index;type:int;" json:"alarm" validate:"required" label:"是否是告警"`
+	AlarmOnValue         int    `gorm:"type:int;default:1" json:"alarmOnValue" label:"告警触发值(0或1)"`
+	AlarmConfirmDelaySec int    `gorm:"type:int;default:0" json:"alarmConfirmDelaySec" label:"告警确认防抖秒数,0关闭"`
 	AlarmLevel           int    `gorm:"index;type:int;" json:"alarmLevel" validate:"required" label:"告警等级 0:提示,1:次要,2:重要,3:严重,4:致命"`
 	AlarmMessage         string `gorm:"type:text;" json:"AlarmMessage" validate:"required" label:"告警显示信息"`
 	AlarmClearMessage    string `gorm:"type:text;" json:"AlarmClearMessage" validate:"required" label:"消除显示信息"`
@@ -82,6 +91,7 @@ type DeviceRealData struct {
 	RecordType           int    `gorm:"type:int;" json:"RecordType" validate:"required" label:"存储方式"`
 	RecordInterval       int    `gorm:"type:int;" json:"recordInterval" validate:"required" label:"存储间隔，单位分钟"`
 	RecordDataCharge     string `gorm:"type:varchar(250);" json:"RecordDataCharge" validate:"required" label:""`
+	RecordDataTimely     string `gorm:"type:varchar(250);" json:"RecordDataTimely"`
 	AlarmShield          int    `gorm:"index;type:int;" json:"AlarmShield" validate:"required" label:"告警屏蔽"`
 }
 
@@ -177,12 +187,25 @@ func ParseMib(module string) ([]gosmi.SmiNode, int) {
 
 	gosmi.Init()
 	gosmi.AppendPath(MibsPath)
-	_, err := gosmi.LoadModule(module)
+	loadedName, err := gosmi.LoadModule(module)
 	if err != nil {
-		logs.Error("Init Error: %s\n", err)
+		logs.Error("LoadModule Error: %s module=%s", err, module)
 		return nil, -1
 	}
-	return ModuleTrees(module), 0
+	lookup := loadedName
+	if lookup == "" {
+		lookup = strings.TrimSuffix(module, path.Ext(module))
+	}
+	nodes := ModuleTrees(lookup)
+	if len(nodes) == 0 && lookup != module {
+		nodes = ModuleTrees(module)
+	}
+	if len(nodes) == 0 {
+		logs.Error("ParseMib empty nodes: file=%s loaded=%s", module, loadedName)
+		return nil, -1
+	}
+	logs.Info("ParseMib ok: file=%s loaded=%s nodes=%d", module, loadedName, len(nodes))
+	return nodes, 0
 }
 
 func ModuleTrees(module string) []gosmi.SmiNode {
@@ -198,10 +221,12 @@ func ModuleTrees(module string) []gosmi.SmiNode {
 
 // MIB 添加
 func SnmpModelMibSave(mibs []SnmpDevicesDataModel) int {
-	var SnmpDevices []MonitorList
-	if len(mibs) > 0 {
-		_ = Db.Unscoped().Where("muid = ?", mibs[0].Muid).Delete(&SnmpDevicesDataModel{}).Error
+	if len(mibs) == 0 {
+		logs.Error("SnmpModelMibSave empty mibs")
+		return errmsg.ERROR
 	}
+	var SnmpDevices []MonitorList
+	_ = Db.Unscoped().Where("muid = ?", mibs[0].Muid).Delete(&SnmpDevicesDataModel{}).Error
 
 	Db.Model(&SnmpDevicesDataModel{}).CreateInBatches(&mibs, 20)
 	err6 := Db.Model(&MonitorList{}).Where("muid = ?", mibs[0].Muid).Find(&SnmpDevices).Error
@@ -273,6 +298,7 @@ func SnmpModelMibSave(mibs []SnmpDevicesDataModel) int {
 			tempDeviceRealData.RecordType = mibs[key].RecordType
 
 			tempDeviceRealData.IsAlarm = mibs[key].IsAlarm
+			tempDeviceRealData.AlarmConfirmDelaySec = mibs[key].AlarmConfirmDelaySec
 			tempDeviceRealData.AlarmLevel = mibs[key].AlarmLevel
 			tempDeviceRealData.AlarmMessage = mibs[key].AlarmMessage
 			tempDeviceRealData.AlarmClearMessage = mibs[key].AlarmClearMessage
@@ -464,6 +490,87 @@ func SnmpModelHistoryMibsGet(muid string, modelType int) []SnmpDevicesDataModel 
 	return getMibs
 }
 
+// ModelDataPointsByMuid 按物模型 uuid 返回测点 name→uuid（供模板页相对绑点解析）
+func ModelDataPointsByMuid(muid string) []map[string]string {
+	out := make([]map[string]string, 0)
+	if muid == "" {
+		return out
+	}
+	var model DevicesModel
+	err := Db.Model(&DevicesModel{}).Select("uuid, type").Where("uuid = ? AND deleted_at IS NULL", muid).First(&model).Error
+	modelType := 2
+	if err == nil && model.Type > 0 {
+		modelType = model.Type
+	}
+	mibs := SnmpModelMibsGet(muid, modelType)
+	if len(mibs) == 0 && modelType != 2 {
+		mibs = SnmpModelMibsGet(muid, 2)
+	}
+	for _, m := range mibs {
+		if m.Name == "" || m.Uuid == "" {
+			continue
+		}
+		item := map[string]string{
+			"name": m.Name,
+			"uuid": m.Uuid,
+		}
+		if m.DataUnit != "" {
+			item["unit"] = m.DataUnit
+		}
+		if m.OidType != "" {
+			item["type"] = m.OidType
+		}
+		out = append(out, item)
+	}
+	return out
+}
+
+// ModelDataPointsPageByMuid 在设备尚未生成 device_real_data 时按物模型定义提供分页点位。
+// 返回值只含当前页，避免前端首屏加载或订阅整个物模型。
+func ModelDataPointsPageByMuid(muid, keyword string, page, pageSize int) ([]DeviceRealData, int64) {
+	return paginateModelDataPoints(ModelDataPointsByMuid(muid), muid, keyword, page, pageSize)
+}
+
+func paginateModelDataPoints(all []map[string]string, muid, keyword string, page, pageSize int) ([]DeviceRealData, int64) {
+	keyword = strings.ToLower(strings.TrimSpace(keyword))
+	filtered := make([]map[string]string, 0, len(all))
+	for _, point := range all {
+		if keyword != "" && !strings.Contains(strings.ToLower(point["name"]), keyword) {
+			continue
+		}
+		filtered = append(filtered, point)
+	}
+	if page < 1 {
+		page = 1
+	}
+	if pageSize < 1 {
+		pageSize = RealDataDefaultPageSize
+	}
+	if pageSize > RealDataMaxPageSize {
+		pageSize = RealDataMaxPageSize
+	}
+	total := int64(len(filtered))
+	start := (page - 1) * pageSize
+	if start >= len(filtered) {
+		return []DeviceRealData{}, total
+	}
+	end := start + pageSize
+	if end > len(filtered) {
+		end = len(filtered)
+	}
+	out := make([]DeviceRealData, 0, end-start)
+	for _, point := range filtered[start:end] {
+		out = append(out, DeviceRealData{
+			Name:          point["name"],
+			Uuid:          point["uuid"],
+			ModelDataUuid: point["uuid"],
+			DataUnit:      point["unit"],
+			Muid:          muid,
+		})
+	}
+	return out, total
+}
+
 // mib删除
 func SnmpModelMibsDel(muid string, uuid []string) int {
 
@@ -483,7 +590,7 @@ func SnmpModelMibsDel(muid string, uuid []string) int {
 // 更新
 func ModelDataEdit(muid string, uuid string, editData SnmpDevicesDataModel) int {
 
-	err := Db.Model(&SnmpDevicesDataModel{}).Select("oid_type", "oid", "data_unit", "conversion_expression", "name", "auth", "is_alarm", "record_type", "record_data_charge", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message").Where("muid = ? AND uuid = ?", muid, uuid).Updates(editData).Error
+	err := Db.Model(&SnmpDevicesDataModel{}).Select("oid_type", "oid", "data_unit", "conversion_expression", "name", "auth", "is_alarm", "alarm_confirm_delay_sec", "record_type", "record_data_charge", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message").Where("muid = ? AND uuid = ?", muid, uuid).Updates(editData).Error
 	if err != nil {
 		return errmsg.ERROR
 	}
@@ -510,6 +617,7 @@ func ModelDataEdit(muid string, uuid string, editData SnmpDevicesDataModel) int 
 	updateDeviceRealData.Name = editData.Name
 
 	updateDeviceRealData.IsAlarm = editData.IsAlarm
+	updateDeviceRealData.AlarmConfirmDelaySec = editData.AlarmConfirmDelaySec
 	updateDeviceRealData.IsRecord = editData.IsRecord
 	updateDeviceRealData.RecordType = editData.RecordType
 	updateDeviceRealData.RecordDataCharge = editData.RecordDataCharge
@@ -518,7 +626,7 @@ func ModelDataEdit(muid string, uuid string, editData SnmpDevicesDataModel) int 
 	updateDeviceRealData.AlarmClearMessage = editData.AlarmClearMessage
 	updateDeviceRealData.AlarmMessage = editData.AlarmMessage
 
-	err1 := Db.Model(&DeviceRealData{}).Select("oid_type", "oid", "data_unit", "conversion_expression", "name", "auth", "is_alarm", "record_type", "record_data_charge", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message").Where("muid = ? AND model_data_uuid = ?", muid, uuid).Updates(updateDeviceRealData).Error
+	err1 := Db.Model(&DeviceRealData{}).Select("oid_type", "oid", "data_unit", "conversion_expression", "name", "auth", "is_alarm", "alarm_confirm_delay_sec", "record_type", "record_data_charge", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message").Where("muid = ? AND model_data_uuid = ?", muid, uuid).Updates(updateDeviceRealData).Error
 	if err1 != nil {
 		return errmsg.ERROR
 	}

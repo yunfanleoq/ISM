@@ -3,9 +3,21 @@
     <a-space class="operator">
       <a-button @click="addModel" type="primary" icon="plus">{{$t('dataModel.RESTFulData.AddModel')}}</a-button>
       <a-button @click="refresh()"  type="default" icon="sync" :loading="refIconLoading">{{$t("dataModel.refModel")}}</a-button>
+      <a-button @click="handleExportAll()" type="default" icon="export" :loading="exportLoading">{{$t("dataModel.exportAllPoints")}}</a-button>
+      <a-upload
+          name="file"
+          accept=".xlsx"
+          :multiple="false"
+          :customRequest="customImportAllRequest"
+          :showUploadList="false"
+          :disabled="importLoading || exportLoading"
+          @change="handleImportAllChange"
+      >
+        <a-button type="default" icon="import" :loading="importLoading">{{$t("dataModel.importAllPoints")}}</a-button>
+      </a-upload>
     </a-space>
 
-    <a-spin style="padding: 1px;"  :spinning="messageShowLoad" tip="Loading...">
+    <a-spin style="padding: 1px;"  :spinning="messageShowLoad || exportLoading || importLoading" :tip="spinTip">
       <a-table rowKey="key" :pagination="pagination" :columns="columns" :data-source="dataSource">
         <template v-for="(item, index) in columns" :slot="item.slotName">
           <span :key="index">{{ $t(item.slotName) }}</span>
@@ -101,6 +113,43 @@ import {
   VirtualDeviceModelEdit,
   VirtualDeviceModellist
 } from "@/services/VirtualDeviceModel";
+import { LOCALUPGATEALLVIRTUALDEVICEDATAMODEL, EXPORTALLVIRTUALDEVICEDATAMODEL } from "@/services/api";
+import { AUTH_TYPE, getAuthorization } from "@/utils/request";
+import axios from 'axios'
+
+const IMPORT_ALL_TIMEOUT_MS = 2 * 60 * 60 * 1000
+
+const alarmText = (value) => {
+  switch (Number(value)) {
+    case 1: return "是"
+    default: return "否"
+  }
+}
+const alarmLevelText = (value) => {
+  switch (Number(value)) {
+    case 1: return "次要"
+    case 2: return "重要"
+    case 3: return "紧急"
+    case 4: return "致命"
+    default: return "提示"
+  }
+}
+const recordText = (value) => {
+  switch (Number(value)) {
+    case 1: return "是"
+    default: return "否"
+  }
+}
+const recordTypeText = (value) => {
+  switch (Number(value)) {
+    case 1: return "定时存储"
+    case 2: return "即时存储"
+    case 3: return "变化百分比"
+    case 4: return "整点存储"
+    default: return "变化存储"
+  }
+}
+
 export default {
   name: 'VirtualDeviceModel',
   i18n: require('../../../i18n/language'),
@@ -115,6 +164,33 @@ export default {
       messageShowLoad:false,
       advanced: true,
       refIconLoading: false,
+      exportLoading: false,
+      importLoading: false,
+      importAllUrl: LOCALUPGATEALLVIRTUALDEVICEDATAMODEL,
+      exportFields: {
+        "模型名称": "modelName",
+        "数据名称": "name",
+        "权限(ReadOnly,ReadWrite)": "auth",
+        "数据类型": "type",
+        "单位": "unit",
+        "转换关系": "conversionExpression",
+        "是否告警(是,否)": { field: "alarm", callback: alarmText },
+        "告警等级(提示、次要、重要、紧急、致命)": { field: "alarmLevel", callback: alarmLevelText },
+        "告警消息": "AlarmMessage",
+        "告警消除消息": "AlarmClearMessage",
+        "报警触发值(0,1)": {
+          field: "alarmOnValue",
+          callback: value => (value === 0 || value === '0') ? '0' : '1',
+        },
+        "是否存储(是,否)": { field: "record", callback: recordText },
+        "存储类型(变化存储、定时存储、即时存储、变化百分比、整点存储)": { field: "RecordType", callback: recordTypeText },
+        "定时时间": "recordInterval",
+        "变化值": "RecordDataCharge",
+        "描述": "Description",
+        "模型类型(勿修改)": "modeltype",
+        "数据ID(勿修改)": "uuid",
+        "模型ID(勿修改)": "muid",
+      },
       columns: [
         {
           width: '10%',
@@ -155,6 +231,29 @@ export default {
   components: {
     Mtextarea,
   },
+  computed: {
+    spinTip() {
+      if (this.importLoading) {
+        return this.$t('dataModel.importAllLoading')
+      }
+      if (this.exportLoading) {
+        return this.$t('dataModel.exportAllLoading')
+      }
+      return 'Loading...'
+    },
+    importHeaders() {
+      const headers = {}
+      const token = getAuthorization(AUTH_TYPE.BEARER)
+      const projectUuid = getAuthorization(AUTH_TYPE.AUTH1)
+      if (token) {
+        headers.Authorization = token
+      }
+      if (projectUuid) {
+        headers.ProjectUuid = projectUuid
+      }
+      return headers
+    },
+  },
   mounted(){
 
   },
@@ -174,6 +273,121 @@ export default {
     }
   },
   methods: {
+    mapExportRow(item, model) {
+      const source = {
+        ...item,
+        modelName: model.modelName,
+        muid: model.key,
+        modeltype: item.modeltype != null ? item.modeltype : 480,
+      }
+      const row = {}
+      for (const key in this.exportFields) {
+        const fieldConfig = this.exportFields[key]
+        if (typeof fieldConfig === 'string') {
+          row[key] = source[fieldConfig]
+        } else if (typeof fieldConfig === 'object' && fieldConfig.field) {
+          const rawValue = source[fieldConfig.field]
+          row[key] = fieldConfig.callback ? fieldConfig.callback(rawValue) : rawValue
+        }
+      }
+      return row
+    },
+    async handleExportAll() {
+      if (this.exportLoading) return
+      this.exportLoading = true
+      try {
+        const res = await axios.post(EXPORTALLVIRTUALDEVICEDATAMODEL, {}, {
+          headers: {
+            ...this.importHeaders,
+          },
+          responseType: 'blob',
+          timeout: IMPORT_ALL_TIMEOUT_MS,
+        })
+        const data = res.data
+        if (data instanceof Blob && data.type && data.type.indexOf('application/json') !== -1) {
+          const text = await data.text()
+          let msg = this.$t('dataModel.exportAllFailed')
+          try {
+            const json = JSON.parse(text)
+            if (json.msg) msg = json.msg
+          } catch (e) { /* ignore */ }
+          this.$message.error(msg)
+          return
+        }
+        const blob = new Blob([data], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+        const url = window.URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        const disp = (res.headers && (res.headers['content-disposition'] || res.headers['Content-Disposition'])) || ''
+        let fileName = `虚拟设备全量点位_${new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '')}.xlsx`
+        const m = /filename\*?=(?:UTF-8'')?["']?([^"';]+)/i.exec(disp)
+        if (m && m[1]) {
+          try { fileName = decodeURIComponent(m[1]) } catch (e) { fileName = m[1] }
+        }
+        a.href = url
+        a.download = fileName
+        document.body.appendChild(a)
+        a.click()
+        document.body.removeChild(a)
+        window.URL.revokeObjectURL(url)
+        this.$message.success(this.$t('dataModel.exportAllSuccess'))
+      } catch (e) {
+        this.$message.error(this.$t('dataModel.exportAllFailed'))
+      } finally {
+        this.exportLoading = false
+      }
+    },
+    customImportAllRequest({ file, onSuccess, onError, onProgress }) {
+      const formData = new FormData()
+      formData.append('file', file)
+      axios.post(this.importAllUrl, formData, {
+        headers: {
+          ...this.importHeaders,
+        },
+        timeout: IMPORT_ALL_TIMEOUT_MS,
+        onUploadProgress: (e) => {
+          if (e.total > 0 && onProgress) {
+            onProgress({ percent: Math.round((e.loaded / e.total) * 100) }, file)
+          }
+        },
+      }).then((res) => {
+        onSuccess(res.data, file)
+      }).catch((err) => {
+        onError(err)
+      })
+    },
+    handleImportAllChange(info) {
+      if (info.file.status === 'uploading') {
+        this.importLoading = true
+        return
+      }
+      if (info.file.status === 'done') {
+        this.importLoading = false
+        const result = info.file.response || {}
+        if (result.Code === 0) {
+          const detail = result.message || `${this.$t('dataModel.importAllSuccess')}`
+          this.$message.success(detail)
+          this.getModelList()
+        } else if (result.Code === -2 || result.Code === -6) {
+          this.$message.error(result.message || this.$t('dataModel.importAllFormatError'))
+        } else {
+          this.$message.error(result.message || this.$t('dataModel.importAllFailed'))
+        }
+        return
+      }
+      if (info.file.status === 'error') {
+        this.importLoading = false
+        const err = info.file.error || {}
+        let detail = this.$t('dataModel.importAllFailed')
+        if (err.code === 'ECONNABORTED' || /timeout/i.test(err.message || '')) {
+          detail = `${detail}（请求超时，请拆分 Excel 后重试）`
+        } else if (err.response && err.response.status) {
+          detail = `${detail}（HTTP ${err.response.status}）`
+        } else if (err.message) {
+          detail = `${detail}（${err.message}）`
+        }
+        this.$message.error(detail)
+      }
+    },
     addModel(){
       this.AddVisible=true
       this.IsEdit=false

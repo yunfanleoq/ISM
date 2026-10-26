@@ -14,35 +14,95 @@ globs: "**/*.vue,**/*.js,**/vue.config.js"
 
 | 问题 | 根因 | 对策 |
 |------|------|------|
-| dev server 在 68%~69% 挂掉 | 内存耗尽（HMR + sourcemap + 8000+ 模块） | `--max-old-space-size=20480`（20G） |
+| dev server 在 68%~69% 挂掉 | 内存耗尽（HMR + sourcemap + 8000+ 模块） | 编译前检查内存 + `--max-old-space-size=20480`（20G） |
 | prod build 能成功但 dev 不行 | dev 额外编译 HMR runtime + sourcemap | 给足内存即可，不是语法错误 |
 | 进程自动重启 | `launchctl` 守护任务 `com.ism.frontend` 在保活 | 先 `launchctl remove com.ism.frontend` |
 | 7080 端口杀不死 | Cursor Helper 也占用 7080 | `lsof -ti :7080 \| grep -v Cursor \| xargs kill -9` |
 
-## 标准启动流程（一步不能少）
+## 内存门槛（Agent 铁律）
+
+| 指标 | 门槛 |
+|------|------|
+| 可用 + 可释放内存 | **≥ 12 GB** |
+| Node V8 heap | **20 GB**（`--max-old-space-size=20480`） |
+
+**serve 前必须跑** `scripts/check_mem_before_compile.sh`；输出 `RESULT: FAIL` 时 **禁止启动** dev server。
+
+详细步骤见 `.cursor/skills/ism-dev-compile-preclean/SKILL.md`。
+
+### macOS 检查命令
 
 ```bash
-# 1. 彻底清场
+./scripts/check_mem_before_compile.sh   # 首选：输出 PASS/FAIL + 建议
+
+# 手工排障
+vm_stat | head -12
+memory_pressure
+sysctl hw.memsize
+ps -Aem -o rss,pid,comm | sort -k1 -nr | head -12
+```
+
+### 内存不足时的释内存顺序
+
+1. 杀旧 `vue-cli-service` / `ism_server`、remove `launchctl`、释放 7080/8081
+2. `colima stop` / `docker stop $(docker ps -q)`
+3. 提示用户关闭 Chrome 等高内存应用（参考脚本 Top 进程列表）
+4. 可选 `sudo purge`
+5. 重新跑 `check_mem_before_compile.sh`；**仍 FAIL 则不编译**，告知用户
+
+## 编译前释内存 / 清进程（必须先做）
+
+**每次启动 dev server 前必须执行。** 详细步骤与排障见技能包：
+
+`.cursor/skills/ism-dev-compile-preclean/SKILL.md`
+
+要点：先内存检查 PASS → 杀旧 `vue-cli-service` / `ism_server` → remove `launchctl` 守护 → 释放 7080/8081 端口 → 确认无残留进程后再启动；66-69% 日志停更 → 查 SIGKILL → 按 skill 重跑清场。
+
+## 标准启动流程（一步不能少）
+
+**服务存活与 macOS 启动陷阱**见 `.cursor/rules/ism-service-startup-macos.mdc` 与 `.cursor/skills/ism-service-startup/SKILL.md`。
+
+```bash
+# Cursor Agent 内（必须，禁止在本会话里跑 start_ism_dev.sh）：
+# 两个独立 Shell，均 block_until_ms=0，命令用 exec — 见 ism-service-startup 技能
+
+# 用户本机终端（脱离 Cursor）：
+./scripts/start_ism_dev.sh
+```
+
+手工步骤：
+
+```bash
+# 0. 内存检查（必须 PASS，否则禁止继续）
+./scripts/check_mem_before_compile.sh
+
+# 1. 彻底清场（详见 ism-dev-compile-preclean / ism-service-startup skill）
 launchctl remove com.ism.frontend 2>/dev/null
 pkill -9 -f "vue-cli-service" 2>/dev/null
+pkill -9 -f "ism_server" 2>/dev/null
 lsof -ti :7080 | grep -v Cursor | xargs kill -9 2>/dev/null
+lsof -ti :8081 | xargs kill -9 2>/dev/null
 sleep 3
 
-# 2. 启动后端
-cd ism_server_user
-nohup ./ism_server > /tmp/ism_be.log 2>&1 &
+# 2~3. 启动 — macOS 禁止 setsid；nohup 必须 disown 或 Agent 用 exec 持久后台
+# 见 ism-service-startup 技能
 
-# 3. 启动前端（20G 内存）
-cd ism-front-end-v2
-NODE_OPTIONS="--max-old-space-size=20480 --openssl-legacy-provider" \
-  nohup npx vue-cli-service serve --port 7080 > /tmp/ism_fe.log 2>&1 &
-
-# 4. 等待编译完成（可在日志中搜索 "Compiled successfully"）
-grep -m1 "Compiled successfully" <(tail -f /tmp/ism_fe.log)
+# 4. 启动后必验证（未通过 = 未启动）
+pgrep -fl "ism_server|vue-cli-service"
+lsof -nP -iTCP:7080,8081 -sTCP:LISTEN
+curl -s http://127.0.0.1:8081/login -X POST -H 'Content-Type: application/json' \
+  -d '{"Username":"admin","password":"e10adc3949ba59abbe56e057f20f883e"}'
+grep -m1 "Compiled successfully" /tmp/ism_fe.log
 ```
 
 ## 禁止事项
 
+- **禁止** 在 macOS 使用 `setsid`（`command not found: setsid` = 启动完全失败）
+- **禁止** 在会快速退出的 shell 里 `nohup ... &` 后未验证就报「重启成功」
+- **禁止** 跳过 `check_mem_before_compile.sh` 直接 serve
+- **禁止** `RESULT: FAIL` 时仍启动 dev server
+- **禁止** 不杀旧 vue-cli 就启动新编译（HMR 叠加吃内存）
+- **禁止** 不用 20G heap 直接 serve 大项目
 - **禁止** 用 `python3 -m http.server` 或 `http-server` serve `dist/` —— 它们不支持 `/api` 代理
 - **禁止** 用已编译的 `dist/` 充当最新代码 —— 它可能是旧的
 - **禁止** 在不杀 `launchctl` 的情况下反复重启 —— 守护进程会自动复活

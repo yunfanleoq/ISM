@@ -6,15 +6,15 @@ import {request, METHOD} from '@/utils/request'
 /**
  * 获取告警通知
  */
-export async function GetAlarmNoticeByType(params) {
-    return request(GETALARMNOTICEPAMAMS, METHOD.POST,params)
+export async function GetAlarmNoticeByType(params, config) {
+    return request(GETALARMNOTICEPAMAMS, METHOD.POST,params, config)
 }
 
 /**
  * 更新告警通知
  */
-export async function UpdateAlarmNoticeByType(params) {
-    return request(UPDATEALARMNOTICEPAMAMS, METHOD.POST,params)
+export async function UpdateAlarmNoticeByType(params, config) {
+    return request(UPDATEALARMNOTICEPAMAMS, METHOD.POST,params, config)
 }
 
 /**

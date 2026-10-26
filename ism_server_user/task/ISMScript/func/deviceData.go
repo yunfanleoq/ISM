@@ -143,15 +143,9 @@ func GetDeviceData(deviceData string) interface{} {
 	if len(data) != 2 {
 		return nil
 	}
-	// var getRealData models.DeviceRealData
-	// err1 := models.Db.Model(&models.DeviceRealData{}).Where("BINARY device_name = ? and name = ? ", data[0], data[1]).First(&getRealData)
-	// if errors.Is(err1.Error, gorm.ErrRecordNotFound) {
-	// 	return 0
-	// }
-
-	getValue, isExistCustom := protocol_common.DeviceRealDataMap.Load(data[0] + "->" + data[1])
-	if isExistCustom {
-		t, convError := strconv.ParseFloat(getValue.(string), 64)
+	getValue, exists := loadDeviceValue(data[0], data[1])
+	if exists {
+		t, convError := strconv.ParseFloat(getValue, 64)
 		if convError != nil {
 			return getValue
 		}
@@ -171,19 +165,74 @@ func GetDeviceRealData(deviceData string) interface{} {
 	if len(data) != 2 {
 		return nil
 	}
-	// var getRealData models.DeviceRealData
-	// err1 := models.Db.Model(&models.DeviceRealData{}).Where("BINARY device_name = ? and name = ? ", data[0], data[1]).First(&getRealData)
-	// if errors.Is(err1.Error, gorm.ErrRecordNotFound) {
-	// 	return 0
-	// }
-
-	getValue, isExistCustom := protocol_common.DeviceRealDataMap.Load(data[0] + "->" + data[1])
-	if isExistCustom {
+	getValue, exists := loadDeviceValue(data[0], data[1])
+	if exists {
 		return getValue
-	} else {
-		return nil
 	}
+	return nil
 }
+
+func loadDeviceValue(deviceName, pointName string) (string, bool) {
+	pairs := [][2]string{{deviceName, pointName}}
+	if i := strings.LastIndex(pointName, "_"); i > 0 {
+		pairs = append(pairs, [2]string{deviceName + "->" + pointName[:i], pointName[i+1:]})
+	}
+	if i := strings.LastIndex(deviceName, "->"); i > 0 {
+		pairs = append(pairs, [2]string{deviceName[:i], deviceName[i+2:] + "_" + pointName})
+	}
+	for _, pair := range pairs {
+		if value, exists := protocol_common.LoadDeviceRealValue("", pair[0], pair[1]); exists {
+			value = strings.TrimSpace(value)
+			if value != "" {
+				return value, true
+			}
+		}
+		var point models.DeviceRealData
+		err := models.Db.Model(&models.DeviceRealData{}).
+			Select("value").
+			Where("device_name = ? and name = ?", pair[0], pair[1]).
+			First(&point).Error
+		if err != nil {
+			continue
+		}
+		val := strings.TrimSpace(point.Value)
+		if val != "" {
+			return val, true
+		}
+	}
+	return "", false
+}
+
+// PeekDeviceDataValue exposes loadDeviceValue for BitUnpack settle fallback.
+func PeekDeviceDataValue(deviceName, pointName string) (string, bool) {
+	return loadDeviceValue(deviceName, pointName)
+}
+
+type devicePointMeta struct {
+	Real     models.DeviceRealData
+	IsStatic bool
+}
+
+var devicePointMetaCache sync.Map // key: deviceName->pointName
+
+func getDevicePointMeta(deviceName, pointName string) (models.DeviceRealData, bool, int) {
+	key := deviceName + "->" + pointName
+	if cached, ok := devicePointMetaCache.Load(key); ok {
+		meta := cached.(devicePointMeta)
+		return meta.Real, meta.IsStatic, 0
+	}
+	var getRealData models.DeviceRealData
+	err1 := models.Db.Model(&models.DeviceRealData{}).Where(" device_name = ? and name = ? ", deviceName, pointName).First(&getRealData)
+	if errors.Is(err1.Error, gorm.ErrRecordNotFound) {
+		return getRealData, false, -2
+	}
+	var staticData models.StaticData
+	err1 = models.Db.Model(&models.StaticData{}).Where("uuid = ?", getRealData.ModelDataUuid).First(&staticData)
+	isStatic := !errors.Is(err1.Error, gorm.ErrRecordNotFound)
+	devicePointMetaCache.Store(key, devicePointMeta{Real: getRealData, IsStatic: isStatic})
+	return getRealData, isStatic, 0
+}
+
 func GetModuleDeviceList(moduleName string) []moduleDeviceStu {
 	var results []moduleDeviceStu
 
@@ -191,6 +240,15 @@ func GetModuleDeviceList(moduleName string) []moduleDeviceStu {
 	return results
 }
 func SetDeviceData(deviceData string, floatValue interface{}) int {
+	return setDeviceDataEx(deviceData, floatValue, false)
+}
+
+// SetDeviceDataSkipAlarm writes the point without enqueueing device alarms (periodic native settle).
+func SetDeviceDataSkipAlarm(deviceData string, floatValue interface{}) int {
+	return setDeviceDataEx(deviceData, floatValue, true)
+}
+
+func setDeviceDataEx(deviceData string, floatValue interface{}, skipAlarm bool) int {
 	var code int = 0
 	data := strings.Split(deviceData, "->")
 	if len(data) != 2 {
@@ -202,40 +260,27 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 	if err == nil {
 		Value = isScientificNotation
 	}
-	var getRealData models.DeviceRealData
-	err1 := models.Db.Model(&models.DeviceRealData{}).Where(" device_name = ? and name = ? ", data[0], data[1]).First(&getRealData)
-	if errors.Is(err1.Error, gorm.ErrRecordNotFound) {
-		return -2
-	}
 	SetValue := Value
-	// if SetValue == getRealData.Value {
-	// 	return 0
-	// }
+	// Memory same-value short-circuit: skip all DB work when live cache already matches.
+	if old, ok := protocol_common.LoadDeviceRealValue("", data[0], data[1]); ok && old == SetValue {
+		return 0
+	}
+	getRealData, isStatic, metaCode := getDevicePointMeta(data[0], data[1])
+	if metaCode != 0 {
+		return metaCode
+	}
 	DeviceUuid := getRealData.DeviceUuid
 	DataUuid := getRealData.ModelDataUuid
 
-	var staticData models.StaticData
-	err1 = models.Db.Model(&models.StaticData{}).Where("uuid = ?", DataUuid).First(&staticData)
-
-	if !errors.Is(err1.Error, gorm.ErrRecordNotFound) {
-		var isSameValue bool = false
-		if v, OK := protocol_common.DeviceRealDataMapByUUID.Load(getRealData.Uuid); OK {
-			if v == SetValue {
-				isSameValue = true
-			}
+	if isStatic {
+		// var tempPushData protocol_common.PushRealDataWebData
+		err := models.Db.Model(&models.DeviceRealData{}).Where("model_data_uuid = ? and device_uuid = ?", DataUuid, DeviceUuid).Update("value", SetValue).Error
+		if err != nil {
+			return -3
 		}
-		if !isSameValue {
-			// var tempPushData protocol_common.PushRealDataWebData
-			err := models.Db.Model(&models.DeviceRealData{}).Where("model_data_uuid = ? and device_uuid = ?", DataUuid, DeviceUuid).Update("value", SetValue).Error
-			if err != nil {
-				return -3
-			}
-			err2 := models.Db.Model(&models.StaticData{}).Where("uuid = ?", DataUuid).Update("data_default_value", SetValue).Error
-			if err2 != nil {
-				return -4
-			}
-		} else {
-			return 0
+		err2 := models.Db.Model(&models.StaticData{}).Where("uuid = ?", DataUuid).Update("data_default_value", SetValue).Error
+		if err2 != nil {
+			return -4
 		}
 		// tempPushData.Cmd = "RealData"
 
@@ -278,13 +323,17 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 				}
 			}
 			signleAlarm.AlarmLevel = getRealData.AlarmLevel
+			signleAlarm.AlarmOnValue = getRealData.AlarmOnValue
 			signleAlarm.AlarmClearMessage = getRealData.AlarmClearMessage
 			signleAlarm.AlarmMessage = getRealData.AlarmMessage
 			signleAlarm.DataName = getRealData.Name
 			signleAlarm.DeviceName = getRealData.DeviceName
 			signleAlarm.HappenTime = time.Now()
-			protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-		} else if getRealData.IsRecord == 1 {
+			if !skipAlarm {
+				protocol_common.GAlarmQueue.QueuePush(signleAlarm)
+			}
+		}
+		if getRealData.IsRecord == 1 {
 			//存储信息
 			signleHistoryData.DataValue = SetValue
 			signleHistoryData.DataName = getRealData.Name
@@ -295,8 +344,7 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 			protocol_common.GHistoryDataQueue.QueuePush(signleHistoryData)
 		}
 
-		protocol_common.DeviceRealDataMapByUUID.Store(getRealData.Uuid, SetValue)
-		protocol_common.DeviceRealDataMap.Store(getRealData.DeviceName+"->"+getRealData.Name, SetValue)
+		protocol_common.StoreDeviceRealValue(getRealData.Uuid, getRealData.DeviceName, getRealData.Name, SetValue)
 
 	} else {
 		var readData models.DeviceRealData
@@ -337,8 +385,7 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 			}
 
 			if code == 0 {
-				protocol_common.DeviceRealDataMapByUUID.Store(getRealData.Uuid, SetValue)
-				protocol_common.DeviceRealDataMap.Store(getRealData.DeviceName+"->"+getRealData.Name, SetValue)
+				protocol_common.StoreDeviceRealValue(getRealData.Uuid, getRealData.DeviceName, getRealData.Name, SetValue)
 				var tempPushData protocol_common.PushRealDataWebData
 				tempPushData.DeviceUuid = DeviceUuid
 				tempPushData.ProjectUuid = readData.ProjectUuid
@@ -396,13 +443,17 @@ func SetDeviceData(deviceData string, floatValue interface{}) int {
 						}
 					}
 					signleAlarm.AlarmLevel = readData.AlarmLevel
+					signleAlarm.AlarmOnValue = readData.AlarmOnValue
 					signleAlarm.AlarmClearMessage = readData.AlarmClearMessage
 					signleAlarm.AlarmMessage = readData.AlarmMessage
 					signleAlarm.DataName = readData.Name
 					signleAlarm.DeviceName = readData.DeviceName
 					signleAlarm.HappenTime = time.Now()
-					protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-				} else if readData.IsRecord == 1 {
+					if !skipAlarm {
+						protocol_common.GAlarmQueue.QueuePush(signleAlarm)
+					}
+				}
+				if readData.IsRecord == 1 {
 					//存储信息
 					signleHistoryData.DataValue = SetValue
 					signleHistoryData.DataName = readData.Name
@@ -717,9 +768,9 @@ func BitGet(deviceData string, bitSize uint8) int8 {
 	if bitSize <= 0 {
 		return -4
 	}
-	getValue, isExistCustom := protocol_common.DeviceRealDataMap.Load(data[0] + "->" + data[1])
-	if isExistCustom {
-		t, convError := strconv.Atoi(getValue.(string))
+	getValue, exists := loadDeviceValue(data[0], data[1])
+	if exists {
+		t, convError := strconv.Atoi(getValue)
 		if convError != nil {
 			return -3
 		} else {
@@ -736,9 +787,9 @@ func BitSet(deviceData string, bitSize uint8, bitValue uint8) int8 {
 	if bitSize <= 0 {
 		return -4
 	}
-	getValue, isExistCustom := protocol_common.DeviceRealDataMap.Load(data[0] + "->" + data[1])
-	if isExistCustom {
-		t, convError := strconv.Atoi(getValue.(string))
+	getValue, exists := loadDeviceValue(data[0], data[1])
+	if exists {
+		t, convError := strconv.Atoi(getValue)
 		if convError != nil {
 			return -3
 		} else {
@@ -759,13 +810,185 @@ func BitSet(deviceData string, bitSize uint8, bitValue uint8) int8 {
 	}
 	return 0
 }
+
+// DeviceDataLookupIndex indexes DeviceRealDataMap for flexible point reference resolution.
+type DeviceDataLookupIndex struct {
+	ByDirectKey    map[string]interface{} // key: "device->data"
+	ByCompositeKey map[string]interface{} // key: "device_data"
+	ByDataName     map[string][]string    // dataName -> []directKeys
+}
+
+// BuildDeviceDataLookupIndex scans DeviceRealDataMap and builds lookup indexes.
+func BuildDeviceDataLookupIndex() *DeviceDataLookupIndex {
+	idx := &DeviceDataLookupIndex{
+		ByDirectKey:    make(map[string]interface{}),
+		ByCompositeKey: make(map[string]interface{}),
+		ByDataName:     make(map[string][]string),
+	}
+	protocol_common.DeviceRealDataMap.Range(func(k, v interface{}) bool {
+		key, ok := k.(string)
+		if !ok {
+			return true
+		}
+		idx.ByDirectKey[key] = v
+		parts := strings.SplitN(key, "->", 2)
+		if len(parts) == 2 {
+			device := parts[0]
+			dataName := parts[1]
+			composite := device + "_" + dataName
+			idx.ByCompositeKey[composite] = v
+			idx.ByDataName[dataName] = append(idx.ByDataName[dataName], key)
+		}
+		return true
+	})
+	return idx
+}
+
+func resolveToDirectKey(pointRef string, idx *DeviceDataLookupIndex) string {
+	pointRef = strings.TrimSpace(pointRef)
+	if pointRef == "" || idx == nil {
+		return ""
+	}
+
+	// 1. Try device->data format directly
+	if strings.Contains(pointRef, "->") {
+		if _, ok := idx.ByDirectKey[pointRef]; ok {
+			return pointRef
+		}
+		parts := strings.SplitN(pointRef, "->", 2)
+		if len(parts) == 2 {
+			logicalDevice := strings.TrimSpace(parts[0])
+			dataName := strings.TrimSpace(parts[1])
+			// 共享物模型：测点全名挂在网关设备上，导航用的是逻辑设备名
+			// 优先按测点全名唯一匹配；多候选时优先 dataName 带逻辑设备前缀的网关键
+			if dataName != "" {
+				if keys, ok := idx.ByDataName[dataName]; ok {
+					if len(keys) == 1 {
+						return keys[0]
+					}
+					prefix := logicalDevice + "_"
+					for _, key := range keys {
+						if strings.HasPrefix(key, logicalDevice+"->") {
+							return key
+						}
+					}
+					for _, key := range keys {
+						dn := strings.SplitN(key, "->", 2)
+						if len(dn) == 2 && (dn[1] == dataName || strings.HasPrefix(dn[1], prefix)) {
+							return key
+						}
+					}
+					if len(keys) > 0 {
+						return keys[0]
+					}
+				}
+				// 直接用测点全名当 composite / dataName
+				if _, ok := idx.ByCompositeKey[dataName]; ok {
+					if underscorePos := strings.Index(dataName, "_"); underscorePos > 0 {
+						return dataName[:underscorePos] + "->" + dataName[underscorePos+1:]
+					}
+				}
+			}
+		}
+		composite := strings.Replace(pointRef, "->", "_", 1)
+		if _, ok := idx.ByCompositeKey[composite]; ok {
+			return strings.Replace(composite, "_", "->", 1)
+		}
+	}
+
+	// 2. Try composite index device_data
+	if _, ok := idx.ByCompositeKey[pointRef]; ok {
+		if underscorePos := strings.Index(pointRef, "_"); underscorePos > 0 {
+			return pointRef[:underscorePos] + "->" + pointRef[underscorePos+1:]
+		}
+	}
+
+	// 2b. Unique full data name (共享模型测点全名)
+	if keys, ok := idx.ByDataName[pointRef]; ok && len(keys) == 1 {
+		return keys[0]
+	}
+
+	// 3. Try device_data split with prefix heuristics
+	if strings.Contains(pointRef, "_") {
+		parts := strings.SplitN(pointRef, "_", 2)
+		if len(parts) == 2 {
+			directKey := parts[0] + "->" + parts[1]
+			if _, ok := idx.ByDirectKey[directKey]; ok {
+				return directKey
+			}
+			composite := parts[0] + "_" + parts[1]
+			if _, ok := idx.ByCompositeKey[composite]; ok {
+				return directKey
+			}
+		}
+		// suffix match: keys whose data name equals suffix part
+		suffixPart := parts[len(parts)-1]
+		if keys, ok := idx.ByDataName[suffixPart]; ok {
+			if len(keys) == 1 {
+				return keys[0]
+			}
+			prefixPart := parts[0]
+			for _, key := range keys {
+				devicePart := strings.SplitN(key, "->", 2)[0]
+				if strings.HasPrefix(devicePart, prefixPart) || strings.HasSuffix(devicePart, prefixPart) || strings.Contains(devicePart, prefixPart) {
+					return key
+				}
+			}
+		}
+	}
+
+	// Suffix match on data name
+	var suffixCandidates []string
+	for dataName, keys := range idx.ByDataName {
+		if dataName == pointRef || strings.HasSuffix(dataName, pointRef) || strings.HasSuffix(pointRef, dataName) {
+			suffixCandidates = append(suffixCandidates, keys...)
+		}
+	}
+	if len(suffixCandidates) == 1 {
+		return suffixCandidates[0]
+	}
+
+	// 4. Unique data name lookup
+	if keys, ok := idx.ByDataName[pointRef]; ok && len(keys) == 1 {
+		return keys[0]
+	}
+
+	return ""
+}
+
+// ResolvePointReference resolves a point reference string to a formatted real-time value.
+func ResolvePointReference(pointRef string, idx *DeviceDataLookupIndex) interface{} {
+	directKey := resolveToDirectKey(pointRef, idx)
+	if directKey != "" {
+		return GetDeviceData(directKey)
+	}
+	pointRef = strings.TrimSpace(pointRef)
+	if strings.Contains(pointRef, "->") {
+		return GetDeviceData(pointRef)
+	}
+
+	var points []models.DeviceRealData
+	query := models.Db.Model(&models.DeviceRealData{}).Select("device_name", "name")
+	if separator := strings.Index(pointRef, "_"); separator > 0 {
+		deviceName := pointRef[:separator]
+		pointName := pointRef[separator+1:]
+		query = query.Where("(device_name = ? AND name = ?) OR name = ?", deviceName, pointName, pointRef)
+	} else {
+		query = query.Where("name = ?", pointRef)
+	}
+	if err := query.Limit(2).Find(&points).Error; err != nil || len(points) != 1 {
+		return nil
+	}
+	return GetDeviceData(points[0].DeviceName + "->" + points[0].Name)
+}
+
 func SaveDeviceData(deviceData string) int8 {
 	data := strings.Split(deviceData, "->")
 	if len(data) != 2 {
 		return -1
 	}
-	getValue, isExistCustom := protocol_common.DeviceRealDataMap.Load(data[0] + "->" + data[1])
-	if !isExistCustom {
+	getValue, exists := loadDeviceValue(data[0], data[1])
+	if !exists {
 		return -4
 	}
 	var getRealData models.DeviceRealData
@@ -784,7 +1007,7 @@ func SaveDeviceData(deviceData string) int8 {
 	signleHistoryData.RecordInterval = getRealData.RecordInterval
 
 	//存储信息
-	signleHistoryData.DataValue = getValue.(string)
+	signleHistoryData.DataValue = getValue
 	signleHistoryData.DataName = getRealData.Name
 	signleHistoryData.DeviceName = getRealData.DeviceName
 	signleHistoryData.RecordTime = time.Now()

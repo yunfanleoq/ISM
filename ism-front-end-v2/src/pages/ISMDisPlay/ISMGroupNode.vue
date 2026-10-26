@@ -271,6 +271,71 @@ export default {
       }
     },
     methods: {
+      ensureGroupControlStatus(option){
+        if (!option) {
+          return
+        }
+        if (!Array.isArray(option.active)) {
+          option.active = []
+        }
+        const hasStatus = option.active.some(item => item && item.id === 'ControlStatus')
+        if (hasStatus) {
+          return
+        }
+        option.active.push({
+          id:"ControlStatus",
+          name:"configComponent.status.ControlStatus",
+          result:0,
+          isStatus:true,
+          isSwitch:false,
+          isImageStatus:false,
+          isTextStatus:false,
+          isLineStatus:true,
+          isExpression:false,
+          condition:{
+            deviceSN:"",
+            isBandDevice:false,
+            bandType:1,
+            dataID: "",
+            dataName: "",
+            IsManual:false,
+            StatusList:[
+              {
+                "StatusOpt":"==",
+                "TextColor":"#d81e06",
+                "Blink":'0',
+                "BlinkSpeed":1,
+                "value2":1,
+                "value":1
+              }
+            ]
+          },
+        })
+      },
+      applyGroupStatusToChildren(color){
+        const parent = this.GetNodeObj
+        if (!parent || typeof parent.getChildren !== 'function' || !color) {
+          return
+        }
+        parent.getChildren().forEach(child => {
+          const data = child.getData() || {}
+          const detail = data.detail
+          if (!detail || !detail.style) {
+            return
+          }
+          if (Array.isArray(detail.style.diy)) {
+            detail.style.diy.forEach(item => {
+              if (item && (item.key === 'strokeColor' || item.key === 'strokeFill')) {
+                item.value = color
+              }
+            })
+          }
+          child.setData(Object.assign({}, data, { detail: detail, UpdateNodeFlag: Date.now() }))
+          if (detail.identifier) {
+            this.$EventBus.$emit(detail.identifier + 'activeEvent', { ID: 'GroupStrokeColor', result: color })
+          }
+        })
+      },
       initComponents(option){
         if(this.IsToolBox)
         {
@@ -278,44 +343,46 @@ export default {
         }
         this.DivOpacity = option.style.opacity
         let i=0
-        for( i=0;i<option.style.diy.length;i++)
+        const diy = (option.style && option.style.diy) || []
+        for( i=0;i<diy.length;i++)
         {
-          if(option.style.diy[i].key=="strokeWidth")
+          if(diy[i].key=="strokeWidth")
           {
-            this.strokeWidth=option.style.diy[i].value
+            this.strokeWidth=diy[i].value
           }
-          else if(option.style.diy[i].key=="strokeFill")
+          else if(diy[i].key=="strokeFill")
           {
-            this.fill=option.style.diy[i].value
+            this.fill=diy[i].value
           }
-          else if(option.style.diy[i].key=="strokeColor")
+          else if(diy[i].key=="strokeColor")
           {
-            this.strokeColor=option.style.diy[i].value
+            this.strokeColor=diy[i].value
           }
-          else if(option.style.diy[i].key=="fillOpacity")
+          else if(diy[i].key=="fillOpacity")
           {
-            this.fillOpacity=option.style.diy[i].value
+            this.fillOpacity=diy[i].value
           }
-          else if(option.style.diy[i].key=="strokeOpacity")
+          else if(diy[i].key=="strokeOpacity")
           {
-            this.strokeOpacity=option.style.diy[i].value
+            this.strokeOpacity=diy[i].value
           }
-          else if(option.style.diy[i].key=="imageURL")
+          else if(diy[i].key=="imageURL")
           {
-            this.imageURL=option.style.diy[i].value
+            this.imageURL=diy[i].value
           }
-          else if(option.style.diy[i].key=="ChartUnit")
+          else if(diy[i].key=="ChartUnit")
           {
-            this.ChartUnit=option.style.diy[i].value
+            this.ChartUnit=diy[i].value
           }
-          else if(option.style.diy[i].key=="ShowJinZhi")
+          else if(diy[i].key=="ShowJinZhi")
           {
-            this.ShowJinZhi=option.style.diy[i].value
+            this.ShowJinZhi=diy[i].value
           }
         }
         i=0
-        this.animateType = option.animate.selected
-        if(option.animate.isExpression)
+        this.animateType = (option.animate && option.animate.selected) || []
+        this.ensureGroupControlStatus(option)
+        if(option.animate && option.animate.isExpression)
         {
           this.isStart = false
         }
@@ -323,42 +390,43 @@ export default {
         {
           this.isStart = true
         }
-        for( i=0;i<option.animate.animateElement.length;i++)
+        const animateElement = (option.animate && option.animate.animateElement) || []
+        for( i=0;i<animateElement.length;i++)
         {
-          if(option.animate.animateElement[i].id=="millcolorGrad")
+          if(animateElement[i].id=="millcolorGrad")
           {
-            for(let k =0;k<option.animate.animateElement[i].elementList.length;k++)
+            for(let k =0;k<animateElement[i].elementList.length;k++)
             {
-              if(option.animate.animateElement[i].elementList[k].key=="startColor")
+              if(animateElement[i].elementList[k].key=="startColor")
               {
-                this.startColor=option.animate.animateElement[i].elementList[k].value
+                this.startColor=animateElement[i].elementList[k].value
               }
-              else if(option.animate.animateElement[i].elementList[k].key=="stopColor")
+              else if(animateElement[i].elementList[k].key=="stopColor")
               {
-                this.stopColor=option.animate.animateElement[i].elementList[k].value
+                this.stopColor=animateElement[i].elementList[k].value
               }
-              else if(option.animate.animateElement[i].elementList[k].key=="animateSpeed")
+              else if(animateElement[i].elementList[k].key=="animateSpeed")
               {
-                this.animateSpeed=option.animate.animateElement[i].elementList[k].value
+                this.animateSpeed=animateElement[i].elementList[k].value
               }
             }
           }
-          else if(option.animate.animateElement[i].id=="blink")
+          else if(animateElement[i].id=="blink")
           {
-            for(let k =0;k<option.animate.animateElement[i].elementList.length;k++) {
-              if (option.animate.animateElement[i].elementList[k].key == "blinkSpeed") {
-                this.blinkSpeed = parseFloat(option.animate.animateElement[i].elementList[k].value)
+            for(let k =0;k<animateElement[i].elementList.length;k++) {
+              if (animateElement[i].elementList[k].key == "blinkSpeed") {
+                this.blinkSpeed = parseFloat(animateElement[i].elementList[k].value)
               }
             }
           }
-          else if(option.animate.animateElement[i].id=="animateSpin")
+          else if(animateElement[i].id=="animateSpin")
           {
-            for(let k =0;k<option.animate.animateElement[i].elementList.length;k++) {
-              if (option.animate.animateElement[i].elementList[k].key == "spinSpeed") {
-                this.animateSpinSpeed = option.animate.animateElement[i].elementList[k].value
+            for(let k =0;k<animateElement[i].elementList.length;k++) {
+              if (animateElement[i].elementList[k].key == "spinSpeed") {
+                this.animateSpinSpeed = animateElement[i].elementList[k].value
               }
-              else if (option.animate.animateElement[i].elementList[k].key == "spinDirection") {
-                this.spinDirection = option.animate.animateElement[i].elementList[k].value
+              else if (animateElement[i].elementList[k].key == "spinDirection") {
+                this.spinDirection = animateElement[i].elementList[k].value
               }
             }
           }
@@ -403,6 +471,33 @@ export default {
             else
             {
               _t.Variable = data.result
+            }
+          }
+          else if(data.ID == "ControlStatus")
+          {
+            const statusValue = parseFloat(data.result)
+            const activeList = (_t.detail && _t.detail.active) || []
+            const statusActive = activeList.find(item => item && item.id === 'ControlStatus') || activeList[0]
+            const statusList = (statusActive && statusActive.condition && statusActive.condition.StatusList) || []
+            for(let i=0;i<statusList.length;i++)
+            {
+              const rule = statusList[i]
+              let matched = false
+              switch(rule.StatusOpt)
+              {
+                case "==": matched = statusValue == rule.value; break
+                case ">": matched = statusValue > rule.value; break
+                case ">=": matched = statusValue >= rule.value; break
+                case "<": matched = statusValue < rule.value; break
+                case "<=": matched = statusValue <= rule.value; break
+                case "!=": matched = statusValue != rule.value; break
+                default: matched = statusValue == rule.value
+              }
+              if(matched)
+              {
+                _t.applyGroupStatusToChildren(rule.TextColor)
+                break
+              }
             }
           }
         }

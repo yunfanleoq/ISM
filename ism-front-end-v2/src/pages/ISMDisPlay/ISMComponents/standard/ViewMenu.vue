@@ -2,11 +2,11 @@
   <div :style="animatedStyle" v-show="detail.style.visible==1 ||isStart? true:false">
     <div class="view-menu-panel" :class="{
           'animated':true,[`${detail.style.animate}`]: true,
-          'color-animation':isStart&&animateType.includes('millcolorGrad')&&!IsToolBox,
-          'blink-animation':isStart&&animateType.includes('blink')&&!IsToolBox,
-          'scale-animation':isStart&&animateType.includes('Zoom')&&!IsToolBox,
-          'rotate-animation':isStart&&animateType.includes('animateSpin')&&!IsToolBox&&spinDirection==0,
-          'rotate-anti-animation':isStart&&animateType.includes('animateSpin')&&!IsToolBox&&spinDirection==1
+          'color-animation':isStart&&(animateType||[]).includes('millcolorGrad')&&!IsToolBox,
+          'blink-animation':isStart&&(animateType||[]).includes('blink')&&!IsToolBox,
+          'scale-animation':isStart&&(animateType||[]).includes('Zoom')&&!IsToolBox,
+          'rotate-animation':isStart&&(animateType||[]).includes('animateSpin')&&!IsToolBox&&spinDirection==0,
+          'rotate-anti-animation':isStart&&(animateType||[]).includes('animateSpin')&&!IsToolBox&&spinDirection==1
         }"
          :style="{
                                 width: detail.style.position.w + 'px',
@@ -171,6 +171,7 @@ import {displayModelList, getDisplayModelLayerData} from "@/services/displayMode
 import Contextmenu from "vue-contextmenujs"
 import Vue from 'vue'
 import ISMChildAutoMixin from '@/mixins/ISMChildAutoMixin'
+import {isPopUpEnabled, resolveMenuPagePath} from "@/pages/ISMDisPlay/utils/pageLink";
 Vue.use(Contextmenu);
 export default {
   mixins: [ISMChildAutoMixin],
@@ -476,18 +477,21 @@ export default {
           if(this.detail.style.MenuConfig[i].key==key)
           {
             this.detail.style.MenuConfig.splice(i,1)
+            this.$forceUpdate()
             this.updateMenuScrollState()
             return
           }
         }
-        if (menuData.children && menuData.children.length > 0)
+        if (menuData && menuData.children && menuData.children.length > 0)
         {
           for(let i=0;i<menuData.children.length;i++)
           {
             if(menuData.children[i].key==key)
             {
               menuData.children.splice(i,1)
+              this.$forceUpdate()
               this.updateMenuScrollState()
+              return
             }
           }
         }
@@ -497,13 +501,22 @@ export default {
         {
           return
         }
+        const pages = this.generateTargetPage(this.displayUUID) || []
+        const path = resolveMenuPagePath(this.SelectPage, this.displayUUID, pages)
+        const isPop = isPopUpEnabled(this.IsPopUp)
+        if (isPop && path && this.displayUUID && path === this.displayUUID) {
+          this.$message && this.$message.warning('弹窗请绑定具体子页，不要绑定首页/模型本身，否则会套娃')
+          return
+        }
+        this.SelectPage = path
+        this.IsPopUp = isPop
         if(this.DoType==1)
         {
           let keyIndex = Date.now()
 
           if(this.SelectType==1)
           {
-            this.detail.style.MenuConfig.push({ key: keyIndex,IsPopUp:this.IsPopUp,DisPlayID:this.displayUUID, path:this.SelectPage,title: this.MenuName });
+            this.detail.style.MenuConfig.push({ key: keyIndex,IsPopUp:isPop,DisPlayID:this.displayUUID, path:path,title: this.MenuName });
           }
           else if(this.SelectType==2)
           {
@@ -515,9 +528,9 @@ export default {
           const menuData = this.findMenuByKey (this.detail.style.MenuConfig,this.SelectKey?.value)
           if (menuData) {
             menuData.title = this.MenuName;
-            menuData.IsPopUp = this.IsPopUp;
+            menuData.IsPopUp = isPop;
             menuData.DisPlayID = this.displayUUID;
-            menuData.path = this.SelectPage;
+            menuData.path = path;
           }
         }
         this.PopUpDialog=false
@@ -540,7 +553,7 @@ export default {
         if (!menuData.children) {
           menuData.children=[]
         }
-        menuData.children.push({ key: keyIndex,IsPopUp:this.IsPopUp,DisPlayID:this.displayUUID, path:this.SelectPage, title: name })
+        menuData.children.push({ key: keyIndex,IsPopUp:isPopUpEnabled(this.IsPopUp),DisPlayID:this.displayUUID, path:this.SelectPage, title: name })
         this.$forceUpdate()
         this.updateMenuScrollState()
       },
@@ -566,7 +579,7 @@ export default {
           if (menu.children && menu.children.length > 0) {
             const found = this.findParentsMenuByKey(menu.children, key,menu); // 递归查找子菜单
             if (found) {
-              return menu;
+              return found;
             }
           }
         }
@@ -575,22 +588,30 @@ export default {
       handleMenuClick(e) {
         this.updateMenuScrollState()
         const menudata = this.findMenuByKey (this.detail.style.MenuConfig,e.key)
-        if(menudata!=null&&menudata.path!="")
+        if(menudata==null)
         {
-          let item={
-            DisPlayID:menudata.DisPlayID,
-            IsPopUp:menudata.IsPopUp,
-            MenuName:menudata.title,
-            PageID:menudata.path,
-          }
-          if(this.ClickType==1)
-          {
-            this.$EventBus.$emit("MenuConfigPage", item);
-          }
-          else
-          {
-            this.JumpPage(item)
-          }
+          return
+        }
+        if(!menudata.path)
+        {
+          this.$message && this.$message.warning(this.$t('readData.UnboundPage') || '菜单未绑定页面，请在编辑菜单中选择目标页面')
+          return
+        }
+        let item={
+          DisPlayID:menudata.DisPlayID,
+          IsPopUp:isPopUpEnabled(menudata.IsPopUp),
+          MenuName:menudata.title,
+          PageID:menudata.path,
+        }
+        if(this.ClickType==1)
+        {
+          // 只发 MenuConfigPage：ISMRender 会转调 ChargePage。
+          // 再发一次 ChargePage 会连续 showPage，第二次把第一次 abort，表现为不报错也不跳转。
+          this.$EventBus.$emit("MenuConfigPage", item);
+        }
+        else
+        {
+          this.JumpPage(item)
         }
       },
       generateTargetPage (uuid) {
@@ -621,7 +642,8 @@ export default {
       },
       GetDisplayPage(uuid){
         let params={
-          muid:uuid
+          muid:uuid,
+          metaOnly:true
         }
         let _t = this
         getDisplayModelLayerData(params).then(function (res){
@@ -642,6 +664,7 @@ export default {
                 pageInfo.value = pageLayer[i].PageId
                 pageInfo.pageType = pageLayer[i].PageType
                 pageInfo.pageModelUuid = pageLayer[i].modelId
+                pageInfo.IsHome = pageLayer[i].IsHome
                 displayArray.push(pageInfo)
               }
               _t.displayPageList.set(uuid,displayArray)
@@ -717,24 +740,26 @@ export default {
         this.backColor=this.detail.style.backColor
         this.foreColor=this.detail.style.foreColor
         let i=0
-        for( i=0;i<option.style.diy.length;i++)
+        const diy = (option.style && option.style.diy) || []
+        for( i=0;i<diy.length;i++)
         {
-          if(option.style.diy[i].key=="hoverBack")
+          if(diy[i].key=="hoverBack")
           {
-            this.hoverBackColor=option.style.diy[i].value
+            this.hoverBackColor=diy[i].value
           }
-          else if(option.style.diy[i].key=="hoverForce")
+          else if(diy[i].key=="hoverForce")
           {
-            this.hoverForeColor=option.style.diy[i].value
+            this.hoverForeColor=diy[i].value
           }
-          else if(option.style.diy[i].key=="ClickType")
+          else if(diy[i].key=="ClickType")
           {
-            this.ClickType=option.style.diy[i].value
+            this.ClickType=diy[i].value
           }
         }
         i=0
-        this.animateType = option.animate.selected
-        if(option.animate.isExpression)
+        const animate = option.animate || {}
+        this.animateType = animate.selected || []
+        if(animate.isExpression)
         {
           this.isStart = false
         }
@@ -742,42 +767,46 @@ export default {
         {
           this.isStart = true
         }
-        for( i=0;i<option.animate.animateElement.length;i++)
+        const animateElement = animate.animateElement || []
+        for( i=0;i<animateElement.length;i++)
         {
-          if(option.animate.animateElement[i].id=="millcolorGrad")
+          if(animateElement[i].id=="millcolorGrad")
           {
-            for(let k =0;k<option.animate.animateElement[i].elementList.length;k++)
+            const elementList = (animateElement[i].elementList) || []
+            for(let k =0;k<elementList.length;k++)
             {
-              if(option.animate.animateElement[i].elementList[k].key=="startColor")
+              if(elementList[k].key=="startColor")
               {
-                this.startColor=option.animate.animateElement[i].elementList[k].value
+                this.startColor=elementList[k].value
               }
-              else if(option.animate.animateElement[i].elementList[k].key=="stopColor")
+              else if(elementList[k].key=="stopColor")
               {
-                this.stopColor=option.animate.animateElement[i].elementList[k].value
+                this.stopColor=elementList[k].value
               }
-              else if(option.animate.animateElement[i].elementList[k].key=="animateSpeed")
+              else if(elementList[k].key=="animateSpeed")
               {
-                this.animateSpeed=option.animate.animateElement[i].elementList[k].value
+                this.animateSpeed=elementList[k].value
               }
             }
           }
-          else if(option.animate.animateElement[i].id=="blink")
+          else if(animateElement[i].id=="blink")
           {
-            for(let k =0;k<option.animate.animateElement[i].elementList.length;k++) {
-              if (option.animate.animateElement[i].elementList[k].key == "blinkSpeed") {
-                this.blinkSpeed = option.animate.animateElement[i].elementList[k].value
+            const elementList = (animateElement[i].elementList) || []
+            for(let k =0;k<elementList.length;k++) {
+              if (elementList[k].key == "blinkSpeed") {
+                this.blinkSpeed = elementList[k].value
               }
             }
           }
-          else if(option.animate.animateElement[i].id=="animateSpin")
+          else if(animateElement[i].id=="animateSpin")
           {
-            for(let k =0;k<option.animate.animateElement[i].elementList.length;k++) {
-              if (option.animate.animateElement[i].elementList[k].key == "spinSpeed") {
-                this.animateSpinSpeed = option.animate.animateElement[i].elementList[k].value
+            const elementList = (animateElement[i].elementList) || []
+            for(let k =0;k<elementList.length;k++) {
+              if (elementList[k].key == "spinSpeed") {
+                this.animateSpinSpeed = elementList[k].value
               }
-              else if (option.animate.animateElement[i].elementList[k].key == "spinDirection") {
-                this.spinDirection = option.animate.animateElement[i].elementList[k].value
+              else if (elementList[k].key == "spinDirection") {
+                this.spinDirection = elementList[k].value
               }
             }
           }

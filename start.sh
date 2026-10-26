@@ -1,7 +1,8 @@
 #!/bin/bash
 # ============================================================
 # ISM Web组态软件 - 一键启动脚本
-# 用途: 同时启动后端 (Go Server)、模拟器、前端 (Vue Dev Server)
+# 用途: 同时启动后端 (Go Server)、前端 (Vue Dev Server)
+# 注: Modbus 模拟器默认不启动，需要时用 ./start.sh simulator
 # 用法: ./start.sh [backend|simulator|frontend|all]
 # ============================================================
 
@@ -28,6 +29,30 @@ log_error() { echo -e "${RED}[ERROR]${NC} $1"; }
 
 # 后端 PID 文件
 BACKEND_PID_FILE="$PROJECT_ROOT/.backend.pid"
+
+# 启动前清场 — 释放端口、杀掉残留进程（避免 7080/8081 被占导致启动失败或端口漂移）
+preclean() {
+    log_info "清场：停止旧进程、释放端口 7080/8081..."
+
+    launchctl remove com.ism.frontend 2>/dev/null || true
+    launchctl remove com.ism.backend 2>/dev/null || true
+    pkill -9 -f "vue-cli-service" 2>/dev/null || true
+    pkill -9 -f "ism_server" 2>/dev/null || true
+    lsof -ti :7080 2>/dev/null | grep -v Cursor | xargs kill -9 2>/dev/null || true
+    lsof -ti :8081 2>/dev/null | xargs kill -9 2>/dev/null || true
+    rm -f "$BACKEND_PID_FILE"
+    sleep 3
+
+    if pgrep -fl "ism_server|vue-cli-service" >/dev/null 2>&1 ||
+       lsof -tiTCP:7080 -sTCP:LISTEN >/dev/null 2>&1 ||
+       lsof -tiTCP:8081 -sTCP:LISTEN >/dev/null 2>&1; then
+        log_error "清场失败，仍有残留进程或端口占用"
+        pgrep -fl "ism_server|vue-cli-service" || true
+        lsof -nP -iTCP:7080,8081 -sTCP:LISTEN || true
+        return 1
+    fi
+    log_ok "清场完成"
+}
 
 # 清理函数 - 退出时停止所有服务
 cleanup() {
@@ -101,7 +126,7 @@ check_oceanbase() {
     log_error "OceanBase 启动超时，请检查容器日志: docker logs oceanbase"
     return 1
 }
-start_backend() {
+_do_start_backend() {
     log_info "正在启动后端服务..."
 
     if [ ! -d "$BACKEND_DIR" ]; then
@@ -111,43 +136,74 @@ start_backend() {
 
     cd "$BACKEND_DIR"
 
-    # 检查二进制文件是否存在
-    if [ ! -f "./ism_server" ]; then
-        log_error "后端二进制文件不存在: ./ism_server"
-        log_info "请先编译后端: cd $BACKEND_DIR && go build -o ism_server"
+    if command -v go >/dev/null 2>&1; then
+        log_info "正在编译最新后端代码..."
+        if ! go build -o ism_server .; then
+            log_error "后端编译失败"
+            exit 1
+        fi
+        log_ok "后端编译完成"
+    elif [ ! -x "./ism_server" ]; then
+        log_error "未安装 Go，且后端二进制文件不存在或不可执行: ./ism_server"
         exit 1
+    else
+        log_warn "未安装 Go，使用现有后端二进制文件"
     fi
 
-    # 确保必要的目录存在
     mkdir -p data/auth static/HistoryData static/reportTemplete static/RecordVideo logs
 
-    # 启动后端 (后台运行)
     ./ism_server &
     BACKEND_PID=$!
     echo $BACKEND_PID > "$BACKEND_PID_FILE"
 
     log_ok "后端服务已启动 (PID: $BACKEND_PID)"
 
-    # 等待后端就绪
     log_info "等待后端服务就绪..."
     for i in $(seq 1 30); do
+        if ! kill -0 "$BACKEND_PID" 2>/dev/null; then
+            log_error "后端进程已退出，禁止将旧端口监听误判为启动成功"
+            return 1
+        fi
         if curl -s http://127.0.0.1:8081/ > /dev/null 2>&1; then
-            log_ok "后端服务就绪 (http://127.0.0.1:8081)"
-            break
+            if lsof -tiTCP:8081 -sTCP:LISTEN 2>/dev/null | grep -qx "$BACKEND_PID"; then
+                log_ok "后端服务就绪 (http://127.0.0.1:8081, PID: $BACKEND_PID)"
+                cd "$PROJECT_ROOT"
+                return 0
+            fi
         fi
         if [ $i -eq 30 ]; then
-            log_warn "后端服务可能启动较慢，请稍候..."
+            log_error "后端启动超时或 8081 由其他进程占用"
+            return 1
         fi
         sleep 1
     done
+}
 
-    cd "$PROJECT_ROOT"
+start_backend() {
+    preclean
+    _do_start_backend
 }
 
 # -----------------------------------------------------------
 # 启动前端
 # -----------------------------------------------------------
-start_frontend() {
+check_mem_before_serve() {
+    log_info "内存检查..."
+    MEM_CHECK_LOG="/tmp/ism_mem_check.log"
+    if ! "$PROJECT_ROOT/scripts/check_mem_before_compile.sh" >"$MEM_CHECK_LOG" 2>&1; then
+        cat "$MEM_CHECK_LOG"
+        log_error "内存检查 FAIL，禁止启动前端 dev server"
+        exit 1
+    fi
+    if ! grep -q "RESULT: PASS" "$MEM_CHECK_LOG"; then
+        cat "$MEM_CHECK_LOG"
+        log_error "内存检查 FAIL，禁止启动前端 dev server"
+        exit 1
+    fi
+    log_ok "内存检查 PASS"
+}
+
+_do_start_frontend() {
     log_info "正在启动前端开发服务器..."
 
     if [ ! -d "$FRONTEND_DIR" ]; then
@@ -183,6 +239,15 @@ start_frontend() {
 
     # 等待前端进程
     wait $FRONTEND_PID 2>/dev/null
+}
+
+start_frontend() {
+    local skip_preclean="${1:-}"
+    if [ "$skip_preclean" != "skip-preclean" ]; then
+        preclean
+    fi
+    check_mem_before_serve
+    _do_start_frontend
 }
 
 # -----------------------------------------------------------
@@ -254,21 +319,21 @@ case "$MODE" in
         start_frontend
         ;;
     all)
-        # 先启动模拟器
-        start_simulator
-        sleep 1
+        # 数据模拟器暂不自动启动，先把页面整对再说
+        log_info "跳过 Modbus 模拟器（需要时: ./start.sh simulator）"
 
         # 检查数据库
         check_oceanbase || exit 1
 
-        # 启动后端
-        start_backend
+        # 先统一清场，再依次启动后端 + 前端（避免重复清场误杀刚起的后端）
+        preclean
+        _do_start_backend
 
         # 等待后端完全就绪
         sleep 2
 
-        # 再启动前端
-        start_frontend
+        # 再启动前端（跳过清场，保留内存检查）
+        start_frontend skip-preclean
         ;;
     *)
         log_error "未知参数: $MODE"
@@ -276,7 +341,7 @@ case "$MODE" in
         echo "  backend    - 仅启动后端服务 (端口 8081)"
         echo "  simulator  - 仅启动 Modbus TCP 模拟器 (端口 502) + HTTP API (端口 5040)"
         echo "  frontend   - 仅启动前端开发服务器 (端口 7080)"
-        echo "  all        - 启动模拟器 + 后端 + 前端 (默认)"
+        echo "  all        - 启动后端 + 前端 (默认，不含模拟器)"
         echo ""
         echo "监控页面:"
         echo "  模拟器界面: http://localhost:7080/#/SimulatorMonitor"

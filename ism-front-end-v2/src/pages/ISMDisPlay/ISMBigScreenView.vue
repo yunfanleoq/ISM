@@ -54,7 +54,7 @@ export default {
         handler(newVal, oldVal) {
           if(newVal!="")
           {
-            this.getLayerDataStruct(newVal);
+            this.getLayerDataStruct({uuid: newVal, metaOnly: true, cb: function () {}});
             this.showUuid = newVal
           }
         },
@@ -177,7 +177,7 @@ export default {
     mounted() {
       if(this.showUuid!="")
       {
-        this.getLayerDataStruct(this.showUuid);
+        this.getLayerDataStruct({uuid: this.showUuid, metaOnly: true, cb: function () {}});
       }
       // window.addEventListener('scroll', this.handleScroll, true);  // 监听（绑定）滚轮滚动事件
       this.selectedValueTemp = this.selectedValue

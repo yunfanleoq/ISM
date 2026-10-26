@@ -1,7 +1,9 @@
 package controllers
 
 import (
+	"ISMServer/middleware"
 	SSEConnManager "ISMServer/utils/SSE"
+	"ISMServer/utils/errmsg"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -17,6 +19,15 @@ type SSEController struct {
 func (c *SSEController) SSEStream() {
 	w := c.Ctx.ResponseWriter
 	r := c.Ctx.Request
+	token := c.GetString("token")
+	if token == "" {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+	if result, _, _, _, _ := middleware.JwtToken(token); result != errmsg.SUCCSE {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
 	// 1. 正确设置 SSE 响应头
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
@@ -33,7 +44,9 @@ func (c *SSEController) SSEStream() {
 
 	// 2. 监听客户端断开
 	ctx := c.Ctx.Request.Context()
-	ticker := time.NewTicker(1 * time.Second)
+	// 定期发送注释心跳，防止 cpolar/Nginx 等代理将空闲 SSE 连接回收。
+	// 注释行不会触发浏览器的 onmessage。
+	ticker := time.NewTicker(20 * time.Second)
 	defer ticker.Stop()
 	groupIDs := []string{"222"}
 	// 4. 创建客户端并注册到管理器
@@ -50,6 +63,12 @@ func (c *SSEController) SSEStream() {
 				return
 			}
 			w.Flush() // 立即推送
+
+		case <-ticker.C:
+			if _, err := fmt.Fprint(w, ": heartbeat\n\n"); err != nil {
+				return
+			}
+			w.Flush()
 
 		case <-client.Quit:
 			// 客户端被移除（如超时）

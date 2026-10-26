@@ -231,8 +231,11 @@ func (c *SnmpDeviceModelController) ModelImport() {
 	}
 	ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
 	WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "导入了SNMP的MIB库文件"+fpath, errmsg.JournalLevelInfo, c.Ctx.Input)
-	reponse_result.Nodes, reponse_result.Code = models.ParseMib(fileNameOnly)
-	reponse_result.Code = 0
+	// 用真实文件名加载，并保留 ParseMib 的失败码，避免“导入成功但无点位”
+	reponse_result.Nodes, reponse_result.Code = models.ParseMib(fileName)
+	if reponse_result.Code == 0 && fileNameOnly != "" && len(reponse_result.Nodes) == 0 {
+		reponse_result.Nodes, reponse_result.Code = models.ParseMib(fileNameOnly)
+	}
 	c.Data["json"] = reponse_result
 	c.ServeJSON()
 }
@@ -346,6 +349,8 @@ func (c *SnmpDeviceModelController) ModelSaveMib() {
 	err := json.Unmarshal(data, &getMibJson)
 	if err != nil {
 		code = -1
+	} else if len(getMibJson) == 0 {
+		code = -2
 	} else {
 		code = models.SnmpModelMibSave(getMibJson)
 	}

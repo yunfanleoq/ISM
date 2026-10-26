@@ -40,6 +40,15 @@ module.exports = {
   parallel: false, // Windows 下多 worker 并发读文件会导致 EMFILE，强制关闭
   runtimeCompiler: true,
   devServer: {
+    // 0.0.0.0 允许局域网访问页面；sockHost 强制 HMR 走本机回环，避免用 10.x IP 连 sockjs 超时
+    host: '0.0.0.0',
+    port: 7080,
+    public: '127.0.0.1:7080',
+    sockHost: '127.0.0.1',
+    sockPort: 7080,
+    disableHostCheck: true,
+    // 始终用本机地址打开，防止书签/历史记录里的局域网 IP 触发 sockjs 错连
+    open: 'http://127.0.0.1:7080',
     writeToDisk: true,
     watchOptions: {
       poll: 2000,        // 改大轮询间隔，进一步降低句柄占用
@@ -57,10 +66,14 @@ module.exports = {
         pathRewrite: {
           '^/api': ''
         }
+      },
+      // App.vue EventSource 使用同源 /SSEPushData（不走 /api）；开发态需单独代理到后端
+      '/SSEPushData': {
+        target: 'http://127.0.0.1:8081',
+        changeOrigin: true,
+        ws: true,
       }
     },
-    open: true, // 自动打开浏览器
-    port: 7080 // 端口号
   },
   pluginOptions: {
     'style-resources-loader': {
@@ -84,7 +97,10 @@ module.exports = {
 	config.optimization = {
         sideEffects: true,
         usedExports: true, // 开启 tree shaking
-        concatenateModules:true,
+        // 开发态的 scope-hoisting 会在循环的异步 Vue SFC 依赖中串改 default export：
+        // ISMRunTreeNav/ISMRender Loader 曾被解析成 Vuex store，导致导航和画布均为空。
+        // 生产构建仍保留合并优化；开发态优先保证 HMR 与动态组件导出的正确性。
+        concatenateModules: process.env.NODE_ENV === 'production',
         splitChunks: {
             chunks: "all",//async 按需加载的异步块 initial（初始块） all（所有块）
             minSize: 30000, // 模块的最小体积

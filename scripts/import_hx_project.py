@@ -181,22 +181,36 @@ if all_dev_names:
 HEADERS["ProjectUuid"] = PROJECT_UUID
 
 # ========== Step 4: RootZone ==========
+# ★ 后端 ProjectModelAdd 建项目时已自动生成 sid=1/pid=0 的 RootZone（见 projectModel.go），
+#   这里必须「先查后建」，否则会再插一个 → 设备树出现两个 RootZone（其中一个空）。
 print("\n[4] RootZone")
-code, _ = api("/monitorAdd", {
-    "sid": 1, "pid": 0, "name": "RootZone", "type": 0,
-    "timeout": 5, "IsEnable": 1, "project_uuid": PROJECT_UUID,
-    "interval": 5, "failedTimes": 5, "description": "根区域",
-    "offlineClear": 0, "offlineDefaultValue": "0", "deviceType": 0,
-    "muid": "", "configUid": "", "PageUUID": "", "extra": "",
-    "Status": 0, "longitude": "", "latitude": ""
-})
-rz = ob_read(
-    "SELECT uuid FROM monitor_list WHERE name='RootZone' AND project_uuid=%s AND deleted_at IS NULL LIMIT 1",
+existing_rz = ob_read(
+    "SELECT uuid, sid FROM monitor_list WHERE name='RootZone' AND project_uuid=%s AND pid=0 AND deleted_at IS NULL",
     (PROJECT_UUID,)
 )
-if rz:
-    api_proj("/monitorEdit", {"data": {"Sid": 1, "uuid": rz[0][0]}})
-print(f"  RootZone code={code}")
+sid1 = [r for r in existing_rz if r[1] == 1]
+if sid1:
+    api_proj("/monitorEdit", {"data": {"Sid": 1, "uuid": sid1[0][0]}})
+    print(f"  RootZone 已存在 sid=1，跳过创建（{len(existing_rz)} 条根记录）")
+elif existing_rz:
+    api_proj("/monitorEdit", {"data": {"Sid": 1, "uuid": existing_rz[0][0]}})
+    print(f"  RootZone 已存在但 sid≠1，已修正 sid=1（{len(existing_rz)} 条根记录）")
+else:
+    code, _ = api("/monitorAdd", {
+        "sid": 1, "pid": 0, "name": "RootZone", "type": 0,
+        "timeout": 5, "IsEnable": 1, "project_uuid": PROJECT_UUID,
+        "interval": 5, "failedTimes": 5, "description": "根区域",
+        "offlineClear": 0, "offlineDefaultValue": "0", "deviceType": 0,
+        "muid": "", "configUid": "", "PageUUID": "", "extra": "",
+        "Status": 0, "longitude": "", "latitude": ""
+    })
+    rz = ob_read(
+        "SELECT uuid FROM monitor_list WHERE name='RootZone' AND project_uuid=%s AND deleted_at IS NULL LIMIT 1",
+        (PROJECT_UUID,)
+    )
+    if rz:
+        api_proj("/monitorEdit", {"data": {"Sid": 1, "uuid": rz[0][0]}})
+    print(f"  RootZone 新建 code={code}")
 
 # ========== Step 5: 数据模型 ==========
 print("\n[5] 创建数据模型")
@@ -371,7 +385,7 @@ for dev in dm_data.get('devices', []):
     extra = json.dumps({
         "modbus": {
             "IPAddress": "127.0.0.1", "Port": "502",
-            "address": str(slave), "RegisterPack": 0,
+            "address": str(slave), "RegisterPack": -1,
             "packTime": 100
         }
     })

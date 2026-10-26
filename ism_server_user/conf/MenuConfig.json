@@ -6,6 +6,11 @@
                 "router": "dashboard"
             },
             {
+                "router": "AutoGenWorkbench",
+                "name": "自动化工作台",
+                "icon": "robot"
+            },
+            {
                 "router": "DataWarehouse"
             },
             {

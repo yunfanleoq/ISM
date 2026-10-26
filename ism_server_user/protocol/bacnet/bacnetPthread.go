@@ -298,6 +298,10 @@ func (c *BacnetCtl) DealWithBACnetAlarmData(AlarmData protocol_common.PushAlarm)
 	build.WriteString(alarm.DataUuid)
 	key := build.String()
 	alarmTemp, isExist := c.DeviceAlarmTemp[key]
+	if protocol_common.ObserveStartupAlarm(alarm, alarm.Value == "1") {
+		c.DeviceAlarmTemp[key] = alarm
+		return
+	}
 
 	updateAlarm.AlarmName = alarm.DataName
 	updateAlarm.DeviceUuid = alarm.DeviceUuid
@@ -1028,7 +1032,8 @@ func (c *BacnetCtl) GatherBacnetDeviceData() {
 				signleAlarm.DeviceName = device.Name
 				signleAlarm.HappenTime = time.Now()
 				c.DealWithBACnetAlarmData(signleAlarm)
-			} else if objID.IsRecord == 1 {
+			}
+			if objID.IsRecord == 1 {
 				//存储信息
 				signleHistoryData.DataName = objID.Name
 				signleHistoryData.DeviceName = device.Name

@@ -35,6 +35,8 @@ type ModbusDevicesDataModel struct {
 	DataUnit             string `gorm:"type:varchar(250);" json:"unit" validate:"required" label:"数据单位"`
 	ConversionExpression string `gorm:"type:varchar(250);" json:"conversionExpression" validate:"required" label:"转换表达式"`
 	IsAlarm              int    `gorm:"index;type:int;" json:"alarm" validate:"required" label:"是否是告警"`
+	AlarmOnValue         int    `gorm:"type:int;default:1" json:"alarmOnValue" label:"告警触发值(0或1)"`
+	AlarmConfirmDelaySec int    `gorm:"type:int;default:0" json:"alarmConfirmDelaySec" label:"告警确认防抖秒数,0关闭"`
 	AlarmLevel           int    `gorm:"index;type:int;" json:"alarmLevel" validate:"required" label:"告警等级 0:提示,1:次要,2:重要,3:严重,4:致命"`
 	AlarmMessage         string `gorm:"type:text;" json:"AlarmMessage" validate:"required" label:"告警显示信息"`
 	AlarmClearMessage    string `gorm:"type:text;" json:"AlarmClearMessage" validate:"required" label:"消除显示信息"`
@@ -321,36 +323,36 @@ func ModbusRegisterAddressAdd(addData ModbusDevicesDataModel) int {
 	writeDeviceRealData.Muid = addData.Muid
 	writeDeviceRealData.DeviceType = 2
 	existError := Db.Model(&MonitorList{}).Where("muid = ?", addData.Muid).Find(&getDeviceData)
-	if !errors.Is(existError.Error, gorm.ErrRecordNotFound) {
+	if !errors.Is(existError.Error, gorm.ErrRecordNotFound) && len(getDeviceData) > 0 {
+		writeDeviceRealDataIn := make([]DeviceRealData, 0, len(getDeviceData))
 		for _, v := range getDeviceData {
-			var writeDeviceRealDataIn DeviceRealData
-
-			writeDeviceRealDataIn.Auth = writeDeviceRealData.Auth
-			writeDeviceRealDataIn.ProjectUuid = v.ProjectUuid
-			writeDeviceRealDataIn.DeviceUuid = v.Uuid
-			writeDeviceRealDataIn.DeviceName = v.Name
-			writeDeviceRealDataIn.Name = writeDeviceRealData.Name
-			writeDeviceRealDataIn.Uuid = uuid.New()
-			writeDeviceRealDataIn.ModelDataUuid = writeDeviceRealData.ModelDataUuid
-			writeDeviceRealDataIn.Type = 1
-
-			writeDeviceRealDataIn.DataUnit = addData.DataUnit
-			writeDeviceRealDataIn.IsAlarm = addData.IsAlarm
-			writeDeviceRealDataIn.AlarmLevel = addData.AlarmLevel
-			writeDeviceRealDataIn.AlarmMessage = addData.AlarmMessage
-			writeDeviceRealDataIn.AlarmClearMessage = addData.AlarmClearMessage
-			writeDeviceRealDataIn.IsRecord = addData.IsRecord
-			writeDeviceRealDataIn.RecordType = addData.RecordType
-			writeDeviceRealDataIn.RecordInterval = addData.RecordInterval
-			writeDeviceRealDataIn.RecordDataCharge = addData.RecordDataCharge
-			writeDeviceRealDataIn.ConversionExpression = addData.ConversionExpression
-
-			writeDeviceRealDataIn.Value = ""
-			writeDeviceRealDataIn.Muid = writeDeviceRealData.Muid
-			writeDeviceRealDataIn.DeviceType = writeDeviceRealData.DeviceType
-
-			Db.Model(&DeviceRealData{}).Create(&writeDeviceRealDataIn)
+			writeDeviceRealDataIn = append(writeDeviceRealDataIn, DeviceRealData{
+				Auth:                 writeDeviceRealData.Auth,
+				ProjectUuid:          v.ProjectUuid,
+				DeviceUuid:           v.Uuid,
+				DeviceName:           v.Name,
+				Name:                 writeDeviceRealData.Name,
+				Uuid:                 uuid.New(),
+				ModelDataUuid:        writeDeviceRealData.ModelDataUuid,
+				Type:                 1,
+				DataUnit:             addData.DataUnit,
+				IsAlarm:              addData.IsAlarm,
+				AlarmOnValue:         addData.AlarmOnValue,
+				AlarmConfirmDelaySec: addData.AlarmConfirmDelaySec,
+				AlarmLevel:           addData.AlarmLevel,
+				AlarmMessage:         addData.AlarmMessage,
+				AlarmClearMessage:    addData.AlarmClearMessage,
+				IsRecord:             addData.IsRecord,
+				RecordType:           addData.RecordType,
+				RecordInterval:       addData.RecordInterval,
+				RecordDataCharge:     addData.RecordDataCharge,
+				ConversionExpression: addData.ConversionExpression,
+				Value:                "",
+				Muid:                 writeDeviceRealData.Muid,
+				DeviceType:           writeDeviceRealData.DeviceType,
+			})
 		}
+		Db.Model(&DeviceRealData{}).CreateInBatches(&writeDeviceRealDataIn, 100)
 	}
 	return errmsg.SUCCSE
 }
@@ -360,7 +362,7 @@ func ModbusRegisterAddressUpdate(update ModbusDevicesDataModel) int {
 
 	var updateRealData DeviceRealData
 
-	err := Db.Model(&ModbusDevicesDataModel{}).Select("record_data_timely", "float_accuracy", "byte_order", "type", "data_unit", "conversion_expression", "name", "auth", "is_alarm", "record_type", "record_data_charge", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message", "register_address").Where("uuid = ?", update.Uuid).Updates(update).Error
+	err := Db.Model(&ModbusDevicesDataModel{}).Select("record_data_timely", "float_accuracy", "byte_order", "type", "data_unit", "conversion_expression", "name", "auth", "is_alarm", "alarm_on_value", "alarm_confirm_delay_sec", "record_type", "record_data_charge", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message", "register_address").Where("uuid = ?", update.Uuid).Updates(update).Error
 
 	if err != nil {
 		return errmsg.ERROR
@@ -378,6 +380,8 @@ func ModbusRegisterAddressUpdate(update ModbusDevicesDataModel) int {
 		updateRealData.Auth = 1
 	}
 	updateRealData.IsAlarm = update.IsAlarm
+	updateRealData.AlarmOnValue = update.AlarmOnValue
+	updateRealData.AlarmConfirmDelaySec = update.AlarmConfirmDelaySec
 	updateRealData.IsRecord = update.IsRecord
 	updateRealData.RecordType = update.RecordType
 	updateRealData.RecordDataCharge = update.RecordDataCharge
@@ -385,7 +389,7 @@ func ModbusRegisterAddressUpdate(update ModbusDevicesDataModel) int {
 	updateRealData.AlarmLevel = update.AlarmLevel
 	updateRealData.AlarmClearMessage = update.AlarmClearMessage
 	updateRealData.AlarmMessage = update.AlarmMessage
-	err = Db.Model(&DeviceRealData{}).Select("data_unit", "conversion_expression", "name", "auth", "is_alarm", "record_type", "record_data_charge", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message").Where("model_data_uuid = ?", update.Uuid).Updates(updateRealData).Error
+	err = Db.Model(&DeviceRealData{}).Select("data_unit", "conversion_expression", "name", "auth", "is_alarm", "alarm_on_value", "alarm_confirm_delay_sec", "record_type", "record_data_charge", "is_record", "record_interval", "alarm_level", "alarm_message", "alarm_clear_message").Where("model_data_uuid = ?", update.Uuid).Updates(updateRealData).Error
 
 	if err != nil {
 		return errmsg.ERROR

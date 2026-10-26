@@ -1326,6 +1326,7 @@ import {
 import deviceTree from '../../components/deviceTree/DeviceTree'
 import {displayModelList, getDisplayModelLayerData} from "@/services/displayModel";
 import {modbusModelRegisterDel} from "@/services/modbusModel";
+import {sortMonitorTreeByName} from "@/utils/naturalSort";
 let CRC = {};
 
 CRC._auchCRCHi = [
@@ -1592,7 +1593,7 @@ export default {
       getMonitorTree().then(function (res){
         if(res.data.code==0)
         {
-          _t.deviceTreeData =res.data.list==null?[]:res.data.list
+          _t.deviceTreeData = sortMonitorTreeByName(res.data.list==null?[]:res.data.list)
         }
       })
     },
@@ -1878,7 +1879,8 @@ export default {
     },
     GetDisplayPage(uuid){
       let params={
-        muid:uuid
+        muid:uuid,
+        metaOnly:true
       }
       let _t = this
       getDisplayModelLayerData(params).then(function (res){
@@ -2403,7 +2405,11 @@ export default {
             _t.$message.destroy()
             if(res.data.code==0)
             {
-              _t.$refs.deviceTree.getMonitorTree()
+              if (_t.$refs.deviceTree && _t.$refs.deviceTree.reloadKeepExpand) {
+                _t.$refs.deviceTree.reloadKeepExpand()
+              } else if (_t.$refs.deviceTree) {
+                _t.$refs.deviceTree.getMonitorTree()
+              }
               _t.getMonitorTree()
               _t.visible = false;
               _t.$message.success(_t.$t("monitor.EditSuccess"))
@@ -2519,18 +2525,10 @@ export default {
                     DeviceAddress:extra.modbus.address,
                     packTime:extra.modbus.packTime?extra.modbus.packTime:100,
                   })
-              if(typeof extra.modbus.RegisterPack!='undefined'&&extra.modbus.RegisterPack!=-1)
-              {
-                _t.modbusConnectType="TCPServer"
-                _t.$nextTick(function (){
-                  _t.RegisterPackByte = _t.Value2Bytes(extra.modbus.RegisterPack)
-                  _t.editForm.setFieldsValue(
-                      {
-                        RegisterPack:extra.modbus.RegisterPack,
-                      })
-                })
-              }
-              else if(extra.modbus.IPAddress!=null&&extra.modbus.Port!=null)
+              // 优先按"有 IP+端口即 TCPClient"判定：TCPClient 才是携带 IP/端口的连接方式，
+              // TCPServer 模式下 IP/端口为空、仅有正整数 RegisterPack(注册包ID)。
+              // 这样可兼容历史/导入数据中 RegisterPack 被误写为 0 但实为 TCP 客户端的设备。
+              if(extra.modbus.IPAddress!=null&&extra.modbus.IPAddress!==""&&extra.modbus.Port!=null&&extra.modbus.Port!=="")
               {
                 _t.modbusConnectType="TCPClient"
                 _t.$nextTick(function (){
@@ -2538,6 +2536,17 @@ export default {
                       {
                         IPAddress:extra.modbus.IPAddress,
                         Port:extra.modbus.Port,
+                      })
+                })
+              }
+              else if(typeof extra.modbus.RegisterPack!='undefined'&&extra.modbus.RegisterPack>0)
+              {
+                _t.modbusConnectType="TCPServer"
+                _t.$nextTick(function (){
+                  _t.RegisterPackByte = _t.Value2Bytes(extra.modbus.RegisterPack)
+                  _t.editForm.setFieldsValue(
+                      {
+                        RegisterPack:extra.modbus.RegisterPack,
                       })
                 })
               }
@@ -2740,15 +2749,32 @@ export default {
         uuid:key
       }
       let _t = this
-      this.$message.loading({ content: 'Waiting...',loadingKey,duration: 0 });
+      this.$message.loading({ content: 'Waiting...', key: loadingKey, duration: 0 });
       delMonitor(params).then(function (res) {
         if(res.data.code==0)
         {
           _t.tableDataSource = _t.tableDataSource.filter(item => item.key !== key)
           _t.selectedRows = _t.selectedRows.filter(item => item.key !== key)
           _t.$refs.deviceTree.getMonitorTree()
+          _t.$message.success({
+            content: _t.$t("dataModel.deleteSuccess"),
+            key: loadingKey
+          })
         }
-        _t.$message.destroy()
+        else
+        {
+          _t.$message.error({
+            content: _t.$t("dataModel.deleteFailed"),
+            key: loadingKey
+          })
+        }
+      }).catch(function (error) {
+        // 响应可能在网络切换/休眠时丢失，刷新树以对齐服务端最终状态。
+        _t.$refs.deviceTree.getMonitorTree()
+        _t.$message.error({
+          content: (error && error.message) || _t.$t("dataModel.deleteFailed"),
+          key: loadingKey
+        })
       })
     },
     backZoneList(){

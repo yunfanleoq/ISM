@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<title>ISM 麒麟 V10 SP3 OceanBase 部署操作手册</title>
+<style>
+
+  @font-face {
+    font-family: ISMCJK;
+    src: url('file:///System/Library/Fonts/Hiragino%20Sans%20GB.ttc');
+  }
+  @page {
+    size: A4;
+    margin: 18mm 16mm 20mm 16mm;
+    @bottom-center {
+      content: "第 " counter(page) " 页";
+      font-family: ISMCJK, sans-serif;
+      font-size: 9pt;
+      color: #666;
+    }
+  }
+  body, h1, h2, h3, p, li, td, th, blockquote, pre, code, .cover {
+    font-family: ISMCJK, sans-serif;
+  }
+
+  body { font-size: 10.5pt; line-height: 1.65; color: #262626; }
+  h1 { font-size: 20pt; color: #006D75; border-bottom: 3px solid #13C2C2; padding-bottom: 8px; page-break-after: avoid; }
+  h2 { font-size: 14pt; color: #08979C; margin-top: 1.3em; border-left: 4px solid #13C2C2; padding-left: 10px; page-break-after: avoid; }
+  h3 { font-size: 11.5pt; color: #434343; page-break-after: avoid; }
+  blockquote { background: #FFFBE6; border-left: 4px solid #FAAD14; padding: 8px 12px; margin: 10px 0; color: #614700; }
+  pre.code-block { background: #1E1E1E; color: #D4D4D4; padding: 12px; border-radius: 6px; font-size: 9pt; white-space: pre-wrap; word-break: break-all; }
+  code { background: #F5F5F5; padding: 1px 4px; border-radius: 3px; font-size: 9.5pt; }
+  pre code { background: transparent; color: inherit; padding: 0; }
+  table.data-table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 9.5pt; }
+  table.data-table th { background: #13C2C2; color: white; padding: 8px; text-align: left; }
+  table.data-table td { border: 1px solid #E8E8E8; padding: 7px 8px; }
+  table.data-table tr:nth-child(even) td { background: #FAFAFA; }
+  hr { border: none; border-top: 1px solid #E8E8E8; margin: 20px 0; }
+  ul { margin: 0.4em 0 0.4em 1.2em; }
+  .cover { text-align: center; padding: 90px 20px 60px; page-break-after: always; }
+  .cover h1 { border: none; font-size: 24pt; }
+  .cover .sub { font-size: 12pt; color: #595959; margin-top: 20px; line-height: 1.8; }
+  .cover .ver { margin-top: 36px; color: #8C8C8C; font-size: 10pt; }
+  .pkg-box { background: #F0F5FF; border: 1px solid #ADC6FF; border-radius: 8px; padding: 14px 18px; margin: 16px 0; }
+</style>
+</head>
+<body>
+<div class="cover">
+  <h1>ISM 电力监控系统</h1>
+  <p class="sub">麒麟 V10 SP3 · OceanBase 一体化部署操作手册<br/>（百度网盘下载 → 解压 → 配置 → 启动）</p>
+  <p class="ver">ISM V3.01.RC07 · 目标平台：银河麒麟高级服务器 V10 SP3 x86_64<br/>文档日期：2026-07-07</p>
+</div>
+<div class="pkg-box">
+  <strong>交付包内容说明：</strong>本 zip 含 <strong>后端 ism_server（64MB 编译二进制）</strong>、
+  <strong>前端 web/dist（约 1.7GB 静态页面）</strong>、<strong>OceanBase Docker 镜像</strong>、
+  <strong>业务数据库 SQL 备份</strong>及一键启停脚本，并非仅数据库。
+</div>
+<blockquote><strong>适用对象</strong>：现场运维新手</blockquote>
+<blockquote><strong>操作系统</strong>：<strong>银河麒麟高级服务器操作系统 V10 SP3</strong>（Kylin Linux Advanced Server V10 SP3）· x86_64</blockquote>
+<blockquote><strong>已验证兼容</strong>：海光 Hygon C86 7285 · 512 GB 内存 · amd64 架构</blockquote>
+<blockquote><strong>数据库</strong>：OceanBase（已内置在部署包中） · <strong>登录账号</strong>：admin / 123456</blockquote>
+
+<hr/>
+
+<h2>写在前面（请先读）</h2>
+
+<p>1. 本包是 <strong>完全离线一体化包</strong>：含 Docker、Docker Compose、OceanBase 镜像、ISM 前后端、业务数据，<strong>现场无需联网</strong>。</p>
+<p>2. <strong>推荐入口</strong>：<code>sudo bash deploy-offline.sh</code>（自动装 Docker → 启动全部服务）。</p>
+<p>3. <strong>首次启动</strong>会自动将业务数据导入 OceanBase（海光 512GB 服务器约 <strong>5–10 分钟</strong>），请勿中断。</p>
+<p>4. <strong>不要</strong>覆盖或修改客户生产目录 <code>/opt/ISMCode/ism_web</code> 和 <code>/opt/ISMCode/ism_webchaifa</code>。</p>
+<p>5. 本测试包请部署在 <strong>独立目录</strong>，例如 <code>/opt/ism/</code>。</p>
+<p>6. 默认端口与客户生产环境错开：<strong>前端 7090</strong>、<strong>后端 8091</strong>、<strong>OceanBase 2881</strong>。</p>
+
+<hr/>
+
+<h2>一、您会收到什么</h2>
+
+<p>交付方会把以下文件放到 <strong>百度网盘</strong>，并给您分享链接和提取码：</p>
+
+<table class="data-table">
+<tr><th>文件名</th><th>大小（约）</th><th>说明</th></tr>
+<tr><td><code>ism-release-oceanbase-YYYYMMDD-offline.zip</code></td><td><strong>2.3–2.8 GB</strong></td><td><strong>完全离线主包</strong>（见下表，无需联网）</td></tr>
+</table>
+
+<h3>安装包内完整组件（完全离线，全部打入）</h3>
+
+<table class="data-table">
+<tr><th>组件</th><th>路径</th><th>说明</th></tr>
+<tr><td><strong>一键部署入口</strong></td><td><code>deploy-offline.sh</code></td><td><strong>推荐</strong>：自动装 Docker + 启动 ISM</td></tr>
+<tr><td><strong>Docker 引擎</strong></td><td><code>docker-offline/bin/</code></td><td>Docker 24 静态二进制（dockerd、docker 等）</td></tr>
+<tr><td><strong>Docker Compose</strong></td><td><code>docker-offline/cli-plugins/docker-compose</code></td><td>Compose v2 插件</td></tr>
+<tr><td><strong>Docker 安装脚本</strong></td><td><code>scripts/install_docker_kylin_sp3.sh</code></td><td>离线安装 Docker</td></tr>
+<tr><td><strong>Python 3</strong></td><td><code>python-offline/install/bin/python3</code></td><td>便携 Python 3.11；无系统 Python 时自动启用</td></tr>
+<tr><td><strong>Python 检测</strong></td><td><code>scripts/ensure_python.sh</code></td><td>优先用系统 python3，否则用包内</td></tr>
+<tr><td><strong>后端程序</strong></td><td><code>ism_server_user/ism_server</code></td><td>Linux x86_64 二进制（约 64MB），无需 Go</td></tr>
+<tr><td><strong>前端页面</strong></td><td><code>web/dist/</code></td><td>已编译静态资源（约 1.7GB）</td></tr>
+<tr><td><strong>OceanBase 镜像</strong></td><td><code>oceanbase/oceanbase-ce.tar</code></td><td>Docker 镜像 tar（约 490MB）</td></tr>
+<tr><td><strong>业务数据</strong></td><td><code>data/source/Mysql_Backup_*.sql</code></td><td>253MB，首次启动自动导入</td></tr>
+<tr><td><strong>启停脚本</strong></td><td><code>start-all.sh</code> / <code>stop-all.sh</code></td><td>Docker 已装时可直接用</td></tr>
+<tr><td><strong>部署手册</strong></td><td><code>ISM-麒麟V10-OceanBase部署操作手册.pdf</code></td><td>PDF 版操作手册</td></tr>
+</table>
+
+<blockquote><strong>Python3</strong>：<code>deploy-offline.sh</code> 会先检测；若系统已有 python3 ≥ 3.6 则直接使用，否则自动启用包内 <code>python-offline/</code>。</blockquote>
+
+<p>包内还附带：</p>
+
+<ul>
+<li><code>ISM-麒麟V10-OceanBase部署操作手册.md</code>（本文档）</li>
+<li><code>README-部署说明.md</code>（快速参考）</li>
+<li><code>start-all.sh</code> / <code>stop-all.sh</code>（一键启停）</li>
+<li><code>scripts/check_env_kylin.sh</code>（环境自检）</li>
+</ul>
+
+<hr/>
+
+<h2>二、服务器要求</h2>
+
+<table class="data-table">
+<tr><th>项目</th><th>最低要求</th><th>推荐</th></tr>
+<tr><td>操作系统</td><td><strong>银河麒麟 V10 SP3</strong> x86_64（amd64）</td><td>同左</td></tr>
+<tr><td>CPU</td><td>4 核 amd64</td><td>8 核</td></tr>
+<tr><td>内存</td><td>8 GB</td><td>16 GB</td></tr>
+<tr><td>磁盘</td><td>解压后约 4 GB，<strong>建议预留 ≥ 15 GB</strong></td><td>30 GB</td></tr>
+<tr><td>Python</td><td><strong>包内已含</strong>（无则自动启用）</td><td>优先用系统自带</td></tr>
+<tr><td>Docker</td><td><strong>包内已含，无需下载</strong></td><td>deploy-offline.sh 自动安装</td></tr>
+<tr><td>Docker Compose</td><td><strong>包内已含</strong></td><td>同上</td></tr>
+<tr><td>网络</td><td><strong>完全离线</strong></td><td>无需互联网</td></tr>
+</table>
+
+<blockquote>OceanBase 容器约占 2–4 GB 内存，服务器内存不足会导致启动失败。</blockquote>
+
+<hr/>
+
+<h2>三、从百度网盘下载安装包</h2>
+
+<h3>3.1 在 Windows 办公电脑上下载</h3>
+
+<p>1. 打开交付方给的 <strong>百度网盘链接</strong>（浏览器或百度网盘客户端均可）。</p>
+<p>2. 输入 <strong>提取码</strong>（如有）。</p>
+<p>3. 找到文件 <code>ism-release-oceanbase-YYYYMMDD-offline.zip</code>。</p>
+<p>4. 点击 <strong>下载</strong>，保存到本地（例如 <code>D:\ISM下载\</code>）。</p>
+<p>5. 下载完成后确认文件大小与交付方告知的一致（约 2.5 GB 以上），避免下载不完整。</p>
+
+<h3>3.2 把安装包传到麒麟服务器</h3>
+
+<p>任选一种方式：</p>
+
+<p><strong>方式 A — U 盘（推荐，离线环境）</strong></p>
+
+<pre class="code-block"><code>
+1. U 盘插入 Windows 电脑，复制 zip 到 U 盘
+2. U 盘插入麒麟服务器
+3. 挂载 U 盘（通常自动挂载到 /media/用户名/ 下）
+4. 复制到服务器目录：
+   cp /media/*/ism-release-oceanbase-*-offline.zip /opt/
+</code></pre>
+
+<p><strong>方式 B — 内网 SCP（有 SSH 时）</strong></p>
+
+<p>在 Windows 上使用 WinSCP / MobaXterm，或用命令：</p>
+
+<pre class="code-block"><code>
+scp ism-release-oceanbase-YYYYMMDD-offline.zip root@服务器IP:/opt/
+</code></pre>
+
+<p><strong>方式 C — 在服务器上直接用 wget/curl 下载网盘直链</strong></p>
+
+<p>若交付方提供了直链，在麒麟服务器上：</p>
+
+<pre class="code-block"><code>
+cd /opt
+wget -O ism-release-oceanbase-YYYYMMDD-offline.zip "网盘直链地址"
+</code></pre>
+
+<hr/>
+
+<h2>四、安装 Docker（包内离线组件，无需下载）</h2>
+
+<blockquote><strong>推荐</strong>：跳过本节，直接执行 <strong>第五节</strong> 的 <code>sudo bash deploy-offline.sh</code>，会自动安装 Docker。</blockquote>
+
+<p>若需单独安装 Docker，包内已含 <strong>Docker 24 + Compose 2.29</strong>（linux/amd64 静态二进制），<strong>无需联网</strong>：</p>
+
+<pre class="code-block"><code>
+cd /opt/ism/ism-release-oceanbase-YYYYMMDD
+sudo bash scripts/install_docker_kylin_sp3.sh
+</code></pre>
+
+<p>安装完成后验证：</p>
+
+<pre class="code-block"><code>
+docker --version
+docker compose version
+docker info
+</code></pre>
+
+<p>组件位置：</p>
+
+<pre class="code-block"><code>
+docker-offline/
+├── bin/dockerd          ← Docker 引擎
+├── bin/docker           ← Docker 客户端
+├── bin/containerd       ← 容器运行时
+├── cli-plugins/docker-compose   ← Compose 插件
+└── docker-24.0.9.tgz    ← 原始压缩包（备份）
+</code></pre>
+
+<hr/>
+
+<h2>五、解压与部署（核心步骤）</h2>
+
+<p>以下命令均在 <strong>麒麟 V10 SP3 服务器</strong> 上执行。假设安装包已放到 <code>/opt/</code>。</p>
+
+<h3>5.1 创建目录并解压</h3>
+
+<pre class="code-block"><code>
+sudo mkdir -p /opt/ism
+cd /opt/ism
+
+# 查看系统版本（应含 SP3）
+cat /etc/.kyinfo 2>/dev/null || cat /etc/os-release
+uname -m   # 应输出 x86_64
+sudo unzip /opt/ism-release-oceanbase-YYYYMMDD-offline.zip
+
+# 进入解压后的目录（目录名以实际为准）
+cd ism-release-oceanbase-YYYYMMDD
+</code></pre>
+
+<blockquote>若提示 <code>unzip: command not found</code>，先安装：<code>sudo yum install -y unzip</code></blockquote>
+
+<h3>5.2 赋予执行权限</h3>
+
+<pre class="code-block"><code>
+chmod +x start-all.sh stop-all.sh
+chmod +x ism_server_user/ism_server
+chmod +x scripts/*.sh
+</code></pre>
+
+<h3>5.3 环境自检（建议）</h3>
+
+<pre class="code-block"><code>
+bash scripts/check_env_kylin.sh
+</code></pre>
+
+<p>期望输出：</p>
+
+<ul>
+<li>CPU 为 <code>x86_64</code></li>
+<li>Python3 已安装</li>
+<li>Docker 和 compose 已安装</li>
+<li>后端显示 <code>dynamically linked</code>（动态链接，约 64 MB）</li>
+<li>能看到 <code>oceanbase/oceanbase-ce-preloaded.tar</code> 或 <code>oceanbase-ce.tar</code></li>
+</ul>
+
+<h3>5.4 检查/修改端口（可选）</h3>
+
+<pre class="code-block"><code>
+cat ports.env
+</code></pre>
+
+<p>默认内容：</p>
+
+<pre class="code-block"><code>
+ISM_FE_PORT=7090
+ISM_BE_PORT=8091
+OB_PORT=2881
+OB_TENANT=ism_tenant
+OB_PASSWORD=ism2024!
+OB_DATABASE=ism
+</code></pre>
+
+<p>若 7090 端口已被占用，改为其他空闲端口（如 7091）：</p>
+
+<pre class="code-block"><code>
+vi ports.env
+# 把 ISM_FE_PORT=7090 改成 ISM_FE_PORT=7091
+</code></pre>
+
+<blockquote><strong>不要</strong>使用客户生产端口 7080、8081、8082。</blockquote>
+
+<h3>5.5 完全离线一键部署（推荐）</h3>
+
+<pre class="code-block"><code>
+sudo bash deploy-offline.sh
+</code></pre>
+
+<p>脚本自动完成：</p>
+
+<p>1. <strong>检测 Python</strong> → 无则启用包内 <code>python-offline/</code></p>
+<p>2. <strong>检测 Docker</strong> → 无则安装包内 <code>docker-offline/</code></p>
+<p>3. 加载 OceanBase 镜像 → 启动容器</p>
+<p>4. 首次自动导入业务 SQL</p>
+<p>5. 启动 ISM 后端 + 前端</p>
+
+<blockquote>需要 <strong>root</strong> 权限（安装 Docker 用）。Python 可在包目录内启用，无需 root。</blockquote>
+
+<h3>5.6 浏览器访问</h3>
+
+<p>在同一局域网内的电脑浏览器打开：</p>
+
+<pre class="code-block"><code>
+http://服务器IP:7090/#/login
+</code></pre>
+
+<p>账号：<strong>admin</strong></p>
+<p>密码：<strong>123456</strong></p>
+
+<p>例如服务器 IP 是 <code>192.168.1.100</code>，则访问：</p>
+
+<pre class="code-block"><code>
+http://192.168.1.100:7090/#/login
+</code></pre>
+
+<hr/>
+
+<h2>六、防火墙放行（若浏览器打不开）</h2>
+
+<pre class="code-block"><code>
+# 麒麟 / CentOS 系 firewalld
+sudo firewall-cmd --permanent --add-port=7090/tcp
+sudo firewall-cmd --permanent --add-port=8091/tcp
+sudo firewall-cmd --reload
+
+# 查看已放行端口
+sudo firewall-cmd --list-ports
+</code></pre>
+
+<p>确认服务在监听：</p>
+
+<pre class="code-block"><code>
+ss -tlnp | grep -E '7090|8091|2881'
+</code></pre>
+
+<hr/>
+
+<h2>七、停止与重启</h2>
+
+<h3>停止</h3>
+
+<pre class="code-block"><code>
+cd /opt/ism/ism-release-oceanbase-YYYYMMDD
+bash stop-all.sh
+</code></pre>
+
+<h3>重启</h3>
+
+<pre class="code-block"><code>
+bash start-all.sh
+</code></pre>
+
+<h3>查看日志</h3>
+
+<table class="data-table">
+<tr><th>日志</th><th>路径</th></tr>
+<tr><td>后端</td><td><code>logs/ism_server.log</code></td></tr>
+<tr><td>前端</td><td><code>logs/frontend.log</code></td></tr>
+<tr><td>OceanBase</td><td><code>docker logs oceanbase</code></td></tr>
+</table>
+
+<hr/>
+
+<h2>八、验收清单（部署完成后逐项打勾）</h2>
+
+<ul>
+<li>[ ] 浏览器能打开登录页 <code>http://IP:7090/#/login</code></li>
+<li>[ ] 使用 admin / 123456 登录成功</li>
+<li>[ ] 项目列表中有「循安电力监控」等项目</li>
+<li>[ ] 设备树有数据（约 349 个节点）</li>
+<li>[ ] 大屏组态页面正常显示，无空白区域</li>
+<li>[ ] 告警列表有数据</li>
+<li>[ ] 未占用客户生产端口 7080 / 8081 / 8082</li>
+<li>[ ] 未修改 <code>/opt/ISMCode/</code> 下任何文件</li>
+</ul>
+
+<hr/>
+
+<h2>九、常见问题</h2>
+
+<h3>Q1：unzip 报错或 zip 不完整</h3>
+
+<p>重新从百度网盘下载，对比文件大小。大文件建议用百度网盘客户端下载，比浏览器更稳定。</p>
+
+<h3>Q2：docker: command not found</h3>
+
+<p>Docker 未安装或未加入 PATH。见 <strong>第四节</strong> 安装 Docker，或联系运维。</p>
+
+<h3>Q3：OceanBase 容器启动失败 / 内存不足</h3>
+
+<pre class="code-block"><code>
+docker logs oceanbase
+free -h
+</code></pre>
+
+<p>服务器内存需 ≥ 8 GB，且不能被其他程序占满。关闭不必要的服务后重试：</p>
+
+<pre class="code-block"><code>
+bash stop-all.sh
+docker rm -f oceanbase 2>/dev/null
+bash start-all.sh
+</code></pre>
+
+<h3>Q4：登录提示密码错误</h3>
+
+<ul>
+<li>确认账号 <strong>admin</strong>，密码 <strong>123456</strong>（区分大小写）</li>
+<li>不要自行改密码或数据库</li>
+<li>若仍失败，联系交付方</li>
+</ul>
+
+<h3>Q5：页面能开但大屏空白</h3>
+
+<p>多为旧包或数据未导入完整。确认使用的是最新 OceanBase 一体包，并检查：</p>
+
+<pre class="code-block"><code>
+docker exec oceanbase obclient -h127.0.0.1 -P2881 -uroot@ism_tenant -p'ism2024!' ism \
+  -e "SELECT COUNT(*) FROM project_lists; SELECT COUNT(*) FROM display_models;"
+</code></pre>
+
+<h3>Q6：端口被占用</h3>
+
+<pre class="code-block"><code>
+ss -tlnp | grep 7090
+</code></pre>
+
+<p>修改 <code>ports.env</code> 中的 <code>ISM_FE_PORT</code> 为其他端口，再执行 <code>bash start-all.sh</code>。</p>
+
+<hr/>
+
+<h2>十、部署包目录结构（解压后）</h2>
+
+<p>解压 <code>ism-release-oceanbase-YYYYMMDD-offline.zip</code> 后，得到如下目录（<strong>以实际包为准</strong>）：</p>
+
+<pre class="code-block"><code>
+ism-release-oceanbase-YYYYMMDD/
+├── deploy-offline.sh                     ← 【推荐】完全离线一键部署
+├── start-all.sh                          ← Docker 已装时一键启动
+├── stop-all.sh
+├── ports.env
+├── docker-compose.oceanbase.yml
+├── BUILD_INFO.txt
+├── ISM-麒麟V10-OceanBase部署操作手册.pdf
+│
+├── docker-offline/                       ← Docker 离线包
+│   ├── bin/dockerd, docker, containerd …
+│   └── cli-plugins/docker-compose
+│
+├── python-offline/                       ← Python 离线包
+│   ├── install/bin/python3
+│   └── cpython-*-install_only.tar.gz
+│
+├── oceanbase/
+│   └── oceanbase-ce.tar                  ← OceanBase 镜像（约 490MB）
+│
+├── ism_server_user/
+│   ├── ism_server                        ← 后端二进制（64MB）
+│   └── conf/app.conf
+│
+├── web/dist/                             ← 前端（约 1.7GB）
+├── data/source/Mysql_Backup_*.sql        ← 业务数据（253MB）
+│
+└── scripts/
+    ├── ensure_python.sh                  ← Python 检测/启用
+    ├── install_docker_kylin_sp3.sh
+    ├── install_python_kylin_sp3.sh       ← 可选：装到 /opt/ism-python
+    ├── check_env_kylin.sh
+    ├── init_oceanbase.sh
+    ├── import_mysql_to_oceanbase.sh
+    └── serve_test_frontend.py
+</code></pre>
+
+<hr/>
+
+<h2>十一、联系交付方时请提供</h2>
+
+<p>1. <code>bash scripts/check_env_kylin.sh</code> 的完整输出</p>
+<p>2. <code>logs/ism_server.log</code> 最后 50 行</p>
+<p>3. <code>docker logs oceanbase</code> 最后 50 行</p>
+<p>4. 服务器 IP 和访问方式（内网/外网）</p>
+
+<hr/>
+
+<p>*文档版本：2026-07-07 · 对应包名 ism-release-oceanbase-YYYYMMDD-offline.zip*</p>
+</body>
+</html>

@@ -373,7 +373,8 @@ func (c *IEC1045Ctl) APDUHandler(apdu *iec104.APDU) error {
 					signleAlarm.HappenTime = time.Now()
 					c.DealWithIEC104AlarmData(signleAlarm)
 					//protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-				} else if dataPoint.IsRecord == 1 {
+				}
+				if dataPoint.IsRecord == 1 {
 					//存储信息
 					signleHistoryData.DataName = dataPoint.Name
 					signleHistoryData.DeviceName = device.Name
@@ -732,6 +733,10 @@ func (c *IEC1045Ctl) DealWithIEC104AlarmData(AlarmData protocol_common.PushAlarm
 	build.WriteString(alarm.DataUuid)
 	key := build.String()
 	alarmTemp, isExist := c.DeviceAlarmTemp[key]
+	if protocol_common.ObserveStartupAlarm(alarm, alarm.Value == "1") {
+		c.DeviceAlarmTemp[key] = alarm
+		return
+	}
 
 	updateAlarm.AlarmName = alarm.DataName
 	updateAlarm.DeviceUuid = alarm.DeviceUuid

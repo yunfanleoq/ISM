@@ -57,17 +57,28 @@ func cleanHistoryData() {
 	}
 }
 
+// cleanAlarmData 仅硬删「已消除」且超过保留期的告警行。
+// 实时告警 clear_time 哨兵为 2006-01-02（< ActiveAlarmClearThreshold），禁止被本任务删除。
 func cleanAlarmData() {
-	days := -protocol_common.HistoryKeepDays
-	cutoff := time.Now().AddDate(0, 0, days)
+	keepDays := protocol_common.AlarmKeepDays
+	if keepDays <= 0 {
+		gormlog.Info("自动清理告警: alarm_keep_days=%d，跳过硬删", keepDays)
+		return
+	}
+
+	cutoff := time.Now().AddDate(0, 0, -keepDays)
+	threshold := protocol_common.ActiveAlarmClearThreshold
+	gormlog.Info("自动清理: 删除 %s 之前已消除的告警（clear_time >= %s）", cutoff.Format("2006-01-02 15:04:05"), threshold)
 
 	result := models.Db.Unscoped().
-		Where("clear_time < ? AND clear_time IS NOT NULL AND clear_time > '2000-01-01'", cutoff).
+		Where("clear_time >= ? AND clear_time < ?", threshold, cutoff).
 		Delete(&models.DevicesAlarmList{})
 
 	if result.Error != nil {
 		gormlog.Error("自动清理告警数据失败: %s", result.Error)
 	} else if result.RowsAffected > 0 {
-		gormlog.Info("自动清理完成: 删除告警数据 %d 条", result.RowsAffected)
+		gormlog.Info("自动清理完成: 删除已消除告警数据 %d 条", result.RowsAffected)
+	} else {
+		gormlog.Info("自动清理完成: 删除已消除告警数据 0 条")
 	}
 }

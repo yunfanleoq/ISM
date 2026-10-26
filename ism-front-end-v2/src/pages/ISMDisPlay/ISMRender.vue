@@ -1,6 +1,6 @@
 <template>
   <div class="ism-render-root" :style="nodeMouseStyleVar" ref="ismrender">
-    <div class="run-graph-container" :class="{'animated':true,[`${configData.layer.animate}`]: true}">
+    <div class="run-graph-container" :class="['animated', configData.layer && configData.layer.animate ? configData.layer.animate : '']">
       <div ref="ISMRunningContainer" ></div>
     </div>
     <div v-show="pageLoading" class="ism-page-loading">
@@ -137,7 +137,7 @@
       <div  @click="PopUpDialogClick">
         <div v-if="!isExternUrl">
           <div  class="ism-popup-render"  @contextmenu.prevent="componentRightDialogClick" :style="popUpStyle" v-if="PopUpConfigData.layer" ref="ismrender1">
-            <div class="run-graph-container" :class="{'animated':true,[`${PopUpConfigData.layer.animate}`]: true}">
+            <div class="run-graph-container" :class="['animated', PopUpConfigData.layer && PopUpConfigData.layer.animate ? PopUpConfigData.layer.animate : '']">
               <div ref="ISMPopUpRunningContainer" ></div>
             </div>
             <!--          <Menu ref="componentMenuDialog"  menuCls="mymenu" @itemClick="componentMenuClickDialog($event)">-->
@@ -171,6 +171,8 @@ import TemplateRender from 'vue-template-render'
 import {ExecSysScript} from "@/services/system";
 import {AUTH_TYPE, checkAuthorization, getAuthorization, setAuthorization} from "@/utils/request";
 import {getRealDataByUuid} from "@/services/device";
+import { fetchRealDataByPairs } from "@/utils/realDataBatch";
+import { selectRuntimeRealDemand, readGraphViewport, demandSignature, groupRealDataPush } from "@/pages/ISMDisPlay/utils/runtimeRealDemand";
 import Vue from 'vue'
 import Contextmenu from "vue-contextmenujs"
 Vue.use(Contextmenu);
@@ -183,6 +185,13 @@ import ISMGroupNode from "@/pages/ISMDisPlay/ISMGroupNode.vue";
 import {snapdom} from "@/utils/snapdom.mjs";
 import LockScreen from "@/components/lockScreen/LockScreen";
 import Hammer from 'hammerjs';
+import {ismDebug} from "@/utils/ismDebug";
+import {isPopUpEnabled} from "@/pages/ISMDisPlay/utils/pageLink";
+// 注意：navTreeIndex / graphCellSanitizer 等已被主 chunk（store→navContextBinding→…）静态引用，
+// 不可在此再静态 import —— 会触发 webpack4 scope-hoisting「unused reexport」bug，
+// 令本 chunk 内 Vue SFC（含 ViewRealTable/ViewSvgText）及主 chunk 命名导出变成 undefined
+// （同 ISMRenderLoader / convertLegacyPageLink 历史坑）。调用处用惰性 require。
+
 let isISMGroupNodeRegistered = false;
 export default {
   name: 'ISMRender',
@@ -225,22 +234,21 @@ export default {
           }
           _t.chargePage = true
           this.$message.loading({ content: 'Loading...', key: 'updatable', duration: 0 });
-          this.CurrentRealUUIDList=[]
-          this.CurrentModelUUIDList=[]
+          this.retireMainRealDemand()
           this.CurrentPagerRealDataUuidList=[]
           this.CurrentPagerRealDeviceUuidList=[]
           console.log('[watch:showUuid] calling selectDisplayPageDataStruct, page=', JSON.parse(JSON.stringify(page)))
           this.selectDisplayPageDataStruct({page:page,callback:function (uuids,devices,isFound){
               console.log('[watch:showUuid] callback fired, isFound=', isFound, 'uuids.length=', uuids?.length, 'devices.length=', devices?.length)
               if (requestToken !== _t.mainPageRequestToken || _t._isDestroyed) {
+                _t.clearPagerLoading()
                 return
               }
-              _t.$message.destroy('updatable');
-              _t.chargePage = false
+              _t.clearPagerLoading()
               if (isFound === false) {
                 _t.currentDisplayUUID = ""
                 _t.currentPageUUID = ""
-                _t.$message.error(_t.$t("readData.NotFindPage"))
+                _t.$message.error(_t.$t("readData.NotFindPage") + (page.pageUuid ? ` (${page.pageUuid})` : ''))
                 return
               }
               _t.CurrentPagerRealDataUuidList = uuids
@@ -350,6 +358,7 @@ export default {
       pageLoading:false,
       pageLoadingEl:null,
       chargePage:false,
+      loadPagerInFlight:false,
       IsAutoClose:false,
       Zoom:100,
       SetPasswordFormValue:"",
@@ -365,8 +374,16 @@ export default {
       pendingTimers:[],
       pageLoadingToken:0,
       pageLoadingStartedAt:0,
+      pageLoadingTimer:null,
+      pageLoadingShownAt:0,
+      pageLoadingWatchdogTimer:null,
       lastGoPageKey:"",
       lastGoPageAt:0,
+      navHydrateInFlight:false,
+      navHydrateSuppressUntil:0,
+      navHydrateAttempts:0,
+      navHydrateKey:"",
+      navHydrateMaxAttempts:3,
       destroyMainGraphRaf:null,
       mainPageRequestToken:0,
       popUpPageRequestToken:0,
@@ -401,7 +418,15 @@ export default {
       CurrentRealDataNameList:[],
       CurrentModelUUIDList:[],
       CurrentPopRealUUIDList:[],
-      CurrentPopModelUUIDList:[]
+      CurrentPopModelUUIDList:[],
+      realDemandGen: 0,
+      popRealDemandGen: 0,
+      hoverCellId: '',
+      popHoverCellId: '',
+      lastMainDemandKey: '',
+      lastPopDemandKey: '',
+      viewportDemandTimer: null,
+      popViewportDemandTimer: null,
     }
   },
   created(){
@@ -429,149 +454,132 @@ export default {
       await result.download({ format: 'png', filename: this.configData.name });
     },
     InitPagerRealData() {
-      console.log('[InitPagerRealData] ENTRY, pageRenderToken=', this.pageRenderToken, 'CurrentPagerRealDataUuidList.length=', this.CurrentPagerRealDataUuidList?.length, 'CurrentPagerRealDeviceUuidList.length=', this.CurrentPagerRealDeviceUuidList?.length)
-      const renderToken = this.pageRenderToken
-      let _t = this
-      const datauuid = this.CurrentPagerRealDataUuidList
-      const devices = this.CurrentPagerRealDeviceUuidList
-      _t.CurrentRealUUIDList=[]
-      _t.CurrentModelUUIDList=[]
-      this.trackTimeout(function (){
-        console.log('[InitPagerRealData] trackTimeout callback, renderToken=', renderToken, 'pageRenderToken=', _t.pageRenderToken, '_isDestroyed=', _t._isDestroyed)
-        if (_t._isDestroyed || renderToken !== _t.pageRenderToken) {
-          console.warn('[InitPagerRealData] ABORTED: token mismatch or destroyed')
-          return
-        }
-        let newuuids=[]
-        for(let i=0;i<datauuid.length;i++)
-        {
-          if((typeof datauuid[i]!="undefined")&&(datauuid[i].length>0))
-          {
-            newuuids.push(datauuid[i])
-          }
-        }
-        let newdevices=[]
-        for(let i=0;i<devices.length;i++)
-        {
-          if((typeof devices[i]!="undefined")&&(devices[i].length>0))
-          {
-            newdevices.push(devices[i])
-          }
-        }
-        console.log('[InitPagerRealData] calling getRealDataByUuid, uuids=', newuuids.length, 'devices=', newdevices.length)
-        getRealDataByUuid({uuid: newuuids,devices:newdevices}).then(function (res) {
-          console.log('[InitPagerRealData] getRealDataByUuid response, code=', res.data?.code, 'realData.length=', res.data?.realData?.length)
-          if (_t._isDestroyed || renderToken !== _t.pageRenderToken) {
-            console.warn('[InitPagerRealData] response ABORTED: token mismatch or destroyed')
-            return
-          }
-          _t.settingLoading = false
-          if (res.data.code == 0) {
-            // 按 DeviceUuid 分组，批量 emit，减少事件数量和 handler 调用次数
-            let pushDataMap = {}
-            for (let k = 0; k < res.data.realData.length; k++) {
-              if(res.data.realData[k].value=="")
-              {
-                continue
-              }
-              let duid = res.data.realData[k].duid
-              if (!pushDataMap[duid]) {
-                pushDataMap[duid] = {
-                  DeviceUuid: duid,
-                  ProjectUuid: res.data.realData[k].project_uuid,
-                  Cmd: "RealData",
-                  Data: []
-                }
-              }
-              _t.CurrentRealUUIDList.push(res.data.realData[k].uuid)
-              _t.CurrentModelUUIDList.push(res.data.realData[k].mduid)
-              let DataObj = {
-                Uuid: res.data.realData[k].uuid,
-                ModelDataUuid: res.data.realData[k].mduid,
-                Value: res.data.realData[k].value
-              }
-              pushDataMap[duid].Data.push(DataObj)
-            }
-            for (let duid in pushDataMap) {
-              _t.$EventBus.$emit("readDataPush", pushDataMap[duid])
-            }
-          }
-        })
-      },0, 'main')
+      this.refreshVisibleRealDemand()
     },
     InitPopUpPagerRealData() {
-      const renderToken = this.popUpRenderToken
-      let _t = this
-      const datauuid = this.CurrentPagerPopRealDataUuidList
-      const devices = this.CurrentPagerPopRealDeviceUuidList
-      _t.CurrentPopRealUUIDList=[]
-      _t.CurrentPopModelUUIDList=[]
-      this.trackTimeout(function (){
-        if (_t._isDestroyed || renderToken !== _t.popUpRenderToken) {
-          return
+      this.refreshPopRealDemand()
+    },
+    retireMainRealDemand() {
+      this.realDemandGen += 1
+      this.hoverCellId = ''
+      this.lastMainDemandKey = ''
+      this.CurrentRealUUIDList = []
+      this.CurrentModelUUIDList = []
+      if (this.viewportDemandTimer) {
+        clearTimeout(this.viewportDemandTimer)
+        this.viewportDemandTimer = null
+      }
+    },
+    retirePopRealDemand() {
+      this.popRealDemandGen += 1
+      this.popHoverCellId = ''
+      this.lastPopDemandKey = ''
+      this.CurrentPopRealUUIDList = []
+      this.CurrentPopModelUUIDList = []
+      if (this.popViewportDemandTimer) {
+        clearTimeout(this.popViewportDemandTimer)
+        this.popViewportDemandTimer = null
+      }
+    },
+    scheduleViewportDemand() {
+      if (this.viewportDemandTimer) clearTimeout(this.viewportDemandTimer)
+      const _t = this
+      this.viewportDemandTimer = setTimeout(function () {
+        _t.viewportDemandTimer = null
+        if (!_t._isDestroyed) _t.refreshVisibleRealDemand()
+      }, 200)
+    },
+    schedulePopViewportDemand() {
+      if (this.popViewportDemandTimer) clearTimeout(this.popViewportDemandTimer)
+      const _t = this
+      this.popViewportDemandTimer = setTimeout(function () {
+        _t.popViewportDemandTimer = null
+        if (!_t._isDestroyed) _t.refreshPopRealDemand()
+      }, 200)
+    },
+    refreshVisibleRealDemand() {
+      const cells = this.configData && this.configData.components ? this.configData.components.cells : []
+      const demand = selectRuntimeRealDemand(cells, {
+        viewport: readGraphViewport(this.ISMRuningCavasContainer),
+        hoverId: this.hoverCellId,
+      })
+      const key = demandSignature(demand)
+      if (key === this.lastMainDemandKey) return
+      const gen = ++this.realDemandGen
+      this.lastMainDemandKey = key
+      this.CurrentRealUUIDList = []
+      this.CurrentModelUUIDList = []
+      ismDebug('SCADA.InitPagerRealData.enter', {
+        pageRenderToken: this.pageRenderToken,
+        dataUuids: demand.pairs.length + demand.systemUuids.length,
+        devices: demand.pairs.length,
+      })
+      if (!demand.pairs.length && !demand.systemUuids.length) return
+      const _t = this
+      fetchRealDataByPairs(getRealDataByUuid, demand, {
+        isStale: function () { return gen !== _t.realDemandGen || _t._isDestroyed },
+      }).then(function (body) {
+        if (gen !== _t.realDemandGen || _t._isDestroyed) return
+        _t.settingLoading = false
+        if (!body || body.code != 0) return
+        const grouped = groupRealDataPush(body.realData)
+        _t.CurrentRealUUIDList = grouped.uuids
+        _t.CurrentModelUUIDList = grouped.modelUuids
+        const map = grouped.pushDataMap
+        for (const duid in map) {
+          _t.$EventBus.$emit('readDataPush', map[duid])
         }
-        if(datauuid.length>0)
-        {
-          let newuuids=[]
-          for(let i=0;i<datauuid.length;i++)
-          {
-            if((typeof datauuid[i]!="undefined")&&(datauuid[i].length>0))
-            {
-              newuuids.push(datauuid[i])
-            }
-          }
-          let newdevices=[]
-          for(let i=0;i<devices.length;i++)
-          {
-            if((typeof devices[i]!="undefined")&&(devices[i].length>0))
-            {
-              newdevices.push(devices[i])
-            }
-          }
-          getRealDataByUuid({uuid:newuuids,devices:newdevices}).then(function (res){
-            if (_t._isDestroyed || renderToken !== _t.popUpRenderToken) {
-              return
-            }
-            _t.settingLoading=false
-            if(res.data.code==0)
-            {
-              // 按 DeviceUuid 分组，批量 emit，减少事件数量和 handler 调用次数
-              let pushDataMap = {}
-              for(let k = 0,realDataLen = res.data.realData.length;k<realDataLen;k++)
-              {
-                let duid = res.data.realData[k].duid
-                if (!pushDataMap[duid]) {
-                  pushDataMap[duid] = {
-                    DeviceUuid: duid,
-                    ProjectUuid: res.data.realData[k].project_uuid,
-                    Cmd: "RealData",
-                    Data: []
-                  }
-                }
-                _t.CurrentPopRealUUIDList.push(res.data.realData[k].uuid)
-                _t.CurrentPopModelUUIDList.push(res.data.realData[k].mduid)
-                let DataObj = {
-                  Uuid: res.data.realData[k].uuid,
-                  ModelDataUuid: res.data.realData[k].mduid,
-                  Value: res.data.realData[k].value
-                }
-                pushDataMap[duid].Data.push(DataObj)
-              }
-              for (let duid in pushDataMap) {
-                _t.$EventBus.$emit("readDataPush", pushDataMap[duid])
-              }
-            }
-          })
+      }).catch(function () {
+        if (gen === _t.realDemandGen) _t.lastMainDemandKey = ''
+      })
+    },
+    refreshPopRealDemand() {
+      const cells = this.PopUpConfigData && this.PopUpConfigData.components ? this.PopUpConfigData.components.cells : []
+      const demand = selectRuntimeRealDemand(cells, {
+        viewport: readGraphViewport(this.ISMPopUpRunningContainer),
+        hoverId: this.popHoverCellId,
+      })
+      const key = demandSignature(demand)
+      if (key === this.lastPopDemandKey) return
+      const gen = ++this.popRealDemandGen
+      this.lastPopDemandKey = key
+      this.CurrentPopRealUUIDList = []
+      this.CurrentPopModelUUIDList = []
+      if (!demand.pairs.length && !demand.systemUuids.length) return
+      const _t = this
+      fetchRealDataByPairs(getRealDataByUuid, demand, {
+        isStale: function () { return gen !== _t.popRealDemandGen || _t._isDestroyed },
+      }).then(function (body) {
+        if (gen !== _t.popRealDemandGen || _t._isDestroyed) return
+        _t.settingLoading = false
+        if (!body || body.code != 0) return
+        const grouped = groupRealDataPush(body.realData)
+        _t.CurrentPopRealUUIDList = grouped.uuids
+        _t.CurrentPopModelUUIDList = grouped.modelUuids
+        const map = grouped.pushDataMap
+        for (const duid in map) {
+          _t.$EventBus.$emit('readDataPush', map[duid])
         }
-      },0, 'popup')
+      }).catch(function () {
+        if (gen === _t.popRealDemandGen) _t.lastPopDemandKey = ''
+      })
     },
     getInitialPageId() {
       return this.$route && this.$route.query ? this.$route.query.pageId : ""
+    },
+    clearPagerLoading() {
+      this.$message.destroy('updatable')
+      this.chargePage = false
     },
     loadPager(){
       let _t = this
       if(this.showUuid!="")
       {
+        if (this.loadPagerInFlight) {
+          console.warn('[loadPager] skip duplicate call, uuid=', this.showUuid)
+          return
+        }
+        this.loadPagerInFlight = true
         if(this.showToken!="")
         {
           const requestToken = ++this.mainPageRequestToken
@@ -581,13 +589,14 @@ export default {
           // 标记正在切换，阻止数据推送期间无效的 DealWithUpdateData
           _t.chargePage = true
           this.$message.loading({content: 'Loading...', key: 'updatable', duration: 0});
-          this.CurrentRealUUIDList=[]
-          this.CurrentModelUUIDList=[]
+          this.retireMainRealDemand()
           _t.CurrentPagerRealDataUuidList=[]
           _t.CurrentPagerRealDeviceUuidList=[]
           this.getLayerDataStructByTokenData({
             pageType: this.isMobile, token:this.showToken,uuid: this.showUuid, cb: function (errno, project_uuid,expireAt,token, datauuid,devices) {
+              _t.loadPagerInFlight = false
               if (requestToken !== _t.mainPageRequestToken || _t._isDestroyed) {
+                _t.clearPagerLoading()
                 return
               }
               document.title = _t.configData.AppName
@@ -602,16 +611,23 @@ export default {
               {
                 document.title = _t.$t('displayConfig.Properties.NoAuth')
                 _t.$message.warn(_t.$t('displayConfig.Properties.NoAuth'))
+                _t.$message.destroy('updatable')
+                _t.chargePage = false
                 return
               }
               else  if (errno == -4)
               {
                 document.title = _t.$t('displayConfig.Properties.NoToken')
                 _t.$message.warn(_t.$t('displayConfig.Properties.NoToken'))
+                _t.$message.destroy('updatable')
+                _t.chargePage = false
                 return
               }
               else if (errno != 0)
               {
+                _t.$message.destroy('updatable')
+                _t.chargePage = false
+                _t.$message.error(_t.$t('Render.GetPageError'))
                 return
               }
               const initialPageId = _t.getInitialPageId()
@@ -640,13 +656,14 @@ export default {
           // 标记正在切换，阻止数据推送期间无效的 DealWithUpdateData
           _t.chargePage = true
           this.$message.loading({content: 'Loading...', key: 'updatable', duration: 0});
-          this.CurrentRealUUIDList=[]
-          this.CurrentModelUUIDList=[]
+          this.retireMainRealDemand()
           this.CurrentPagerRealDataUuidList=[]
           this.CurrentPagerRealDeviceUuidList=[]
           this.getLayerDataStruct({
-            pageType: this.isMobile, uuid: this.showUuid, cb: function (errno, project_uuid, datauuid,devices) {
+            pageType: this.isMobile, uuid: this.showUuid, metaOnly: true, cb: function (errno, project_uuid, datauuid,devices) {
+              _t.loadPagerInFlight = false
               if (requestToken !== _t.mainPageRequestToken || _t._isDestroyed) {
+                _t.clearPagerLoading()
                 return
               }
               document.title = _t.configData.AppName
@@ -655,9 +672,13 @@ export default {
                   setAuthorization({token: project_uuid}, AUTH_TYPE.AUTH1)
                 }
               } else {
-                _t.$router.push('/login')
                 _t.$message.destroy()
                 _t.chargePage = false
+                if (!checkAuthorization(AUTH_TYPE.BEARER)) {
+                  _t.$router.push('/login')
+                  return
+                }
+                _t.$message.error(_t.$t('Render.GetPageError'))
                 return
               }
               _t.$message.destroy()
@@ -898,10 +919,50 @@ export default {
         this.zoomDebounceTimer = null
       }
     },
+    /** 运行态只允许三类模板：首页、设备列表、点位列表。 */
+    isTemplatePage(pageUuid) {
+      if (!pageUuid) return false
+      const tm = (this.$store.state.ISMDisPlayEditorTool || {}).navTemplateMap
+      if (!tm) return pageUuid === this.showUuid
+      return [tm.home, tm.deviceList, tm.datapointList].filter(Boolean).indexOf(pageUuid) >= 0
+    },
+    /**
+     * 层级模板兜底：链接目标是「已删除的旧 page_id」时，
+     * 按导航树索引转换为对应层级模板页并附带 navContext。
+     */
+    convertLegacyPageLink(linkInfo) {
+      try {
+        if (!linkInfo || linkInfo.linkType !== "Inside" || !linkInfo.Inside || !linkInfo.Inside.pageUUID) {
+          return linkInfo
+        }
+        const st = this.$store.state.ISMDisPlayEditorTool || {}
+        const index = st.navTreeIndex
+        const pageUuid = linkInfo.Inside.pageUUID
+        if (this.isTemplatePage(pageUuid)) return linkInfo
+        // 解析不到旧页时保持原链接。强行改成首页会让配电室子页、总览按钮都落到同一页，
+        // 随后弹出「已在目标页面」或「弹窗目标与当前页相同」。
+        if (!index) return linkInfo
+        const { resolveOldPageTarget } = require('@/pages/ISMDisPlay/utils/navTreeIndex')
+        const conv = resolveOldPageTarget(pageUuid, index, st.navTemplateMap)
+        if (!conv) return linkInfo
+        console.log('[showPage] legacy page link converted:', pageUuid, '→', conv.pageUuid, conv.navContext && conv.navContext.kind)
+        return {
+          ...linkInfo,
+          Inside: { ...linkInfo.Inside, pageUUID: conv.pageUuid },
+          navContext: linkInfo.navContext || conv.navContext,
+        }
+      } catch (e) {
+        console.warn('[showPage] convertLegacyPageLink failed:', e && e.message)
+        return linkInfo
+      }
+    },
     buildGoPageKey(wsData) {
+      const nav = wsData.navContext || null
       return JSON.stringify({
         ModelId: wsData.ModelId || "",
         PageUuid: wsData.PageUuid || "",
+        // 同模板页不同上下文（不同机柜/设备组）必须视为不同跳转，避免被防抖拦截
+        NavKey: nav ? `${nav.kind || ''}:${nav.sid != null ? nav.sid : ''}:${nav.uuid || ''}:${nav.name || ''}:${nav.pageIndex != null ? nav.pageIndex : 0}:${nav.datapointPageIndex != null ? nav.datapointPageIndex : 0}:${nav.detailPageIndex != null ? nav.detailPageIndex : 0}` : "",
         IsPopUp: !!wsData.IsPopUp,
         AutoClose: !!wsData.AutoClose,
         linkType: typeof wsData.linkType !== "undefined" ? wsData.linkType : "Inside",
@@ -1149,7 +1210,7 @@ export default {
         this.ISMRuningCavasContainer.resize(this.configData.layer.width, this.configData.layer.height);
         this.ISMRuningCavasContainer.scale( 1,  1);
       }
-
+      this.scheduleViewportDemand()
     },
     ActionSoundSpeech : function() {
       let speechInstance = new SpeechSynthesisUtterance();
@@ -1426,6 +1487,7 @@ export default {
       this.$message.destroy()
       this.PopUpDialog  = false
       this.popUpPageRequestToken += 1
+      this.retirePopRealDemand()
       this.currentPopUpDisplayUUID = ""
       this.currentPopUpPageUUID = ""
       this.destroyPopUpGraph()
@@ -1437,6 +1499,7 @@ export default {
       {
         this.PopUpDialog  = false
         this.popUpPageRequestToken += 1
+        this.retirePopRealDemand()
         this.currentPopUpDisplayUUID = ""
         this.currentPopUpPageUUID = ""
         this.destroyPopUpGraph()
@@ -3236,13 +3299,70 @@ export default {
       nodeData.detail.style.visible = visible
       cell.setData(nodeData, {overwrite: true})
     },
+    clearPageLoadingWatchdog() {
+      if (this.pageLoadingWatchdogTimer) {
+        clearTimeout(this.pageLoadingWatchdogTimer)
+        this.pageLoadingWatchdogTimer = null
+      }
+    },
+    armPageLoadingWatchdog(token) {
+      // 根治：任何路径漏关 Loading 时，看门狗强制摘掉遮罩，避免只能刷新才能恢复
+      const PAGE_LOADING_MAX_MS = 12000
+      this.clearPageLoadingWatchdog()
+      this.pageLoadingWatchdogTimer = setTimeout(() => {
+        this.pageLoadingWatchdogTimer = null
+        if (this._isDestroyed) return
+        if (token !== this.pageLoadingToken) return
+        if (!this.pageLoading && !this.pageLoadingTimer && !this.pendingClickPageLoadingToken) {
+          return
+        }
+        console.warn('[ISMRender] pageLoading watchdog force-close', {
+          token,
+          pageLoading: this.pageLoading,
+          chargePage: this.chargePage,
+          showUuid: this.showUuid,
+        })
+        this.forceClosePageLoading(loadingKey)
+      }, PAGE_LOADING_MAX_MS)
+    },
+    forceClosePageLoading(key = loadingKey) {
+      this.clearPageLoadingWatchdog()
+      if (this.pageLoadingTimer) {
+        clearTimeout(this.pageLoadingTimer)
+        this.pageLoadingTimer = null
+      }
+      this.pendingClickPageLoadingToken = null
+      this.pageLoading = false
+      this.pageLoadingShownAt = 0
+      this.unmountBodyPageLoading()
+      this.$message.destroy(key)
+      ismDebug('SCADA.forceClosePageLoading', {token: this.pageLoadingToken})
+    },
     beginPageLoading(key = loadingKey) {
       this.$message.destroy(key)
       this.pageLoadingToken += 1
       this.pageLoadingStartedAt = Date.now()
-      this.pageLoading = true
-      this.mountBodyPageLoading()
-      return this.pageLoadingToken
+      const token = this.pageLoadingToken
+      ismDebug('SCADA.beginPageLoading', {token, key, showUuid: this.showUuid})
+      // 静默切换：延迟显示遮罩。若页面在 PAGE_LOADING_DELAY 内完成(按需加载已缓存/秒回)，
+      // 遮罩根本不会出现，画面只做数据替换、不闪烁弹动；仅当加载确实较慢时才提示。
+      const PAGE_LOADING_DELAY = 280
+      if (this.pageLoadingTimer) {
+        clearTimeout(this.pageLoadingTimer)
+        this.pageLoadingTimer = null
+      }
+      this.pageLoadingShownAt = 0
+      this.armPageLoadingWatchdog(token)
+      this.pageLoadingTimer = setTimeout(() => {
+        this.pageLoadingTimer = null
+        if (token === this.pageLoadingToken && !this._isDestroyed) {
+          this.pageLoading = true
+          this.pageLoadingShownAt = Date.now()
+          this.mountBodyPageLoading()
+          ismDebug('SCADA.pageLoading.shown', {token})
+        }
+      }, PAGE_LOADING_DELAY)
+      return token
     },
     openPageLoading(key = loadingKey) {
       const token = this.beginPageLoading(key)
@@ -3256,7 +3376,10 @@ export default {
     consumePendingPageLoading() {
       const token = this.pendingClickPageLoadingToken
       this.pendingClickPageLoadingToken = null
-      if (token && token === this.pageLoadingToken && this.pageLoading) {
+      // 只要 pending token 仍是当前 token，就复用（即使延迟遮罩尚未显示）
+      // 旧逻辑要求 pageLoading===true，会在 280ms 延迟窗口内误开新 token，导致旧 close 被 skip
+      if (token && token === this.pageLoadingToken) {
+        this.armPageLoadingWatchdog(token)
         return Promise.resolve(token)
       }
       return this.openPageLoading(loadingKey)
@@ -3265,23 +3388,43 @@ export default {
       if (this.pendingClickPageLoadingToken) {
         this.closePageLoading(loadingKey, this.pendingClickPageLoadingToken)
         this.pendingClickPageLoadingToken = null
+      } else if (this.pageLoading || this.pageLoadingTimer) {
+        // 无 pending 但遮罩/延迟定时器仍在（如 GoPage 被拦截）→ 强制关闭
+        this.forceClosePageLoading(loadingKey)
       }
     },
     closePageLoading(key = loadingKey, token = this.pageLoadingToken) {
       if (token !== this.pageLoadingToken) {
+        ismDebug('SCADA.closePageLoading.skipToken', {token, current: this.pageLoadingToken})
         return
       }
-      const elapsed = Date.now() - this.pageLoadingStartedAt
+      this.clearPageLoadingWatchdog()
+      // 取消尚未触发的延迟遮罩 → 静默完成，遮罩从未出现
+      if (this.pageLoadingTimer) {
+        clearTimeout(this.pageLoadingTimer)
+        this.pageLoadingTimer = null
+      }
+      if (!this.pageLoading) {
+        this.pageLoadingShownAt = 0
+        this.$message.destroy(key)
+        ismDebug('SCADA.closePageLoading.silent', {token})
+        return
+      }
       const close = () => {
         if (token !== this.pageLoadingToken) {
           return
         }
         this.pageLoading = false
+        this.pageLoadingShownAt = 0
         this.unmountBodyPageLoading()
         this.$message.destroy(key)
+        ismDebug('SCADA.closePageLoading.done', {token})
       }
-      if (elapsed < 400) {
-        setTimeout(close, 400 - elapsed)
+      // 遮罩已显示时，保证最短展示时长，避免遮罩本身一闪而过
+      const MIN_SHOW = 360
+      const shownFor = Date.now() - (this.pageLoadingShownAt || this.pageLoadingStartedAt)
+      if (shownFor < MIN_SHOW) {
+        setTimeout(close, MIN_SHOW - shownFor)
       } else {
         close()
       }
@@ -3338,9 +3481,36 @@ export default {
     },
     async showPage(linkInfo) {
       const _debugTag = '[showPage]'
-      console.log(_debugTag, '===== ENTRY =====', JSON.parse(JSON.stringify(linkInfo)))
+      console.log(_debugTag, '===== ENTRY =====', linkInfo && linkInfo.linkType, linkInfo && linkInfo.Inside && linkInfo.Inside.pageUUID)
+      if (linkInfo && typeof linkInfo === 'object') {
+        linkInfo.isPopUp = isPopUpEnabled(linkInfo.isPopUp)
+      }
       //  this.PopUpDialog = false
       try {
+        // 层级模板：目标是已删除的旧 page_id 时按导航树索引兜底转换为「模板页 + navContext」
+        // （覆盖首页初载后卡片点击等未经槽位重映射的旧链接）
+        linkInfo = this.convertLegacyPageLink(linkInfo)
+        try {
+          const target = linkInfo && linkInfo.Inside
+          // 首页 pageUUID 与 displayUUID 相同。返回首页必须清空设备测点上下文，
+          // 否则会把上一设备页的 navDatapoints 表格再次注入首页画布并遮挡总览。
+          const isDashboardHome = target
+            && target.pageUUID
+            && target.pageUUID === target.displayUUID
+          if (isDashboardHome) {
+            this.$store.commit('ISMDisPlayEditorTool/setNavContext', null)
+            this.SelectDeviceUuid = ''
+          } else if (linkInfo && linkInfo.navContext) {
+            this.$store.commit('ISMDisPlayEditorTool/setNavContext', linkInfo.navContext)
+            if (linkInfo.navContext.kind === 'device' && linkInfo.navContext.uuid) {
+              this.SelectDeviceUuid = linkInfo.navContext.uuid
+            }
+          } else if (linkInfo && linkInfo.linkType === 'Inside' && linkInfo.Inside &&
+              !linkInfo.isPopUp && !this.isTemplatePage(linkInfo.Inside.pageUUID)) {
+            // 跳到非模板页（oneline 等）：清除残留上下文，避免误解析普通页绑点
+            this.$store.commit('ISMDisPlayEditorTool/setNavContext', null)
+          }
+        } catch (e) { /* ignore */ }
         if(linkInfo && linkInfo.linkType == "Inside" && linkInfo.Inside && (linkInfo.Inside.displayType === 2 || linkInfo.Inside.displayType === '2')) {
           this.cancelPendingPageLoading()
           this.$router.push({
@@ -3349,17 +3519,24 @@ export default {
           })
           return
         }
-        if(typeof linkInfo.isPopUp!='undefined'&& linkInfo.isPopUp==true)
+        if(isPopUpEnabled(linkInfo && linkInfo.isPopUp))
         {
           let _t = this
           const requestToken = ++this.popUpPageRequestToken
           this.popUpRenderToken += 1
           this.IsAutoClose = linkInfo.autoClose
           if (linkInfo.linkType == "Inside") {
+            if (!linkInfo.Inside.pageUUID) {
+              this.cancelPendingPageLoading()
+              this.$message && this.$message.warning(this.$t('readData.UnboundPage') || '未绑定目标页面，无法跳转')
+              return
+            }
             if (this.PopUpDialog &&
                 this.ISMPopUpRunningContainer &&
                 this.currentPopUpDisplayUUID === linkInfo.Inside.displayUUID &&
                 this.currentPopUpPageUUID === linkInfo.Inside.pageUUID) {
+              this.cancelPendingPageLoading()
+              this.$message && this.$message.warning('已在目标页面')
               return
             }
             // 先标记目标页，防止异步加载期间重复触发 GoPage
@@ -3378,8 +3555,7 @@ export default {
               return
             }
             _t.destroyPopUpGraph()
-            this.CurrentPopRealUUIDList=[]
-            this.CurrentPopModelUUIDList=[]
+            this.retirePopRealDemand()
             this.CurrentPagerPopRealDataUuidList=[]
             this.CurrentPagerPopRealDeviceUuidList=[]
             this.selectPopUpDisplayPageDataStruct({
@@ -3392,6 +3568,16 @@ export default {
                 }
                 if(res==0)
                 {
+                  const popupPageId = _t.PopUpConfigData && (_t.PopUpConfigData.PageId || _t.PopUpConfigData.pageUuid)
+                  const mainPageId = _t.currentPageUUID || (_t.configData && _t.configData.PageId)
+                  if (popupPageId && mainPageId && String(popupPageId) === String(mainPageId)) {
+                    _t.currentPopUpDisplayUUID = ""
+                    _t.currentPopUpPageUUID = ""
+                    _t.chargePagePopUp = false
+                    _t.closePageLoading(loadingKey, loadingToken)
+                    _t.$message && _t.$message.warning('弹窗目标与当前页相同，请绑定具体子页')
+                    return
+                  }
                   console.log('[showPage-PopUp] page loaded, opening dialog')
                   _t.chargePagePopUp = false
                   _t.PopUpDialog = true
@@ -3456,12 +3642,28 @@ export default {
         }
         else {
           if (linkInfo.linkType == "Inside") {
-            // 已在当前页则跳过，防止 GoPage 高频推送导致反复销毁重建
-            if (this.currentDisplayUUID === linkInfo.Inside.displayUUID &&
-                this.currentPageUUID === linkInfo.Inside.pageUUID) {
+            if (!linkInfo.Inside.pageUUID) {
+              this.cancelPendingPageLoading()
+              this.$message && this.$message.warning(this.$t('readData.UnboundPage') || '未绑定目标页面，无法跳转')
+              return
+            }
+            // 已在当前页则跳过，防止 GoPage 高频推送导致反复销毁重建。
+            // 例外：层级模板同页换上下文（navContext）必须重新解析绑点。
+            const samePage = this.currentDisplayUUID === linkInfo.Inside.displayUUID &&
+                this.currentPageUUID === linkInfo.Inside.pageUUID
+            const navCtx = linkInfo.navContext || null
+            if (samePage && !navCtx) {
+              if (this.chargePage) {
+                console.log('[showPage] skip in-flight same target, keep first request', linkInfo.Inside)
+                return
+              }
               this.cancelPendingPageLoading()
               console.log('[showPage] skip: already on target page', linkInfo.Inside)
+              this.$message && this.$message.warning('已在目标页面')
               return
+            }
+            if (samePage && navCtx) {
+              console.log('[showPage] same template page, re-apply navContext', navCtx.kind, navCtx.uuid || navCtx.sid)
             }
             // 先标记目标页，防止异步加载期间重复触发 GoPage
             this.currentDisplayUUID = linkInfo.Inside.displayUUID
@@ -3473,10 +3675,15 @@ export default {
             const loadingToken = await this.consumePendingPageLoading()
             if (requestToken !== _t.mainPageRequestToken || _t._isDestroyed) {
               _t.closePageLoading(loadingKey, loadingToken)
+              if (!_t._isDestroyed &&
+                  _t.currentDisplayUUID === linkInfo.Inside.displayUUID &&
+                  _t.currentPageUUID === linkInfo.Inside.pageUUID) {
+                _t.$message && _t.$message.warning('页面切换未完成，请再点一次')
+              }
               return
             }
-            // 立即销毁旧 Graph，阻断旧实例继续消费数据/定时器
-            _t.destroyMainGraph()
+            // 静默切换：不再提前销毁旧 Graph(否则画布会先变空白再重建 → 闪烁)。
+            // 保留旧画面直到新数据就绪，由 RunCavasContainerInit 复用实例 + fromJSON 原地替换 cells。
             _t.clearPendingTimers('main')
             // 标记正在切换，阻止数据推送期间无效的 DealWithUpdateData
             let page = {
@@ -3485,8 +3692,7 @@ export default {
               pageUuid: linkInfo.Inside.pageUUID
             }
 
-            _t.CurrentRealUUIDList=[]
-            _t.CurrentModelUUIDList=[]
+            _t.retireMainRealDemand()
             this.CurrentPagerRealDataUuidList=[]
             this.CurrentPagerRealDeviceUuidList=[]
 
@@ -3495,16 +3701,21 @@ export default {
                 if (requestToken !== _t.mainPageRequestToken || _t._isDestroyed) {
                   _t.closePageLoading(loadingKey, loadingToken)
                   console.warn("[showPage] callback ABORTED: token mismatch or destroyed", "req=", requestToken, "cur=", _t.mainPageRequestToken, "destroyed=", _t._isDestroyed)
+                  if (!_t._isDestroyed &&
+                      _t.currentDisplayUUID === page.displayUUID &&
+                      _t.currentPageUUID === page.pageUuid) {
+                    _t.$message && _t.$message.warning('页面切换未完成，请再点一次')
+                  }
                   return
                 }
                 console.log('[showPage-Main] callback fired, isFound=', isFound, 'uuids=', uuids?.length, 'devices=', devices?.length)
                 _t.chargePage = false
                 if (isFound === false) {
                   _t.closePageLoading(loadingKey, loadingToken)
-                  console.error('[showPage-Main] page not found, displayUUID=', page.displayUUID)
+                  console.error('[showPage-Main] page not found, displayUUID=', page.displayUUID, 'pageUuid=', page.pageUuid)
                   _t.currentDisplayUUID = ""
                   _t.currentPageUUID = ""
-                  _t.$message.error(_t.$t("readData.NotFindPage"))
+                  _t.$message.error(_t.$t("readData.NotFindPage") + (page.pageUuid ? ` (${page.pageUuid})` : ''))
                   return
                 }
                 // 设置 currentDisplayUUID 会触发 watch，但这是原有逻辑，保留
@@ -3532,8 +3743,9 @@ export default {
       }catch (e) {
         this.chargePage = false
         this.chargePagePopUp = false
-        this.closePageLoading(loadingKey)
+        this.forceClosePageLoading(loadingKey)
         console.error(e)
+        this.$message && this.$message.error('页面跳转失败：' + (e && e.message ? e.message : '运行时异常'))
       }finally {
         console.log("[showPage] finally - nothing to clean here")
       }
@@ -3760,13 +3972,17 @@ export default {
       this.ISMRuningCavasContainer.off('blank:contextmenu')
       this.ISMRuningCavasContainer.off('cell:contextmenu')
       this.ISMRuningCavasContainer.off('scale')
+      this.ISMRuningCavasContainer.off('translate')
 
       window.removeEventListener('resize', this.setScale);
       window.addEventListener('resize', this.setScale);
       // token 已在函数入口处自增，此处只捕获当前值供回调使用
       const renderToken = this.pageRenderToken
-      this.ISMRuningCavasContainer.on('scale', ( scale ) => {
-
+      this.ISMRuningCavasContainer.on('scale', () => {
+        _t.scheduleViewportDemand()
+      });
+      this.ISMRuningCavasContainer.on('translate', () => {
+        _t.scheduleViewportDemand()
       });
       //
       this.ISMRuningCavasContainer.on('node:click', ( { e, x, y, node, view } ) => {
@@ -3782,9 +3998,13 @@ export default {
         _t.handleGraphNodeAction(node, 'mouseup')
       });
       this.ISMRuningCavasContainer.on('node:mouseenter', ( { e, x, y, node, view } ) => {
+        _t.hoverCellId = node && node.id ? node.id : ''
+        _t.refreshVisibleRealDemand()
         _t.handleGraphNodeAction(node, 'mouseenter')
       });
       this.ISMRuningCavasContainer.on('node:mouseleave', ( { e, x, y, node, view } ) => {
+        if (node && _t.hoverCellId === node.id) _t.hoverCellId = ''
+        _t.refreshVisibleRealDemand()
         _t.handleGraphNodeAction(node, 'mouseleave')
       });
       //页面空白处右键菜单
@@ -3806,6 +4026,8 @@ export default {
         const domContainer = this.$refs.ISMRunningContainer
         console.log('[RunCavasContainerInit] DOM check at render:done: container exists=', !!domContainer, 'childCount=', domContainer?.children?.length, 'svg exists=', !!domContainer?.querySelector('svg'))
         if (renderToken !== this.pageRenderToken) {
+          // 被新一轮渲染顶替时，本轮 loadingToken 可能已过期；若仍是当前 token 则关掉
+          this.closePageLoading(loadingKey, loadingToken)
           console.warn('[RunCavasContainerInit] render:done ABORTED: token mismatch, renderToken=', renderToken, 'pageRenderToken=', this.pageRenderToken)
           return
         }
@@ -3830,15 +4052,8 @@ export default {
         console.log("[RunCavasContainerInit] loading components from JSON, cells count=", _t.configData.components?.cells?.length)
         const hasObserver = !!_t.configData.components?.__ob__
         console.log("[RunCavasContainerInit] components has __ob__ (Vue Observer)=", hasObserver)
-        const components = JSON.parse(JSON.stringify(_t.configData.components))
-        if (components.cells && Array.isArray(components.cells)) {
-          const originalCount = components.cells.length
-          components.cells = components.cells.filter(cell => cell && cell.shape)
-          const filteredCount = components.cells.length
-          if (filteredCount < originalCount) {
-            console.warn(`[RunCavasContainerInit] filtered ${originalCount - filteredCount} cells that are missing the shape property`)
-          }
-        }
+        const { sanitizeGraphComponents } = require('@/pages/ISMDisPlay/utils/graphCellSanitizer')
+        const components = sanitizeGraphComponents(_t.configData.components, { tag: 'RunCavasContainerInit' })
         _t.ISMRuningCavasContainer.fromJSON(components)
         console.log("[RunCavasContainerInit] fromJSON completed, graph cells count=", _t.ISMRuningCavasContainer.getCells()?.length)
         this.$nextTick(() => {
@@ -3908,8 +4123,11 @@ export default {
           };
         },
       })
-      this.ISMPopUpRunningContainer.on('scale', ( scale ) => {
-
+      this.ISMPopUpRunningContainer.on('scale', () => {
+        _t.schedulePopViewportDemand()
+      });
+      this.ISMPopUpRunningContainer.on('translate', () => {
+        _t.schedulePopViewportDemand()
       });
       //
       this.ISMPopUpRunningContainer.on('node:click', ( { e, x, y, node, view } ) => {
@@ -3925,9 +4143,13 @@ export default {
         _t.handleGraphNodeAction(node, 'mouseup')
       });
       this.ISMPopUpRunningContainer.on('node:mouseenter', ( { e, x, y, node, view } ) => {
+        _t.popHoverCellId = node && node.id ? node.id : ''
+        _t.refreshPopRealDemand()
         _t.handleGraphNodeAction(node, 'mouseenter')
       });
       this.ISMPopUpRunningContainer.on('node:mouseleave', ( { e, x, y, node, view } ) => {
+        if (node && _t.popHoverCellId === node.id) _t.popHoverCellId = ''
+        _t.refreshPopRealDemand()
         _t.handleGraphNodeAction(node, 'mouseleave')
       });
       //页面空白处右键菜单
@@ -3955,10 +4177,8 @@ export default {
       });
       //==============================
       try{
-        const components = JSON.parse(JSON.stringify(_t.PopUpConfigData.components))
-        if (components.cells && Array.isArray(components.cells)) {
-          components.cells = components.cells.filter(cell => cell && cell.shape)
-        }
+        const { sanitizeGraphComponents } = require('@/pages/ISMDisPlay/utils/graphCellSanitizer')
+        const components = sanitizeGraphComponents(_t.PopUpConfigData.components, { tag: 'RunPopUpCavasContainerInit' })
         _t.ISMPopUpRunningContainer.fromJSON(components)
       }catch (e){
         _t.closePageLoading(loadingKey, loadingToken)
@@ -3992,13 +4212,25 @@ export default {
       _t.eventHandlers.GoPage && _t.$EventBus.$off("GoPage", _t.eventHandlers.GoPage)
       _t.eventHandlers.GoPage = (data) => {
         if(!_t.shouldHandleGoPage(data)) {
-          console.warn("[GoPage] BLOCKED by shouldHandleGoPage (800ms debounce)")
+          // 点击已 beginPageLoading，但跳转被防抖拦截 → 必须关掉遮罩，否则永久转圈
+          _t.cancelPendingPageLoading()
+          console.warn("[GoPage] BLOCKED by shouldHandleGoPage (debounce), loading cancelled")
           return
         }
         // 非弹窗切换时，若主页面正在加载中则直接忽略，防止高频点击叠加请求
-        if(_t.chargePage && !(data.IsPopUp)) {
-          console.warn("[GoPage] BLOCKED by chargePage guard", "chargePage=", _t.chargePage, "IsPopUp=", data.IsPopUp)
+        if(_t.chargePage && !isPopUpEnabled(data && data.IsPopUp)) {
+          _t.cancelPendingPageLoading()
+          console.warn("[GoPage] BLOCKED by chargePage guard, loading cancelled", "chargePage=", _t.chargePage, "IsPopUp=", data.IsPopUp)
           return
+        }
+        // 层级模板：导航注入上下文
+        if (data && data.navContext) {
+          try {
+            _t.$store.commit('ISMDisPlayEditorTool/setNavContext', data.navContext)
+          } catch (e) { /* ignore */ }
+          if (data.navContext.kind === 'device' && data.navContext.uuid) {
+            _t.SelectDeviceUuid = data.navContext.uuid
+          }
         }
         let JumpWindow = localStorage.getItem("JumpWindow")
         let JumpWindowEnable = false
@@ -4020,7 +4252,7 @@ export default {
         if(JumpWindowEnable) {
           let wsData = data
           let linkInfo = {
-            isPopUp: wsData.IsPopUp,
+            isPopUp: isPopUpEnabled(wsData.IsPopUp),
             autoClose: wsData.AutoClose,
             linkType: typeof wsData.linkType != "undefined" ? wsData.linkType : "Inside",
             Inside: {
@@ -4031,14 +4263,339 @@ export default {
             height: wsData.height,
             External: wsData.External,
             title: wsData.External,
-            OpenExternalType: wsData.OpenExternalType
+            OpenExternalType: wsData.OpenExternalType,
+            navContext: wsData.navContext || null,
           }
           _t.showPage(linkInfo)
         } else {
-          console.warn("[GoPage] BLOCKED by JumpWindowEnable=false")
+          _t.cancelPendingPageLoading()
+          console.warn("[GoPage] BLOCKED by JumpWindowEnable=false, loading cancelled")
         }
       }
       _t.$EventBus.$on("GoPage", _t.eventHandlers.GoPage);
+
+      _t.eventHandlers.NavPageChange && _t.$EventBus.$off("NavPageChange", _t.eventHandlers.NavPageChange)
+      _t.eventHandlers.NavPageChange = async (data) => {
+        const nav = _t.$store && _t.$store.state.ISMDisPlayEditorTool
+          ? _t.$store.state.ISMDisPlayEditorTool.navContext
+          : null
+        if (!nav) return
+        const payload = data || {}
+        // 信号层测点翻页：页内更新表格，禁止整页 GoPage/fromJSON（慢）
+        if (payload.datapointPageIndex != null
+          && (nav.signalMode || nav.routeMode === 'signal' || nav.allDatapoints || nav.kind === 'device')) {
+          let applyDatapointPagination
+          let fetchDeviceDatapointPage
+          let buildDeviceSignalContext
+          try {
+            const navContext = require('@/pages/ISMDisPlay/utils/navContext')
+            applyDatapointPagination = navContext.applyDatapointPagination
+            fetchDeviceDatapointPage = navContext.fetchDeviceDatapointPage
+            buildDeviceSignalContext = navContext.buildDeviceSignalContext
+          } catch (e) {
+            applyDatapointPagination = null
+          }
+          const base = {
+            ...nav,
+            signalMode: true,
+            routeMode: 'signal',
+            datapointPageIndex: payload.datapointPageIndex,
+          }
+          const requestedPageUuid = _t.currentPageUUID
+          const requestedDeviceUuid = base.deviceUuid || base.uuid || ''
+          const cachedAllLen = Array.isArray(base.allDatapoints) ? base.allDatapoints.length : 0
+          const declaredTotal = Number(base.totalDatapoints) || 0
+          // 本地缓存短于声明总数时，必须走服务端分页，不能用截断列表算总页数
+          const useServerPaged = !!base.serverPaged
+            || (declaredTotal > 0 && cachedAllLen > 0 && declaredTotal > cachedAllLen)
+            || (declaredTotal > 0 && cachedAllLen === 0)
+          let nextNav = typeof applyDatapointPagination === 'function'
+            ? applyDatapointPagination({ ...base, serverPaged: useServerPaged || !!base.serverPaged })
+            : base
+          // 大设备的测点只保留当前服务端页；顶部翻页必须重新请求，
+          // 不能像旧模板那样仅修改页码后继续渲染上一页的内存数据。
+          if (useServerPaged && typeof fetchDeviceDatapointPage === 'function'
+            && typeof buildDeviceSignalContext === 'function') {
+            try {
+              const baseVc = String(base.virtualCabinet || '').trim()
+              const baseParent = String(base.parentDeviceLabel || '').trim()
+              const baseFallback = !!(
+                base.virtualCabinetFallback
+                || base.isFallbackGroup
+                || (baseVc && baseParent && baseVc === baseParent)
+              )
+              const pointPage = await fetchDeviceDatapointPage({
+                muid: base.modelUuid || base.muid || '',
+                deviceLabel: baseVc ? '' : (base.label || base.name || ''),
+                deviceUuid: base.deviceUuid || base.uuid || '',
+                pointNamePrefix: baseVc,
+                isFallbackGroup: baseFallback,
+                page: Number(payload.datapointPageIndex) + 1,
+                pageSize: base.datapointPageSize,
+                query: base.datapointQuery || '',
+                category: baseVc ? '' : (base.datapointCategory || ''),
+              })
+              const activeNav = _t.$store.state.ISMDisPlayEditorTool.navContext
+              const activeDeviceUuid = activeNav && (activeNav.deviceUuid || activeNav.uuid || '')
+              if (!activeNav || _t.currentPageUUID !== requestedPageUuid
+                || activeDeviceUuid !== requestedDeviceUuid) {
+                return
+              }
+              nextNav = buildDeviceSignalContext({
+                ...base,
+                label: base.label || base.name || '',
+                name: base.name || base.label || '',
+                uuid: base.deviceUuid || base.uuid || '',
+                virtualCabinet: baseVc,
+                virtualCabinetFallback: baseFallback,
+                parentDeviceLabel: baseParent,
+                parentDeviceUuid: base.parentDeviceUuid || '',
+              }, pointPage.points, base.ancestors || [], {
+                ...pointPage,
+                serverPaged: true,
+                query: base.datapointQuery || '',
+                category: (baseVc && !baseFallback)
+                  ? `${baseVc.replace(/_+$/, '')}_`
+                  : (base.datapointCategory || ''),
+                virtualCabinet: baseVc,
+                virtualCabinetFallback: baseFallback,
+                parentDeviceLabel: baseParent,
+                parentDeviceUuid: base.parentDeviceUuid || '',
+              })
+              nextNav = {
+                ...nextNav,
+                virtualCabinet: baseVc,
+                virtualCabinetFallback: baseFallback,
+                parentDeviceLabel: baseParent,
+                parentDeviceUuid: base.parentDeviceUuid || '',
+                deviceListReturnContext: base.deviceListReturnContext || null,
+                homePageUuid: base.homePageUuid || '',
+              }
+            } catch (e) {
+              console.warn('[NavPageChange] fetch datapoint page failed:', e && e.message)
+            }
+          }
+          try {
+            _t.$store.commit('ISMDisPlayEditorTool/setNavContext', nextNav)
+          } catch (e) { /* ignore */ }
+          _t.navHydrateSuppressUntil = Date.now() + 800
+          try {
+            _t.$EventBus.$emit('NavDatapointPageUpdate', nextNav)
+          } catch (e) {
+            console.warn('[NavPageChange] NavDatapointPageUpdate emit failed', e && e.message)
+          }
+          return
+        }
+        let changed = false
+        if (nav.deviceListMode && payload.pageIndex != null) {
+          // 优先用 allChildDevices 重新切片，避免 childDevices 被当成全量导致总台数缩水
+          let nextNav = { ...nav, pageIndex: Math.max(0, Number(payload.pageIndex) || 0) }
+          if (Array.isArray(nav.allChildDevices) && nav.allChildDevices.length) {
+            try {
+              const { applyDeviceListPagination } = require('@/pages/ISMDisPlay/utils/deviceListPager')
+              nextNav = applyDeviceListPagination(nextNav)
+            } catch (e) { /* keep pageIndex-only fallback */ }
+          }
+          try {
+            _t.$store.commit('ISMDisPlayEditorTool/setNavContext', nextNav)
+          } catch (e) {
+            _t.$store.commit('ISMDisPlayEditorTool/setNavContextPage', { pageIndex: nextNav.pageIndex })
+          }
+          // 设备卡片和页码都直接响应 Vuex navContext；同一模板翻页无需销毁并重建整张 X6 画布。
+          return
+        } else if (nav.kind === 'device' && nav.detailPointMode && payload.detailPageIndex != null) {
+          _t.$store.commit('ISMDisPlayEditorTool/setNavContextPage', { detailPageIndex: payload.detailPageIndex })
+          changed = true
+        }
+        if (!changed) return
+        const updated = _t.$store.state.ISMDisPlayEditorTool.navContext
+        if (!_t.currentDisplayUUID || !_t.currentPageUUID) return
+        _t.$EventBus.$emit('GoPage', {
+          ModelId: _t.currentDisplayUUID,
+          PageUuid: _t.currentPageUUID,
+          IsPopUp: false,
+          AutoClose: false,
+          linkType: 'Inside',
+          navContext: updated,
+        })
+      }
+      _t.$EventBus.$on("NavPageChange", _t.eventHandlers.NavPageChange);
+
+      // ViewRealTable 空表时请求补齐测点（禁止表格组件 require navContext）
+      _t.eventHandlers.NavDatapointNeedHydrate
+        && _t.$EventBus.$off("NavDatapointNeedHydrate", _t.eventHandlers.NavDatapointNeedHydrate)
+      _t.eventHandlers.NavDatapointNeedHydrate = async () => {
+        const nav = _t.$store && _t.$store.state.ISMDisPlayEditorTool
+          ? _t.$store.state.ISMDisPlayEditorTool.navContext
+          : null
+        if (!nav) return
+        if (!(nav.signalMode || nav.routeMode === 'signal' || nav.kind === 'device'
+          || nav.allDatapoints || nav.datapoints)) {
+          return
+        }
+        // PageUpdate 同步回调里发出的 NeedHydrate：短暂抑制，打断同步事件环
+        if (_t.navHydrateSuppressUntil && Date.now() < _t.navHydrateSuppressUntil) {
+          return
+        }
+        const hydrateKey = [
+          nav.deviceUuid || nav.uuid || '',
+          Number(nav.datapointPageIndex) || 0,
+          nav.virtualCabinet || '',
+          nav.datapointQuery || '',
+          nav.datapointCategory || '',
+        ].join('|')
+        if (_t.navHydrateInFlight) {
+          return
+        }
+        if (_t.navHydrateKey === hydrateKey
+          && _t.navHydrateAttempts >= _t.navHydrateMaxAttempts) {
+          console.warn('[ISMRender] NavDatapointNeedHydrate: stop after max attempts', hydrateKey)
+          return
+        }
+        if (_t.navHydrateKey !== hydrateKey) {
+          _t.navHydrateKey = hydrateKey
+          _t.navHydrateAttempts = 0
+        }
+        _t.navHydrateInFlight = true
+        _t.navHydrateAttempts += 1
+        const releaseHydrate = () => { _t.navHydrateInFlight = false }
+        const emitPageUpdateSafe = (nextNav) => {
+          // 先抑制再广播：避免 ViewRealTable.applySignalPageFromNav → NeedHydrate 同步重入炸栈
+          _t.navHydrateSuppressUntil = Date.now() + 800
+          try {
+            _t.$EventBus.$emit('NavDatapointPageUpdate', nextNav)
+          } catch (e) {
+            console.warn('[ISMRender] NavDatapointPageUpdate emit failed', e && e.message)
+          }
+        }
+        const declaredTotal = Number(nav.totalDatapoints) || 0
+        const cachedAll = Array.isArray(nav.allDatapoints) ? nav.allDatapoints : []
+        // 本地缓存短于声明总数，或已标记服务端分页：禁止走 fetchAll（硬上限 5000
+        // → pageSize=80 时总页数被算成 63，下一页永久禁用）。
+        const mustServerPage = !!nav.serverPaged
+          || (declaredTotal > 0 && cachedAll.length > 0 && declaredTotal > cachedAll.length)
+          || (declaredTotal > 0 && !cachedAll.length)
+        if (!mustServerPage && cachedAll.length) {
+          let applyDatapointPagination
+          try {
+            applyDatapointPagination = require('@/pages/ISMDisPlay/utils/navContext').applyDatapointPagination
+          } catch (e) {
+            applyDatapointPagination = null
+          }
+          const nextNav = typeof applyDatapointPagination === 'function'
+            ? applyDatapointPagination({ ...nav, signalMode: true, routeMode: 'signal' })
+            : nav
+          try {
+            _t.$store.commit('ISMDisPlayEditorTool/setNavContext', nextNav)
+          } catch (e) { /* ignore */ }
+          emitPageUpdateSafe(nextNav)
+          releaseHydrate()
+          return
+        }
+        const muid = nav.modelUuid || nav.muid || ''
+        const label = nav.label || nav.name || nav.rawLabel || ''
+        const requestedPageUuid = _t.currentPageUUID
+        const requestedDeviceUuid = nav.deviceUuid || nav.uuid || ''
+        let fetchDeviceDatapointPage
+        let buildDeviceSignalContext
+        try {
+          const mod = require('@/pages/ISMDisPlay/utils/navContext')
+          fetchDeviceDatapointPage = mod.fetchDeviceDatapointPage
+          buildDeviceSignalContext = mod.buildDeviceSignalContext
+        } catch (e) {
+          console.warn('[ISMRender] NavDatapointNeedHydrate: navContext load failed', e && e.message)
+          releaseHydrate()
+          return
+        }
+        if (typeof fetchDeviceDatapointPage !== 'function' || typeof buildDeviceSignalContext !== 'function') {
+          releaseHydrate()
+          return
+        }
+        try {
+          const pageSize = Math.max(1, Number(nav.datapointPageSize) || 80)
+          const pageIndex = Math.max(0, Number(nav.datapointPageIndex) || 0)
+          const navVc = String(nav.virtualCabinet || '').trim()
+          const navParent = String(nav.parentDeviceLabel || '').trim()
+          const navFallback = !!(
+            nav.virtualCabinetFallback
+            || nav.isFallbackGroup
+            || (navVc && navParent && navVc === navParent)
+          )
+          const pointPage = await fetchDeviceDatapointPage({
+            muid: muid || '',
+            deviceLabel: navVc ? '' : label,
+            deviceUuid: nav.uuid || nav.deviceUuid || '',
+            pointNamePrefix: navVc,
+            isFallbackGroup: navFallback,
+            page: pageIndex + 1,
+            pageSize,
+            query: nav.datapointQuery || '',
+            category: navVc ? '' : (nav.datapointCategory || ''),
+          })
+          if (!pointPage.points.length) {
+            // total>0 但当前页仍空：停止重入，避免 NeedHydrate↔PageUpdate 死循环
+            console.warn('[ISMRender] NavDatapointNeedHydrate: empty page, stop loop', {
+              muid, label, total: pointPage.total, page: pageIndex + 1,
+            })
+            // 标记耗尽，后续同 key 不再 hydrate
+            _t.navHydrateAttempts = _t.navHydrateMaxAttempts
+            releaseHydrate()
+            return
+          }
+          const activeNav = _t.$store.state.ISMDisPlayEditorTool.navContext
+          const activeDeviceUuid = activeNav && (activeNav.deviceUuid || activeNav.uuid || '')
+          if (!activeNav || _t.currentPageUUID !== requestedPageUuid
+            || activeDeviceUuid !== requestedDeviceUuid) {
+            releaseHydrate()
+            return
+          }
+          const nextNav = buildDeviceSignalContext(
+            {
+              label: nav.label || label,
+              name: nav.name || label,
+              uuid: nav.uuid || nav.deviceUuid,
+              sid: nav.sid,
+              modelUuid: muid,
+              muid,
+              treeDepth: nav.treeDepth,
+              code: nav.code || '',
+              status: nav.status || '',
+              deviceListReturnContext: nav.deviceListReturnContext || null,
+              homePageUuid: nav.homePageUuid || '',
+              virtualCabinet: navVc,
+              virtualCabinetFallback: navFallback,
+              parentDeviceLabel: navParent,
+              parentDeviceUuid: nav.parentDeviceUuid || '',
+            },
+            pointPage.points,
+            nav.ancestors || [],
+            {
+              ...pointPage,
+              total: Math.max(Number(pointPage.total) || 0, declaredTotal),
+              page: pageIndex + 1,
+              pageSize,
+              serverPaged: true,
+              query: nav.datapointQuery || '',
+              category: (navVc && !navFallback)
+                ? `${navVc.replace(/_+$/, '')}_`
+                : (nav.datapointCategory || ''),
+              virtualCabinetFallback: navFallback,
+            },
+          )
+          try {
+            _t.$store.commit('ISMDisPlayEditorTool/setNavContext', nextNav)
+          } catch (e) { /* ignore */ }
+          _t.navHydrateAttempts = 0
+          emitPageUpdateSafe(nextNav)
+        } catch (e) {
+          console.warn('[ISMRender] NavDatapointNeedHydrate failed', e && e.message)
+          // 异常时也确保 Loading 不因后续组件崩溃残留
+          _t.forceClosePageLoading(loadingKey)
+        } finally {
+          releaseHydrate()
+        }
+      }
+      _t.$EventBus.$on("NavDatapointNeedHydrate", _t.eventHandlers.NavDatapointNeedHydrate);
 
       _t.eventHandlers.onSelectDevice && _t.$EventBus.$off("onSelectDevice", _t.eventHandlers.onSelectDevice)
       _t.eventHandlers.onSelectDevice = async (device)=>{
@@ -4085,13 +4642,12 @@ export default {
             _t.pageRenderToken += 1
             _t.chargePage = true
             const loadingToken = await _t.consumePendingPageLoading()
-            // 立即销毁旧 Graph，阻断旧实例继续消费数据/定时器
-            _t.destroyMainGraph()
+            // 静默切换：不再提前销毁旧 Graph，保留旧画面直到新数据就绪，
+            // 由 RunCavasContainerInit 复用实例 + fromJSON 原地替换 cells，避免空白闪烁。
             _t.clearPendingTimers('main')
             // 标记正在切换，阻止数据推送期间无效的 DealWithUpdateData
             // _t.$message.loading({content: 'Loading...', key: 'updatable', duration: 0});
-            _t.CurrentRealUUIDList=[]
-            _t.CurrentModelUUIDList=[]
+            _t.retireMainRealDemand()
             _t.CurrentPagerRealDataUuidList=[]
             _t.CurrentPagerRealDeviceUuidList=[]
             _t.selectDisplayPageDataStruct({
@@ -4105,7 +4661,7 @@ export default {
                   _t.closePageLoading(loadingKey, loadingToken)
                   _t.currentDisplayUUID = ""
                   _t.currentPageUUID = ""
-                  _t.$message.error(_t.$t("readData.NotFindPage"))
+                  _t.$message.error(_t.$t("readData.NotFindPage") + (page.pageUuid ? ` (${page.pageUuid})` : ''))
                   return
                 }
                 _t.currentDisplayUUID = page.displayUUID
@@ -4752,32 +5308,48 @@ export default {
       };
       _t.$EventBus.$on("RealAlarm", _t.eventHandlers.RealAlarm);
       _t.eventHandlers.ChargePage = (data) => {
-        let linkInfo = {
-          isPopUp:data.IsPopUp,
-          linkType:"Inside",
-          Inside:{}
-        }
-        if(data.PageID!="") {
-          if(data.DisPlayID!=undefined&&data.DisPlayID!="")
-          {
-            linkInfo.Inside.displayUUID = data.DisPlayID
+        try {
+          let linkInfo = {
+            isPopUp: isPopUpEnabled(data && data.IsPopUp),
+            linkType:"Inside",
+            Inside:{}
           }
-          else {
-            linkInfo.Inside.displayUUID = this.$route.params.uid
+          if(data && data.PageID) {
+            if(data.DisPlayID!=undefined&&data.DisPlayID!="")
+            {
+              linkInfo.Inside.displayUUID = data.DisPlayID
+            }
+            else {
+              linkInfo.Inside.displayUUID = this.$route.params.uid
+            }
+            linkInfo.Inside.pageUUID = data.PageID
+            _t.showPage(linkInfo)
+          } else {
+            _t.$message && _t.$message.warning(_t.$t('readData.UnboundPage') || '菜单未绑定页面，无法跳转')
           }
-          linkInfo.Inside.pageUUID = data.PageID
-          _t.showPage(linkInfo)
+        } catch (e) {
+          _t.$message && _t.$message.error('页面跳转失败：' + (e && e.message ? e.message : '运行时异常'))
         }
       };
       _t.$EventBus.$on("ChargePage", _t.eventHandlers.ChargePage);
-
+      // ViewMenu ClickType==1 发 MenuConfigPage；运行态原先未监听导致菜单无响应
+      _t.eventHandlers.MenuConfigPage = (data) => {
+        if (_t.eventHandlers.ChargePage) {
+          _t.eventHandlers.ChargePage(data)
+        }
+      };
+      _t.$EventBus.$off("MenuConfigPage", _t.eventHandlers.MenuConfigPage)
+      _t.$EventBus.$on("MenuConfigPage", _t.eventHandlers.MenuConfigPage);
 
     });
   },
   beforeDestroy() {
+    this.retireMainRealDemand()
+    this.retirePopRealDemand()
     speechSynthesis.cancel()
     this.$notification.destroy()
     this.clearPendingTimers()
+    this.forceClosePageLoading(loadingKey)
     this.mainPageRequestToken += 1
     this.popUpPageRequestToken += 1
 
@@ -4795,8 +5367,11 @@ export default {
     this.$EventBus.$off("StaticData", h.StaticData)
     this.$EventBus.$off("RealAlarm", h.RealAlarm)
     this.$EventBus.$off("ChargePage", h.ChargePage)
+    this.$EventBus.$off("MenuConfigPage", h.MenuConfigPage)
     this.$EventBus.$off("PlayVoice", h.PlayVoice)
     this.$EventBus.$off("GoPage", h.GoPage)
+    this.$EventBus.$off("NavPageChange", h.NavPageChange)
+    this.$EventBus.$off("NavDatapointNeedHydrate", h.NavDatapointNeedHydrate)
     this.$EventBus.$off("cell-editMode")
     this.$EventBus.$off("cell-vuex")
     this.$EventBus.$off("MenuConfigPage")
@@ -5274,5 +5849,64 @@ body:-ms-fullscreen {
   box-shadow   : inset 0 0 5px rgba(0, 0, 0, 0.2);
   background   : #ededed;
   border-radius: 1px;
+}
+
+/* ============================================================
+   航信机房大屏 · 未来科技感「流动光效」（纯装饰 / pointer-events:none）
+   原则：周期 ≥3s、叠加在数据上的光效透明度低、不遮挡读数
+   作用对象：DataV 面板容器 dv-border-box-13(大面板) / dv-border-box-12(KPI卡)
+   ============================================================ */
+
+/* 1) 流动光线：一道高光沿面板边框斜向「缓慢」扫过（mask 仅保留 1px 边框环）
+   克制原则：周期拉长(≥8s)、峰值透明度压到 ~0.3、高光本身降到 0.5，避免多个面板
+   同时扫光造成「眼花」。仅提示能量流动方向，不抢数据。 */
+::v-deep .dv-border-box-13::after,
+::v-deep .dv-border-box-12::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 6px;
+  padding: 1px;
+  background: linear-gradient(115deg,
+      transparent 0%,
+      transparent 42%,
+      rgba(44, 247, 254, 0) 46%,
+      rgba(44, 247, 254, 0.5) 50%,
+      rgba(140, 205, 255, 0) 54%,
+      transparent 58%,
+      transparent 100%);
+  background-size: 280% 280%;
+  background-position: 0% 0%;
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+          mask-composite: exclude;
+  pointer-events: none;
+  z-index: 6;
+  opacity: 0.3;
+  animation: ismBorderFlow 9s linear infinite;
+}
+::v-deep .dv-border-box-12::after {
+  animation-duration: 11s;
+  opacity: 0.24;
+}
+@keyframes ismBorderFlow {
+  0%   { background-position: 0% 0%; }
+  100% { background-position: 280% 280%; }
+}
+
+/* 2) 呼吸光晕：drop-shadow 跟随 DataV 真实 SVG 边框形状「缓慢」明灭（边角能量感）
+   克制原则：周期≥8s，峰值模糊/透明度压低，呼吸幅度小，肉眼几乎察觉不到闪。 */
+::v-deep .dv-border-box-13 {
+  animation: ismPanelBreath 8.5s ease-in-out infinite;
+  will-change: filter;
+}
+::v-deep .dv-border-box-12 {
+  animation: ismPanelBreath 7.5s ease-in-out infinite;
+  will-change: filter;
+}
+@keyframes ismPanelBreath {
+  0%, 100% { filter: drop-shadow(0 0 2px rgba(44, 247, 254, 0.08)); }
+  50%      { filter: drop-shadow(0 0 8px rgba(44, 247, 254, 0.16)); }
 }
 </style>

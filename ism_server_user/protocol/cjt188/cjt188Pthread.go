@@ -161,6 +161,10 @@ func (c *Cjt188Ctl) DealWithCJT188AlarmData(AlarmData protocol_common.PushAlarm)
 	build.WriteString(alarm.DataUuid)
 	key := build.String()
 	alarmTemp, isExist := c.DeviceAlarmTemp[key]
+	if protocol_common.ObserveStartupAlarm(alarm, alarm.Value == "1") {
+		c.DeviceAlarmTemp[key] = alarm
+		return
+	}
 
 	updateAlarm.AlarmName = alarm.DataName
 	updateAlarm.DeviceUuid = alarm.DeviceUuid
@@ -582,7 +586,8 @@ func (c *Cjt188Ctl) GatherCjt188DeviceData() {
 						signleAlarm.HappenTime = time.Now()
 						c.DealWithCJT188AlarmData(signleAlarm)
 						// protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-					} else if address.IsRecord == 1 {
+					}
+					if address.IsRecord == 1 {
 						//存储信息
 						signleHistoryData.DataName = address.Name
 						signleHistoryData.DeviceName = device.Name

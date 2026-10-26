@@ -1013,6 +1013,10 @@ func (c *OpcuaCtl) DealWithOpcuaCtlAlarmData(AlarmData protocol_common.PushAlarm
 	build.WriteString(alarm.DataUuid)
 	key := build.String()
 	alarmTemp, isExist := c.DeviceAlarmTemp[key]
+	if protocol_common.ObserveStartupAlarm(alarm, alarm.Value == "1") {
+		c.DeviceAlarmTemp[key] = alarm
+		return
+	}
 
 	updateAlarm.AlarmName = alarm.DataName
 	updateAlarm.DeviceUuid = alarm.DeviceUuid
@@ -1461,7 +1465,8 @@ func (c *OpcuaCtl) GatherOPcuaDeviceData() {
 					signleAlarm.HappenTime = time.Now()
 					c.DealWithOpcuaCtlAlarmData(signleAlarm)
 					// protocol_common.GAlarmQueue.QueuePush(signleAlarm)
-				} else if temp.IsRecord == 1 {
+				}
+				if temp.IsRecord == 1 {
 					//存储信息
 					signleHistoryData.DataName = temp.Name
 					signleHistoryData.DeviceName = device.Name

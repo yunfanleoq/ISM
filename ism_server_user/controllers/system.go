@@ -13,6 +13,7 @@ import (
 	"ISMServer/models"
 	protocolCommonFunc "ISMServer/protocol/commFunc"
 	protocolCommon "ISMServer/protocol/common"
+	ISMScript "ISMServer/task/ISMScript"
 	"ISMServer/utils/errmsg"
 	"archive/zip"
 	"bytes"
@@ -35,6 +36,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	license "ISMServer/license"
@@ -46,7 +48,6 @@ import (
 	"github.com/denisbrodbeck/machineid"
 	"github.com/forgoer/openssl"
 	"github.com/gogf/gf/v2/util/gconv"
-	"github.com/mattn/anko/vm"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/disk"
 	"github.com/shirou/gopsutil/v3/host"
@@ -67,6 +68,44 @@ type ISMSystem struct {
 var upgradeDir string = "data/upgrade/"
 var tempDir string = "data/tempDir/"
 var dbbackup string = "data/dbbackup/"
+
+// GetSystemAnalysis DataCount 短缓存：概览页不需要秒级精确，避免大表 COUNT 反复打库。
+const systemAnalysisDataCountTTL = 30 * time.Second
+
+type systemAnalysisDataCountEntry struct {
+	count     int64
+	expiresAt time.Time
+}
+
+var systemAnalysisDataCountCache sync.Map // projectUuid -> systemAnalysisDataCountEntry
+
+func getCachedSystemAnalysisDataCount(projectUuid string) (int64, bool) {
+	v, ok := systemAnalysisDataCountCache.Load(projectUuid)
+	if !ok {
+		return 0, false
+	}
+	entry, ok := v.(systemAnalysisDataCountEntry)
+	if !ok || time.Now().After(entry.expiresAt) {
+		systemAnalysisDataCountCache.Delete(projectUuid)
+		return 0, false
+	}
+	return entry.count, true
+}
+
+func storeSystemAnalysisDataCount(projectUuid string, count int64) {
+	systemAnalysisDataCountCache.Store(projectUuid, systemAnalysisDataCountEntry{
+		count:     count,
+		expiresAt: time.Now().Add(systemAnalysisDataCountTTL),
+	})
+}
+
+// safeAnalysisCount 执行 COUNT；失败时写 0 并打明确错误日志，避免超时刷屏且接口仍可返回。
+func safeAnalysisCount(dest *int64, tx *gorm.DB, label string) {
+	if err := tx.Count(dest).Error; err != nil {
+		logs.Error("GetSystemAnalysis %s count failed: %v", label, err)
+		*dest = 0
+	}
+}
 
 // SM4加密
 func SM4Encrypt(data string) (result string, err error) {
@@ -639,73 +678,42 @@ func (c *ISMSystem) UpdateDataModel() {
 			//SNMP设备
 			if DataModelType == 1 {
 
-			} else if DataModelType == 2 { //Modbus设备
-				var setparams models.ModbusDevicesDataModel
-				setparams.Name = row[0]
-				setparams.RegisterAddress, convErr = strconv.Atoi(row[1])
-				if convErr != nil {
-					continue
+			} else if DataModelType == 2 { // Modbus：按表头解析整表，按数据ID/地址 upsert，改名不会新增重复点
+				colIndex := excelColIndex(rows[0])
+				if !excelLooksLikeModbusPointSheet(colIndex) {
+					reponse_result.Code = -6
+					c.Data["json"] = reponse_result
+					c.ServeJSON()
+					return
 				}
-				setparams.Auth = row[2]
-				setparams.Type = row[3]
-				setparams.ByteOrder = row[4]
-				setparams.DataUnit = row[5]
-				setparams.ConversionExpression = row[6]
-
-				if row[7] == "是" {
-					setparams.IsAlarm = 1
-				} else if row[7] == "否" {
-					setparams.IsAlarm = 0
-				} else {
-					setparams.IsAlarm = 0
+				registerGroupUuid := c.GetString("registerGroupUuid")
+				bulkItems := make([]models.ModbusDevicesDataModel, 0, len(rows))
+				for i, r := range rows {
+					if i == 0 {
+						continue
+					}
+					item, ok := parseModbusPointRow(r, colIndex)
+					if !ok {
+						continue
+					}
+					if item.Muid == "" {
+						item.Muid = suuid
+					}
+					if item.RegisterGroupUuid == "" {
+						item.RegisterGroupUuid = registerGroupUuid
+					}
+					if item.Muid == "" || item.RegisterGroupUuid == "" {
+						continue
+					}
+					bulkItems = append(bulkItems, item)
 				}
-
-				if row[8] == "提示" {
-					setparams.AlarmLevel = 0
-				} else if row[8] == "次要" {
-					setparams.AlarmLevel = 1
-				} else if row[8] == "重要" {
-					setparams.AlarmLevel = 2
-				} else if row[8] == "紧急" {
-					setparams.AlarmLevel = 3
-				} else if row[8] == "致命" {
-					setparams.AlarmLevel = 4
-				} else {
-					setparams.AlarmLevel = 0
-				}
-
-				setparams.AlarmMessage = row[9]
-				setparams.AlarmClearMessage = row[10]
-
-				if row[11] == "是" {
-					setparams.IsRecord = 1
-				} else if row[11] == "否" {
-					setparams.IsRecord = 0
-				} else {
-					setparams.IsRecord = 0
-				}
-				if row[12] == "定时存储" {
-					setparams.RecordType = 1
-				} else if row[12] == "即时存储" {
-					setparams.RecordType = 2
-				} else if row[12] == "变化存储" {
-					setparams.RecordType = 0
-				} else {
-					setparams.RecordType = 0
-				}
-
-				setparams.RecordInterval, convErr = strconv.Atoi(row[13])
-				if convErr != nil {
-					setparams.RecordInterval = 60
-				}
-				setparams.RecordDataCharge = row[14]
-				setparams.FloatAccuracy = row[15]
-				if len(row) > 17 {
-					setparams.Uuid = row[17]
-				} else {
-					setparams.Uuid = ""
-				}
-				models.ModbusRegisterAddressUpdate(setparams)
+				bulk := models.ModbusBulkUpsertRegisterAddresses(bulkItems)
+				logs.Info("UpdateDataModel modbus: rows=%d added=%d updated=%d skipped=%d",
+					len(bulkItems), bulk.Added, bulk.Updated, bulk.Skipped)
+				reponse_result.Code = 0
+				c.Data["json"] = reponse_result
+				c.ServeJSON()
+				return
 			} else if DataModelType == 3 { //OPCUA设备
 				var setparams models.OpcuaDevicesDataModel
 
@@ -776,15 +784,7 @@ func (c *ISMSystem) UpdateDataModel() {
 				} else {
 					setparams.IsRecord = 0
 				}
-				if row[11] == "定时存储" {
-					setparams.RecordType = 1
-				} else if row[11] == "即时存储" {
-					setparams.RecordType = 2
-				} else if row[11] == "变化存储" {
-					setparams.RecordType = 0
-				} else {
-					setparams.RecordType = 0
-				}
+				setparams.RecordType = parseRecordTypeFromExcel(row[11])
 
 				setparams.RecordInterval, convErr = strconv.Atoi(row[12])
 				if convErr != nil {
@@ -936,15 +936,7 @@ func (c *ISMSystem) UpdateDataModel() {
 				} else {
 					setparams.IsRecord = 0
 				}
-				if row[15] == "定时存储" {
-					setparams.RecordType = 1
-				} else if row[15] == "即时存储" {
-					setparams.RecordType = 2
-				} else if row[15] == "变化存储" {
-					setparams.RecordType = 0
-				} else {
-					setparams.RecordType = 0
-				}
+				setparams.RecordType = parseRecordTypeFromExcel(row[15])
 
 				setparams.RecordInterval, convErr = strconv.Atoi(row[16])
 				if convErr != nil {
@@ -1026,15 +1018,7 @@ func (c *ISMSystem) UpdateDataModel() {
 				} else {
 					setparams.IsRecord = 0
 				}
-				if row[11] == "定时存储" {
-					setparams.RecordType = 1
-				} else if row[11] == "即时存储" {
-					setparams.RecordType = 2
-				} else if row[11] == "变化存储" {
-					setparams.RecordType = 0
-				} else {
-					setparams.RecordType = 0
-				}
+				setparams.RecordType = parseRecordTypeFromExcel(row[11])
 
 				setparams.RecordInterval, convErr = strconv.Atoi(row[12])
 				if convErr != nil {
@@ -1132,15 +1116,7 @@ func (c *ISMSystem) UpdateDataModel() {
 				} else {
 					setparams.IsRecord = 0
 				}
-				if row[11] == "定时存储" {
-					setparams.RecordType = 1
-				} else if row[11] == "即时存储" {
-					setparams.RecordType = 2
-				} else if row[11] == "变化存储" {
-					setparams.RecordType = 0
-				} else {
-					setparams.RecordType = 0
-				}
+				setparams.RecordType = parseRecordTypeFromExcel(row[11])
 
 				setparams.RecordInterval, convErr = strconv.Atoi(row[12])
 				if convErr != nil {
@@ -1234,15 +1210,7 @@ func (c *ISMSystem) UpdateDataModel() {
 				} else {
 					setparams.IsRecord = 0
 				}
-				if row[12] == "定时存储" {
-					setparams.RecordType = 1
-				} else if row[12] == "即时存储" {
-					setparams.RecordType = 2
-				} else if row[12] == "变化存储" {
-					setparams.RecordType = 0
-				} else {
-					setparams.RecordType = 0
-				}
+				setparams.RecordType = parseRecordTypeFromExcel(row[12])
 
 				setparams.RecordInterval, convErr = strconv.Atoi(row[13])
 				if convErr != nil {
@@ -1338,15 +1306,7 @@ func (c *ISMSystem) UpdateDataModel() {
 				} else {
 					setparams.IsRecord = 0
 				}
-				if row[11] == "定时存储" {
-					setparams.RecordType = 1
-				} else if row[11] == "即时存储" {
-					setparams.RecordType = 2
-				} else if row[11] == "变化存储" {
-					setparams.RecordType = 0
-				} else {
-					setparams.RecordType = 0
-				}
+				setparams.RecordType = parseRecordTypeFromExcel(row[11])
 
 				setparams.RecordInterval, convErr = strconv.Atoi(row[12])
 				if convErr != nil {
@@ -1430,15 +1390,7 @@ func (c *ISMSystem) UpdateDataModel() {
 				} else {
 					setparams.IsRecord = 0
 				}
-				if row[11] == "定时存储" {
-					setparams.RecordType = 1
-				} else if row[11] == "即时存储" {
-					setparams.RecordType = 2
-				} else if row[11] == "变化存储" {
-					setparams.RecordType = 0
-				} else {
-					setparams.RecordType = 0
-				}
+				setparams.RecordType = parseRecordTypeFromExcel(row[11])
 
 				setparams.RecordInterval, convErr = strconv.Atoi(row[12])
 				if convErr != nil {
@@ -1544,15 +1496,7 @@ func (c *ISMSystem) UpdateDataModel() {
 				} else {
 					setparams.IsRecord = 0
 				}
-				if row[12] == "定时存储" {
-					setparams.RecordType = 1
-				} else if row[12] == "即时存储" {
-					setparams.RecordType = 2
-				} else if row[12] == "变化存储" {
-					setparams.RecordType = 0
-				} else {
-					setparams.RecordType = 0
-				}
+				setparams.RecordType = parseRecordTypeFromExcel(row[12])
 
 				setparams.RecordInterval, convErr = strconv.Atoi(row[13])
 				if convErr != nil {
@@ -1586,6 +1530,199 @@ func (c *ISMSystem) UpdateDataModel() {
 
 	c.ServeJSON() //返回json格式
 }
+
+// UpdateAllModbusDataModel 导入「导出全量点位」Excel，按 模型ID/组ID/数据ID 做 upsert（有则更新，无则新增）。
+// 大表场景：预加载模型/组缓存 → 解析全部行 → 批量预取已有点位 → 分批写入 + 有限并发更新。
+func (c *ISMSystem) UpdateAllModbusDataModel() {
+	type UploadResult struct {
+		Code    int    `json:"Code"`
+		Added   int    `json:"added"`
+		Updated int    `json:"updated"`
+		Skipped int    `json:"skipped"`
+		Message string `json:"message"`
+	}
+	var reponse_result UploadResult
+
+	f, h, _ := c.GetFile("file")
+	if h == nil || f == nil {
+		reponse_result.Code = -1
+		reponse_result.Message = "未收到上传文件"
+		c.Data["json"] = reponse_result
+		c.ServeJSON()
+		return
+	}
+	ext := path.Ext(h.Filename)
+	if ext != ".xlsx" {
+		reponse_result.Code = -2
+		reponse_result.Message = "仅支持 .xlsx 文件"
+		c.Data["json"] = reponse_result
+		c.ServeJSON()
+		return
+	}
+
+	uploadDir := tempDir
+	if err := os.MkdirAll(uploadDir, 0777); err != nil {
+		reponse_result.Code = -3
+		reponse_result.Message = "创建临时目录失败"
+		c.Data["json"] = reponse_result
+		c.ServeJSON()
+		return
+	}
+
+	fpath := uploadDir + h.Filename
+	defer f.Close()
+	if err := c.SaveToFile("file", fpath); err != nil {
+		reponse_result.Code = -4
+		reponse_result.Message = "保存上传文件失败"
+		c.Data["json"] = reponse_result
+		c.ServeJSON()
+		return
+	}
+
+	excelfile, err := excelize.OpenFile(fpath)
+	if err != nil {
+		reponse_result.Code = -4
+		reponse_result.Message = "打开 Excel 失败"
+		c.Data["json"] = reponse_result
+		c.ServeJSON()
+		return
+	}
+	defer excelfile.Close()
+
+	projectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
+	started := time.Now()
+
+	// ---- 预加载模型 / 寄存器组缓存（避免每行查库）----
+	muidByUuid := map[string]string{}
+	muidByName := map[string]string{}
+	{
+		var allModels []models.DevicesModel
+		if err := models.Db.Model(&models.DevicesModel{}).
+			Select("uuid", "name", "project_uuid").
+			Where("type = ?", 2).
+			Find(&allModels).Error; err != nil {
+			logs.Error("UpdateAllModbusDataModel preload models: %v", err)
+		}
+		for _, m := range allModels {
+			muidByUuid[m.Uuid] = m.Uuid
+			if projectUuid == "" || m.ProjectUuid == projectUuid {
+				muidByName[m.Name] = m.Uuid
+			}
+		}
+	}
+	groupByUuid := map[string]models.ModbusDevicesRegisterGroup{}
+	groupByMuidName := map[string]string{}
+	{
+		var allGroups []models.ModbusDevicesRegisterGroup
+		if err := models.Db.Model(&models.ModbusDevicesRegisterGroup{}).
+			Select("uuid", "name", "muid").
+			Find(&allGroups).Error; err != nil {
+			logs.Error("UpdateAllModbusDataModel preload groups: %v", err)
+		}
+		for _, g := range allGroups {
+			groupByUuid[g.Uuid] = g
+			groupByMuidName[g.Muid+"\x00"+g.Name] = g.Uuid
+		}
+	}
+
+	resolveMuid := func(muid, modelName string) string {
+		if muid != "" {
+			if v, ok := muidByUuid[muid]; ok {
+				return v
+			}
+		}
+		if modelName != "" {
+			if v, ok := muidByName[modelName]; ok {
+				return v
+			}
+		}
+		return ""
+	}
+	resolveGroupUuid := func(groupUuid, muid, groupName string) string {
+		if groupUuid != "" {
+			if g, ok := groupByUuid[groupUuid]; ok {
+				if muid == "" || g.Muid == muid {
+					return g.Uuid
+				}
+			}
+		}
+		if muid == "" || groupName == "" {
+			return ""
+		}
+		if v, ok := groupByMuidName[muid+"\x00"+groupName]; ok {
+			return v
+		}
+		return ""
+	}
+
+	processed := false
+	parseSkipped := 0
+	bulkItems := make([]models.ModbusDevicesDataModel, 0, 4096)
+
+	for _, sheetName := range excelfile.GetSheetList() {
+		rows, err := excelfile.GetRows(sheetName)
+		if err != nil || len(rows) == 0 {
+			continue
+		}
+		colIndex := excelColIndex(rows[0])
+		if !excelLooksLikeModbusPointSheet(colIndex) {
+			continue
+		}
+		_, hasModelId := colIndex["模型ID(勿修改)"]
+		_, hasModelName := colIndex["模型名称"]
+		_, hasGroupId := colIndex["组ID(勿修改)"]
+		_, hasGroupName := colIndex["寄存器组名称"]
+		if (!hasModelId && !hasModelName) || (!hasGroupId && !hasGroupName) {
+			continue
+		}
+		processed = true
+		for index, row := range rows {
+			if index == 0 {
+				continue
+			}
+			item, ok := parseModbusPointRow(row, colIndex)
+			if !ok {
+				parseSkipped++
+				continue
+			}
+			muid := resolveMuid(item.Muid, excelCell(row, colIndex, "模型名称"))
+			if muid == "" {
+				parseSkipped++
+				continue
+			}
+			groupUuid := resolveGroupUuid(item.RegisterGroupUuid, muid, excelCell(row, colIndex, "寄存器组名称"))
+			if groupUuid == "" {
+				parseSkipped++
+				continue
+			}
+			item.Muid = muid
+			item.RegisterGroupUuid = groupUuid
+			bulkItems = append(bulkItems, item)
+		}
+		break
+	}
+
+	if !processed {
+		reponse_result.Code = -6
+		reponse_result.Message = "Excel 格式不正确，请使用「导出全量点位」生成的模板"
+		c.Data["json"] = reponse_result
+		c.ServeJSON()
+		return
+	}
+
+	bulk := models.ModbusBulkUpsertRegisterAddresses(bulkItems)
+	reponse_result.Code = 0
+	reponse_result.Added = bulk.Added
+	reponse_result.Updated = bulk.Updated
+	reponse_result.Skipped = bulk.Skipped + parseSkipped
+	reponse_result.Message = fmt.Sprintf("导入完成：新增 %d，更新 %d，跳过 %d（耗时 %s）",
+		reponse_result.Added, reponse_result.Updated, reponse_result.Skipped, time.Since(started).Round(time.Second))
+	logs.Info("UpdateAllModbusDataModel done: rows=%d added=%d updated=%d skipped=%d cost=%s",
+		len(bulkItems), reponse_result.Added, reponse_result.Updated, reponse_result.Skipped, time.Since(started))
+	c.Data["json"] = reponse_result
+	c.ServeJSON()
+}
+
 func downloadFile(filepath string, url string) (err error) {
 
 	// Create the file
@@ -1800,15 +1937,10 @@ func (c *ISMSystem) ExecSysScript() {
 			code = -1
 			message = "JSON格式错误"
 		} else {
-			e := protocolCommonFunc.ScriptDefine()
 			err := models.Db.Model(&models.ISMScript{}).Where("script_uuid in ?", recvList.Script).Find(&GetScriptList).Error
 			if err == nil && len(GetScriptList) > 0 {
 				for _, v := range GetScriptList {
-					tempComponents, deErr := base64.StdEncoding.DecodeString(v.ScriptContent)
-					if deErr == nil {
-						v.ScriptContent = string(tempComponents)
-					}
-					exceResult, err = vm.Execute(e, nil, v.ScriptContent)
+					exceResult, err = ISMScript.ManualExec(v)
 					if err != nil {
 						isError = 1
 					}
@@ -1867,6 +1999,11 @@ func (c *ISMSystem) GetCustomPel() {
 			var SingleCustomPel CustomPel
 			SingleCustomPel.DirName = dir.Name()
 			SingleCustomPel.FilePath = readDirFile(systemPelPath + dir.Name())
+			for i, p := range SingleCustomPel.FilePath {
+				if p != "" && !strings.HasPrefix(p, "/") {
+					SingleCustomPel.FilePath[i] = "/" + p
+				}
+			}
 			GetCustomPelList = append(GetCustomPelList, SingleCustomPel)
 		}
 	}
@@ -2051,12 +2188,30 @@ func (c *ISMSystem) GetSystemAnalysis() {
 
 	// 项目级信息仅在指定项目时查询
 	if ProjectUuid != "" {
-		models.Db.Model(&models.MonitorList{}).Where("ID >0 and Type = 1 and project_uuid = ? ", ProjectUuid).Count(&getAnalysisInfo.DeviceCount)
-		models.Db.Model(&models.MonitorList{}).Where("ID >0 and Type = 1 and project_uuid = ? and (status = 0 or status = 2)", ProjectUuid).Count(&getAnalysisInfo.DeviceOffCount)
-		models.Db.Model(&models.DisplayModels{}).Where("ID >0 and project_uuid = ? ", ProjectUuid).Count(&getAnalysisInfo.AppCount)
-		models.Db.Model(&models.DevicesAlarmList{}).Where("project_uuid=? and clear_time < ?", ProjectUuid, "2007-01-02 15:04:05").Count(&getAnalysisInfo.AlarmCount)
-		models.Db.Model(&models.DeviceRealData{}).Where("project_uuid=?", ProjectUuid).Count(&getAnalysisInfo.DataCount)
-		models.Db.Model(&models.ProjectVideoList{}).Where("project_uuid=?", ProjectUuid).Count(&getAnalysisInfo.VideoCount)
+		safeAnalysisCount(&getAnalysisInfo.DeviceCount,
+			models.Db.Model(&models.MonitorList{}).Where("ID >0 and Type = 1 and project_uuid = ? ", ProjectUuid),
+			"DeviceCount")
+		safeAnalysisCount(&getAnalysisInfo.DeviceOffCount,
+			models.Db.Model(&models.MonitorList{}).Where("ID >0 and Type = 1 and project_uuid = ? and (status = 0 or status = 2)", ProjectUuid),
+			"DeviceOffCount")
+		safeAnalysisCount(&getAnalysisInfo.AppCount,
+			models.Db.Model(&models.DisplayModels{}).Where("ID >0 and project_uuid = ? ", ProjectUuid),
+			"AppCount")
+		safeAnalysisCount(&getAnalysisInfo.AlarmCount,
+			models.Db.Model(&models.DevicesAlarmList{}).Where("project_uuid=? and clear_time < ?", ProjectUuid, "2007-01-02 15:04:05"),
+			"AlarmCount")
+		if cached, ok := getCachedSystemAnalysisDataCount(ProjectUuid); ok {
+			getAnalysisInfo.DataCount = cached
+		} else {
+			safeAnalysisCount(&getAnalysisInfo.DataCount,
+				models.Db.Model(&models.DeviceRealData{}).Where("project_uuid=?", ProjectUuid),
+				"DataCount")
+			// 仅成功且非超时失败时缓存；失败为 0 也短缓存，避免连续打穿 OB 超时
+			storeSystemAnalysisDataCount(ProjectUuid, getAnalysisInfo.DataCount)
+		}
+		safeAnalysisCount(&getAnalysisInfo.VideoCount,
+			models.Db.Model(&models.ProjectVideoList{}).Where("project_uuid=?", ProjectUuid),
+			"VideoCount")
 	}
 	result := map[string]interface{}{
 		"code": code,
@@ -2426,6 +2581,16 @@ func (c *ISMSystem) RebootISMSystem() {
 
 }
 
+// applyXunanBranding 覆盖授权文件中的「零界X / zerobound」等非正式品牌为循安现场口径。
+// Logo 使用 static/branding/logo-xunan-hexagon.png（自问题文档提取）。
+func applyXunanBranding(result map[string]interface{}) {
+	result["systemName"] = "循安电力监控平台"
+	result["SystemAPPName"] = "循安"
+	result["systemCompany"] = "北京循安科技有限公司"
+	result["systemUrl"] = "xunan"
+	result["SystemLogo"] = "/static/branding/logo-xunan-hexagon.png"
+}
+
 func (c *ISMSystem) GetAuthLicenseInfo() {
 
 	var lisceseAuth map[string]interface{}
@@ -2460,6 +2625,9 @@ func (c *ISMSystem) GetAuthLicenseInfo() {
 	result["SystemLogo"] = lisceseAuth["SystemLogo"]
 	result["systemLoginBg"] = lisceseAuth["systemLoginBg"]
 	result["systemBg"] = lisceseAuth["systemBg"]
+
+	// 循安品牌覆盖：现场问题文档要求去掉「零界/AI」等非正式名称
+	applyXunanBranding(result)
 
 	c.Ctx.Output.Header("Content-Encoding", "gzip")
 	gw := gzip.NewWriter(c.Ctx.ResponseWriter)

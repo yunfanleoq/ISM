@@ -25,7 +25,7 @@ type SystemJournal struct {
 	JournalLevel int       `gorm:"type:int;not null" json:"JournalLevel" validate:"required" label:"日志等级"`
 	Operator     string    `gorm:"index;type:varchar(250);not null" json:"Operator" validate:"required,min=2,max=250" label:"操作者"`
 	ProjectUuid  string    `gorm:"index;type:varchar(250);" json:"ProjectUuid" validate:"required,min=2,max=250" label:"项目ID"`
-	ClientInfo   string    `gorm:"index;type:varchar(250);" json:"ClientInfo" validate:"required,min=2,max=250" label:"客户端信息"`
+	ClientInfo   string    `gorm:"type:text;" json:"ClientInfo" label:"客户端信息"`
 	UserName     string    `gorm:"index;type:varchar(250);" json:"UserName" validate:"required,min=2,max=250" label:"操作者的ID"`
 }
 

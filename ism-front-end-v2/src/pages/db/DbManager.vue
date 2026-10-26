@@ -67,6 +67,12 @@
           </a-spin>
         </a-tab-pane>
         <a-tab-pane key="1" v-if="DbType!=3" :tab="$t('DbBack.Backups')">
+          <a-alert
+            type="info"
+            show-icon
+            style="margin-bottom: 12px"
+            message="海量历史表（device_record_*）建议排除或使用 scripts/ism_project_backup_core.py 分批备份；全表 SQL 导出可能超时或内存不足。"
+          />
           <a-spin :tip="$t('DbBack.BackingUp')" :spinning="messageShowLoad">
           <a-checkbox-group
               style="margin-bottom: 10px"
@@ -91,6 +97,12 @@
           </a-spin>
         </a-tab-pane>
         <a-tab-pane key="2" v-if="DbType!=3" :tab="$t('DbBack.Restore')" >
+          <a-alert
+            type="warning"
+            show-icon
+            style="margin-bottom: 12px"
+            message="上传 ≠ 还原：上传只把 SQL 文件存到备份目录，不会自动覆盖业务库。覆盖数据库必须在下方列表点击「还原」。"
+          />
           <a-upload
               name="file"
               :multiple="false"
@@ -103,7 +115,7 @@
               {{$t('DbBack.BackupUpload')}}
             </a-button>
           </a-upload>
-        <a-spin :tip="$t('DbBack.Restoring')" :spinning="messageShowLoad">
+        <a-spin :tip="restoreTabSpinTip" :spinning="messageShowLoad">
         <a-table rowKey='FileName' :pagination="pagination" :columns="columns" :data-source="BackupList" >
           <template v-for="(item, index) in columns" :slot="item.slotName">
             <span :key="index">{{ $t(item.slotName) }}</span>
@@ -112,6 +124,10 @@
             <a type="link"   @click="DbRestore(record.FilePath)" style="cursor: pointer;color: #13C2C2"><a-icon type="reload" /><span style="margin-left: 2px;">{{$t('DbBack.Restore')}}</span></a>
             <a-divider type="vertical" />
             <a type="link"   @click="DbDown(record.FilePath)" style="cursor: pointer;color: #13C2C2"><a-icon type="download" /><span style="margin-left: 2px;">{{$t('DbBack.download')}}</span></a>
+            <a-divider type="vertical" />
+            <a-popconfirm :title="$t('DbBack.DeleteConfirm')" @confirm="DbDeleteBackup(record.FilePath)">
+              <a type="link" style="cursor: pointer;color: #eb2f96"><a-icon type="delete" /><span style="margin-left: 2px;">{{$t('DbBack.Delete')}}</span></a>
+            </a-popconfirm>
           </div>
         </a-table>
         </a-spin>
@@ -121,7 +137,7 @@
   </div>
 </template>
 <script>
-import {DbBackup,DbDown, GetDbConfig,SetDbConfig,DbRestore, GetBackUpList, GetTablesList} from "@/services/dbbackup";
+import {DbBackup,DbDown,DbDeleteBackup as requestDbDeleteBackup, GetDbConfig,SetDbConfig,DbRestore, GetBackUpList, GetTablesList} from "@/services/dbbackup";
 import {SQLUPLOAD} from "@/services/api";
 export default {
   i18n: require('../../i18n/language'),
@@ -129,6 +145,8 @@ export default {
     return {
       checkAll: true,
       messageShowLoad:false,
+      // restore | download | loading — 还原页 spin tip，避免下载误显示「还原中」
+      restoreTabSpinMode: 'loading',
       indeterminate: false,
       SystemTables:[],
       DbType:"1",
@@ -170,6 +188,17 @@ export default {
     }
   },
   components: {},
+  computed: {
+    restoreTabSpinTip () {
+      if (this.restoreTabSpinMode === 'download') {
+        return this.$t('DbBack.Downloading')
+      }
+      if (this.restoreTabSpinMode === 'restore') {
+        return this.$t('DbBack.Restoring')
+      }
+      return this.$t('DbBack.Loading')
+    }
+  },
   mounted () {
     this.GetDbConfig()
   },
@@ -332,6 +361,7 @@ export default {
     },
     GetBackUpList(){
       let _t = this
+      this.restoreTabSpinMode = 'loading'
       this.messageShowLoad = true
       _t.BackupList=[]
       GetBackUpList().then(function (res){
@@ -345,6 +375,7 @@ export default {
     },
     DbRestore(name){
       let _t = this
+      this.restoreTabSpinMode = 'restore'
       this.messageShowLoad = true
       let params={
         DbFilePath : name
@@ -374,10 +405,8 @@ export default {
         let result = info.file.response
         this.$message.destroy();
         if(result.Code==0) {
-          this.$message.success(`${info.file.name} `+this.$t("SystemUpgrade.AuthUploadLoading"));
-          _t.$store.state.setting.IsOEM = result.Oem
-          // 刷新页面
-          window.location.reload();
+          this.$message.success('文件已加入还原列表，不会自动覆盖业务库；请在下方点还原。')
+          _t.GetBackUpList()
         }
         else if(result.Code==-2)
         {
@@ -392,36 +421,68 @@ export default {
         //this.$message.success(`${info.file.name} `+this.$t("SystemUpgrade.BeginUpgradeUploading"));
       }
       else if (info.file.status === 'error') {
-        let _t = this
-        _t.$message.loading(_t.$t("SystemUpgrade.BeginUpgradeLoading"),0)
-        setTimeout(function (){
-          location.reload()
-        },10000)
+        this.$message.error(`${info.file.name} `+this.$t("SystemUpgrade.UpgradeFileSaveError"));
       }
 
       this.messageShowLoad = false
+    },
+    DbDeleteBackup(name){
+      let _t = this
+      let params={
+        DbFilePath : name
+      }
+      requestDbDeleteBackup(params).then(function (res){
+        if(res.data && res.data.code === 0){
+          _t.$message.success(_t.$t('DbBack.DeleteSuccess'))
+          _t.GetBackUpList()
+        } else {
+          _t.$message.error(_t.$t('DbBack.DeleteFailed'))
+        }
+      }).catch(function () {
+        _t.$message.error(_t.$t('DbBack.DeleteFailed'))
+      })
     },
     DbDown(name){
       let _t = this
       let params={
         DbFilePath : name
       }
+      _t.restoreTabSpinMode = 'download'
+      _t.messageShowLoad = true
       DbDown(params).then(function (res){
-        if(res.data.code==0)
-        {
-          // 创建一个链接标签，用于下载文件
-          const link = document.createElement('a');
-          link.href = res.data.path;
-          link.target="_blank"
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+        const data = res.data
+        // 失败时后端仍可能返回 JSON blob
+        if (data instanceof Blob && data.type && data.type.indexOf('application/json') !== -1) {
+          const reader = new FileReader()
+          reader.onload = function () {
+            try {
+              const json = JSON.parse(reader.result)
+              if (json.code !== 0) {
+                _t.$message.error(_t.$t('DbBack.DownloadFailed'))
+              }
+            } catch (e) {
+              _t.$message.error(_t.$t('DbBack.DownloadFailed'))
+            }
+          }
+          reader.readAsText(data)
+          return
         }
-        else
-        {
-          _t.$message.error(_t.$t('DbBack.RestoreFailed'))
+        if (!(data instanceof Blob) || data.size === 0) {
+          _t.$message.error(_t.$t('DbBack.DownloadFailed'))
+          return
         }
-      }).finally(function (error) {
+        const fileName = (name ? String(name).replace(/\.[^.]+$/, '') : 'backup') + '.zip'
+        const url = window.URL.createObjectURL(data)
+        const link = document.createElement('a')
+        link.href = url
+        link.download = fileName
+        document.body.appendChild(link)
+        link.click()
+        document.body.removeChild(link)
+        window.URL.revokeObjectURL(url)
+      }).catch(function () {
+        _t.$message.error(_t.$t('DbBack.DownloadFailed'))
+      }).finally(function () {
         _t.messageShowLoad = false
       })
     }

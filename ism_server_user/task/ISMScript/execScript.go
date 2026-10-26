@@ -11,36 +11,120 @@ package ISMScript
 import (
 	"ISMServer/models"
 	protocolCommonFunc "ISMServer/protocol/commFunc"
+	protocolCommon "ISMServer/protocol/common"
+	"ISMServer/task/ISMScript/bitunpack"
 	"time"
 
 	"github.com/beego/beego/v2/adapter/logs"
+	"github.com/mattn/anko/ast"
+	"github.com/mattn/anko/env"
+	"github.com/mattn/anko/parser"
 	"github.com/mattn/anko/vm"
 )
 
 type ISMScriptPthread struct {
 	Script models.ISMScript
+	env    *env.Env
+	stmt   ast.Stmt
+	wakeCh chan struct{}
+	deps   []string
 }
 
+// ExecScript runs a script once (used by manual/task paths). Still parses each call.
 func ExecScript(sct models.ISMScript) {
 	GoSctVm := protocolCommonFunc.ScriptDefine()
 	_, err := vm.Execute(GoSctVm, nil, sct.ScriptContent)
 	if err != nil {
-		logs.Error("%s,Execute error: %v", sct.ScriptName, err)
+		protocolCommon.ErrorThrottled("script:"+sct.ScriptName, "%s,Execute error: %v", sct.ScriptName, err)
 	}
 	time.Sleep(time.Millisecond * time.Duration(sct.Delay))
 }
 
+func (t *ISMScriptPthread) prepare() error {
+	t.env = protocolCommonFunc.ScriptDefine()
+	stmt, err := parser.ParseSrc(t.Script.ScriptContent)
+	if err != nil {
+		return err
+	}
+	t.stmt = stmt
+	t.deps = ExtractScriptDeps(t.Script.ScriptContent)
+	t.wakeCh = make(chan struct{}, 1)
+	registerScriptWake(t.Script.ScriptUuid, t.deps, t.wakeCh)
+	return nil
+}
+
+// ManualExec runs one script from ExecSysScript: native-bitunpack if compilable, else Anko.
+// Success and failure both emit Info/Error logs (field: "手动执行没有脚本日志").
+func ManualExec(script models.ISMScript) (any, error) {
+	decodeScriptContent(&script)
+	if rules, ok := bitunpack.Compile(script.ScriptUuid, script.ScriptName, script.ScriptContent); ok {
+		bitunpack.RunRules(rules)
+		logs.Info("ExecSysScript native-bitunpack ok: %s rules=%d", script.ScriptName, len(rules))
+		return "native-bitunpack", nil
+	}
+	env := protocolCommonFunc.ScriptDefine()
+	result, err := vm.Execute(env, nil, script.ScriptContent)
+	if err != nil {
+		logs.Error("ExecSysScript anko failed: %s err=%v", script.ScriptName, err)
+		return result, err
+	}
+	logs.Info("ExecSysScript anko-onchange ok: %s result=%v", script.ScriptName, result)
+	return result, nil
+}
+
+func (t *ISMScriptPthread) runOnce() {
+	_, err := vm.Run(t.env, nil, t.stmt)
+	if err != nil {
+		protocolCommon.ErrorThrottled("script:"+t.Script.ScriptName, "%s,Execute error: %v", t.Script.ScriptName, err)
+	}
+}
+
 func (t *ISMScriptPthread) Run() {
+	defer scriptWg.Done()
+
+	if err := t.prepare(); err != nil {
+		protocolCommon.ErrorThrottled("script:"+t.Script.ScriptName, "%s,Parse error: %v", t.Script.ScriptName, err)
+		logs.Info("anko-onchange: %s parse failed, idle until reload", t.Script.ScriptName)
+		for {
+			select {
+			case <-GScriptChan:
+				logs.Info("脚本主动退出", t.Script.ScriptName)
+				return
+			case <-time.After(time.Second):
+			}
+		}
+	}
+
+	delay := t.Script.Delay
+	if delay < 1000 {
+		delay = 1000
+	}
+	logs.Info("anko-onchange: %s deps=%d delay=%d", t.Script.ScriptName, len(t.deps), delay)
+
+	// Run once on start so outputs are consistent before first change/tick.
+	t.runOnce()
+
+	ticker := time.NewTicker(time.Millisecond * time.Duration(delay))
+	defer ticker.Stop()
 
 	for {
-		//检测协程是否主动退出
 		select {
 		case <-GScriptChan:
-			scriptWg.Done()
 			logs.Info("脚本主动退出", t.Script.ScriptName)
 			return
-		default:
+		case <-t.wakeCh:
+			// drain coalesced wakes
+			for {
+				select {
+				case <-t.wakeCh:
+					continue
+				default:
+				}
+				break
+			}
+			t.runOnce()
+		case <-ticker.C:
+			t.runOnce()
 		}
-		ExecScript(t.Script)
 	}
 }

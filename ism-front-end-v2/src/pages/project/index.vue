@@ -284,8 +284,12 @@ export default {
 
     },
     GoProject(uuid){
+      // 进入所选项目的管理后台；并刷新该项目的默认「监控大屏」配置
       setAuthorization({token: uuid},AUTH_TYPE.AUTH1)
-      this.$router.push('/dashboard')
+      const goDashboard = () => { this.$router.push('/dashboard') }
+      this.$store.dispatch('setting/fetchSystemHomeDashboard')
+        .then(goDashboard)
+        .catch(goDashboard)
     },
     editProject(e,item){
       this.projectVisible=true

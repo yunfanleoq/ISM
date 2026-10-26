@@ -59,6 +59,7 @@
                 <a-table
                     row-key="uuid"
                     :customRow="rowClick"
+                    :row-selection="tableRowSelection"
                     :columns="columns"
                     size="small"
                     :rowClassName="setRowClassName"
@@ -164,10 +165,9 @@ export default {
       searchedColumn: '',
       selectedRowsIndex:-1,
       selectNodeInfo:{},
-      rowSelection:{
-        onSelect:this.onDataTableSelect,
-        onSelectAll:this.onDataTableSelectAll
-      },
+      localMultiSelect:false,
+      checkedRowKeys:[],
+      checkedPointMap:{},
       pagination:{
         pageSize:15,
         showSizeChanger:true
@@ -181,7 +181,6 @@ export default {
       ],
       columns :[
         {
-          width: '20%',
           slotName: 'readData.tableName',
           scopedSlots: { filterDropdown: 'filterDropdown', filterIcon: 'filterIcon', customRender: 'customRender', title: 'readData.tableName' },
           dataIndex: 'name',
@@ -230,6 +229,19 @@ export default {
 
     }
   },
+  computed: {
+    tableRowSelection() {
+      if (!this.localMultiSelect) return null
+      const _t = this
+      return {
+        selectedRowKeys: this.checkedRowKeys,
+        columnWidth: 36,
+        onChange: function (selectedRowKeys, selectedRows) {
+          _t.onCheckedPointsChange(selectedRowKeys, selectedRows)
+        }
+      }
+    }
+  },
   mounted(){
     if(this.fromType==2)
     {
@@ -265,71 +277,111 @@ export default {
       clearFilters();
       this.searchText = '';
     },
-    onDataTableSelect (record, selected, selectedRows)  {
-      if(selected)
-      {
-        this.selectDataTableUuid.push(record.uuid)
-      }
-      else
-      {
-        const index=this.findDataTableSelectIndex(record.uuid)
-        if(index!=-1)
-        {
-          this.selectDataTableUuid.splice(index,1)
-        }
-      }
+    clearCheckedPoints() {
+      this.checkedRowKeys = []
+      this.checkedPointMap = {}
     },
-    onDataTableSelectAll(selected, selectedRows, changeRows) {
-      if(selected)
-      {
-        for(let i=0;i<selectedRows.length;i++)
-        {
-          const index=this.findDataTableSelectIndex(selectedRows[i].uuid)
-          if(index==-1)
-          {
-            this.selectDataTableUuid.push(selectedRows[i].uuid)
-          }
-        }
-
+    onCheckedPointsChange(selectedRowKeys, selectedRows) {
+      const keys = Array.isArray(selectedRowKeys) ? selectedRowKeys.slice() : []
+      const nextMap = {}
+      const rows = Array.isArray(selectedRows) ? selectedRows : []
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i]
+        if (row && row.uuid) nextMap[row.uuid] = row
       }
-      else
-      {
-        for(let i=0;i<changeRows.length;i++)
-        {
-          const index=this.findDataTableSelectIndex(changeRows[i].uuid)
-          if(index!=-1)
-          {
-            this.selectDataTableUuid.splice(index,1)
-          }
+      for (let i = 0; i < keys.length; i++) {
+        const key = keys[i]
+        if (!nextMap[key] && this.checkedPointMap[key]) {
+          nextMap[key] = this.checkedPointMap[key]
         }
+      }
+      this.checkedRowKeys = keys
+      this.checkedPointMap = nextMap
+    },
+    buildSelectionInfo(record) {
+      const info = {
+        id: record.id,
+        name: record.name,
+        uuid: record.uuid,
+        unit: record.unit
+      }
+      if (this.IsDevice) {
+        info.DeviceName = this.deviceName
+        info.IsDevice = true
+        info.DeviceSN = this.DeviceSN
+      } else {
+        info.DeviceType = this.DeviceType
+        info.IsDevice = false
+        info.DeviceSN = ""
+      }
+      if (this.fromType != 1) {
+        info.DeviceType = -1
+        info.selectDataModelUUid = ""
+      } else {
+        info.selectDataModelUUid = this.selectDataModelUUid
+        info.DeviceType = this.DeviceType
+      }
+      info.name = this.$t(info.name)
+      return info
+    },
+    collectCheckedSelections() {
+      const list = []
+      const keys = this.checkedRowKeys || []
+      for (let i = 0; i < keys.length; i++) {
+        const record = this.checkedPointMap[keys[i]]
+        if (!record || !record.uuid) continue
+        list.push(this.buildSelectionInfo(record))
+      }
+      return list
+    },
+    appendRealDataRows(rows){
+      if (!rows || !rows.length) return
+      for (let i = 0; i < rows.length; i++) {
+        this.dataSource.push({
+          id: this.dataSource.length.toString(),
+          name: rows[i].name,
+          uuid: rows[i].mduid || rows[i].uuid,
+          unit: rows[i].unit,
+        })
       }
     },
     getRealData(uuid){
       let _t = this
-      const params = {
+      const pageSize = 200
+      const base = {
         uuid:uuid,
         IsRemoveGW:this.selectNodeInfo.IsRemoteGw,
         ProjectUuid:this.selectNodeInfo.ProjectUUID,
       }
       this.dataSource = []
+      this.clearCheckedPoints()
       this.messageShowLoad = true
       this.getReadDataResponse = false
-      getRealData(params).then(function (res){
-        _t.getReadDataResponse = true
-        _t.messageShowLoad = false
+      const fetchPage = function(page){
+        return getRealData(Object.assign({}, base, { page: page, pageSize: pageSize }))
+      }
+      fetchPage(1).then(function (res){
         if(res.data.code==0)
         {
-          for(let i=0;i<res.data.realData.length;i++)
-          {
-              let temp={}
-              temp.id = i.toString()
-              temp.name = res.data.realData[i].name
-              temp.uuid = res.data.realData[i].mduid
-              temp.unit = res.data.realData[i].unit
-              _t.dataSource.push(temp)
-              temp={}
+          _t.appendRealDataRows(res.data.realData)
+          const total = Number(res.data.total) || _t.dataSource.length
+          const pages = Math.max(1, Math.ceil(total / pageSize))
+          let chain = Promise.resolve()
+          for (let p = 2; p <= pages; p++) {
+            chain = chain.then(function(){
+              return fetchPage(p).then(function(next){
+                if(next.data.code==0)
+                {
+                  _t.appendRealDataRows(next.data.realData)
+                }
+              })
+            })
           }
+          return chain
         }
+      }).finally(function(){
+        _t.getReadDataResponse = true
+        _t.messageShowLoad = false
       })
     },
     GetSystemData(uuid){
@@ -338,6 +390,7 @@ export default {
         uuid:uuid
       }
       this.dataSource = []
+      this.clearCheckedPoints()
       this.messageShowLoad = true
       this.getReadDataResponse = false
       GetSystemData(params).then(function (res){
@@ -364,6 +417,7 @@ export default {
         type:type
       }
       this.dataSource = []
+      this.clearCheckedPoints()
       this.messageShowLoad = true
       this.getReadDataResponse = false
       GetDataModelData(params).then(function (res){
@@ -400,6 +454,7 @@ export default {
         type:this.DeviceType
       }
       this.dataSource = []
+      this.clearCheckedPoints()
       let _t = this
       this.messageShowLoad = true
       getDatasByUuid(params).then(function (res){
@@ -421,6 +476,7 @@ export default {
     },
     changeDataFromType(value){
       this.dataSource=[]
+      this.clearCheckedPoints()
       this.fromType = value
       if (value==2)
       {
@@ -438,6 +494,7 @@ export default {
     },
     changeDeviceType(value){
       this.dataSource=[]
+      this.clearCheckedPoints()
       this.IsDevice=false
       this.DeviceSN=""
       this.DeviceType = value
@@ -494,24 +551,36 @@ export default {
       this.deviceName = node.$options.propsData.title
       this.IsDevice = true
       this.dataSource=[]
+      this.clearCheckedPoints()
       this.DeviceSN = ev
       this.selectNodeInfo = node.$options.propsData.dataRef.value
       this.getRealData(ev)
     },
     changeDeviceModel(ev,event){
       this.dataSource=[]
+      this.clearCheckedPoints()
       this.selectDataModelUUid = ev[0]
       this.getDeviceDataModel(ev[0])
     },
     handleCancel(){
       this.dataModelDialog = false
     },
-    showDataModal() {
+    showDataModal(options) {
+      this.localMultiSelect = !!(options && options.multiSelect)
+      this.clearCheckedPoints()
       this.selectedRowsIndex = -1
       this.dataModelDialog = true
       this.visible = true
     },
     onSelectData(){
+      if (this.localMultiSelect) {
+        const checked = this.collectCheckedSelections()
+        if (checked.length > 0) {
+          this.$emit("onSelectDataModel", checked)
+          this.dataModelDialog = false
+          return
+        }
+      }
       if (this.selectedRowsIndex==-1)
       {
         this.$message.error(this.$t('component.deviceDataModel.SelectError'), 3)

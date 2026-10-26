@@ -1,5 +1,15 @@
 <template>
   <a-card>
+    <div class="alarm-management-actions">
+      <a-button icon="setting" @click="openStartupAlarmDelay">
+        {{$t('AlarmTips.Management.StartupDelay')}}
+      </a-button>
+      <a-popconfirm :title="$t('AlarmTips.Management.ClearAllTips')" @confirm="clearAllAlarms">
+        <a-button type="danger" icon="delete">
+          {{$t('AlarmTips.Management.ClearAll')}}
+        </a-button>
+      </a-popconfirm>
+    </div>
     <a-spin :spinning="messageShowLoad" >
     <a-tabs default-active-key="1" @change="callback">
       <a-tab-pane key="1">
@@ -506,11 +516,28 @@
       </a-tab-pane>
     </a-tabs>
     </a-spin>
+    <a-modal
+      v-model="startupAlarmDelayVisible"
+      :title="$t('AlarmTips.Management.StartupDelay')"
+      :ok-text="$t('AlarmTips.Save')"
+      @ok="saveStartupAlarmDelay"
+    >
+      <p>{{$t('AlarmTips.Management.StartupDelayDescription')}}</p>
+      <a-input-number
+        v-model="startupAlarmDelayMinutes"
+        :min="0"
+        :max="1440"
+        :precision="0"
+        style="width: 100%"
+      />
+      <p class="startup-delay-hint">{{$t('AlarmTips.Management.StartupDelayHint')}}</p>
+    </a-modal>
   </a-card>
 </template>
 
 <script>
 import {TestSend,GetAlarmNoticeByType,UpdateAlarmNoticeByType} from "@/services/alarmNotice";
+import {ClearAllCurrentAlarm} from "@/services/alarm";
 
 export default {
   name: "AlarmTips",
@@ -529,6 +556,8 @@ export default {
       showWindowsAlarmItems:[],
       showAlarmItems:[],
       showAlarmVoiceItems:[],
+      startupAlarmDelayVisible:false,
+      startupAlarmDelayMinutes:10,
       marks: {
         0: '0.1',
         26: '1',
@@ -664,6 +693,9 @@ export default {
                   })
               _t.showAlarmVoiceItems = EmailParams.SendAlarmLevel
             }
+            else if(AlarmNoticeType=="StartupAlarmDelay"){
+              _t.startupAlarmDelayMinutes = EmailParams.DelayMinutes
+            }
           }catch (e){
             console.log(e)
           }
@@ -671,6 +703,49 @@ export default {
         _t.messageShowLoad=false
       }).catch(function(e){
         _t.messageShowLoad=false
+        _t.$message.error(_t.$t('loginPage.serverError'), 3)
+      })
+    },
+    openStartupAlarmDelay(){
+      this.startupAlarmDelayVisible = true
+      this.GetAlarmNotice("StartupAlarmDelay")
+    },
+    saveStartupAlarmDelay(){
+      const minutes = Number(this.startupAlarmDelayMinutes)
+      if (!Number.isInteger(minutes) || minutes < 0 || minutes > 1440) {
+        this.$message.error(this.$t('AlarmTips.Management.StartupDelayInvalid'))
+        return
+      }
+      const _t = this
+      this.messageShowLoad = true
+      UpdateAlarmNoticeByType({
+        type:"StartupAlarmDelay",
+        params:JSON.stringify({DelayMinutes: minutes})
+      }).then(function (res) {
+        if (res.data.code === 0) {
+          _t.startupAlarmDelayVisible = false
+          _t.$message.success(_t.$t('AlarmTips.SaveSuccess'))
+        } else {
+          _t.$message.error(_t.$t('AlarmTips.SaveFailed'))
+        }
+        _t.messageShowLoad = false
+      }).catch(function () {
+        _t.messageShowLoad = false
+        _t.$message.error(_t.$t('loginPage.serverError'), 3)
+      })
+    },
+    clearAllAlarms(){
+      const _t = this
+      this.messageShowLoad = true
+      ClearAllCurrentAlarm({skipOfflineResync:true}).then(function (res) {
+        if (res.data && res.data.code === 0) {
+          _t.$message.success(_t.$t('AlarmTips.Management.ClearAllSuccess') + ' (' + (res.data.count || 0) + ')')
+        } else {
+          _t.$message.error(_t.$t('AlarmTips.Management.ClearAllFailed'))
+        }
+        _t.messageShowLoad = false
+      }).catch(function () {
+        _t.messageShowLoad = false
         _t.$message.error(_t.$t('loginPage.serverError'), 3)
       })
     },
@@ -1023,6 +1098,16 @@ export default {
 </script>
 
 <style scoped>
+.alarm-management-actions{
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.startup-delay-hint{
+  margin-top: 8px;
+  color: rgba(0, 0, 0, 0.45);
+}
 .ant-form-item{
   margin-bottom: 2px;
 }

@@ -23,12 +23,27 @@ __pycache__/
 # ============================================
 ism_server_user/ism_server*
 ism_server_user/ISMServer*
+patches/**/ism_server
+patches/ism-server-kylin-glibc228/
+releases/
 
 # ============================================
 # 数据库备份
 # ============================================
 *.db.bak*
 *.sqlite.bak*
+ism_server_user/data/db/ism-hangxin-20261023.db
+ism_server_user/data/db/ism-hangxin-20261023.db-*
+ism-front-end-v2/public/hx-dcim/data/
+
+# ============================================
+# 项目级备份 (scripts/backup_project.py 产物)
+#   - tables/ 为完整逐表导出, 含 18M 的 display_model_layer, 不入 git
+#     (display 画面可由 build_ncc_dashboard.py 重建)
+#   - manifest.json (~6K) + minimal_bundle.json (~112K) 体积小,
+#     纳入 git 以便云端恢复 & 变更可追溯
+# ============================================
+backups/*/tables/
 
 # ============================================
 # 日志文件

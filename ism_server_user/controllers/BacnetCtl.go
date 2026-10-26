@@ -14,7 +14,6 @@ import (
 	"encoding/json"
 
 	bacnet "ISMServer/protocol/bacnet"
-	ismmqtt "ISMServer/protocol/mqtt"
 
 	beego "github.com/beego/beego/v2/server/web"
 	"github.com/go-basic/uuid"
@@ -40,8 +39,11 @@ func (c *BacnetController) ModelAdd() {
 		} else {
 			addModel.Uuid = uuid.New()
 			addModel.ProjectUuid = ProjectUuid
-			code = models.MqttModelAdd(addModel)
-			WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "添加了Mqtt模型"+addModel.Name, errmsg.JournalLevelInfo, c.Ctx.Input)
+			if addModel.Type == 0 {
+				addModel.Type = 500
+			}
+			code = models.BACnetModelAdd(addModel)
+			WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "添加了BACnet模型"+addModel.Name, errmsg.JournalLevelInfo, c.Ctx.Input)
 		}
 	} else {
 		code = -1
@@ -54,7 +56,7 @@ func (c *BacnetController) ModelAdd() {
 	}
 
 	c.Data["json"] = result
-	c.ServeJSON() //返回json格式
+	c.ServeJSON()
 }
 func (c *BacnetController) ModelList() {
 
@@ -62,17 +64,19 @@ func (c *BacnetController) ModelList() {
 	var code int64
 	var getModelByType = struct {
 		DataModelType int `json:"type"`
-	}{1}
+	}{500}
 
 	data := c.Ctx.Input.RequestBody
 	ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
 	if ProjectUuid != "" {
-		//json数据封装到user对象中
 		err := json.Unmarshal(data, &getModelByType)
 		if err != nil {
 			code = -1
 		} else {
-			getLists, code = models.MqttModelList(getModelByType.DataModelType, ProjectUuid)
+			if getModelByType.DataModelType == 0 {
+				getModelByType.DataModelType = 500
+			}
+			getLists, code = models.BACnetModelList(getModelByType.DataModelType, ProjectUuid)
 		}
 	} else {
 		code = -1
@@ -84,8 +88,7 @@ func (c *BacnetController) ModelList() {
 	}
 
 	c.Data["json"] = result
-	ismmqtt.MqttCloseChan()
-	c.ServeJSON() //返回json格式
+	c.ServeJSON()
 }
 func (c *BacnetController) ModelDel() {
 
@@ -94,14 +97,13 @@ func (c *BacnetController) ModelDel() {
 
 	data := c.Ctx.Input.RequestBody
 
-	//json数据封装到对象中
 	err := json.Unmarshal(data, &delModel)
 	if err != nil {
 		code = -1
 	} else {
-		code = models.MqttModelDel(delModel.Uuid)
+		code = models.BACnetModelDel(delModel.Uuid)
 		ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
-		WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "删除了Mqtt模型", errmsg.JournalLevelInfo, c.Ctx.Input)
+		WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "删除了BACnet模型", errmsg.JournalLevelInfo, c.Ctx.Input)
 	}
 
 	result := map[string]interface{}{
@@ -110,7 +112,7 @@ func (c *BacnetController) ModelDel() {
 
 	c.Data["json"] = result
 
-	c.ServeJSON() //返回json格式
+	c.ServeJSON()
 }
 
 func (c *BacnetController) ModelEdit() {
@@ -124,14 +126,13 @@ func (c *BacnetController) ModelEdit() {
 
 	dataJson := c.Ctx.Input.RequestBody
 
-	//json数据封装到对象中
 	err := json.Unmarshal(dataJson, &update)
 	if err != nil {
 		code = -1
 	} else {
-		code = models.MqttModelUpdate(update.Uuid, update.Data)
+		code = models.BACnetModelUpdate(update.Uuid, update.Data)
 		ProjectUuid := c.Ctx.Request.Header.Get("ProjectUuid")
-		WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "编辑了Mqtt模型"+update.Data.Name, errmsg.JournalLevelInfo, c.Ctx.Input)
+		WriteOperationJournal(c.Ctx.Request.Header.Get("Authorization"), ProjectUuid, "编辑了BACnet模型"+update.Data.Name, errmsg.JournalLevelInfo, c.Ctx.Input)
 	}
 
 	result := map[string]interface{}{
@@ -140,7 +141,7 @@ func (c *BacnetController) ModelEdit() {
 
 	c.Data["json"] = result
 	bacnet.BacnetCloseChan()
-	c.ServeJSON() //返回json格式
+	c.ServeJSON()
 }
 
 func (c *BacnetController) ModelDataAdd() {
@@ -190,8 +191,7 @@ func (c *BacnetController) ModelDataDel() {
 	}
 
 	c.Data["json"] = result
-	ismmqtt.MqttCloseChan()
-	c.ServeJSON() //返回json格式
+	c.ServeJSON()
 }
 func (c *BacnetController) ModelDataEdit() {
 

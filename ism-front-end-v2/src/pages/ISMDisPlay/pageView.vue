@@ -1,28 +1,16 @@
 <template>
-  <div class="ism-pageview">
-    <ISMRender :showUuid="$route.params.uid" showToken="" showDeviceUuid="" />
-    <PreviewWatermark />
-  </div>
+  <AppRunShell :uid="$route.params.uid" />
 </template>
 
 <script>
-import ISMRender from './ISMRender'
-import PreviewWatermark from '@/components/PreviewWatermark.vue'
-
+/**
+ * 路由入口：禁止 sync import 同目录任何 SFC（含 Loader），
+ * 否则与 ISMRender/ISMRunTreeNav 链形成循环依赖 → export default 为 undefined。
+ */
 export default {
   name: 'AppRun',
   components: {
-    ISMRender,
-    PreviewWatermark,
+    AppRunShell: () => import(/* webpackChunkName: "app-run-shell" */ './AppRunShell.vue'),
   },
 }
 </script>
-
-<style lang="less">
-.ism-pageview {
-  height: 100vh;
-  width: 100%;
-  position: relative;
-  overflow: hidden;
-}
-</style>

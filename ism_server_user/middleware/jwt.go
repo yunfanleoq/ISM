@@ -10,6 +10,7 @@ package middleware
 
 import (
 	"ISMServer/utils/errmsg"
+	"strings"
 	"time"
 
 	"github.com/beego/beego/v2/core/config"
@@ -72,6 +73,10 @@ func CheckToken(token string) (*MyClaims, int) {
 
 // jwt中间件
 func JwtToken(Token string) (int, string, string, string, string) {
+	Token = strings.TrimSpace(Token)
+	if strings.HasPrefix(strings.ToLower(Token), "bearer ") {
+		Token = strings.TrimSpace(Token[7:])
+	}
 
 	key, tCode := CheckToken(Token)
 	if tCode == errmsg.ERROR {

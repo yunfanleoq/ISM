@@ -1,0 +1,109 @@
+{
+  "files": [
+    {
+      "file": "1B配电室 172.31.4.15 172.20.255.15.xlsx",
+      "fmt": "A",
+      "building": "1B",
+      "room": "1B配电室",
+      "ip": "172.31.4.15",
+      "devices": 79,
+      "models": [
+        "A20",
+        "A40",
+        "施耐德UPS",
+        "伊顿UPS"
+      ]
+    },
+    {
+      "file": "2A3模块172.20.255.25.xlsx",
+      "fmt": "模块",
+      "building": "2A",
+      "room": "2A3模块",
+      "ip": "172.20.255.25",
+      "devices": 16,
+      "models": [
+        "列头柜"
+      ]
+    },
+    {
+      "file": "2A2配电室172.31.4.24.xlsx",
+      "fmt": "配电室",
+      "building": "2A",
+      "room": "2A2配电室",
+      "ip": "172.31.4.24",
+      "devices": 40,
+      "models": [
+        "仪表",
+        "仪表_2",
+        "UPS"
+      ]
+    }
+  ],
+  "totalDevices": 135,
+  "models": [
+    {
+      "name": "A20",
+      "type": "A20",
+      "ai": 17,
+      "di": 3,
+      "aiCount": 31,
+      "diCount": 4
+    },
+    {
+      "name": "A40",
+      "type": "A40",
+      "ai": 24,
+      "di": 3,
+      "aiCount": 42,
+      "diCount": 3
+    },
+    {
+      "name": "施耐德UPS",
+      "type": "施耐德UPS",
+      "ai": 44,
+      "di": 1,
+      "aiCount": 45,
+      "diCount": 1
+    },
+    {
+      "name": "伊顿UPS",
+      "type": "伊顿UPS",
+      "ai": 28,
+      "di": 23,
+      "aiCount": 29,
+      "diCount": 23
+    },
+    {
+      "name": "列头柜",
+      "type": "列头柜",
+      "ai": 322,
+      "di": 80,
+      "aiCount": 478,
+      "diCount": 117
+    },
+    {
+      "name": "仪表",
+      "type": "仪表",
+      "ai": 17,
+      "di": 3,
+      "aiCount": 31,
+      "diCount": 4
+    },
+    {
+      "name": "仪表_2",
+      "type": "仪表",
+      "ai": 24,
+      "di": 3,
+      "aiCount": 42,
+      "diCount": 3
+    },
+    {
+      "name": "UPS",
+      "type": "UPS",
+      "ai": 44,
+      "di": 21,
+      "aiCount": 45,
+      "diCount": 7
+    }
+  ]
+}

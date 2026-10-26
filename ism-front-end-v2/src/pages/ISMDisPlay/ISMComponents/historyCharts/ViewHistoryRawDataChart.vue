@@ -1229,13 +1229,9 @@ export default {
             type: 'line',
             dataID: this.SelectDeviceList[i].deviceUUID+this.SelectDeviceDataList[k].DataUUID,
             data: [],
-            itemStyle: {
-              normal: {
-                lineStyle: {
+            itemStyle: {lineStyle: {
                   width:this.EchartsWidth
-                }
-              }
-            },
+                }},
             symbolSize: this.EchartsWidth,
           }
           listObj.DeviceUuid = this.SelectDeviceList[i].deviceUUID

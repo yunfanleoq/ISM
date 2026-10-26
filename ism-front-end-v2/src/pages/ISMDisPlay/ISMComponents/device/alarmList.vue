@@ -29,7 +29,7 @@
 
 <script>
 import svgView from '../View';
-import {GetCurrentAlarmList} from "@/services/alarm";
+import {GetAlarmEventFeed} from "@/services/alarm";
 import {formatDate} from "@/utils/common";
 import ISMChildAutoMixin from '@/mixins/ISMChildAutoMixin'
 
@@ -58,6 +58,8 @@ export default {
       isStart:false,
       imageURL:"",
       AlarmTimer:null,
+      SelectDevice:[],
+      SelectAlarmData:[],
       rowNum:5,
       scrollConfig:{
         header: ['列1', '列2', '列3'],
@@ -316,7 +318,7 @@ export default {
       }
       this.updateTable([])
       i=0
-      this.animateType = option.animate.selected
+      this.animateType = option.animate.selected || []
       if(option.animate.isExpression)
       {
         this.isStart = false
@@ -373,6 +375,7 @@ export default {
           this.$t('reporting.AlarmHistory.AlarmName'),
           this.$t('reporting.AlarmHistory.HappenTime'),
           this.$t('reporting.AlarmHistory.AlarmLevel'),
+          this.$t('configComponent.AlarmList.eventStatus'),
           this.$t('dataModel.editData.AlarmMessage')
         ],
         indexHeader:this.$t('configComponent.AlarmList.index'),
@@ -407,37 +410,45 @@ export default {
       }
       this.messageShowLoad=true
       _t.scrollConfig.data = []
-      GetCurrentAlarmList(params).then(function (res){
+      GetAlarmEventFeed(params).then(function (res){
         if(res.data.code==0)
         {
           let updateData = []
           for(let i = 0;i<res.data.list.length;i++)
           {
               let single = []
-            single[0] = res.data.list[i].DeviceName
-            single[1] = _t.$t(res.data.list[i].AlarmName)
-            single[2] = formatDate(new Date(res.data.list[i].HappenTime),'yyyy-MM-dd hh:mm:ss')
-            if(res.data.list[i].AlarmLevel==0)
+            const item = res.data.list[i]
+            single[0] = item.DeviceName
+            single[1] = _t.$t(item.AlarmName)
+            const timeVal = item.EventStatus === 'recovered' ? item.ClearTime : item.HappenTime
+            single[2] = formatDate(new Date(timeVal),'yyyy-MM-dd hh:mm:ss')
+            if(item.AlarmLevel==0)
             {
               single[3] ='<span style="color:#0099FF;">'+ _t.$t('dataModel.alarm.Tips')+'</span>'
             }
-            else if(res.data.list[i].AlarmLevel==1)
+            else if(item.AlarmLevel==1)
             {
               single[3] = '<span style="color:#0099FF;">'+ _t.$t('dataModel.alarm.Minor')+'</span>'
             }
-            else if(res.data.list[i].AlarmLevel==2)
+            else if(item.AlarmLevel==2)
             {
               single[3] = '<span style="color:yellow;">'+ _t.$t('dataModel.alarm.Importance')+'</span>'
             }
-            else if(res.data.list[i].AlarmLevel==3)
+            else if(item.AlarmLevel==3)
             {
               single[3] = '<span style="color:orange;">'+ _t.$t('dataModel.alarm.Urgency')+'</span>'
             }
-            else if(res.data.list[i].AlarmLevel==4)
+            else if(item.AlarmLevel==4)
             {
               single[3] = '<span style="color:red;">'+ _t.$t('dataModel.alarm.Deadly')+'</span>'
             }
-            single[4] = '<span title='+_t.$t(res.data.list[i].AlarmMessage)+'>'+ _t.$t(res.data.list[i].AlarmMessage)+'</span>'
+            if(item.EventStatus === 'recovered') {
+              single[4] = '<span style="color:#52c41a;">'+ _t.$t('configComponent.AlarmList.recovered')+'</span>'
+              single[5] = '<span title='+_t.$t(item.AlarmClearMessage)+'>'+ _t.$t(item.AlarmClearMessage)+'</span>'
+            } else {
+              single[4] = '<span style="color:#ff4d4f;">'+ _t.$t('configComponent.AlarmList.alarming')+'</span>'
+              single[5] = '<span title='+_t.$t(item.AlarmMessage)+'>'+ _t.$t(item.AlarmMessage)+'</span>'
+            }
             updateData.push(single)
           }
           _t.updateTable (updateData)

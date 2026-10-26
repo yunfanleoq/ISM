@@ -7,6 +7,10 @@
         <a-button type="primary" @click="RegisterVisible=true;isEdit=false"> <a-icon type="plus" />
           {{$t("dataModel.RESTFulData.AddModelData")}}</a-button>
 
+        <a-button type="default" icon="download" @click="handleVirtualExport">{{$t('dataModel.exportExcel')}}</a-button>
+        <a-upload :show-upload-list="false" accept=".xlsx,.xls" :customRequest="handleVirtualImport">
+          <a-button type="default" icon="upload">{{$t('dataModel.importExcel')}}</a-button>
+        </a-upload>
 
         <a-button type="default" @click="onBlackCLK()"> <a-icon type="backward" />
           {{$t("dataModel.opcuaModel.Back")}}</a-button>
@@ -266,6 +270,27 @@
                   </a-input>
                 </a-form-item>
               </a-col>
+              <a-col :span="12">
+                <a-form-item label="报警触发值(0/1)">
+                  <a-select autocomplete="autocomplete" v-decorator="[
+                        'alarmOnValue',
+                        {
+                          rules: [{ required: true, message: '报警触发值' }],
+                          initialValue: '1',
+                        },
+                      ]">
+                    <a-select-option value="1">1 报警</a-select-option>
+                    <a-select-option value="0">0 报警</a-select-option>
+                  </a-select>
+                </a-form-item>
+              </a-col>
+              <a-col :span="12">
+                <a-form-item label="告警确认延迟">
+                  <a-checkbox v-decorator="['alarmConfirmDelayEnable', { valuePropName: 'checked', initialValue: false }]">启用</a-checkbox>
+                  <a-input-number v-decorator="['alarmConfirmDelaySec', { initialValue: 5 }]" :min="1" :max="3600" style="width: 90px; margin-left: 8px;" />
+                  秒
+                </a-form-item>
+              </a-col>
             </div>
             <!--存储            -->
             <div v-else>
@@ -358,6 +383,8 @@ import {
   VirtualDeviceModelDataEdit,
   VirtualDeviceModelDataList
 } from "@/services/VirtualDeviceModel";
+import { exportExcelWithStyle } from "@/services/excelExport.js"
+import ExcelJS from 'exceljs'
 const dataSource= []
 const loadingKey = 'updatable'
 export default {
@@ -433,6 +460,19 @@ export default {
       dataSource,
       registerGroupDataSource:[],
       selectedRows: [],
+      virtualExportFields: {
+        "数据名称": "name",
+        "数据类型": "type",
+        "权限": "auth",
+        "单位": "unit",
+        "转换关系": "conversionExpression",
+        "是否告警(是,否)": { field: "alarm", callback: v => v === 1 ? '是' : '否' },
+        "告警等级": "alarmLevel",
+        "告警消息": "AlarmMessage",
+        "告警消除消息": "AlarmClearMessage",
+        "报警触发值(0,1)": { field: "alarmOnValue", callback: v => (v === 0 || v === '0') ? '0' : '1' },
+        "数据ID(勿修改)": "uuid",
+      },
     }
   },
   created(){
@@ -472,6 +512,117 @@ export default {
       clearFilters();
       this.searchText = '';
     },
+    async handleVirtualExport() {
+      const data = this.registerGroupDataSource.map(item => {
+        const row = {}
+        for (const key in this.virtualExportFields) {
+          const fieldConfig = this.virtualExportFields[key]
+          if (typeof fieldConfig === 'string') {
+            row[key] = item[fieldConfig]
+          } else if (fieldConfig.callback) {
+            row[key] = fieldConfig.callback(item[fieldConfig.field])
+          }
+        }
+        return row
+      })
+      await exportExcelWithStyle(data, this.virtualExportFields, 'virtual-device-data', '', false)
+    },
+    handleVirtualImport({ file, onSuccess, onError }) {
+      const _t = this
+      const reader = new FileReader()
+      reader.onload = async function(e) {
+        try {
+          const workbook = new ExcelJS.Workbook()
+          await workbook.xlsx.load(e.target.result)
+          const sheet = workbook.worksheets[0]
+          const headers = []
+          sheet.getRow(1).eachCell({ includeEmpty: true }, (cell, col) => { headers[col] = String(cell.value || '') })
+          let ok = 0
+          let updated = 0
+          const cellText = (raw) => {
+            if (raw == null) return ''
+            if (typeof raw === 'object') {
+              if (raw.result != null) return String(raw.result).trim()
+              if (raw.text != null) return String(raw.text).trim()
+              if (Array.isArray(raw.richText)) return raw.richText.map(t => t.text || '').join('').trim()
+              return ''
+            }
+            return String(raw).trim()
+          }
+          const parseAlarmOn = (raw) => {
+            const v = cellText(raw)
+            if (v === '0' || v === '0.0' || v === '0.00') return 0
+            return 1
+          }
+          for (let rowNumber = 2; rowNumber <= sheet.rowCount; rowNumber++) {
+            const row = sheet.getRow(rowNumber)
+            const rowObj = {}
+            for (let col = 1; col < headers.length; col++) {
+              const key = headers[col]
+              if (!key) continue
+              rowObj[key] = row.getCell(col).value
+            }
+            const name = cellText(rowObj['数据名称'] || rowObj.name)
+            if (!name) continue
+            const alarmOnRaw = rowObj['报警触发值(0,1)'] != null ? rowObj['报警触发值(0,1)'] : rowObj.alarmOnValue
+            const dataUuid = cellText(rowObj['数据ID(勿修改)'] || rowObj.uuid || '')
+            const params = {
+              muid: _t.$route.params.uid,
+              modeltype: 480,
+              name,
+              auth: rowObj['权限'] || rowObj.auth || 'ReadOnly',
+              type: parseInt(rowObj['数据类型'] || rowObj.type || 12),
+              unit: rowObj['单位'] || rowObj.unit || '',
+              conversionExpression: rowObj['转换关系'] || rowObj.conversionExpression || '',
+              alarm: (rowObj['是否告警(是,否)'] === '是' || rowObj.alarm === '是') ? 1 : 0,
+              alarmLevel: parseInt(rowObj['告警等级'] || rowObj.alarmLevel || 0),
+              AlarmMessage: rowObj['告警消息'] || rowObj.AlarmMessage || '',
+              AlarmClearMessage: rowObj['告警消除消息'] || rowObj.AlarmClearMessage || '',
+              alarmOnValue: parseAlarmOn(alarmOnRaw),
+              record: 0,
+            }
+            if (dataUuid) {
+              const editRes = await VirtualDeviceModelDataEdit({
+                uuid: dataUuid,
+                muid: _t.$route.params.uid,
+                data: params,
+              })
+              if (editRes.data && editRes.data.code === 2002) {
+                ok++
+                updated++
+                continue
+              }
+            }
+            const res = await VirtualDeviceModelDataAdd(params)
+            if (res.data && res.data.code === 2002) {
+              ok++
+              continue
+            }
+            if (res.data && res.data.code === 2001) {
+              const exist = (_t.registerGroupDataSource || []).find(x => x.uuid === dataUuid || x.name === name)
+              if (exist && exist.uuid) {
+                const editRes = await VirtualDeviceModelDataEdit({
+                  uuid: exist.uuid,
+                  muid: _t.$route.params.uid,
+                  data: params,
+                })
+                if (editRes.data && editRes.data.code === 2002) {
+                  ok++
+                  updated++
+                }
+              }
+            }
+          }
+          _t.$message.success(_t.$t('dataModel.importSuccess') + ` (${ok}` + (updated ? `, 更新 ${updated}` : '') + `)`)
+          _t.RESTFulDataList()
+          onSuccess && onSuccess()
+        } catch (err) {
+          _t.$message.error(_t.$t('dataModel.FormatError'))
+          onError && onError(err)
+        }
+      }
+      reader.readAsArrayBuffer(file)
+    },
     chargeDataRecordType(value){
       this.DataRecordType = parseInt(value)
     },
@@ -509,6 +660,9 @@ export default {
                 dataRecord:item.record.toString(),
                 AlarmMessage :item.AlarmMessage,
                 AlarmClearMessage : item.AlarmClearMessage,
+                alarmOnValue: (item.alarmOnValue === 0 || item.alarmOnValue === '0') ? '0' : '1',
+                alarmConfirmDelayEnable: (parseInt(item.alarmConfirmDelaySec, 10) || 0) > 0,
+                alarmConfirmDelaySec: (parseInt(item.alarmConfirmDelaySec, 10) || 0) > 0 ? parseInt(item.alarmConfirmDelaySec, 10) : 5,
               })
         }
         else  if (item.record==1)
@@ -557,6 +711,8 @@ export default {
             params.data.alarmLevel= parseInt(this.RegisterForm.getFieldValue('AlarmLevel'))
             params.data.AlarmMessage= this.RegisterForm.getFieldValue('AlarmMessage')
             params.data.AlarmClearMessage=this.RegisterForm.getFieldValue('AlarmClearMessage')
+            params.data.alarmOnValue= parseInt(this.RegisterForm.getFieldValue('alarmOnValue') || '1')
+            params.data.alarmConfirmDelaySec= this.RegisterForm.getFieldValue('alarmConfirmDelayEnable') ? (parseInt(this.RegisterForm.getFieldValue('alarmConfirmDelaySec') || '0') || 0) : 0
           }
           if (params.data.record==1)
           {
@@ -582,6 +738,8 @@ export default {
                 target.alarmLevel=parseInt(_t.RegisterForm.getFieldValue('AlarmLevel'))
                 target.AlarmMessage = _t.RegisterForm.getFieldValue('AlarmMessage')
                 target.AlarmClearMessage = _t.RegisterForm.getFieldValue('AlarmClearMessage')
+                target.alarmOnValue = parseInt(_t.RegisterForm.getFieldValue('alarmOnValue') || '1')
+                target.alarmConfirmDelaySec = _t.RegisterForm.getFieldValue('alarmConfirmDelayEnable') ? (parseInt(_t.RegisterForm.getFieldValue('alarmConfirmDelaySec') || '0') || 0) : 0
                 target.record=parseInt(_t.RegisterForm.getFieldValue('dataRecord'))
                 target.RecordType=parseInt(_t.RegisterForm.getFieldValue('dataRecordType'))
                 target.recordInterval=parseInt(_t.RegisterForm.getFieldValue('dataRecordTime'))
@@ -639,6 +797,8 @@ export default {
             alarmLevel:parseInt(this.RegisterForm.getFieldValue('AlarmLevel')),
             AlarmMessage:this.RegisterForm.getFieldValue('AlarmMessage'),
             AlarmClearMessage:this.RegisterForm.getFieldValue('AlarmClearMessage'),
+            alarmOnValue: parseInt(this.RegisterForm.getFieldValue('alarmOnValue') || '1'),
+            alarmConfirmDelaySec: this.RegisterForm.getFieldValue('alarmConfirmDelayEnable') ? (parseInt(this.RegisterForm.getFieldValue('alarmConfirmDelaySec') || '0') || 0) : 0,
             record:parseInt(this.RegisterForm.getFieldValue('dataRecord')),
             RecordType:this.RegisterForm.getFieldValue('dataRecordType')?parseInt(this.RegisterForm.getFieldValue('dataRecordType')):0,
             recordInterval:this.RegisterForm.getFieldValue('dataRecordTime')?parseInt(this.RegisterForm.getFieldValue('dataRecordTime')):0,

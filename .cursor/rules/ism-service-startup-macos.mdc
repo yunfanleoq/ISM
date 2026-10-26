@@ -1,0 +1,73 @@
+---
+description: ISM 服务启动铁律（macOS）—— 禁止 setsid、短 shell nohup、未验证即报成功；登录不了先查进程端口
+alwaysApply: true
+---
+
+# ISM 服务启动铁律（macOS）
+
+## 已反复踩坑（禁止再犯）
+
+| 错误做法 | 现象 | 根因 |
+|---|---|---|
+| `setsid ./ism_server &` | 日志 `command not found: setsid`，服务未起 | **`setsid` 是 Linux 命令，macOS 默认没有** |
+| `nohup ... &` 在 Cursor 短生命周期 shell | 报「启动成功」后 5~10 秒 7080/8081 无监听 | shell 退出时子进程被清理 |
+| **Agent 内跑 `./scripts/start_ism_dev.sh`** | 脚本验证全过，退出后进程消失 | Agent shell 结束清理子树；`disown` 无效 |
+| 未验证就告知用户「重启成功」 | 用户登录不了、页面打不开 | 进程/端口/API 未实测 |
+
+**`setsid` 在 macOS 上不存在 — 日志里是 `command not found: setsid`，像这个问题已经犯了好多次了。**
+
+## 正确启动方式（按优先级）
+
+### 1. Cursor Agent 内（推荐）
+
+用 Shell 工具 **`block_until_ms=0`** 启动持久后台终端，命令用 **`exec`** 避免多余父进程：
+
+```bash
+# 后端
+cd ism_server_user && exec ./ism_server >> /tmp/ism_be.log 2>&1
+
+# 前端（先跑 check_mem_before_compile.sh 且 PASS）
+cd ism-front-end-v2 && NODE_OPTIONS="--max-old-space-size=20480 --openssl-legacy-provider" \
+  exec npx vue-cli-service serve --port 7080 >> /tmp/ism_fe.log 2>&1
+```
+
+### 2. 终端脚本（脱离 Cursor）
+
+```bash
+./scripts/start_ism_dev.sh   # 含清场、内存检查、disown、启动后验证
+```
+
+或手工 `nohup` 必须 **`</dev/null` + `disown`**，不能只在 5 秒就结束的 shell 里 `nohup ... &`。
+
+### 3. macOS 替代 setsid
+
+- **禁止** `setsid`（Linux only）
+- 可用：`nohup cmd </dev/null >>log 2>&1 & disown`、子 shell `( cmd & )`、**launchctl** 用户守护
+
+## 启动后必做验证（未通过 = 未启动）
+
+```bash
+pgrep -fl "ism_server|vue-cli-service"
+lsof -nP -iTCP:7080,8081 -sTCP:LISTEN
+curl -s http://127.0.0.1:8081/login -X POST -H 'Content-Type: application/json' \
+  -d '{"Username":"admin","password":"e10adc3949ba59abbe56e057f20f883e"}'
+# 期望 code: 1000；前端代理同理测 http://127.0.0.1:7080/api/login
+grep -m1 "Compiled successfully" /tmp/ism_fe.log
+```
+
+## 登录不了排障顺序
+
+1. **进程** — `pgrep -fl ism_server|vue-cli-service` 有无输出
+2. **端口** — 8081/7080 是否 LISTEN
+3. **API** — 直连 8081 `/login` 是否 `code:1000`
+4. **代理** — 7080 `/api/login` 是否通（前端未编译完时代理也不通）
+5. **密码** — 仅当前 4 步都正常仍失败时再查 bcrypt(MD5) 链路（见 `password-chain.mdc`）
+
+## 禁止事项
+
+- **禁止** 在 macOS 使用 `setsid`
+- **禁止** 在会快速退出的 shell 里单独 `nohup ... &` 就宣布成功
+- **禁止** 未跑 `pgrep` + `lsof` + `curl login` 就告诉用户「已重启」
+- **禁止** 登录失败时先改密码 — 先确认服务是否真的在跑
+
+详细流程见 `.cursor/skills/ism-service-startup/SKILL.md`；编译内存见 `ism-dev-compile-preclean` 技能。

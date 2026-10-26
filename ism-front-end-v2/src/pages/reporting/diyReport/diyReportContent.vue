@@ -15,7 +15,7 @@
     <div class="hello">
       <div
           id="luckysheetContent"
-          style="margin:0px;padding:0px;height:600px;top:5px;z-index: -1"
+          style="margin:0px;padding:0px;height:600px;position:relative;z-index:1"
       ></div>
 
       <div v-show="isMaskShow" style="position: absolute;z-index: 1000000;left: 0px;top: 0px;bottom: 0px;right: 0px; background: rgba(255, 255, 255, 0.8); text-align: center;font-size: 40px;align-items:center;justify-content: center;display:flex;">Downloading</div>
@@ -33,7 +33,7 @@ import LuckyExcel from 'luckyexcel'
 import DeviceHistoryDataModel from "@/components/deviceHistoryDataModel/deviceHistoryDataModel";
 import {formatDate} from '@/utils/common';
 import { exportExcel,getExcelData } from '@/utils/export'
-import {SaveReportTemplete} from "@/services/reportTemplete";
+import {SaveReportTemplete, GetReportTempleteFile} from "@/services/reportTemplete";
 
 export default {
   name: 'diyDataHistory',
@@ -49,16 +49,33 @@ export default {
       exportName:"",
       messageShowLoad:false,
       advanced: true,
-      sheetOptions:{}
+      sheetOptions:{},
+      _initing: false
     }
   },
   authorize: {
     // deleteRecord: 'delete'
   },
   mounted(){
-
+    this.initLuckySheet()
   },
   activated(){
+    this.initLuckySheet()
+  },
+  created(){
+    this.buildSheetOptions()
+  },
+  watch: {
+    '$route.params.uuid'(val, oldVal) {
+      if (val && val !== oldVal) {
+        this.safeDestroyLuckySheet()
+        this._initing = false
+        this.initLuckySheet()
+      }
+    }
+  },
+  methods: {
+    buildSheetOptions(){
     let _t = this
     this.sheetOptions = {
       container: 'luckysheetContent', // 设定DOM容器的id
@@ -212,42 +229,93 @@ export default {
       this.json_fields = this.json_fields_en
     }
     this.exportName = this.$t('reporting.DataHistory.exportName')+"."+formatDate( new Date(),'yyyy-MM-dd hh:mm:ss')+".xlsx"
-    // In some cases, you need to use $nextTick
-    this.$nextTick(() => {
-      // luckysheet.create( this.sheetOptions);
-      let myDate = new Date()
-      let  value = '/static/reportTemplete/'+this.$route.params.uuid+'.xlsx?'+myDate.getMilliseconds()
-      let name = this.$route.params.uuid
-      let _t = this
-      LuckyExcel.transformExcelToLuckyByUrl(value, name, function (exportJson, luckysheetfile) {
-        if (exportJson.sheets == null || exportJson.sheets.length == 0) {
+    },
+    isExcelBuffer(buf) {
+      if (!buf || buf.byteLength < 4) {
+        return false
+      }
+      const u8 = new Uint8Array(buf)
+      return u8[0] === 0x50 && u8[1] === 0x4b
+    },
+    isLuckySheetVisible() {
+      const el = document.getElementById('luckysheetContent')
+      return !!(el && el.querySelector('.luckysheet-grid-container, .luckysheet-cell-main, #luckysheet-cell-main'))
+    },
+    safeDestroyLuckySheet() {
+      try {
+        if (typeof luckysheet !== 'undefined' && luckysheet.destroy) {
+          luckysheet.destroy()
+        }
+      } catch (e) {}
+    },
+    createBlankLuckySheet() {
+      this.sheetOptions.data = [{
+        name: 'Sheet1',
+        color: '',
+        status: 1,
+        order: 0,
+        data: [],
+        config: {},
+        index: 0
+      }]
+      luckysheet.create(this.sheetOptions)
+    },
+    applyExcelJson(exportJson) {
+      const info = exportJson && exportJson.info ? exportJson.info : {}
+      this.sheetOptions.data = exportJson.sheets
+      this.sheetOptions.title = (info && typeof info.name === 'string') ? info.name : this.$route.params.uuid
+      this.sheetOptions.userInfo = (info && info.creator) ? info.creator : ''
+      luckysheet.create(this.sheetOptions)
+    },
+    initLuckySheet() {
+      if (this._initing || this.isLuckySheetVisible()) {
+        return
+      }
+      if (!this.sheetOptions || !this.sheetOptions.container) {
+        this.buildSheetOptions()
+      }
+      this.sheetOptions.gridKey = this.$route.params.uuid
+      this._initing = true
+      this.$nextTick(() => {
+        this.loadTemplate().finally(() => {
+          this._initing = false
+        })
+      })
+    },
+    loadTemplate() {
+      const uuid = this.$route.params.uuid
+      const _t = this
+      this.safeDestroyLuckySheet()
+      return GetReportTempleteFile(uuid).then(function (res) {
+        const buf = res && res.data
+        if (!_t.isExcelBuffer(buf)) {
+          _t.$message.warning(_t.$t('diyReportTemplete.LoadFailed'))
+          _t.createBlankLuckySheet()
           return
         }
-
-        _t.sheetOptions.data={}
-        // luckysheet.destroy()
-        _t.sheetOptions.data = exportJson.sheets
-        _t.sheetOptions.title = exportJson.info.name,
-          _t.sheetOptions.userInfo = exportJson.info.name.creator,
-          luckysheet.create(_t.sheetOptions)
+        const file = new File([buf], (uuid || 'template') + '.xlsx', {
+          type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        })
+        let parsed = false
+        LuckyExcel.transformExcelToLucky(file, function (exportJson) {
+          parsed = true
+          if (!exportJson || !exportJson.sheets || exportJson.sheets.length === 0) {
+            _t.createBlankLuckySheet()
+            return
+          }
+          _t.applyExcelJson(exportJson)
+        })
+        setTimeout(function () {
+          if (!parsed && !_t.isLuckySheetVisible()) {
+            _t.$message.warning(_t.$t('diyReportTemplete.LoadFailed'))
+            _t.createBlankLuckySheet()
+          }
+        }, 3000)
+      }).catch(function () {
+        _t.$message.error(_t.$t('diyReportTemplete.LoadFailed'))
+        _t.createBlankLuckySheet()
       })
-    });
-  },
-  filters: {
-    formatDate(time) {
-      let date = new Date(time)
-      return formatDate(date,'yyyy-MM-dd hh:mm:ss')
     },
-  },
-  created(){
-
-  },
-  watch: {
-    '$route'() {
-      luckysheet.destroy()
-    }
-  },
-  methods: {
     onSelectData(selectData) {
       luckysheet.setCellValue(this.selectRow ,this.selectCol,"{{DataModel."+selectData.name+"}}")
     },
@@ -339,21 +407,8 @@ export default {
       this.SelectDateRange = dateString
     },
     LoadReportTemplete(){
-      let myDate = new Date()
-      let  value = '/static/reportTemplete/'+this.$route.params.uuid+'.xlsx?'+myDate.getMilliseconds()
-      let name = '1111'
-      let _t = this
-      luckysheet.destroy()
-      LuckyExcel.transformExcelToLuckyByUrl(value, name, function (exportJson, luckysheetfile) {
-        if (exportJson.sheets == null || exportJson.sheets.length == 0) {
-          return
-        }
-
-        _t.sheetOptions.data = exportJson.sheets
-        _t.sheetOptions.title = exportJson.info.name,
-        _t.sheetOptions.userInfo = exportJson.info.name.creator,
-        luckysheet.create(_t.sheetOptions)
-      })
+      this._initing = false
+      this.loadTemplate()
     },
     back(){
       this.$router.push('/Reporting/DiyReportTemplete')
@@ -382,7 +437,7 @@ export default {
     }
   },
   destroyed () {
-    luckysheet.destroy()
+    this.safeDestroyLuckySheet()
   },
 }
 </script>

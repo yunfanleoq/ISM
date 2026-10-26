@@ -10,9 +10,11 @@
         <a-divider type="vertical" />
         <a-upload
             name="file"
+            accept=".xlsx"
             :multiple="false"
-            :action=localUpgradeUrl
+            :customRequest="customImportRequest"
             :showUploadList="false"
+            :disabled="messageShowLoad"
             @change="localUpgradeCharge"
         >
           <a-button type="default"> <a-icon type="import" />
@@ -24,12 +26,12 @@
           {{$t('dataModel.delete')}}
         </a-button>
         <a-divider type="vertical" />
-        <a-button type="link" @click="registerGroupListTable=true"> <a-icon type="backward" />
+        <a-button type="link" @click="registerGroupListTable=true; dataPagination.current = 1"> <a-icon type="backward" />
           {{$t("dataModel.modbusModel.Back")}}</a-button>
 
       </a-space>
       <a-spin style="padding: 1px;"  :spinning="messageShowLoad" tip="Loading...">
-        <a-table :loading="false" :pagination="pagination" row-key="uuid" :row-selection="rowSelection" :columns="columns" :data-source="dataSource" class="ant-table-tbody">
+        <a-table :loading="false" :pagination="dataPagination" @change="onDataTableChange" row-key="uuid" :row-selection="rowSelection" :columns="columns" :data-source="dataSource" class="ant-table-tbody">
           <template v-for="(item, index) in columns" :slot="item.slotName">
             <span :key="index">{{ $t(item.slotName) }}</span>
           </template>
@@ -309,6 +311,27 @@
                   </a-input>
                 </a-form-item>
               </a-col>
+              <a-col :span="12">
+                <a-form-item label="报警触发值(0/1)">
+                  <a-select autocomplete="autocomplete" v-decorator="[
+                  'alarmOnValue',
+                  {
+                    rules: [{ required: true, message: '报警触发值' }],
+                    initialValue: '1',
+                  },
+                ]">
+                    <a-select-option value="1">1 报警</a-select-option>
+                    <a-select-option value="0">0 报警</a-select-option>
+                  </a-select>
+                </a-form-item>
+              </a-col>
+              <a-col :span="12">
+                <a-form-item label="告警确认延迟">
+                  <a-checkbox v-decorator="['alarmConfirmDelayEnable', { valuePropName: 'checked', initialValue: false }]">启用</a-checkbox>
+                  <a-input-number v-decorator="['alarmConfirmDelaySec', { initialValue: 5 }]" :min="1" :max="3600" style="width: 90px; margin-left: 8px;" />
+                  秒
+                </a-form-item>
+              </a-col>
             </div>
 
 
@@ -424,7 +447,7 @@
 
       </a-space>
       <a-spin style="padding: 1px;"  :spinning="messageShowLoad" tip="Loading...">
-        <a-table  :pagination="pagination" row-key="uuid" :columns="registerGroupColumns" :data-source="registerGroupDataSource" class="ant-table-tbody">
+        <a-table  :pagination="groupPagination" @change="onGroupTableChange" row-key="uuid" :columns="registerGroupColumns" :data-source="registerGroupDataSource" class="ant-table-tbody">
           <template v-for="(item, index) in registerGroupColumns" :slot="item.slotName">
             <span :key="index">{{ $t(item.slotName) }}</span>
           </template>
@@ -540,7 +563,11 @@ import {
 import {LOCALUPGATEDATAMODEL} from "@/services/api";
 import {formatDate} from "@/utils/common";
 import { exportExcelWithStyle } from "@/services/excelExport.js"
+import { AUTH_TYPE, getAuthorization } from "@/utils/request";
+import axios from 'axios'
+
 const dataSource= []
+const IMPORT_TIMEOUT_MS = 2 * 60 * 60 * 1000
 
 export default {
   name: 'ModbusModelRegister',
@@ -552,6 +579,18 @@ export default {
       pagination:{
         pageSize:15,
         showSizeChanger:true
+      },
+      groupPagination:{
+        pageSize:15,
+        showSizeChanger:true,
+        current:1,
+        total:0
+      },
+      dataPagination:{
+        pageSize:15,
+        showSizeChanger:true,
+        current:1,
+        total:0
       },
       localUpgradeUrl:LOCALUPGATEDATAMODEL+"/"+this.$route.params.uid,
       DataRecordType:0,
@@ -623,6 +662,10 @@ export default {
         },
         "告警消息": "AlarmMessage",
         "告警消除消息": "AlarmClearMessage",
+        "报警触发值(0,1)": {
+          field: "alarmOnValue",
+          callback: value => (value === 0 || value === '0') ? '0' : '1'
+        },
         "是否存储(是,否)": {
           field: "record",
           //自定义回调函数
@@ -637,11 +680,11 @@ export default {
             }
           }
         },
-        "存储类型(变化存储、定时存储、即时存储)": {
+        "存储类型(变化存储、定时存储、即时存储、变化百分比、整点存储)": {
           field: "RecordType",
               //自定义回调函数
               callback: value => {
-              switch (value){
+              switch (Number(value)){
                 case 0:{
                   return "变化存储"
                 }
@@ -650,6 +693,15 @@ export default {
                 }
                 case 2:{
                   return "即时存储"
+                }
+                case 3:{
+                  return "变化百分比"
+                }
+                case 4:{
+                  return "整点存储"
+                }
+                default:{
+                  return "变化存储"
                 }
               }
             }
@@ -772,10 +824,32 @@ export default {
   mounted() {
 
   },
-  computed: {
-
-  },
   methods: {
+    customImportRequest({ file, onSuccess, onError }) {
+      const formData = new FormData()
+      formData.append('file', file)
+      const groupUuid = this.registerUUID || ''
+      if (groupUuid) {
+        formData.append('registerGroupUuid', groupUuid)
+      }
+      const headers = {}
+      const token = getAuthorization(AUTH_TYPE.BEARER)
+      const projectUuid = getAuthorization(AUTH_TYPE.AUTH1)
+      if (token) {
+        headers.Authorization = token
+      }
+      if (projectUuid) {
+        headers.ProjectUuid = projectUuid
+      }
+      axios.post(this.localUpgradeUrl, formData, {
+        headers,
+        timeout: IMPORT_TIMEOUT_MS,
+      }).then((res) => {
+        onSuccess(res.data, file)
+      }).catch((err) => {
+        onError(err)
+      })
+    },
     async handleExport() {
       const data = this.dataSource.map(item => {
         const row = {};
@@ -822,15 +896,18 @@ export default {
       this.searchText = '';
     },
     localUpgradeCharge(info){
-      this.dataSource=[]
-      this.messageShowLoad = true
+      if (info.file.status === 'uploading') {
+        this.messageShowLoad = true
+        return
+      }
+      this.messageShowLoad = false
       if (info.file.status === 'done') {
         let result = info.file.response
         if(result.Code==0) {
           this.$message.success(`${info.file.name} `+this.$t("dataModel.importSuccess"));
           this.registerAddressList(this.registerUUID)
         }
-        else if(result.Code==-2)
+        else if(result.Code==-2 || result.Code==-6)
         {
           this.$message.error(`${info.file.name} `+this.$t("dataModel.FormatError"));
         }
@@ -838,12 +915,11 @@ export default {
         {
           this.$message.error(`${info.file.name} `+this.$t("SystemUpgrade.UpgradeFileSaveError"));
         }
+        return
       }
-      else if (info.file.status === 'uploading') {
-        //this.$message.success(`${info.file.name} `+this.$t("SystemUpgrade.BeginUpgradeUploading"));
+      if (info.file.status === 'error') {
+        this.$message.error(`${info.file.name} `+this.$t("dataModel.importAllFailed"));
       }
-
-      this.messageShowLoad = false
     },
     onCellChange(rc, e) {
       let params = {
@@ -991,6 +1067,9 @@ export default {
                   {
                     dataAlarm:item.alarm.toString(),
                     AlarmLevel:item.alarmLevel.toString(),
+                    alarmOnValue:(item.alarmOnValue === 0 || item.alarmOnValue === '0') ? '0' : '1',
+                    alarmConfirmDelayEnable: (parseInt(item.alarmConfirmDelaySec, 10) || 0) > 0,
+                    alarmConfirmDelaySec: (parseInt(item.alarmConfirmDelaySec, 10) || 0) > 0 ? parseInt(item.alarmConfirmDelaySec, 10) : 5,
                     dataRecord:item.record.toString(),
                     AlarmMessage :item.AlarmMessage,
                     AlarmClearMessage : item.AlarmClearMessage,
@@ -1035,6 +1114,8 @@ export default {
               unit:this.EditForm.getFieldValue('dataUnit'),
               conversionExpression:this.EditForm.getFieldValue('ConversionExpression'),
               alarm:parseInt(this.EditForm.getFieldValue('dataAlarm')),
+              alarmOnValue:parseInt(this.EditForm.getFieldValue('alarmOnValue') || '1'),
+              alarmConfirmDelaySec: this.EditForm.getFieldValue('alarmConfirmDelayEnable') ? (parseInt(this.EditForm.getFieldValue('alarmConfirmDelaySec') || '0') || 0) : 0,
               alarmLevel:parseInt(this.EditForm.getFieldValue('AlarmLevel')),
               AlarmMessage:this.EditForm.getFieldValue('AlarmMessage'),
               AlarmClearMessage:this.EditForm.getFieldValue('AlarmClearMessage'),
@@ -1098,6 +1179,8 @@ export default {
               unit:this.EditForm.getFieldValue('dataUnit'),
               conversionExpression:this.EditForm.getFieldValue('ConversionExpression'),
               alarm:parseInt(this.EditForm.getFieldValue('dataAlarm')),
+              alarmOnValue:parseInt(this.EditForm.getFieldValue('alarmOnValue') || '1'),
+              alarmConfirmDelaySec: this.EditForm.getFieldValue('alarmConfirmDelayEnable') ? (parseInt(this.EditForm.getFieldValue('alarmConfirmDelaySec') || '0') || 0) : 0,
               alarmLevel:parseInt(this.EditForm.getFieldValue('AlarmLevel')),
               AlarmMessage:this.EditForm.getFieldValue('AlarmMessage'),
               AlarmClearMessage:this.EditForm.getFieldValue('AlarmClearMessage'),
@@ -1225,6 +1308,29 @@ export default {
         })
       }
     },
+    /** a-table 受控分页：必须同步 current/pageSize，否则点击页码不生效 */
+    onGroupTableChange(pagination) {
+      if (!pagination) return
+      this.groupPagination = {
+        ...this.groupPagination,
+        current: pagination.current || 1,
+        pageSize: pagination.pageSize || this.groupPagination.pageSize,
+        total: this.groupPagination.total != null
+          ? this.groupPagination.total
+          : (this.registerGroupDataSource || []).length,
+      }
+    },
+    onDataTableChange(pagination) {
+      if (!pagination) return
+      this.dataPagination = {
+        ...this.dataPagination,
+        current: pagination.current || 1,
+        pageSize: pagination.pageSize || this.dataPagination.pageSize,
+        total: this.dataPagination.total != null
+          ? this.dataPagination.total
+          : (this.dataSource || []).length,
+      }
+    },
     registerGroupList(){
       let _t = this
       this.messageShowLoad = true
@@ -1235,6 +1341,11 @@ export default {
       modbusModelGroupList(params).then(function (res){
         _t.messageShowLoad = false
         _t.registerGroupDataSource = res.data.list==null?[]:res.data.list
+        _t.groupPagination = {
+          ..._t.groupPagination,
+          total: _t.registerGroupDataSource.length,
+          current: 1,
+        }
       })
     },
     deleteRegisterGroupRecord(uuid){
@@ -1286,6 +1397,11 @@ export default {
       }
       modbusModelRegisterList(params).then(function (res){
         _t.dataSource = res.data.list==null?[]:res.data.list
+        _t.dataPagination = {
+          ..._t.dataPagination,
+          total: _t.dataSource.length,
+          current: 1,
+        }
         _t.messageShowLoad = false
       })
     },
@@ -1312,6 +1428,10 @@ export default {
                 _t.selectedRows = _t.selectedRows.filter(item => item.uuid !== _t.selectDataTableUuid[i])
               }
               _t.selectDataTableUuid=[]
+              _t.dataPagination = {
+                ..._t.dataPagination,
+                total: _t.dataSource.length,
+              }
             }
             else {
               _t.$message.error(_t.$t("dataModel.deleteFailed"));

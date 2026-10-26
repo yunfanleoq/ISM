@@ -21,6 +21,10 @@ function clone(value) {
   return JSON.parse(JSON.stringify(value || {}))
 }
 
+function asArray(value) {
+  return Array.isArray(value) ? value : []
+}
+
 function readCellPosition(cell, sourcePosition) {
   const graphPosition = cell && cell.position ? cell.position : {}
   return {
@@ -140,9 +144,16 @@ export function createISMNode({
 }
 
 export function normalizeISMCell(cell, options = {}) {
-  if (!cell || typeof cell !== 'object' || !cell.shape) {
+  if (!cell || typeof cell !== 'object') {
     return null
   }
+  const inferredShape = cell.shape
+    || (cell.data && cell.data.detail && cell.data.detail.type)
+    || (cell.detail && cell.detail.type)
+  if (!inferredShape) {
+    return null
+  }
+  cell = { ...cell, shape: inferredShape }
   const allowedShapes = options.allowedShapes || []
   const isEdge = cell.shape === 'edge'
   if (!isEdge && allowedShapes.length > 0 && !allowedShapes.includes(cell.shape)) {
@@ -203,11 +214,11 @@ export function normalizeISMCell(cell, options = {}) {
         active: Array.isArray(sourceDetail.active) ? sourceDetail.active : [],
         ...sourceDetail,
         animate: {
-          selected: sourceDetail.animate && sourceDetail.animate.selected || [],
+          selected: asArray(sourceDetail.animate && sourceDetail.animate.selected),
           condition: (sourceDetail.animate && sourceDetail.animate.condition) || { ...DEFAULT_CONDITION },
           isExpression: sourceDetail.animate ? !!sourceDetail.animate.isExpression : false,
-          animateList: (sourceDetail.animate && sourceDetail.animate.animateList) || [],
-          animateElement: (sourceDetail.animate && sourceDetail.animate.animateElement) || []
+          animateList: asArray(sourceDetail.animate && sourceDetail.animate.animateList),
+          animateElement: asArray(sourceDetail.animate && sourceDetail.animate.animateElement)
         },
         type: cell.shape,
         style: {

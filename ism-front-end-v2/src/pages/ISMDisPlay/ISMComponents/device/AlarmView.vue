@@ -387,31 +387,23 @@ export default {
             {
               value: _t.trafficWay[i].value,
               name: _t.trafficWay[i].name,
-              itemStyle: {
-                normal: {
-                  borderWidth: 5,
+              itemStyle: {borderWidth: 5,
                   shadowBlur: 20,
                   borderColor:_t.trafficWayColor[i],
-                  shadowColor: _t.trafficWayColor[i]
-                }
-              }
+                  shadowColor: _t.trafficWayColor[i]}
             },
             {
               value: 2,
               name: '',
-              itemStyle: {
-                normal: {
-                  label: {
-                    show: false
-                  },
-                  labelLine: {
-                    show: false
-                  },
-                  color: 'rgba(0, 0, 0, 0)',
+              itemStyle: {color: 'rgba(0, 0, 0, 0)',
                   borderColor: 'rgba(0, 0, 0, 0)',
-                  borderWidth: 0
-                }
-              }
+                  borderWidth: 0},
+            label: {
+                    show: false
+                  },
+            labelLine: {
+                    show: false
+                  }
             }
         );
       }
@@ -446,9 +438,7 @@ export default {
             radius: [_t.EchartsInside+'%', _t.EchartsOutside+'%'],
             // center : ['70%', '50%'],    // 默认全局居中
             hoverAnimation: true,
-            itemStyle: {
-              normal: {
-                label: {
+            label: {
                   show: true,
                   position: 'outside',
                   color:  _t.detail.style.foreColor,
@@ -465,14 +455,12 @@ export default {
                     }
                   },
                 },
-                labelLine: {
+            labelLine: {
                   length:20,
                   length2:10,
                   show: true,
                   color: _t.detail.style.foreColor,
-                }
-              }
-            },
+                },
             data: data
           }
         ]

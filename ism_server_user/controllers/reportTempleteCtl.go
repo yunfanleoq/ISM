@@ -12,9 +12,13 @@ package controllers
 import (
 	"ISMServer/models"
 	protocol_common "ISMServer/protocol/common"
+	"ISMServer/utils/diyreport"
 	"ISMServer/utils/errmsg"
 	"bytes"
 	"encoding/json"
+	"os"
+	"path/filepath"
+	"strings"
 
 	beego "github.com/beego/beego/v2/server/web"
 	"github.com/go-basic/uuid"
@@ -187,6 +191,85 @@ func (c *ReportTempleteController) SaveReportTemplete() {
 
 	c.ServeJSON() //返回json格式
 }
+
+func sanitizeReportTempleteUuid(raw string) (string, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || strings.ContainsAny(raw, `/\`) || strings.Contains(raw, "..") {
+		return "", false
+	}
+	return raw, true
+}
+
+func ensureReportTempleteFile(uuid string) (string, error) {
+	filePath := filepath.Join("static", "reportTemplete", uuid+".xlsx")
+	if _, err := os.Stat(filePath); err == nil {
+		return filePath, nil
+	}
+	if err := os.MkdirAll(filepath.Dir(filePath), os.ModePerm); err != nil {
+		return "", err
+	}
+	xlsx := excelize.NewFile()
+	if err := xlsx.SaveAs(filePath); err != nil {
+		return "", err
+	}
+	return filePath, nil
+}
+
+func (c *ReportTempleteController) GetReportTempleteFile() {
+	uuidStr := strings.TrimSpace(c.GetString("Uuid"))
+	if uuidStr == "" {
+		uuidStr = strings.TrimSpace(c.GetString("uuid"))
+	}
+	if uuidStr == "" {
+		var body struct {
+			Uuid string `json:"Uuid"`
+		}
+		_ = json.Unmarshal(c.Ctx.Input.RequestBody, &body)
+		uuidStr = strings.TrimSpace(body.Uuid)
+	}
+	clean, ok := sanitizeReportTempleteUuid(uuidStr)
+	if !ok {
+		c.Data["json"] = map[string]interface{}{"code": -1, "msg": "invalid uuid"}
+		c.ServeJSON()
+		return
+	}
+	filePath, err := ensureReportTempleteFile(clean)
+	if err != nil {
+		c.Data["json"] = map[string]interface{}{"code": -2, "msg": err.Error()}
+		c.ServeJSON()
+		return
+	}
+	c.Ctx.Output.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	c.Ctx.Output.Download(filePath, clean+".xlsx")
+}
+
+func (c *ReportTempleteController) GetDiyReportFile() {
+	rel := strings.TrimSpace(c.GetString("path"))
+	if rel == "" {
+		var body struct {
+			Path string `json:"path"`
+		}
+		_ = json.Unmarshal(c.Ctx.Input.RequestBody, &body)
+		rel = strings.TrimSpace(body.Path)
+	}
+	full, err := diyreport.ResolveHistoryDataFile(".", rel)
+	if err != nil {
+		c.Data["json"] = map[string]interface{}{
+			"code": -1,
+			"msg":  diyreport.ErrHistoryFile.Error(),
+		}
+		c.ServeJSON()
+		return
+	}
+	name := filepath.Base(full)
+	if strings.EqualFold(filepath.Ext(name), ".zip") {
+		c.Ctx.Output.Header("Content-Type", "application/zip")
+	} else {
+		c.Ctx.Output.Header("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+	}
+	c.Ctx.Output.Download(full, name)
+}
+
 func (c *ReportTempleteController) HandExport() {
 
 	type EditReportTemplete struct {
@@ -196,6 +279,7 @@ func (c *ReportTempleteController) HandExport() {
 
 	var code = -1
 	var path string = ""
+	var failMsg string
 	result := map[string]interface{}{
 		"code": code,
 		"msg":  "成功",
@@ -209,13 +293,13 @@ func (c *ReportTempleteController) HandExport() {
 			code = errmsg.NOTJSON
 		} else {
 			if protocol_common.HistoryRecordDbType == 1 || protocol_common.HistoryRecordDbType == 5 {
-				path, code = models.HandExportModel(editReportTempletes.Uuid)
+				path, code, failMsg = models.HandExportModel(editReportTempletes.Uuid)
 			} else if protocol_common.HistoryRecordDbType == 2 {
-				path, code = models.HandTsExportModel(editReportTempletes.Uuid, protocol_common.HistoryRecordTsDb)
+				path, code, failMsg = models.HandTsExportModel(editReportTempletes.Uuid, protocol_common.HistoryRecordTsDb)
 			} else if protocol_common.HistoryRecordDbType == 4 {
-				path, code = models.HandInfluxdbExportModel(editReportTempletes.Uuid)
+				path, code, failMsg = models.HandInfluxdbExportModel(editReportTempletes.Uuid)
 			} else if protocol_common.HistoryRecordDbType == 3 {
-				path, code = models.HandClickHouseExportModel(editReportTempletes.Uuid)
+				path, code, failMsg = models.HandClickHouseExportModel(editReportTempletes.Uuid)
 			}
 
 		}
@@ -224,6 +308,12 @@ func (c *ReportTempleteController) HandExport() {
 	}
 	result["code"] = code
 	result["path"] = path
+	if code != errmsg.SUCCSECODE {
+		if strings.TrimSpace(failMsg) == "" {
+			failMsg = "自定义报表导出失败"
+		}
+		result["msg"] = failMsg
+	}
 	c.Data["json"] = result
 	c.ServeJSON()
 }

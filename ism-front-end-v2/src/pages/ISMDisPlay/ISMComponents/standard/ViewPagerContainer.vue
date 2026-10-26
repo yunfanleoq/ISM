@@ -172,10 +172,13 @@ Vue.use(Contextmenu);
 import '@/utils/vmodalDrage'
 import AKeepAlive from "@/components/cache/AKeepAlive";
 import {getRealDataByUuid} from "@/services/device";
+import { fetchRealDataByPairs } from "@/utils/realDataBatch";
+import { selectRuntimeRealDemand, readGraphViewport, demandSignature, groupRealDataPush } from "@/pages/ISMDisPlay/utils/runtimeRealDemand";
 import ISMGroupNode from "@/pages/ISMDisPlay/ISMGroupNode.vue";
 import {Graph} from "@antv/x6";
 import {getDisplayModelLayerData,getDisplayModelPagerLayerData,getLayerDataStructByToken} from "@/services/displayModel";
 import {Selection} from "@antv/x6";
+import {isPopUpEnabled} from "@/pages/ISMDisPlay/utils/pageLink";
 res_components["AKeepAlive"] = AKeepAlive
 res_components["SimpleKeyboard"] = SimpleKeyboard
 export default {
@@ -206,8 +209,7 @@ export default {
             }
             _t.chargePage = true
             this.$message.loading({ content: 'Loading...', key: loadingKey, duration: 0 });
-            this.CurrentRealUUIDList=[]
-            this.CurrentModelUUIDList=[]
+            this.retirePagerRealDemand()
             this.selectDisplayPageDataStruct({page:page,callback:function (uuids,devices,isFound){
                 _t.chargePage = false
                 if (isFound === false) {
@@ -215,51 +217,7 @@ export default {
                   _t.$message.error(_t.$t("readData.NotFindPage"))
                   return
                 }
-                setTimeout(function (){
-                  if(uuids.length>0)
-                  {
-                    let newuuids=[]
-                    for(let i=0;i<uuids.length;i++)
-                    {
-                      if((typeof uuids[i]!="undefined")&&(uuids[i].length>0))
-                      {
-                        newuuids.push(uuids[i])
-                      }
-                    }
-                    let newdevices=[]
-                    for(let i=0;i<devices.length;i++)
-                    {
-                      if((typeof devices[i]!="undefined")&&(devices[i].length>0))
-                      {
-                        newdevices.push(devices[i])
-                      }
-                    }
-                    getRealDataByUuid({uuid:newuuids,devices:newdevices}).then(function (res){
-                      _t.settingLoading=false
-                      if(res.data.code==0)
-                      {
-                        for(let k = 0,realDataLen =res.data.realData.length;k<realDataLen;k++)
-                        {
-                          let pushData = {
-                            DeviceUuid:res.data.realData[k].duid,
-                            ProjectUuid:res.data.realData[k].project_uuid,
-                            Cmd:"RealData",
-                            Data:[]
-                          }
-                          _t.CurrentRealUUIDList.push(res.data.realData[k].uuid)
-                          _t.CurrentModelUUIDList.push(res.data.realData[k].mduid)
-                          let DataObj = {
-                            Uuid: res.data.realData[k].uuid,
-                            ModelDataUuid: res.data.realData[k].mduid,
-                            Value: res.data.realData[k].value
-                          }
-                          pushData.Data.push(DataObj)
-                          _t.$EventBus.$emit("readDataPush", pushData);
-                        }
-                      }
-                    })
-                  }
-                },300)
+                _t.refreshPagerRealDemand()
               }})
           }
         },
@@ -353,6 +311,7 @@ export default {
           pageLoadingToken: 0,
           pageLoadingStartedAt: 0,
           pageLoadingEl: null,
+          pageLoadingWatchdogTimer: null,
           pendingClickPageLoadingToken: null,
           _isDestroyed: false,
           detail:null,
@@ -431,6 +390,12 @@ export default {
           CurrentModelUUIDList:[],
           CurrentPopRealUUIDList:[],
           CurrentPopModelUUIDList:[],
+          pagerRealDemandGen: 0,
+          pagerPopRealDemandGen: 0,
+          pagerHoverCellId: '',
+          pagerPopHoverCellId: '',
+          pagerDemandKey: '',
+          pagerPopDemandKey: '',
           Url:"",
           width:600,
           height:600,
@@ -588,107 +553,88 @@ export default {
     },
     methods: {
       InitPagerRealData() {
-        let _t = this
-        const datauuid = this.CurrentPagerRealDataUuidList
-        const devices = this.CurrentPagerRealDeviceUuidList
-        _t.CurrentRealUUIDList=[]
-        _t.CurrentModelUUIDList=[]
-        setTimeout(function (){
-          let newuuids=[]
-          for(let i=0;i<datauuid.length;i++)
-          {
-            if((typeof datauuid[i]!="undefined")&&(datauuid[i].length>0))
-            {
-              newuuids.push(datauuid[i])
-            }
-          }
-          let newdevices=[]
-          for(let i=0;i<devices.length;i++)
-          {
-            if((typeof devices[i]!="undefined")&&(devices[i].length>0))
-            {
-              newdevices.push(devices[i])
-            }
-          }
-          getRealDataByUuid({uuid: newuuids,devices:newdevices}).then(function (res) {
-            _t.settingLoading = false
-            if (res.data.code == 0) {
-              for (let k = 0; k < res.data.realData.length; k++) {
-                if(res.data.realData[k].value=="")
-                {
-                  continue
-                }
-                let pushData = {
-                  DeviceUuid: res.data.realData[k].duid,
-                  ProjectUuid: res.data.realData[k].project_uuid,
-                  Cmd: "RealData",
-                  Data: []
-                }
-                _t.CurrentRealUUIDList.push(res.data.realData[k].uuid)
-                _t.CurrentModelUUIDList.push(res.data.realData[k].mduid)
-                let DataObj = {
-                  Uuid: res.data.realData[k].uuid,
-                  ModelDataUuid: res.data.realData[k].mduid,
-                  Value: res.data.realData[k].value
-                }
-                pushData.Data.push(DataObj)
-                _t.$EventBus.$emit("readDataPush", pushData);
-              }
-            }
-          })
-        },50)
+        this.refreshPagerRealDemand()
       },
       InitPopUpPagerRealData() {
-        let _t = this
-        const datauuid = this.CurrentPagerPopRealDataUuidList
-        const devices = this.CurrentPagerPopRealDeviceUuidList
-        _t.CurrentPopRealUUIDList=[]
-        _t.CurrentPopModelUUIDList=[]
-        setTimeout(function (){
-          if(datauuid.length>0)
-          {
-            let newuuids=[]
-            for(let i=0;i<datauuid.length;i++)
-            {
-              if((typeof datauuid[i]!="undefined")&&(datauuid[i].length>0))
-              {
-                newuuids.push(datauuid[i])
-              }
-            }
-            let newdevices=[]
-            for(let i=0;i<devices.length;i++)
-            {
-              if((typeof devices[i]!="undefined")&&(devices[i].length>0))
-              {
-                newdevices.push(devices[i])
-              }
-            }
-            getRealDataByUuid({uuid:newuuids,devices:newdevices}).then(function (res){
-              _t.settingLoading=false
-              if(res.data.code==0)
-              {
-                for(let k = 0,realDataLen = res.data.realData.length;k<realDataLen;k++)
-                {
-                  let pushData = {
-                    DeviceUuid:res.data.realData[k].duid,
-                    ProjectUuid:res.data.realData[k].project_uuid,
-                    Cmd:"RealData",
-                    Data:[]
-                  }
-                  _t.CurrentPopRealUUIDList.push(res.data.realData[k].uuid)
-                  _t.CurrentPopModelUUIDList.push(res.data.realData[k].mduid)
-                  let DataObj = {
-                    Uuid: res.data.realData[k].uuid,
-                    ModelDataUuid: res.data.realData[k].mduid,
-                    Value: res.data.realData[k].value
-                  }
-                  pushData.Data.push(DataObj)
-                  _t.$EventBus.$emit("readDataPush", pushData);
-                }
-              }
-            })
+        this.refreshPagerPopRealDemand()
+      },
+      retirePagerRealDemand() {
+        this.pagerRealDemandGen += 1
+        this.pagerHoverCellId = ''
+        this.pagerDemandKey = ''
+        this.CurrentRealUUIDList = []
+        this.CurrentModelUUIDList = []
+      },
+      retirePagerPopRealDemand() {
+        this.pagerPopRealDemandGen += 1
+        this.pagerPopHoverCellId = ''
+        this.pagerPopDemandKey = ''
+        this.CurrentPopRealUUIDList = []
+        this.CurrentPopModelUUIDList = []
+      },
+      refreshPagerRealDemand() {
+        const layer = this.LayerContainerData
+        const cells = layer && layer.components ? layer.components.cells : []
+        const demand = selectRuntimeRealDemand(cells, {
+          viewport: readGraphViewport(this.ISMPagerRuningCavasContainer),
+          hoverId: this.pagerHoverCellId,
+        })
+        const key = demandSignature(demand)
+        if (key === this.pagerDemandKey) return
+        const gen = ++this.pagerRealDemandGen
+        this.pagerDemandKey = key
+        this.CurrentRealUUIDList = []
+        this.CurrentModelUUIDList = []
+        if (!demand.pairs.length && !demand.systemUuids.length) return
+        const _t = this
+        fetchRealDataByPairs(getRealDataByUuid, demand, {
+          isStale: function () { return gen !== _t.pagerRealDemandGen || _t._isDestroyed },
+        }).then(function (body) {
+          if (gen !== _t.pagerRealDemandGen || _t._isDestroyed) return
+          _t.settingLoading = false
+          if (!body || body.code != 0) return
+          const grouped = groupRealDataPush(body.realData)
+          _t.CurrentRealUUIDList = grouped.uuids
+          _t.CurrentModelUUIDList = grouped.modelUuids
+          const map = grouped.pushDataMap
+          for (const duid in map) {
+            _t.$EventBus.$emit('readDataPush', map[duid])
           }
-        },50)
+        }).catch(function () {
+          if (gen === _t.pagerRealDemandGen) _t.pagerDemandKey = ''
+        })
+      },
+      refreshPagerPopRealDemand() {
+        const layer = this.PopUpContainerConfigData
+        const cells = layer && layer.components ? layer.components.cells : []
+        const demand = selectRuntimeRealDemand(cells, {
+          viewport: readGraphViewport(this.ISMPopUpRunningContainer),
+          hoverId: this.pagerPopHoverCellId,
+        })
+        const key = demandSignature(demand)
+        if (key === this.pagerPopDemandKey) return
+        const gen = ++this.pagerPopRealDemandGen
+        this.pagerPopDemandKey = key
+        this.CurrentPopRealUUIDList = []
+        this.CurrentPopModelUUIDList = []
+        if (!demand.pairs.length && !demand.systemUuids.length) return
+        const _t = this
+        fetchRealDataByPairs(getRealDataByUuid, demand, {
+          isStale: function () { return gen !== _t.pagerPopRealDemandGen || _t._isDestroyed },
+        }).then(function (body) {
+          if (gen !== _t.pagerPopRealDemandGen || _t._isDestroyed) return
+          _t.settingLoading = false
+          if (!body || body.code != 0) return
+          const grouped = groupRealDataPush(body.realData)
+          _t.CurrentPopRealUUIDList = grouped.uuids
+          _t.CurrentPopModelUUIDList = grouped.modelUuids
+          const map = grouped.pushDataMap
+          for (const duid in map) {
+            _t.$EventBus.$emit('readDataPush', map[duid])
+          }
+        }).catch(function () {
+          if (gen === _t.pagerPopRealDemandGen) _t.pagerPopDemandKey = ''
+        })
       },
       onNodeClick(e,type){
         if(!this.editMode) {
@@ -697,7 +643,8 @@ export default {
       },
       getLayerDataStruct  (data) {
         let params={
-          muid:data.uuid
+          muid:data.uuid,
+          metaOnly:data.metaOnly !== false
         }
         let bangDingData=[]
         let bangDingDeviceSN=[]
@@ -1114,7 +1061,7 @@ export default {
           }
         }
 
-        this.getLayerDataStruct({uuid:page.page.displayUUID,isPopUp:true,cb:function () {
+        this.getLayerDataStruct({uuid:page.page.displayUUID,isPopUp:true,metaOnly:true,cb:function () {
             let PCPageInfo = _t.PCPageList
             let PhonePageInfo = _t.PhonePageList
 
@@ -1385,7 +1332,7 @@ export default {
           }
         }
 
-        this.getLayerDataStruct({uuid:page.page.displayUUID,cb:function (){
+        this.getLayerDataStruct({uuid:page.page.displayUUID,metaOnly:true,cb:function (){
             let PCPageInfo = _t.PCPageList
             let PhonePageInfo = _t.PhonePageList
 
@@ -1528,6 +1475,15 @@ export default {
           }});
       },
       getLayerPagerContainerDataStruct (data) {
+        const templateMap = (this.$store.state.ISMDisPlayEditorTool || {}).navTemplateMap
+        if (templateMap) {
+          const allowed = [templateMap.home, templateMap.deviceList, templateMap.datapointList]
+            .filter(Boolean)
+          if (!allowed.includes(data.pageid)) {
+            data.cb(-4, null, [], [])
+            return
+          }
+        }
         let params={
           pageid:data.pageid
         }
@@ -2020,10 +1976,33 @@ export default {
           return action.action === 'DeviceView' && action.DeviceView && action.DeviceView.isContainer
         })
       },
+      clearPageLoadingWatchdog() {
+        if (this.pageLoadingWatchdogTimer) {
+          clearTimeout(this.pageLoadingWatchdogTimer)
+          this.pageLoadingWatchdogTimer = null
+        }
+      },
+      armPageLoadingWatchdog(token) {
+        const PAGE_LOADING_MAX_MS = 12000
+        this.clearPageLoadingWatchdog()
+        this.pageLoadingWatchdogTimer = setTimeout(() => {
+          this.pageLoadingWatchdogTimer = null
+          if (this._isDestroyed || token !== this.pageLoadingToken) return
+          console.warn('[ViewPagerContainer] pageLoading watchdog force-close', { token })
+          this.forceClosePageLoading(loadingKey)
+        }, PAGE_LOADING_MAX_MS)
+      },
+      forceClosePageLoading(key = loadingKey) {
+        this.clearPageLoadingWatchdog()
+        this.pendingClickPageLoadingToken = null
+        this.unmountBodyPageLoading()
+        this.$message.destroy(key)
+      },
       beginPageLoading(key = loadingKey) {
         this.$message.destroy(key)
         this.pageLoadingToken += 1
         this.pageLoadingStartedAt = Date.now()
+        this.armPageLoadingWatchdog(this.pageLoadingToken)
         this.mountBodyPageLoading()
         return this.pageLoadingToken
       },
@@ -2040,6 +2019,7 @@ export default {
         const token = this.pendingClickPageLoadingToken
         this.pendingClickPageLoadingToken = null
         if (token && token === this.pageLoadingToken) {
+          this.armPageLoadingWatchdog(token)
           return Promise.resolve(token)
         }
         return this.openPageLoading(loadingKey)
@@ -2048,12 +2028,15 @@ export default {
         if (this.pendingClickPageLoadingToken) {
           this.closePageLoading(loadingKey, this.pendingClickPageLoadingToken)
           this.pendingClickPageLoadingToken = null
+        } else {
+          this.forceClosePageLoading(loadingKey)
         }
       },
       closePageLoading(key = loadingKey, token = this.pageLoadingToken) {
         if (token !== this.pageLoadingToken) {
           return
         }
+        this.clearPageLoadingWatchdog()
         const elapsed = Date.now() - this.pageLoadingStartedAt
         const close = () => {
           if (token !== this.pageLoadingToken) {
@@ -4037,7 +4020,10 @@ export default {
       },
       async showPage(linkInfo) {
         //  this.PopUpDialog = false
-        if(typeof linkInfo.isPopUp!='undefined'&& linkInfo.isPopUp==true)
+        if (linkInfo && typeof linkInfo === 'object') {
+          linkInfo.isPopUp = isPopUpEnabled(linkInfo.isPopUp)
+        }
+        if(isPopUpEnabled(linkInfo && linkInfo.isPopUp))
         {
           let _t = this
           this.IsAutoClose = linkInfo.autoClose
@@ -4067,6 +4053,16 @@ export default {
                 if (_t._isDestroyed) { _t.closePageLoading(loadingKey, loadingToken); return }
                 if(res==0)
                 {
+                  const popupPageId = pagerData && (pagerData.PageId || pagerData.pageUuid)
+                  const mainPageId = _t.currentPageUUID
+                  if (popupPageId && mainPageId && String(popupPageId) === String(mainPageId)) {
+                    _t.currentPopUpDisplayUUID = ""
+                    _t.currentPopUpPageUUID = ""
+                    _t.chargePagePopUp = false
+                    _t.closePageLoading(loadingKey, loadingToken)
+                    _t.$message && _t.$message.warning('弹窗目标与当前页相同，请绑定具体子页')
+                    return
+                  }
                   _t.CurrentPagerPopRealDataUuidList = uuids
                   _t.CurrentPagerPopRealDeviceUuidList=devices
                   _t.PopUpContainerConfigData = pagerData
@@ -4137,8 +4133,7 @@ export default {
             const loadingToken = await this.consumePendingPageLoading()
             _t.destroyMainGraph()
             _t.clearPendingTimers('main')
-            _t.CurrentRealUUIDList=[]
-            _t.CurrentModelUUIDList=[]
+            _t.retirePagerRealDemand()
             _t.CurrentPagerRealDataUuidList = []
             _t.CurrentPagerRealDeviceUuidList=[]
             _t.chargePage = true
@@ -4274,12 +4269,16 @@ export default {
             e.stopPropagation()
             const component = node.prop().data.detail
             _t.SelectCurrentNodeData = component
+            _t.pagerHoverCellId = node && node.id ? node.id : ''
+            _t.refreshPagerRealDemand()
             _t.doComponentAction(component, 'mouseenter')
           });
           this.ISMPagerRuningCavasContainer.on('node:mouseleave', ({e, x, y, node, view}) => {
             e.stopPropagation()
             const component = node.prop().data.detail
             _t.SelectCurrentNodeData = component
+            if (node && _t.pagerHoverCellId === node.id) _t.pagerHoverCellId = ''
+            _t.refreshPagerRealDemand()
             _t.doComponentAction(component, 'mouseleave')
           });
           //页面空白处右键菜单
@@ -4413,11 +4412,15 @@ export default {
         this.ISMPopUpRunningContainer.on('node:mouseenter', ( { e, x, y, node, view } ) => {
           const component = node.prop().data.detail
           _t.SelectCurrentNodeData = component
+          _t.pagerPopHoverCellId = node && node.id ? node.id : ''
+          _t.refreshPagerPopRealDemand()
           _t.doComponentAction(component,'mouseenter')
         });
         this.ISMPopUpRunningContainer.on('node:mouseleave', ( { e, x, y, node, view } ) => {
           const component = node.prop().data.detail
           _t.SelectCurrentNodeData = component
+          if (node && _t.pagerPopHoverCellId === node.id) _t.pagerPopHoverCellId = ''
+          _t.refreshPagerPopRealDemand()
           _t.doComponentAction(component,'mouseleave')
         });
         //页面空白处右键菜单
@@ -4567,8 +4570,7 @@ export default {
               _t.destroyMainGraph()
               _t.clearPendingTimers('main')
               _t.chargePage = true
-              _t.CurrentRealUUIDList=[]
-              _t.CurrentModelUUIDList=[]
+              _t.retirePagerRealDemand()
               _t.CurrentPagerRealDataUuidList=[]
               _t.CurrentPagerRealDeviceUuidList=[]
               _t.selectDisplayPageContainerDataStruct({
@@ -5211,7 +5213,7 @@ export default {
               linkType:"Inside",
               Inside:{}
             }
-            if(data.PageID!="") {
+            if(data && data.PageID) {
               if(data.DisPlayID!=undefined&&data.DisPlayID!="")
               {
                 linkInfo.Inside.displayUUID = data.DisPlayID
@@ -5221,6 +5223,8 @@ export default {
               }
               linkInfo.Inside.pageUUID = data.PageID
               _t.showPage(linkInfo)
+            } else {
+              _t.$message && _t.$message.warning(_t.$t('readData.UnboundPage') || '菜单未绑定页面，无法跳转')
             }
           }
         _t.$EventBus.$on("ChargePage", _t.eventHandlers.ChargePage);
@@ -5258,6 +5262,8 @@ export default {
       this.$EventBus.$on('cell-vuex', this.eventHandlers.cellVuex)
     },
     beforeDestroy() {
+      this.retirePagerRealDemand()
+      this.retirePagerPopRealDemand()
       this._isDestroyed = true
       this.clearPendingTimers()
       // 清理 DOM 事件
@@ -5292,7 +5298,7 @@ export default {
       // 清理嵌套 X6 Graph（含异常保护）
       this.destroyPopUpGraph()
       this.destroyMainGraph()
-      this.unmountBodyPageLoading()
+      this.forceClosePageLoading(loadingKey)
     }
 }
 </script>

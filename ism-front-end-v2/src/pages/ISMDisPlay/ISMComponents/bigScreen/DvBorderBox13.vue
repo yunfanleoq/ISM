@@ -1,6 +1,9 @@
 <template>
 
- <dv-border-box-13 :style="{width:detail.style.position.w+'px',height: detail.style.position.h+'px'}">
+ <dv-border-box-13
+   v-if="!isEmbeddedOverviewPanel"
+   :style="{width:detail.style.position.w+'px',height: detail.style.position.h+'px'}"
+ >
 
  </dv-border-box-13>
 </template>
@@ -44,6 +47,12 @@ export default {
 
         },
         deep: true
+      }
+    },
+    computed: {
+      isEmbeddedOverviewPanel() {
+        const name = String((this.detail && this.detail.name) || '')
+        return /(?:chart-power-inner|chart-energy-inner|alarm-inner)$/.test(name)
       }
     },
     data() {

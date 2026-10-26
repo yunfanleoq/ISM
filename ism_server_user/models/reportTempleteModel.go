@@ -10,6 +10,7 @@ package models
 
 import (
 	protocol_common "ISMServer/protocol/common"
+	"ISMServer/utils/diyreport"
 	"ISMServer/utils/errmsg"
 	"archive/zip"
 	"context"
@@ -131,7 +132,7 @@ func EditReportTemplete(Uuid string, editParams ReportTemplete) int {
 
 	return errmsg.SUCCSECODE
 }
-func HandClickHouseExportModel(Uuid string) (string, int) {
+func HandClickHouseExportModel(Uuid string) (string, int, string) {
 	var exportPath string = ""
 	var editParams ReportTemplete
 	var saveFilePath string = "static/HistoryData/"
@@ -140,16 +141,21 @@ func HandClickHouseExportModel(Uuid string) (string, int) {
 	var fileslist []string
 	existError := Db.Model(&ReportTemplete{}).Where("uuid = ?", Uuid).First(&editParams)
 	if existError.Error != nil {
-		return exportPath, errmsg.ERROR_DATABASE
+		return exportPath, errmsg.ERROR_DATABASE, ""
 	}
 
 	jsonErr := json.Unmarshal([]byte(editParams.DeviceUuids), &devcies)
 
 	if jsonErr != nil {
 		logs.Error("解析%s的数据%s列表出错,不是标准的JSON格式", editParams.Name, editParams.DeviceUuids)
-		return exportPath, errmsg.ERROR_DATABASE
+		return exportPath, errmsg.ERROR_DATABASE, ""
 	}
 	reportTemplete := "static/reportTemplete/" + editParams.Uuid + ".xlsx"
+	HistoryName, nameErr := diyreport.ExportPoints(reportTemplete)
+	if nameErr != nil {
+		logs.Error("报表模板 %s 导出失败: %v", editParams.Name, nameErr)
+		return "", errmsg.ERROR, nameErr.Error()
+	}
 	for _, deviceUuid := range devcies {
 		var jinage int = 60
 		ctx := map[string]interface{}{
@@ -159,10 +165,6 @@ func HandClickHouseExportModel(Uuid string) (string, int) {
 		err = doc.ReadTemplate(reportTemplete)
 		if err != nil {
 			fmt.Println(err)
-			continue
-		}
-		HistoryName := []string{}
-		if len(HistoryName) <= 0 {
 			continue
 		}
 		if editParams.TimeGe == 1 {
@@ -184,7 +186,7 @@ func HandClickHouseExportModel(Uuid string) (string, int) {
 		var findHistoryDataModel []DeviceRealData
 		err = Db.Model(&DeviceRealData{}).Where("device_uuid = ? and is_record = 1", deviceUuid).Select("*").Find(&findHistoryDataModel).Error
 		if err != nil || len(findHistoryDataModel) <= 0 {
-			return "", errmsg.ERROR_DATABASE
+			return "", errmsg.ERROR_DATABASE, ""
 		}
 		ctx["DeviceName"] = findHistoryDataModel[0].DeviceName
 		ctx["StepInterval"] = editParams.TimeGe
@@ -293,11 +295,14 @@ func HandClickHouseExportModel(Uuid string) (string, int) {
 		}
 		fileslist = append(fileslist, saveFilePathZip)
 	}
+	if len(fileslist) == 0 {
+		return "", errmsg.ERROR, diyreport.QueryFailMsg
+	}
 	filePath := saveFilePath + editParams.Name + ".zip"
 	ZipFiles(filePath, fileslist, saveFilePath, "")
-	return filePath, errmsg.SUCCSECODE
+	return filePath, errmsg.SUCCSECODE, ""
 }
-func HandExportModel(Uuid string) (string, int) {
+func HandExportModel(Uuid string) (string, int, string) {
 	var exportPath string = ""
 	var editParams ReportTemplete
 	var saveFilePath string = "static/HistoryData/"
@@ -306,16 +311,21 @@ func HandExportModel(Uuid string) (string, int) {
 	var fileslist []string
 	existError := Db.Model(&ReportTemplete{}).Where("uuid = ?", Uuid).First(&editParams)
 	if existError.Error != nil {
-		return exportPath, errmsg.ERROR_DATABASE
+		return exportPath, errmsg.ERROR_DATABASE, ""
 	}
 
 	jsonErr := json.Unmarshal([]byte(editParams.DeviceUuids), &devcies)
 
 	if jsonErr != nil {
 		logs.Error("解析%s的数据%s列表出错,不是标准的JSON格式", editParams.Name, editParams.DeviceUuids)
-		return exportPath, errmsg.ERROR_DATABASE
+		return exportPath, errmsg.ERROR_DATABASE, ""
 	}
 	reportTemplete := "static/reportTemplete/" + editParams.Uuid + ".xlsx"
+	HistoryName, nameErr := diyreport.ExportPoints(reportTemplete)
+	if nameErr != nil {
+		logs.Error("报表模板 %s 导出失败: %v", editParams.Name, nameErr)
+		return "", errmsg.ERROR, nameErr.Error()
+	}
 	for _, deviceUuid := range devcies {
 		var jinage int = 60
 		ctx := map[string]interface{}{
@@ -325,10 +335,6 @@ func HandExportModel(Uuid string) (string, int) {
 		err = doc.ReadTemplate(reportTemplete)
 		if err != nil {
 			fmt.Println(err)
-			continue
-		}
-		HistoryName := []string{}
-		if len(HistoryName) <= 0 {
 			continue
 		}
 		if editParams.TimeGe == 1 {
@@ -350,7 +356,7 @@ func HandExportModel(Uuid string) (string, int) {
 		var findHistoryDataModel []DeviceRealData
 		err = Db.Model(&DeviceRealData{}).Where("device_uuid = ? and is_record = 1", deviceUuid).Select("*").Find(&findHistoryDataModel).Error
 		if err != nil || len(findHistoryDataModel) <= 0 {
-			return "", errmsg.ERROR_DATABASE
+			return "", errmsg.ERROR_DATABASE, ""
 		}
 		ctx["DeviceName"] = findHistoryDataModel[0].DeviceName
 		ctx["StepInterval"] = editParams.TimeGe
@@ -407,7 +413,7 @@ func HandExportModel(Uuid string) (string, int) {
 		}
 		if (protocol_common.InsideDbType == 1 || protocol_common.InsideDbType == 3) && protocol_common.HistoryRecordDbType == 1 {
 			if err := Db.Model(&DevicesHistoryDataList{}).Where("device_uuid = ? AND data_name in ? and record_time>=? AND record_time<=? ", deviceUuid, HistoryName, startTimeBe, endTimeBe).Select("data_name,device_uuid,device_name,model_data_uuid,record_time,data_value").Order("record_time asc ").Find(&getAllDataHistorys).Error; err != nil {
-				return "", errmsg.ERROR_DATABASE
+				return "", errmsg.ERROR_DATABASE, ""
 			}
 		} else {
 			if protocol_common.HistoryRecordDbType == 5 {
@@ -541,11 +547,14 @@ func HandExportModel(Uuid string) (string, int) {
 		}
 		fileslist = append(fileslist, saveFilePathZip)
 	}
+	if len(fileslist) == 0 {
+		return "", errmsg.ERROR, diyreport.QueryFailMsg
+	}
 	filePath := saveFilePath + editParams.Name + ".zip"
 	ZipFiles(filePath, fileslist, saveFilePath, "")
-	return filePath, errmsg.SUCCSECODE
+	return filePath, errmsg.SUCCSECODE, ""
 }
-func HandTsExportModel(Uuid string, dbClient *sql.DB) (string, int) {
+func HandTsExportModel(Uuid string, dbClient *sql.DB) (string, int, string) {
 	var exportPath string = ""
 	var editParams ReportTemplete
 	var saveFilePath string = "static/HistoryData/"
@@ -554,16 +563,21 @@ func HandTsExportModel(Uuid string, dbClient *sql.DB) (string, int) {
 	var fileslist []string
 	existError := Db.Model(&ReportTemplete{}).Where("uuid = ?", Uuid).First(&editParams)
 	if existError.Error != nil {
-		return exportPath, errmsg.ERROR_DATABASE
+		return exportPath, errmsg.ERROR_DATABASE, ""
 	}
 
 	jsonErr := json.Unmarshal([]byte(editParams.DeviceUuids), &devcies)
 
 	if jsonErr != nil {
 		logs.Error("解析%s的数据%s列表出错,不是标准的JSON格式", editParams.Name, editParams.DeviceUuids)
-		return exportPath, errmsg.ERROR_DATABASE
+		return exportPath, errmsg.ERROR_DATABASE, ""
 	}
 	reportTemplete := "static/reportTemplete/" + editParams.Uuid + ".xlsx"
+	HistoryName, nameErr := diyreport.ExportPoints(reportTemplete)
+	if nameErr != nil {
+		logs.Error("报表模板 %s 导出失败: %v", editParams.Name, nameErr)
+		return "", errmsg.ERROR, nameErr.Error()
+	}
 	for _, deviceUuid := range devcies {
 		var jinage int = 60
 		ctx := map[string]interface{}{
@@ -573,10 +587,6 @@ func HandTsExportModel(Uuid string, dbClient *sql.DB) (string, int) {
 		err = doc.ReadTemplate(reportTemplete)
 		if err != nil {
 			fmt.Println(err)
-			continue
-		}
-		HistoryName := []string{}
-		if len(HistoryName) <= 0 {
 			continue
 		}
 		if editParams.TimeGe == 1 {
@@ -598,7 +608,7 @@ func HandTsExportModel(Uuid string, dbClient *sql.DB) (string, int) {
 		var findHistoryDataModel []DeviceRealData
 		err = Db.Model(&DeviceRealData{}).Where("device_uuid = ? and is_record = 1", deviceUuid).Select("*").Find(&findHistoryDataModel).Error
 		if err != nil || len(findHistoryDataModel) <= 0 {
-			return "", errmsg.ERROR_DATABASE
+			return "", errmsg.ERROR_DATABASE, ""
 		}
 		ctx["DeviceName"] = findHistoryDataModel[0].DeviceName
 		ctx["StepInterval"] = editParams.TimeGe
@@ -622,8 +632,16 @@ func HandTsExportModel(Uuid string, dbClient *sql.DB) (string, int) {
 		ctx["TimeRange"] = startTimeBe.Format("2006-01-02 15:04:05") + " " + endTimeBe.Format("2006-01-02 15:04:05")
 		// var getAllDataHistorys []DevicesHistoryDataList
 		var AllDataHistorysMap = make(map[string][]DevicesHistoryDataList, 0)
-		dataListStr := "(" + StringJoin(HistoryName, ",") + ")"
-		querySql := fmt.Sprintf("SELECT * FROM ISMHistoryDb.HistoryDatas where device_uuid = '%s' AND data_name in %s and record_time>='%s' and record_time<='%s' order by record_time asc", deviceUuid, dataListStr, startTimeBe, endTimeBe)
+		tdStart := protocol_common.FormatTDengineTimestamp(startTimeBe)
+		tdEnd := protocol_common.FormatTDengineTimestamp(endTimeBe)
+		querySql, sqlErr := diyreport.BuildTsExportQuerySQL(deviceUuid, HistoryName, tdStart, tdEnd)
+		if sqlErr != nil {
+			logs.Error("报表模板 %s 导出失败: %v", editParams.Name, sqlErr)
+			return "", errmsg.ERROR, sqlErr.Error()
+		}
+		if dbClient == nil {
+			return "", errmsg.ERROR, diyreport.QueryFailMsg
+		}
 		queryRows, err := dbClient.Query(querySql)
 
 		// err = Db.Model(&DevicesHistoryDataList{}).Where("device_uuid = ? AND model_data_uuid in ? and record_time>=? AND record_time<=? ", deviceUuid, ModelDataUuid, startTimeBe, endTimeBe).Select("data_name,device_uuid,device_name,model_data_uuid,record_time,data_value").Order("record_time asc ").Limit(1000000).Find(&getAllDataHistorys).Error
@@ -719,12 +737,15 @@ func HandTsExportModel(Uuid string, dbClient *sql.DB) (string, int) {
 		}
 		fileslist = append(fileslist, saveFilePathZip)
 	}
+	if len(fileslist) == 0 {
+		return "", errmsg.ERROR, diyreport.QueryFailMsg
+	}
 	filePath := saveFilePath + editParams.Name + ".zip"
 	ZipFiles(filePath, fileslist, saveFilePath, "")
-	return filePath, errmsg.SUCCSECODE
+	return filePath, errmsg.SUCCSECODE, ""
 }
 
-func HandInfluxdbExportModel(Uuid string) (string, int) {
+func HandInfluxdbExportModel(Uuid string) (string, int, string) {
 	var exportPath string = ""
 	var editParams ReportTemplete
 	var saveFilePath string = "static/HistoryData/"
@@ -733,16 +754,21 @@ func HandInfluxdbExportModel(Uuid string) (string, int) {
 	var fileslist []string
 	existError := Db.Model(&ReportTemplete{}).Where("uuid = ?", Uuid).First(&editParams)
 	if existError.Error != nil {
-		return exportPath, errmsg.ERROR_DATABASE
+		return exportPath, errmsg.ERROR_DATABASE, ""
 	}
 
 	jsonErr := json.Unmarshal([]byte(editParams.DeviceUuids), &devcies)
 
 	if jsonErr != nil {
 		logs.Error("解析%s的数据%s列表出错,不是标准的JSON格式", editParams.Name, editParams.DeviceUuids)
-		return exportPath, errmsg.ERROR_DATABASE
+		return exportPath, errmsg.ERROR_DATABASE, ""
 	}
 	reportTemplete := "static/reportTemplete/" + editParams.Uuid + ".xlsx"
+	HistoryName, nameErr := diyreport.ExportPoints(reportTemplete)
+	if nameErr != nil {
+		logs.Error("报表模板 %s 导出失败: %v", editParams.Name, nameErr)
+		return "", errmsg.ERROR, nameErr.Error()
+	}
 	for _, deviceUuid := range devcies {
 		var jinage int = 60
 		ctx := map[string]interface{}{
@@ -752,10 +778,6 @@ func HandInfluxdbExportModel(Uuid string) (string, int) {
 		err = doc.ReadTemplate(reportTemplete)
 		if err != nil {
 			fmt.Println(err)
-			continue
-		}
-		HistoryName := []string{}
-		if len(HistoryName) <= 0 {
 			continue
 		}
 		if editParams.TimeGe == 1 {
@@ -777,7 +799,7 @@ func HandInfluxdbExportModel(Uuid string) (string, int) {
 		var findHistoryDataModel []DeviceRealData
 		err = Db.Model(&DeviceRealData{}).Where("device_uuid = ? and is_record = 1", deviceUuid).Select("*").Find(&findHistoryDataModel).Error
 		if err != nil || len(findHistoryDataModel) <= 0 {
-			return "", errmsg.ERROR_DATABASE
+			return "", errmsg.ERROR_DATABASE, ""
 		}
 		ctx["DeviceName"] = findHistoryDataModel[0].DeviceName
 		ctx["StepInterval"] = editParams.TimeGe
@@ -937,7 +959,10 @@ func HandInfluxdbExportModel(Uuid string) (string, int) {
 		}
 		fileslist = append(fileslist, saveFilePathZip)
 	}
+	if len(fileslist) == 0 {
+		return "", errmsg.ERROR, diyreport.QueryFailMsg
+	}
 	filePath := saveFilePath + editParams.Name + ".zip"
 	ZipFiles(filePath, fileslist, saveFilePath, "")
-	return filePath, errmsg.SUCCSECODE
+	return filePath, errmsg.SUCCSECODE, ""
 }

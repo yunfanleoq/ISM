@@ -18,7 +18,6 @@ import (
 	"encoding/gob"
 	"fmt"
 	"math"
-	"math/rand"
 	"net"
 	"net/http"
 	"runtime"
@@ -108,35 +107,6 @@ func writeInsideHistoryData(writeDeviceHistoryData []models.DevicesHistoryDataLi
 		return insertHistoryData(writeDeviceHistoryData, OnceWriteHistoryNumber)
 	}
 	return models.Db.Model(&models.DevicesHistoryDataList{}).CreateInBatches(&writeDeviceHistoryData, OnceWriteHistoryNumber).Error
-}
-
-func writeTDengineHistoryData(writeDeviceHistoryData []models.DevicesHistoryDataList) error {
-	if len(writeDeviceHistoryData) == 0 {
-		return nil
-	}
-	if protocol_common.HistoryRecordTsDb == nil {
-		return fmt.Errorf("history record tdengine db is nil")
-	}
-
-	var insertSQL strings.Builder
-	insertSQL.Grow(len(writeDeviceHistoryData) * 256)
-	tagNo := rand.New(rand.NewSource(time.Now().UnixNano())).Intn(0xFFFFFF)
-	insertSQL.WriteString(fmt.Sprintf("INSERT INTO ISMHistoryDb.HistoryDatas USING ISMHistoryDb.TempleteHistoryDatas  TAGS(%d) VALUES", tagNo))
-	for _, historyData := range writeDeviceHistoryData {
-		insertSQL.WriteString(fmt.Sprintf(" ('%s', '%s','%s','%s','%s','%s','%s','%s','%s') ",
-			historyData.RecordTime.Format("2006-01-02 15:04:05.0000"),
-			historyData.DataName,
-			historyData.DeviceUuid,
-			historyData.ProjectUuid,
-			historyData.DeviceName,
-			historyData.DataUuid,
-			historyData.ModelDataUuid,
-			historyData.DataUnit,
-			historyData.DataValue,
-		))
-	}
-	_, err := protocol_common.HistoryRecordTsDb.Exec(insertSQL.String())
-	return err
 }
 
 func writeInfluxHistoryData(writeDeviceHistoryData []models.DevicesHistoryDataList) error {
@@ -320,6 +290,10 @@ func DealWithHistoryData() {
 		if code != -1 {
 			var build strings.Builder
 			HistoryData := data.(models.DevicesHistoryDataList)
+			if HistoryData.RecordType == 1 || HistoryData.RecordType == 4 {
+				// 定时/整点存储由 DealWithTimedRealtimeHistorySnapshot 独占
+				continue
+			}
 			build.WriteString(HistoryData.DeviceUuid)
 			build.WriteString(HistoryData.DataUuid)
 			key := build.String()
@@ -368,19 +342,22 @@ func DealWithHistoryData() {
 				} else if HistoryData.RecordType == 3 {
 					ChargeValue, err3 := strconv.ParseFloat(HistoryData.RecordDataCharge, 32)
 					if err3 != nil {
-						return
+						time.Sleep(time.Millisecond * 100)
+						continue
 					}
 					currentValue, err := strconv.ParseFloat(HistoryData.DataValue, 32)
 					if err != nil {
-						return
+						time.Sleep(time.Millisecond * 100)
+						continue
 					}
 					oldValue, err1 := strconv.ParseFloat(dataTemp.DataValue, 32)
 					if err1 != nil {
-						return
+						time.Sleep(time.Millisecond * 100)
+						continue
 					}
 					if oldValue == 0 {
 						DeviceHistoryDataTemp[key] = HistoryData
-						return
+						continue
 					}
 					DiffValue := math.Abs(currentValue - oldValue)
 					cr := (DiffValue / oldValue) * 100
@@ -614,7 +591,7 @@ func TraversalHistoryDb() {
 			if err == nil {
 				if protocol_common.HistoryRecordDbType == 2 {
 					indexNo++
-					InsertSqlBuilder.WriteString(fmt.Sprintf(" ('%s', '%s','%s','%s','%s','%s','%s','%s','%s') ", HistoryData.RecordTime.Format("2006-01-02 15:04:05.0000"), HistoryData.DataName, HistoryData.DeviceUuid, HistoryData.ProjectUuid, HistoryData.DeviceName, HistoryData.DataUuid, HistoryData.ModelDataUuid, HistoryData.DataUnit, HistoryData.DataValue))
+					InsertSqlBuilder.WriteString(fmt.Sprintf(" ('%s', '%s','%s','%s','%s','%s','%s','%s','%s') ", protocol_common.FormatTDengineTimestamp(HistoryData.RecordTime), HistoryData.DataName, HistoryData.DeviceUuid, HistoryData.ProjectUuid, HistoryData.DeviceName, HistoryData.DataUuid, HistoryData.ModelDataUuid, HistoryData.DataUnit, HistoryData.DataValue))
 					if indexNo >= OnceWriteHistoryNumber {
 						_, err := protocol_common.HistoryRecordTsDb.Exec(InsertSqlBuilder.String())
 						if err != nil {

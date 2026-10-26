@@ -12,6 +12,20 @@
 
 import {mapMutations} from "vuex";
 import { register } from '@antv/x6-vue-shape'
+
+/** 单个 shape 注册失败不阻断后续组件（避免一个坏组件拖垮整页 fromJSON） */
+function registerShapeSafe(shape, component, tag) {
+  if (!shape || !component) {
+    return false
+  }
+  try {
+    register({ shape, component })
+    return true
+  } catch (e) {
+    console.warn('[ISMBase] register shape failed:', shape, tag || '', e && e.message)
+    return false
+  }
+}
 const toolStandardBoxList = {
   title: "displayConfig.ToolBox.Base.title",
   icon: "icon-standard-application",
@@ -82,6 +96,20 @@ const toolSvgElectricBoxList={
   vueCount:0,
   items:[]
 }
+const toolDcEnvBoxList={
+  title: "displayConfig.ToolBox.DcEnv",
+  "icon": "icon-electric",
+  "opened": false,
+  "isSequence": false,
+  items:[]
+}
+const toolSldBoxList={
+  title: "displayConfig.ToolBox.Sld",
+  "icon": "icon-electric",
+  "opened": false,
+  "isSequence": false,
+  items:[]
+}
 const toolBigScreenBoxContainerList={
   title: "displayConfig.ToolBox.bigScreen.Container",
   icon: "icon-standard-big-screen",
@@ -105,6 +133,8 @@ const componentsCharts = require.context('./ISMComponents/charts/', true, /\.vue
 const componentsBigScreen = require.context('./ISMComponents/bigScreen/', true, /\.vue$/)
 const componentsSvgArrows = require.context('./ISMComponents/svg/arrows/', true, /\.vue$/)
 const componentsSvgElectric = require.context('./ISMComponents/ComponentClassification/electric/', true, /\.vue$/)
+const componentsDcEnv = require.context('./ISMComponents/ComponentClassification/dcenv/', true, /\.vue$/)
+const componentsSld = require.context('./ISMComponents/ComponentClassification/sld/', true, /\.vue$/)
 const componentsImages = require.context('./ISMComponents/Images/', true, /\.vue$/)
 const componentPiping = require.context('../../../public/static/ISM/Conduit', true, /\.png$/)
 const componentPageNavigationList = require.context('../../../public/static/ISM/page/navigation/', true, /\.png$/)
@@ -134,28 +164,94 @@ const mapComponents = require.context('./ISMComponents/map/', true, /\.vue$/)
 
 const historyChartsComponents = require.context('./ISMComponents/historyCharts/', true, /\.vue$/)
 const MesStandardComponentsDir = require.context('./ISMComponents/Mes/standard/', true, /\.vue$/)
+
+// 防御性读取组态组件的 base 样式。
+// require.context 批量扫描注册组态组件时，若个别组件因循环依赖 / 导出残缺，
+// 使得 comp.default.data 不是函数，原本 `comp.default.data().base` 会直接抛
+// TypeError，进而让整个 forEach 中断、ISMBase 模块加载失败，最终路由异步组件
+// 解析失败（"comp.default.data is not a function" 运行时回归）。
+// 这里对单个组件 try/catch 跳过，保证一个坏组件不会拖垮整张大屏的加载。
+function componentDataFn(comp) {
+  const d = comp && comp.default
+  if (!d) return null
+  if (typeof d.data === 'function') {
+    return d.data
+  }
+  // Vue.extend 构造器或 vue-loader 特殊导出
+  if (d.options && typeof d.options.data === 'function') {
+    return d.options.data
+  }
+  return null
+}
+
+function safeBaseOf(comp, filePath) {
+  try {
+    const dataFn = componentDataFn(comp)
+    if (dataFn) {
+      return dataFn().base
+    }
+    console.error('[ISMBase] 跳过无效组态组件(缺少 data 函数): ' + filePath)
+  } catch (e) {
+    console.error('[ISMBase] 组态组件扫描异常已跳过: ' + filePath + ' -> ' + (e && e.message))
+  }
+  return undefined
+}
+// standard 目录中的运行态内部子组件由宿主组件本地注册，不属于 X6 shape / 编辑器工具箱。
+const standardHelperComponents = new Set([
+  './RuntimeDataCardGrid.vue',
+])
 //标准控件
 componentsStandard.keys().forEach(filePath => {
+  if (standardHelperComponents.has(filePath)) {
+    return
+  }
   const keyArr = filePath.split('/')
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
-  let comp = componentsStandard(filePath)
-  let componentsInfo = comp.default.data().base
+  let comp
+  try {
+    comp = componentsStandard(filePath)
+  } catch (e) {
+    console.error('[ISMBase] 跳过加载失败的组件: ' + filePath + ' -> ' + (e && e.message))
+    return
+  }
+  let componentsInfo = safeBaseOf(comp, filePath)
+  const shapeName = comp && comp.default && comp.default.name
+  // 运行态 fromJSON 依赖 X6 shape 注册；base 仅编辑器工具箱需要，二者解耦
+  if (shapeName) {
+    registerShapeSafe(shapeName, comp.default, filePath)
+  }
   if(typeof componentsInfo!="undefined")
   {
-    register({
-      shape: comp.default.name,
-      component: comp.default,
-    })
-    componentsInfo.info.type=comp.default.name
+    componentsInfo.info.type=shapeName
     toolStandardBoxList.items.push(componentsInfo)
   }
   else
   {
-    console.error(filePath+"缺少base基本样式")
+    console.error(filePath+"缺少base基本样式(已尝试 register 供运行态渲染)")
   }
 
 })
+
+// 大屏最常用文本组件：扫描阶段 safeBaseOf 跳过时仍保证运行态可 fromJSON
+try {
+  const vt = componentsStandard('./ViewSvgText.vue')
+  if (vt && vt.default) {
+    registerShapeSafe('view-svg-text', vt.default, 'ViewSvgText-fallback')
+  }
+} catch (e) {
+  console.warn('[ISMBase] ViewSvgText fallback load failed:', e && e.message)
+}
+
+// 导航设备列表/测点表：跨 chunk 静态依赖可能导致 safeBaseOf 失败，单独兜底注册
+try {
+  const vrt = componentsStandard('./ViewRealTable.vue')
+  if (vrt && vrt.default) {
+    registerShapeSafe('ism-view-real-table', vrt.default, 'ViewRealTable-fallback')
+  }
+} catch (e) {
+  console.warn('[ISMBase] ViewRealTable fallback load failed:', e && e.message)
+}
 
 //视频控件
 componentsVideo.keys().forEach(filePath => {
@@ -163,7 +259,7 @@ componentsVideo.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = componentsVideo(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -185,7 +281,7 @@ componentsLogin.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = componentsLogin(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -207,7 +303,7 @@ componentsCanvas.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = componentsCanvas(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -229,7 +325,7 @@ componentsCharts.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = componentsCharts(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -252,7 +348,7 @@ componentsSvgArrows.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = componentsSvgArrows(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -275,7 +371,7 @@ componentsSvgElectric.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = componentsSvgElectric(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -292,6 +388,22 @@ componentsSvgElectric.keys().forEach(filePath => {
     console.error(filePath+"缺少base基本样式")
   }
 })
+function registerPowerGroup(context, groupList) {
+  context.keys().sort().forEach(filePath => {
+    let comp = context(filePath)
+    let componentsInfo = safeBaseOf(comp, filePath)
+    if (typeof componentsInfo != "undefined" && comp.default && comp.default.name) {
+      registerShapeSafe(comp.default.name, comp.default, filePath)
+      componentsInfo.info.type = comp.default.name
+      groupList.items.push(componentsInfo)
+      res_components[componentsInfo.info.type] = comp.default
+    } else {
+      console.error(filePath + "缺少base基本样式")
+    }
+  })
+}
+registerPowerGroup(componentsDcEnv, toolDcEnvBoxList)
+registerPowerGroup(componentsSld, toolSldBoxList)
 // PNG图片组件
 componentsImages.keys().forEach(filePath => {
   let comp = componentsImages(filePath)
@@ -307,7 +419,7 @@ componentsBigScreen.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = componentsBigScreen(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -331,7 +443,7 @@ deviceComponents.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = deviceComponents(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -354,7 +466,7 @@ MesStandardComponentsDir.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = MesStandardComponentsDir(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -377,7 +489,7 @@ historyChartsComponents.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = historyChartsComponents(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -400,7 +512,7 @@ mapComponents.keys().forEach(filePath => {
   const fileName = keyArr.pop()
   const compKey = fileName.replace(/\.vue$/g, '')
   let comp = mapComponents(filePath)
-  let componentsInfo = comp.default.data().base
+  let componentsInfo = safeBaseOf(comp, filePath)
   if(typeof componentsInfo!="undefined")
   {
     register({
@@ -804,6 +916,8 @@ export default {
 
     toolBoxList.push(toolSvgArrowsBoxList)
     toolBoxList.push(toolSvgElectricBoxList)
+    toolBoxList.push(toolDcEnvBoxList)
+    toolBoxList.push(toolSldBoxList)
 
     //==================管道开始========================
     const toolConduitBoxList={

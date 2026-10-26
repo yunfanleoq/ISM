@@ -352,6 +352,13 @@
           </a-form-item>
         </a-form>
       </a-tab-pane>
+      <a-tab-pane key="7">
+        <span slot="tab" style="font-size: 20px">
+          <icon-font type="icon-shujukanban" />
+          {{$t('SystemParams.EnergyOverview.title')}}
+        </span>
+        <energy-overview-params />
+      </a-tab-pane>
     </a-tabs>
     </a-spin>
   </a-card>
@@ -372,6 +379,7 @@ import moment from 'moment';
 import 'moment/locale/zh-cn';
 import  'moment/locale/en-ie';
 import  'moment/locale/zh-tw';
+import EnergyOverviewParams from './EnergyOverviewParams'
 export default {
   name: "SystemParams",
   i18n: require('../../i18n/language'),
@@ -442,7 +450,7 @@ export default {
     };
   },
   components: {
-
+    EnergyOverviewParams,
   },
   created(){
     this.GetSystemWeb()

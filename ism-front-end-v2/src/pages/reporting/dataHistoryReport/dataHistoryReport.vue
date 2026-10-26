@@ -100,6 +100,7 @@
       </a-form>
     </div>
 
+    <div v-if="historyCoverageText" style="margin: 8px 0 12px; color: #555;">{{ historyCoverageText }}</div>
     <a-spin style="padding: 1px;"  :spinning="messageShowLoad" tip="Loading...">
       <a-table :pagination="pagination" :columns="columns" :data-source="dataSource" rowKey="ID">
       <template v-for="(item, index) in columns" :slot="item.slotName">
@@ -122,7 +123,7 @@ import {GetDeviceModelDataList} from "../../../services/device";
 import {GetDataHistoryList} from "../../../services/report";
 import moment from 'moment';
 
-import {formatDate} from '@/utils/common';
+import {formatDate, parseLocalDateTime} from '@/utils/common';
 import {exportExcel} from '@/services/excelExport'
 import 'moment/locale/zh-cn';
 import  'moment/locale/en-ie';
@@ -157,7 +158,8 @@ export default {
           field: "RecordTime",
           //自定义回调函数
           callback: value => {
-            let date = new Date(value)
+            let date = parseLocalDateTime(value)
+            if (!date || isNaN(date.getTime())) return ''
             return formatDate(date,'yyyy-MM-dd hh:mm:ss')
           }
         }
@@ -171,7 +173,8 @@ export default {
           field: "RecordTime",
           //自定义回调函数
           callback: value => {
-            let date = new Date(value)
+            let date = parseLocalDateTime(value)
+            if (!date || isNaN(date.getTime())) return ''
             return formatDate(date,'yyyy-MM-dd hh:mm:ss')
           }
         }
@@ -193,6 +196,7 @@ export default {
       AlarmDataTree:[],
       form: this.$form.createForm(this),
       messageShowLoad:false,
+      historyCoverageText: '',
       advanced: true,
       refIconLoading: false,
       columns: [
@@ -251,7 +255,8 @@ export default {
   },
   filters: {
     formatDate(time) {
-      let date = new Date(time)
+      let date = parseLocalDateTime(time)
+      if (!date || isNaN(date.getTime())) return ''
       return formatDate(date,'yyyy-MM-dd hh:mm:ss')
     },
   },
@@ -410,6 +415,7 @@ export default {
 
 
       _t.dataSource = []
+      _t.historyCoverageText = ''
       const params = {
         deviceList:this.SelectDevice,
         dataList:this.SelectAlarmData,
@@ -425,7 +431,21 @@ export default {
       GetDataHistoryList(params).then(function (res){
         if(res.data.code==0)
         {
-          _t.dataSource =res.data.list
+          _t.dataSource =res.data.list || []
+          if (res.data.truncated) {
+            _t.$message.warning(res.data.msg || '结果过多，已只返回前 10 万行')
+          }
+          const rows = _t.dataSource || []
+          const uniq = {}
+          rows.forEach(function (r) {
+            const id = (r && (r.DataUuid || r.ModelDataUuid)) || ((r && r.DeviceName || '') + '/' + (r && r.DataName || ''))
+            if (id) uniq[id] = true
+          })
+          const hit = Object.keys(uniq).length
+          const selected = (_t.SelectAlarmData || []).length
+          _t.historyCoverageText = selected
+            ? ('本次命中 ' + hit + ' 个不同测点 / 已选 ' + selected + ' 个测点，共 ' + rows.length + ' 条')
+            : ('本次命中 ' + hit + ' 个不同测点，共 ' + rows.length + ' 条')
         }
         _t.messageShowLoad=false
       })

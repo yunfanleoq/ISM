@@ -248,13 +248,13 @@
                   <div v-if="diyData.type==5">
                     <vue-hover-mask>
                       <!-- 默认插槽 -->
-                      <img v-if="configObject.style.diy[diyIndex].value!=''"  style="width: 200px;height:200px;cursor: pointer" :src="configObject.style.diy[diyIndex].value" />
+                      <img v-if="configObject.style.diy[diyIndex].value!=''"  style="width: 200px;height:200px;cursor: pointer" :src="resolveDiyImage(configObject.style.diy[diyIndex].value)" />
                       <div v-else :style="{width: '200px',height:'200px',cursor: 'pointer','background-color':'#F2F2F2'}"></div>
                       <!-- action插槽 -->
                       <template v-slot:action>
                         <span style="font-size: 14px" @click="showSystemImageModel(1,diyIndex)">{{$t('component.systemImageModel.selectImage')}}</span>
                         <a-divider type="vertical" />
-                        <span  style="font-size: 14px" @click="configObject.style.diy[diyIndex].value=''">{{$t('component.systemImageModel.delImage')}}</span>
+                        <span  style="font-size: 14px" @click="clearDiyImage(diyIndex)">{{$t('component.systemImageModel.delImage')}}</span>
                       </template>
                     </vue-hover-mask>
                   </div>
@@ -368,6 +368,21 @@
                 </a-form-item>
               </div>
             </template>
+
+            <div v-if="isImageHotspotComponent">
+              <a-form-item label="悬停/点击测点">
+                <div v-for="(bind, bindIndex) in imageDataBind" :key="'img-bind-'+bindIndex" style="margin-bottom:6px;display:flex;align-items:center;">
+                  <a-input :value="bindDisplayName(bind)" readOnly size="small">
+                    <a-tooltip slot="addonAfter" title="选择测点">
+                      <icon-font @click="ShowDeviceDataModel(bindIndex,'data')" type="icon-xuanzeshuju" />
+                    </a-tooltip>
+                  </a-input>
+                  <a-icon type="delete" @click="removeImageDataBind(bindIndex)" style="margin-left:6px;cursor:pointer;color:#eb2f96"/>
+                </div>
+                <a-button size="small" icon="plus" @click="addImageDataBind">添加测点</a-button>
+                <div style="color:#888;font-size:12px;margin-top:4px;">运行态点击或悬停图片，弹出已绑定测点实时值</div>
+              </a-form-item>
+            </div>
 
           </a-form>
         </a-tab-pane>
@@ -1261,7 +1276,7 @@
                         <div v-if="diyData.type==5">
                           <vue-hover-mask>
                             <!-- 默认插槽 -->
-                            <img v-if="configObject.animate.animateElement[index].elementList[diyIndex].value!=''"  style="width: 200px;height:200px;cursor: pointer" :src="configObject.animate.animateElement[index].elementList[diyIndex].value" />
+                            <img v-if="configObject.animate.animateElement[index].elementList[diyIndex].value!=''"  style="width: 200px;height:200px;cursor: pointer" :src="resolveDiyImage(configObject.animate.animateElement[index].elementList[diyIndex].value)" />
                             <div v-else :style="{width: '200px',height:'200px',cursor: 'pointer','background-color':'#F2F2F2'}"></div>
                             <!-- action插槽 -->
                             <template v-slot:action>
@@ -1539,6 +1554,7 @@ import codeEditor from '@/components/CodeEditor/index'
 import {setGroupList} from "@/store/ISM/actions";
 import { cloneDeep } from 'lodash-es'
 import {GetSQLReportTempletes} from "@/services/SqlReportTemplete";
+import { resolveDisplayAssetUrl } from '@/pages/ISMDisPlay/utils/displayAssetUrl'
 export default {
   name: 'ISMProperties',
   i18n: require('../../i18n/language'),
@@ -1820,6 +1836,16 @@ export default {
             [{ label: '向上', value: 'up' }, { label: '向下', value: 'down' }] : [{ label: '向右', value: 'right' }, { label: '向左', value: 'left' }];
       }
       return items;
+    },
+    isImageHotspotComponent () {
+      const type = this.configObject && this.configObject.type
+      return type === 'ism-view-png-image' || type === 'image' || type === 'view-svg-image' || type === 'view-svg-text' || type === 'ism-view-svg-text'
+    },
+    imageDataBind () {
+      if (!this.configObject || !Array.isArray(this.configObject.dataBind)) {
+        return []
+      }
+      return this.configObject.dataBind
     }
   },
   created(){
@@ -1846,7 +1872,13 @@ export default {
         editorEl.classList.remove('editor-fullscreen')
       }
     },
+    hasSelectedNode(){
+      return !!(this.selectedNode && this.selectedNodePops && this.selectedNodePops.data)
+    },
     UpdateNode(){
+      if (!this.hasSelectedNode()) {
+        return
+      }
       const tdata = this.selectedNodePops.data
       const popsData = this.selectedNodePops
       let NodeAngle = popsData.angle
@@ -1870,6 +1902,9 @@ export default {
       })
     },
     UpdateNodeData(){
+      if (!this.hasSelectedNode()) {
+        return
+      }
       const tdata = this.selectedNodePops.data
       const popsData = this.selectedNodePops
       const Visible = tdata.detail.style.visible==1?true:false
@@ -2412,12 +2447,30 @@ export default {
     },
     onSelectData(selectData) {
 
+      if(this.BandType=="data" && Array.isArray(selectData)) {
+        this.applyCheckedDataBinds(selectData)
+        this.UpdateNodeData()
+        return
+      }
       if(this.BandType=="data") {
+        if (!Array.isArray(this.configObject.dataBind)) {
+          this.$set(this.configObject, 'dataBind', [])
+        }
+        if (!this.configObject.dataBind[this.selectBandDataIndex]) {
+          this.$set(this.configObject.dataBind, this.selectBandDataIndex, {
+            DeviceName: '',
+            isBandDevice: false,
+            deviceSN: '',
+            dataName: '',
+            dataID: ''
+          })
+        }
         this.configObject.dataBind[this.selectBandDataIndex].DeviceName=selectData.DeviceName
         this.configObject.dataBind[this.selectBandDataIndex].isBandDevice = selectData.IsDevice
         this.configObject.dataBind[this.selectBandDataIndex].deviceSN = selectData.DeviceSN
         this.configObject.dataBind[this.selectBandDataIndex].dataName = selectData.name
         this.configObject.dataBind[this.selectBandDataIndex].dataID = selectData.uuid
+        this.configObject.dataBind[this.selectBandDataIndex].dataUnit = selectData.unit || selectData.dataUnit || ''
       }
       else if(this.BandType=="active") {
         this.configObject.active[this.selectBandDataIndex].DeviceName=selectData.DeviceName
@@ -2458,10 +2511,82 @@ export default {
       }
       this.UpdateNodeData()
     },
+    bindDisplayName(bind) {
+      if (!bind) return ''
+      if (bind.DeviceName && bind.dataName) return bind.DeviceName + ' / ' + bind.dataName
+      return bind.dataName || bind.DeviceName || ''
+    },
+    addImageDataBind() {
+      if (!this.configObject) return
+      if (!Array.isArray(this.configObject.dataBind)) {
+        this.$set(this.configObject, 'dataBind', [])
+      }
+      this.configObject.dataBind.push({
+        DeviceName: '',
+        isBandDevice: false,
+        deviceSN: '',
+        dataName: '',
+        dataID: ''
+      })
+      this.ShowDeviceDataModel(this.configObject.dataBind.length - 1, 'data')
+    },
+    removeImageDataBind(index) {
+      if (!this.configObject || !Array.isArray(this.configObject.dataBind)) return
+      this.configObject.dataBind.splice(index, 1)
+      this.UpdateNodeData()
+    },
     ShowDeviceDataModel(index,type){
       this.selectBandDataIndex = index;
       this.BandType = type
-      this.$refs.deviceDataModel.showDataModal()
+      this.$refs.deviceDataModel.showDataModal({ multiSelect: type === 'data' })
+    },
+    makeDataBindItem(selectData) {
+      return {
+        DeviceName: selectData.DeviceName,
+        isBandDevice: selectData.IsDevice,
+        deviceSN: selectData.DeviceSN,
+        dataName: selectData.name,
+        dataID: selectData.uuid,
+        dataUnit: selectData.unit || selectData.dataUnit || ''
+      }
+    },
+    applyCheckedDataBinds(points) {
+      if (!this.configObject) return
+      if (!Array.isArray(this.configObject.dataBind)) {
+        this.$set(this.configObject, 'dataBind', [])
+      }
+      const binds = this.configObject.dataBind
+      const seen = {}
+      for (let i = 0; i < binds.length; i++) {
+        const id = binds[i] && binds[i].dataID
+        if (id) seen[id] = true
+      }
+      const fresh = []
+      const list = Array.isArray(points) ? points : []
+      for (let i = 0; i < list.length; i++) {
+        const point = list[i]
+        const id = point && point.uuid
+        if (!id || seen[id]) continue
+        seen[id] = true
+        fresh.push(point)
+      }
+      const idx = this.selectBandDataIndex
+      const slot = binds[idx]
+      const slotEmpty = !slot || !slot.dataID
+      if (!fresh.length) {
+        if (slot && !slot.dataID) {
+          binds.splice(idx, 1)
+        }
+        return
+      }
+      let start = 0
+      if (slotEmpty) {
+        this.$set(binds, idx, this.makeDataBindItem(fresh[0]))
+        start = 1
+      }
+      for (let i = start; i < fresh.length; i++) {
+        binds.push(this.makeDataBindItem(fresh[i]))
+      }
     },
     changeAction(v,index){
       if(v=='SetValue')
@@ -2758,10 +2883,26 @@ export default {
       else if(this.selectImageType==1)
       {
         this.configObject.style.diy[this.selectBandDiyDataIndex].value=url
+        if (this.configObject.style.diy[this.selectBandDiyDataIndex].key === 'imageURL') {
+          this.$set(this.configObject.style, 'imageURL', url)
+        }
       }
       else if(this.selectImageType==2)
       {
         this.configObject.active[0].condition.StatusList[this.selectBandDiyDataIndex].Image=url
+      }
+      this.UpdateNodeData()
+    },
+    resolveDiyImage(url){
+      return resolveDisplayAssetUrl(url) || url
+    },
+    clearDiyImage(diyIndex){
+      if (!this.configObject || !this.configObject.style || !this.configObject.style.diy) {
+        return
+      }
+      this.configObject.style.diy[diyIndex].value = ''
+      if (this.configObject.style.diy[diyIndex].key === 'imageURL') {
+        this.$set(this.configObject.style, 'imageURL', '')
       }
       this.UpdateNodeData()
     },

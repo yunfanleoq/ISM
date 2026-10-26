@@ -40,7 +40,7 @@
                       <vue-hover-mask>
                         <!-- 默认插槽 -->
                         <div style="text-align: center;display: block;width: 128px;height: 128px;cursor: pointer">
-                          <img  style="width: 100%;height: 100%;cursor: pointer" :src="item.imgurl" />
+                          <img  style="width: 100%;height: 100%;cursor: pointer" :src="resolveAsset(item.imgurl)" />
                         </div>
                         <!-- action插槽 -->
                         <template v-slot:action>
@@ -52,7 +52,7 @@
                     </a-list-item>
                   </a-list>
                   <a-modal :visible="previewVisible" :footer="null" @cancel="viewImageCancel" style="min-height: 100px">
-                    <img alt="预览" style="width: 100%;min-height: 100px" :src="previewImage" />
+                    <img alt="预览" style="width: 100%;min-height: 100px" :src="resolveAsset(previewImage)" />
                   </a-modal>
                 </div>
               </div>
@@ -83,7 +83,7 @@
                       <vue-hover-mask @click="selectImage(item)">
                         <!-- 默认插槽 -->
                         <div class="companyImg" style="width: 64px;height: 64px;float: left;">
-                          <img style="width: 64px;height: 64px;" :src="item">
+                          <img style="width: 64px;height: 64px;" :src="resolveAsset(item)">
                         </div>
                         <!-- action插槽 -->
                         <template v-slot:action  >
@@ -110,7 +110,7 @@
                       <vue-hover-mask @click="selectImage(item)">
                         <!-- 默认插槽 -->
                         <div class="companyImg" style="width: 64px;height: 64px;float: left;">
-                          <img style="width: 64px;height: 64px;" :src="item">
+                          <img style="width: 64px;height: 64px;" :src="resolveAsset(item)">
                         </div>
                         <!-- action插槽 -->
                         <template v-slot:action  >
@@ -158,7 +158,7 @@
                     </a-list-item>
                   </a-list>
                   <a-modal :visible="previewVisible" :footer="null" @cancel="viewImageCancel" style="min-height: 100px">
-                    <img alt="预览" style="width: 100%;min-height: 100px" :src="previewImage" />
+                    <img alt="预览" style="width: 100%;min-height: 100px" :src="resolveAsset(previewImage)" />
                   </a-modal>
                 </div>
               </div>
@@ -202,7 +202,7 @@
                     </a-list-item>
                   </a-list>
                   <a-modal :visible="previewVisible" :footer="null" @cancel="viewImageCancel" style="min-height: 100px">
-                    <img alt="预览" style="width: 100%;min-height: 100px" :src="previewImage" />
+                    <img alt="预览" style="width: 100%;min-height: 100px" :src="resolveAsset(previewImage)" />
                   </a-modal>
                 </div>
               </div>
@@ -221,6 +221,7 @@
 import {SYSTEMIMAGEUPLOAD} from "@/services/api";
 import {systemImageList,systemImageDel} from "@/services/systemImages";
 import VueHoverMask from "@/components/VueHoverMask/VueHoverMask"
+import { resolveDisplayAssetUrl } from "@/pages/ISMDisPlay/utils/displayAssetUrl"
 
 const SystemImageButtonList = require.context("../../../public/static/ISM/systemImage/button/", false, /\.png$/)
 const SystemImageSafeList = require.context("../../../public/static/ISM/systemImage/safe/", false, /\.png$/)
@@ -392,6 +393,9 @@ export default {
     selectImage(url){
       this.$emit("onSelectImage", url);
       this.systemImageModelDialog =false
+    },
+    resolveAsset(url){
+      return resolveDisplayAssetUrl(url) || url
     },
     delImage(url){
       let _t = this

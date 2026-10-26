@@ -6,7 +6,7 @@
       </a>
     </div>
     <div class="copyright">
-      {{ $t('copyright.Version') }}:{{version}} Operated by <a :href="'http://'+systemUrl" target="_blank">{{systemCompany}}</a>
+      {{ $t('copyright.Version') }}:{{version}} · {{systemCompany}}
     </div>
     <div class="copyright">
       Copyright<a-icon type="copyright" />{{copyright}}

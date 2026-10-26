@@ -1,3 +1,5 @@
+//go:build (linux || windows) && cgo
+
 package iec61850
 
 // this file is used to import all the packages that are needed include cgo files

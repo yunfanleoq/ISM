@@ -560,6 +560,8 @@ export default {
       const componentsBigScreen = require.context('@/pages/ISMDisPlay/ISMComponents/bigScreen/', true, /\.vue$/)
       const componentsSvgArrows = require.context('@/pages/ISMDisPlay/ISMComponents/svg/arrows/', true, /\.vue$/)
       const componentsSvgElectric = require.context('@/pages/ISMDisPlay/ISMComponents/ComponentClassification/electric/', true, /\.vue$/)
+      const componentsDcEnv = require.context('@/pages/ISMDisPlay/ISMComponents/ComponentClassification/dcenv/', true, /\.vue$/)
+      const componentsSld = require.context('@/pages/ISMDisPlay/ISMComponents/ComponentClassification/sld/', true, /\.vue$/)
       const componentsImages = require.context('@/pages/ISMDisPlay/ISMComponents/Images/', true, /\.vue$/)
       const deviceComponents = require.context('@/pages/ISMDisPlay/ISMComponents/device/', true, /\.vue$/)
       const mapComponents = require.context('@/pages/ISMDisPlay/ISMComponents/map/', true, /\.vue$/)
@@ -582,6 +584,8 @@ export default {
       const toolChartsBoxList = { title: "displayConfig.ToolBox.Charts.title", icon: "icon-standard-chart-bar", opened: false, items: [] }
       const toolSvgArrowsBoxList = { title: "displayConfig.ToolBox.Arrows", icon: "icon-standard-arrows", opened: false, isSequence: true, items: [] }
       const toolSvgElectricBoxList = { title: "displayConfig.ToolBox.Electric", icon: "icon-electric", opened: false, isSequence: true, vueCount: 0, items: [] }
+      const toolDcEnvBoxList = { title: "displayConfig.ToolBox.DcEnv", icon: "icon-electric", opened: false, isSequence: false, items: [] }
+      const toolSldBoxList = { title: "displayConfig.ToolBox.Sld", icon: "icon-electric", opened: false, isSequence: false, items: [] }
       const toolBigScreenBoxContainerList = { title: "displayConfig.ToolBox.bigScreen.Container", icon: "icon-standard-big-screen", opened: false, items: [] }
       const toolDeviceContainerList = { title: "displayConfig.ToolBox.device.Container", icon: "icon-device", opened: false, items: [] }
       const toolImagesBoxList = { title: "configComponent.image.Text", icon: "icon-image", opened: false, items: [] }
@@ -681,6 +685,21 @@ export default {
           }
         }
       })
+
+      function fillPowerGroup(context, groupList) {
+        context.keys().sort().forEach(filePath => {
+          const comp = context(filePath)
+          if (comp.default && comp.default.data) {
+            const base = comp.default.data().base
+            if (base && base.info) {
+              base.info.type = comp.default.name
+              groupList.items.push(base)
+            }
+          }
+        })
+      }
+      fillPowerGroup(componentsDcEnv, toolDcEnvBoxList)
+      fillPowerGroup(componentsSld, toolSldBoxList)
 
       deviceComponents.keys().forEach(filePath => {
         const comp = deviceComponents(filePath)
@@ -810,6 +829,8 @@ export default {
       toolBoxList.push(toolMapBoxList)
       toolBoxList.push(toolSvgArrowsBoxList)
       toolBoxList.push(toolSvgElectricBoxList)
+      toolBoxList.push(toolDcEnvBoxList)
+      toolBoxList.push(toolSldBoxList)
       toolBoxList.push(toolConduitBoxList)
       toolBoxList.push(toolBoxHVACList)
       toolBoxList.push(toolBoxElectricMachineryList)

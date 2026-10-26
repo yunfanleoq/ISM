@@ -461,6 +461,11 @@ export default {
            if((_t.editMode)&&(!this.IsToolBox)){
              return
            }
+           if(data.ID == "GroupStrokeColor")
+           {
+             _t.strokeColor = data.result
+             return
+           }
            if(data.ID == "ControlStatus")
            {
              let TempStatusValue = parseFloat(data.result)

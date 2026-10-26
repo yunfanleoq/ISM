@@ -402,15 +402,19 @@ export default {
           this.CurrentRealUUIDList=[]
           this.CurrentModelUUIDList=[]
           this.getLayerDataStruct({
-            pageType: this.isMobile, uuid: this.showUuid, cb: function (errno, project_uuid, datauuid,devices) {
+            pageType: this.isMobile, uuid: this.showUuid, metaOnly: true, cb: function (errno, project_uuid, datauuid,devices) {
               document.title = _t.configData.AppName
               if (errno == 0) {
                 if (!checkAuthorization(AUTH_TYPE.AUTH1)) {
                   setAuthorization({token: project_uuid}, AUTH_TYPE.AUTH1)
                 }
               } else {
-                _t.$router.push('/login')
                 _t.$message.destroy()
+                if (!checkAuthorization(AUTH_TYPE.BEARER)) {
+                  _t.$router.push('/login')
+                  return
+                }
+                _t.$message.error(_t.$t('Render.GetPageError'))
                 return
               }
               _t.$message.destroy()

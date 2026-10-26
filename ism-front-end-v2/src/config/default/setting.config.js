@@ -43,6 +43,6 @@ module.exports = {
   WSPort:"10215",
   WSAddress:"local",
   IsLicense:false,
-  IsOEM:false,
+  IsOEM:true,
   skeletonLoading:true,
 }

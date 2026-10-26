@@ -45,12 +45,23 @@ Vue.use(VueResource)
 Vue.component('icon-font',IconFont)
 
 Vue.prototype.$EventBus = new Vue()
+// 供 X6 组态子组件跨 chunk 安全读 store（禁止在 ism-render chunk 内 require @/store）
+if (typeof window !== 'undefined') {
+  window.__ISM_STORE__ = store
+}
 
-bootstrap({router, store, i18n, message: Vue.prototype.$message})
-
-new Vue({
-  router,
-  store,
-  i18n,
-  render: h => h(App),
-}).$mount('#app')
+// 必须等 bootstrap（含 loadRoutes）完成后再挂载，
+// 否则深链刷新会在菜单路由注册前命中 path:'*' → 客户端 404 闪现
+async function startApp() {
+  await bootstrap({router, store, i18n, message: Vue.prototype.$message})
+  if (typeof window !== 'undefined') {
+    window.__ISM_STORE__ = store
+  }
+  new Vue({
+    router,
+    store,
+    i18n,
+    render: h => h(App),
+  }).$mount('#app')
+}
+startApp()
