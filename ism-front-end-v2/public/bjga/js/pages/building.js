@@ -30,11 +30,38 @@
   function roomNo(n) { var m = String(n).match(/(\d+)/); return m ? Number(m[1]) : 0; }
   function hotOf(r) { return r.alarmN >= 200; }
 
+  /* 五级钻取演示锚点（园区→楼→房→柜→设备） */
+  function drill5Pick(Dd) {
+    var room = (Dd.rooms || []).filter(function (r) { return r.name === '3层2#数据机房'; })[0]
+      || (Dd.rooms || []).filter(function (r) { return r.type === '主机房' && r.cabCount; })[0]
+      || (Dd.rooms || [])[0];
+    if (!room) return { room: '', cab: '', dev: '' };
+    var cab = (room.cabinets || []).filter(function (c) { return c.dev > 0; })[0];
+    var cabName = cab ? cab.name : '';
+    var dev = '';
+    if (cabName) {
+      var ix = cabIndex();
+      var items = ix[cabName] || [];
+      if (items.length) dev = items[0].sn;
+    }
+    return { room: room.name, floor: room.floor, cab: cabName, dev: dev };
+  }
+
+  function campusLabel(Dd) {
+    var m = (Dd && Dd.meta) || {};
+    return m.campus || m.project || '信息化园区';
+  }
+
+  function buildingLabel() {
+    return '数据中心主体楼';
+  }
+
   /* ---------------- 页面 ---------------- */
   A.register('building', {
     render: function (root) {
       var self = this;
-      this.state = { floor: null, room: null, cab: null };
+      this.state = { site: true, floor: null, room: null, cab: null, dev: null };
+      this.drill5 = drill5Pick(D());
       this.entryBack = '';
       if (!this.mode) this.mode = '3d';   /* 2D / 3D 在下钻时保持一致；默认 3D 进入沉浸式巡检 */
 
@@ -80,7 +107,7 @@
         if (v && v.fitRack) v.fitRack();
       });
 
-      if (!this.openFromHash()) this.viewBuilding(null, true);
+      if (!this.openFromHash()) this.viewCampus(null, true);
     },
 
     /* 只读 hash：#/building/floor/4F/assetmgr 或 #/building/room/机房名/assetmgr
@@ -91,6 +118,11 @@
       var parts = raw.split('/');
       var fromDash = parts.length && parts[parts.length - 1] === '~dashboard';
       if (fromDash) parts.pop();
+      if (parts[1] === 'drill5') {
+        this.entryBack = '';
+        this.viewCampus(null, true);
+        return true;
+      }
       if (parts[0] !== 'building' || (parts[1] !== 'floor' && parts[1] !== 'room')) return false;
       var name = parts[2] || '';
       try { name = decodeURIComponent(name); } catch (e) {}
@@ -142,9 +174,11 @@
     },
     redraw: function () {
       var s = this.state;
-      if (s.cab) this.viewCab(s.cab, null);
+      if (s.dev) this.viewDevice(s.dev, null);
+      else if (s.cab) this.viewCab(s.cab, null);
       else if (s.room) this.viewRoom(s.room, null);
       else if (s.floor) this.viewFloor(s.floor, null);
+      else if (s.site) this.viewCampus(null, true);
       else this.viewBuilding(null, true);
     },
     isoLegend: function (tip) {
@@ -253,38 +287,138 @@
     /* ---------------- 面包屑 ---------------- */
     crumbs: function () {
       var s = this.state, out = [];
-      var backTop = String(this.entryBack || '').split('/')[0];
-      var rootLabel = backTop === 'assetmgr' ? '资产管理' : (backTop === 'dashboard' ? '总览' : '整栋楼');
-      out.push('<span class="crumb-item' + (!s.floor ? ' is-cur' : '') + '" data-lv="0">' + rootLabel + '</span>');
-      if (s.floor) out.push('<span class="crumb-sep">›</span><span class="crumb-item' + (!s.room ? ' is-cur' : '') + '" data-lv="1">' + s.floor + '</span>');
-      if (s.room) out.push('<span class="crumb-sep">›</span><span class="crumb-item' + (!s.cab ? ' is-cur' : '') + '" data-lv="2">' + A.esc(s.room) + '</span>');
-      if (s.cab) out.push('<span class="crumb-sep">›</span><span class="crumb-item is-cur" data-lv="3">' + A.esc(s.cab.split('-').slice(-2).join('-')) + ' 机柜</span>');
+      var Dd = D();
+      var cur0 = !!s.site;
+      var cur1 = !s.site && !s.room && !s.cab && !s.dev;
+      var cur2 = !!s.room && !s.cab && !s.dev;
+      var cur3 = !!s.cab && !s.dev;
+      var cur4 = !!s.dev;
+      out.push('<span class="crumb-item' + (cur0 ? ' is-cur' : '') + '" data-lv="0">' + A.esc(campusLabel(Dd)) + '</span>');
+      if (!s.site) {
+        out.push('<span class="crumb-sep">›</span><span class="crumb-item' + (cur1 ? ' is-cur' : '') + '" data-lv="1">' +
+          A.esc(buildingLabel()) + (s.floor ? ' · ' + s.floor : '') + '</span>');
+      }
+      if (s.room) {
+        out.push('<span class="crumb-sep">›</span><span class="crumb-item' + (cur2 ? ' is-cur' : '') + '" data-lv="2">' + A.esc(s.room) + '</span>');
+      }
+      if (s.cab) {
+        out.push('<span class="crumb-sep">›</span><span class="crumb-item' + (cur3 ? ' is-cur' : '') + '" data-lv="3">' +
+          A.esc(s.cab.split('-').slice(-2).join('-')) + ' 机柜</span>');
+      }
+      if (s.dev) {
+        var a = Dd.assets.filter(function (x) { return x.sn === s.dev; })[0];
+        var dn = a ? (a.brand + ' ' + a.model) : s.dev;
+        out.push('<span class="crumb-sep">›</span><span class="crumb-item' + (cur4 ? ' is-cur' : '') + '" data-lv="4">' + A.esc(dn) + '</span>');
+      }
       this.crumb.innerHTML = out.join('');
     },
 
     jump: function (lv) {
       var s = this.state;
       if (lv === 0) {
-        if (this.entryBack) { A.go(this.entryBack); return; }
-        s.floor = s.room = s.cab = null; this.viewBuilding(this.cam);
+        if (this.entryBack && s.site) { A.go(this.entryBack); return; }
+        s.site = true; s.floor = s.room = s.cab = s.dev = null;
+        this.viewCampus(this.cam, true);
       }
-      else if (lv === 1) { s.room = s.cab = null; this.viewFloor(s.floor, this.cam); }
-      else if (lv === 2) { s.cab = null; this.viewRoom(s.room, this.cam); }
+      else if (lv === 1) {
+        s.site = false; s.room = s.cab = s.dev = null;
+        this.viewBuilding(this.cam, true);
+      }
+      else if (lv === 2) { s.cab = s.dev = null; this.viewRoom(s.room, this.cam); }
+      else if (lv === 3) { s.dev = null; this.viewCab(s.cab, this.cam); }
+      else if (lv === 4 && s.dev) { this.viewDevice(s.dev, this.cam); }
     },
     up: function () {
       var s = this.state;
-      if (s.cab) { s.cab = null; this.viewRoom(s.room, null); }
-      else if (s.room) { s.room = null; this.viewFloor(s.floor, null); }
-      else if (s.floor) {
-        if (this.entryBack) { A.go(this.entryBack); return; }
-        s.floor = null; this.viewBuilding(null);
-      }
+      if (s.dev) { s.dev = null; this.viewCab(s.cab, null); }
+      else if (s.cab) { s.cab = null; this.viewRoom(s.room, null); }
+      else if (s.room) { s.room = null; if (s.floor) this.viewFloor(s.floor, null); else this.viewBuilding(null); }
+      else if (s.floor) { s.floor = null; this.viewBuilding(null); }
+      else if (!s.site) { s.site = true; this.viewCampus(null); }
+      else if (this.entryBack) { A.go(this.entryBack); }
     },
 
-    /* ---------------- L0 整栋楼 ---------------- */
+    /* ---------------- L0 园区 ---------------- */
+    viewCampus: function (fromEl, instant) {
+      this.cleanChrome(false, true);
+      var self = this, Dd = D();
+      this.state.site = true;
+      this.state.floor = this.state.room = this.state.cab = this.state.dev = null;
+      var hint = document.getElementById('tourHint');
+      if (hint) hint.innerHTML = '五级钻取：<b>园区</b> → 楼 → 房 → 柜 → 设备 · 点击主体建筑进入';
+
+      var html = '<div class="campus-wrap">' +
+        '<div class="campus-map">' +
+          '<div class="campus-plate"></div>' +
+          '<button type="button" class="campus-bld is-main" data-act="enter-bld">' +
+            '<span class="campus-bld-nm">' + A.esc(buildingLabel()) + '</span>' +
+            '<span class="campus-bld-sub">' + A.esc(Dd.meta.project || '') + '</span>' +
+            '<span class="campus-bld-kv">' + Dd.floors.length + ' 个楼层 · ' + Dd.meta.roomTotal + ' 间机房 · ' +
+              A.num(Dd.meta.cabTotal) + ' 架机柜</span>' +
+          '</button>' +
+          '<div class="campus-anno">园区总览 · 单击建筑下钻</div>' +
+        '</div>' +
+        '<div class="campus-rail">' +
+          '<div class="campus-rail-title"><i class="card-bar"></i>五级演示路径</div>' +
+          '<ol class="campus-steps">' +
+            '<li class="is-on"><b>1 园区</b><span>当前</span></li>' +
+            '<li><b>2 楼</b><span>主体建筑立面</span></li>' +
+            '<li><b>3 房</b><span>' + A.esc(this.drill5.room || '主机房') + '</span></li>' +
+            '<li><b>4 柜</b><span>机柜 42U</span></li>' +
+            '<li><b>5 设备</b><span>在架服务器/网络</span></li>' +
+          '</ol>' +
+        '</div></div>';
+
+      var nx = this.fly(html, this.focusOf(fromEl), fromEl ? -1 : 1, instant);
+      A.q('[data-act="enter-bld"]', nx).addEventListener('click', function () {
+        self.state.site = false;
+        self.viewBuilding(null);
+      });
+      this.crumbs();
+      this.sideCampus();
+    },
+
+    sideCampus: function () {
+      var Dd = D();
+      var d = this.drill5;
+      this.side.innerHTML =
+        A.UI.card({ title: campusLabel(Dd), body:
+          A.UI.stats([
+            { v: 1, u: '栋', l: '主体建筑' },
+            { v: Dd.floors.length, u: '层', l: '楼层' },
+            { v: Dd.meta.roomTotal, u: '间', l: '机房' },
+            { v: A.num(Dd.meta.cabTotal), u: '架', l: '机柜' }
+          ]) +
+          '<p class="campus-side-note">演示账号 admin 可完整走通五级。右侧步骤与顶栏面包屑同步高亮。</p>' +
+          '<button type="button" class="btn is-primary campus-go" style="width:100%;margin-top:12px">进入 ' +
+            A.esc(buildingLabel()) + ' ›</button>' +
+          (d.room ? '<button type="button" class="btn is-ghost campus-skip" style="width:100%;margin-top:8px">快捷：直达演示机房 ' +
+            A.esc(d.room) + '</button>' : '')
+        });
+      var self = this;
+      A.q('.campus-go', this.side).addEventListener('click', function () {
+        self.state.site = false;
+        self.viewBuilding(null);
+      });
+      var skip = A.q('.campus-skip', this.side);
+      if (skip) skip.addEventListener('click', function () {
+        self.state.site = false;
+        self.state.floor = d.floor;
+        self.state.room = d.room;
+        self.state.cab = self.state.dev = null;
+        self.viewRoom(d.room, null);
+      });
+    },
+
+    /* ---------------- L1 楼（整栋） ---------------- */
     viewBuilding: function (fromEl, instant) {
       this.cleanChrome(false, true);
       var self = this, Dd = D();
+      this.state.site = false;
+      this.state.dev = null;
+      if (!fromEl && !this.state.floor) {
+        this.state.room = this.state.cab = null;
+      }
       var floors = Dd.floors.slice().sort(function (a, b) { return b.floor < a.floor ? -1 : 1; });
       var maxAlarm = Math.max.apply(null, Dd.rooms.map(function (r) { return r.alarmN; }));
 
@@ -334,8 +468,21 @@
             return { label: f.floor + ' · 告警 ' + A.num(f.alarmN), value: f.cabCount };
           }), { unit: '柜' }) +
           '<div class="side-title" style="margin:14px 0 8px">告警热点机房 TOP6</div>' +
-          A.UI.rank(top.map(function (r) { return { name: r.name + '（' + r.floor + '）', value: r.alarmN }; }), ' 条')
+          A.UI.rank(top.map(function (r) { return { name: r.name + '（' + r.floor + '）', value: r.alarmN }; }), ' 条') +
+          (this.drill5.room
+            ? '<button type="button" class="btn is-primary" data-drill-room style="width:100%;margin-top:14px">五级演示 · 进入 ' +
+              A.esc(this.drill5.room) + '</button>'
+            : '')
         });
+      var self = this;
+      var btn = A.q('[data-drill-room]', this.side);
+      if (btn) btn.addEventListener('click', function () {
+        var d = self.drill5;
+        self.state.floor = d.floor;
+        self.state.room = d.room;
+        self.state.cab = self.state.dev = null;
+        self.viewRoom(d.room, null);
+      });
     },
 
     /* ---------------- L1 图纸平面 ---------------- */
@@ -577,7 +724,7 @@
       if (hint0) hint0.innerHTML = '点击色块沿镜头向下钻取 · <b>Esc</b> 返回上一层';
       var r = D().rooms.filter(function (x) { return x.name === name; })[0];
       if (!r) return;
-      this.state.room = name; this.state.floor = r.floor; this.state.cab = null;
+      this.state.room = name; this.state.floor = r.floor; this.state.cab = null; this.state.dev = null;
 
       var html;
       if (!r.cabCount) {
@@ -758,8 +905,7 @@
       A.qa('.iso-dev', nx).forEach(function (el) {
         el.addEventListener('click', function () {
           var sn = el.getAttribute('data-sn');
-          var a = D().assets.filter(function (x) { return x.sn === sn; })[0];
-          if (a) A.toast(a.brand + ' ' + a.model + ' · ' + a.uH + 'U · U' + a.uStart + '-' + a.uEnd + ' · ' + a.kw + 'kW');
+          if (sn) self.viewDevice(sn, el);
         });
       });
       this.bindMode(nx);
@@ -809,8 +955,18 @@
           (top.length ? '<div class="side-title" style="margin:14px 0 8px">使用率最高机柜</div>' +
             A.UI.rank(top.map(function (c) {
               return { name: c.name.split('-').slice(-2).join('-') + ' 柜', value: c.comp };
-            }), '%') : '')
+            }), '%') : '') +
+          (this.drill5.room === r.name && this.drill5.cab
+            ? '<button type="button" class="btn is-primary" data-drill-cab style="width:100%;margin-top:14px">五级演示 · 进入机柜 ' +
+              A.esc(this.drill5.cab.split('-').slice(-2).join('-')) + '</button>'
+            : '')
         });
+      var self = this;
+      var cabBtn = A.q('[data-drill-cab]', this.side);
+      if (cabBtn) cabBtn.addEventListener('click', function () {
+        self.state.cab = self.drill5.cab;
+        self.viewCab(self.drill5.cab, null);
+      });
     },
 
     /* ---------------- L3 机柜 ---------------- */
@@ -968,6 +1124,7 @@
         x.cabinets.forEach(function (c) { if (c.name === cabName) { cab = c; room = x; } });
       });
       this.state.cab = cabName;
+      this.state.dev = null;
       if (room) { this.state.room = room.name; this.state.floor = room.floor; }
       var part = this.cabParts(cabName);
 
@@ -1069,27 +1226,92 @@
         var el = e.target.closest ? e.target.closest('.rk-u[data-sn]') : null;
         if (!el || !nx.contains(el)) return;
         var sn = el.getAttribute('data-sn');
-        var a = D().assets.filter(function (x) { return x.sn === sn; })[0];
+        if (!sn) return;
         if (is3) {
           var v = A.V3.active;
           if (v && v.kind === 'rack') v.flyTo('dev:' + sn);
-          self.markDev(sn);
         }
-        if (a) A.toast(a.cat + ' · ' + a.brand + ' ' + a.model + ' · ' + a.uH + 'U · U' +
-          a.uStart + '-' + a.uEnd + ' · ' + a.kw + 'kW · ' + (a.psu || 1) + ' 电源' +
-          (a.source === 'sim' ? ' · 模拟' : ''));
-        else A.toast('设备 ' + sn);
+        self.viewDevice(sn, el);
       });
       A.qa('.iso-dev', nx).forEach(function (el) {
         el.addEventListener('click', function () {
-          var a = D().assets.filter(function (x) { return x.sn === el.getAttribute('data-sn'); })[0];
-          if (a) A.toast(a.cat + ' · ' + a.brand + ' ' + a.model + ' · ' + a.uH + 'U · U' +
-            a.uStart + '-' + a.uEnd + ' · ' + a.kw + 'kW · ' + (a.psu || 1) + ' 电源' +
-            (a.source === 'sim' ? ' · 模拟' : ''));
+          var sn = el.getAttribute('data-sn');
+          if (sn) self.viewDevice(sn, el);
         });
       });
       this.bindMode(nx);
       this.crumbs();
+    },
+
+    viewDevice: function (sn, fromEl) {
+      this.cleanChrome(false, true);
+      var self = this;
+      var a = D().assets.filter(function (x) { return x.sn === sn; })[0];
+      if (!a) { A.toast('未找到设备 ' + sn); return; }
+      this.state.dev = sn;
+      if (a.cabinet) this.state.cab = a.cabinet;
+      if (a.room) this.state.room = a.room;
+      if (a.floor) this.state.floor = a.floor;
+      var hint = document.getElementById('tourHint');
+      if (hint) hint.innerHTML = '设备详情 · 测点与 U 位 · <b>Esc</b> 返回机柜';
+
+      var cabName = this.state.cab || a.cabinet;
+      var part = cabName ? this.cabParts(cabName) : { rows: '' };
+      var html = '<div class="dev-wrap">' +
+        '<div class="dev-head"><span class="dev-title">' + A.esc(a.cat) + ' · ' + A.esc(a.brand + ' ' + a.model) + '</span>' +
+          '<span class="dev-sub">SN ' + A.esc(a.sn) + ' · U' + a.uStart + '-' + a.uEnd + ' · ' + a.kw + ' kW' +
+          (a.source === 'sim' ? ' · 模拟' : '') + '</span></div>' +
+        '<div class="dev-grid">' +
+          '<div class="dev-panel is-on">' +
+            '<div class="dev-panel-h"><i class="card-bar"></i>运行状态</div>' +
+            '<div class="dev-kv">' + A.UI.kv([
+              ['设备类别', a.cat],
+              ['品牌型号', a.brand + ' ' + a.model],
+              ['所在机柜', a.cabinet || '-'],
+              ['所在机房', (a.room || '-') + (a.floor ? '（' + a.floor + '）' : '')],
+              ['占用 U 位', 'U' + a.uStart + '-' + a.uEnd + '（' + a.uH + 'U）'],
+              ['额定功率', a.kw + ' kW'],
+              ['电源模块', (a.psu || 1) + ' 路'],
+              ['业务', a.biz || '-']
+            ]) + '</div>' +
+          '</div>' +
+          '<div class="dev-panel">' +
+            '<div class="dev-panel-h"><i class="card-bar"></i>机柜内位置（高亮当前设备）</div>' +
+            '<div class="rk-rack dev-rack">' + part.rows + '</div>' +
+          '</div>' +
+        '</div></div>';
+
+      var nx = this.fly(html, this.focusOf(fromEl), fromEl ? 1 : 1);
+      self.markDev(sn);
+      A.qa('.rk-u[data-sn="' + sn + '"]', nx).forEach(function (el) { el.classList.add('is-sel'); });
+      nx.addEventListener('click', function (e) {
+        var el = e.target.closest ? e.target.closest('.rk-u[data-sn]') : null;
+        if (!el || !nx.contains(el)) return;
+        var ns = el.getAttribute('data-sn');
+        if (ns && ns !== sn) self.viewDevice(ns, el);
+      });
+      this.crumbs();
+      this.sideDevice(a);
+    },
+
+    sideDevice: function (a) {
+      var ex = A.derive ? A.derive(a) : {};
+      this.side.innerHTML =
+        A.UI.card({ title: '设备测点（演示）', body:
+          A.UI.stats([
+            { v: a.kw, u: 'kW', l: '实时功率', color: 'var(--cyan)' },
+            { v: a.uH, u: 'U', l: '占用高度' },
+            { v: (a.psu || 1), u: '路', l: '电源' },
+            { v: a.status || '在架', l: '状态', color: 'var(--green)' }
+          ]) +
+          '<div style="margin-top:12px">' + A.UI.kv([
+            ['所属部门', ex.dept || a.org || '-'],
+            ['上架时间', ex.ctime || '-'],
+            ['网络', a.net || '已接入'],
+            ['责任人', a.owner || '未登记']
+          ]) + '</div>' +
+          '<p class="campus-side-note" style="margin-top:12px">点击左侧机柜内其它 U 位可切换设备，面包屑第 5 级同步更新。</p>'
+        });
     }
   });
 })(window.App);

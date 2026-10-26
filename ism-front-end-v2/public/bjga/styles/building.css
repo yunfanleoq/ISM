@@ -398,6 +398,96 @@
   color: #E6F4FF; box-shadow: inset 0 0 0 1px rgba(0, 216, 255, .55);
 }
 
+/* ---------- L0 园区 ---------- */
+.campus-wrap {
+  position: absolute; inset: 0; padding: 22px 26px;
+  display: flex; gap: 18px; min-height: 0;
+}
+.campus-map {
+  flex: 1 1 auto; min-width: 0; position: relative;
+  border-radius: 8px; overflow: hidden;
+  background: linear-gradient(180deg, rgba(8, 28, 58, .92), rgba(4, 14, 32, .95));
+  box-shadow: inset 0 0 0 1px rgba(60, 140, 210, .45);
+}
+.campus-plate {
+  position: absolute; inset: 12% 8% 18% 8%;
+  border-radius: 6px;
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 40%, rgba(0, 180, 255, .08), transparent 70%),
+    repeating-linear-gradient(0deg, rgba(40, 100, 160, .12) 0 1px, transparent 1px 48px),
+    repeating-linear-gradient(90deg, rgba(40, 100, 160, .12) 0 1px, transparent 1px 48px);
+  box-shadow: inset 0 0 0 1px rgba(70, 150, 220, .25);
+}
+.campus-bld {
+  position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%);
+  width: min(420px, 58%); padding: 22px 24px; text-align: left;
+  border: 0; border-radius: 10px; cursor: pointer;
+  color: #EAF7FF;
+  background: linear-gradient(145deg, rgba(0, 140, 255, .32), rgba(0, 70, 140, .22));
+  box-shadow: inset 0 0 0 2px rgba(0, 216, 255, .55), 0 16px 48px rgba(0, 0, 0, .35);
+  transition: transform .2s ease, box-shadow .2s ease;
+}
+.campus-bld:hover, .campus-bld:focus-visible {
+  transform: translate(-50%, -50%) scale(1.02);
+  box-shadow: inset 0 0 0 2px rgba(127, 233, 255, .85), 0 0 32px rgba(0, 216, 255, .25);
+}
+.campus-bld.is-main::after {
+  content: ''; position: absolute; inset: -4px; border-radius: 12px; pointer-events: none;
+  animation: campusPulse 2.4s ease-in-out infinite;
+  box-shadow: 0 0 0 0 rgba(0, 216, 255, .45);
+}
+@keyframes campusPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(0, 216, 255, .35); }
+  50% { box-shadow: 0 0 0 10px rgba(0, 216, 255, 0); }
+}
+.campus-bld-nm { display: block; font-size: 18px; font-weight: 700; letter-spacing: 1px; }
+.campus-bld-sub { display: block; margin-top: 6px; font-size: 12px; color: #9FC3E8; }
+.campus-bld-kv { display: block; margin-top: 10px; font-size: 12px; color: #7FA8D9; }
+.campus-anno {
+  position: absolute; left: 16px; bottom: 14px; font-size: 12px; color: var(--t-muted);
+}
+.campus-rail {
+  flex: 0 0 240px; padding: 14px 16px; border-radius: 8px;
+  background: rgba(8, 24, 52, .72);
+  box-shadow: inset 0 0 0 1px rgba(55, 130, 200, .4);
+}
+.campus-rail-title {
+  display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--t-sub);
+  margin-bottom: 12px;
+}
+.campus-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.campus-steps li {
+  display: flex; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 6px;
+  font-size: 12px; color: var(--t-label);
+  background: rgba(255, 255, 255, .03);
+  box-shadow: inset 0 0 0 1px rgba(60, 120, 180, .22);
+}
+.campus-steps li.is-on {
+  color: #EAF7FF;
+  background: linear-gradient(90deg, rgba(0, 140, 255, .22), rgba(0, 80, 160, .08));
+  box-shadow: inset 0 0 0 1px rgba(0, 216, 255, .5);
+}
+.campus-steps li b { font-weight: 600; }
+.campus-side-note { font-size: 12px; line-height: 1.6; color: var(--t-muted); margin: 0; }
+
+/* ---------- L5 设备 ---------- */
+.dev-wrap { position: absolute; inset: 0; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px; }
+.dev-head { flex: 0 0 auto; }
+.dev-title { display: block; font-size: 17px; font-weight: 700; color: #EAF7FF; }
+.dev-sub { display: block; margin-top: 6px; font-size: 12px; color: var(--t-muted); }
+.dev-grid { flex: 1 1 auto; min-height: 0; display: flex; gap: 16px; }
+.dev-panel {
+  flex: 1 1 0; min-width: 0; border-radius: 8px; padding: 14px 16px;
+  background: rgba(8, 26, 56, .78);
+  box-shadow: inset 0 0 0 1px rgba(55, 130, 200, .38);
+}
+.dev-panel.is-on { box-shadow: inset 0 0 0 1px rgba(0, 216, 255, .55); }
+.dev-panel-h { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--t-sub); margin-bottom: 10px; }
+.dev-rack { max-height: 100%; overflow: auto; }
+.rk-u.is-sel {
+  box-shadow: inset 0 0 0 2px rgba(255, 210, 77, .95), 0 0 12px rgba(255, 162, 77, .35);
+}
+
 .iso-stage { flex: 1 1 auto; min-height: 0; position: relative; }
 .iso-stage.is-rack { min-height: 520px; }
 .iso-svg { width: 100%; height: 100%; display: block; }
