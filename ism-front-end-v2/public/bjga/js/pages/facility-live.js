@@ -61,10 +61,12 @@
   }
 
   A.alarmFeed = function () {
-    var live = window.DCIM && window.DCIM.live && window.DCIM.live.alarms;
-    if (!Array.isArray(live)) return null;
+    var D = window.DCIM;
+    var live = D && D.live && D.live.alarms;
+    var list = (Array.isArray(live) && live.length) ? live : ((D && D.alarms) || []);
+    if (!list.length) return null;
     var levels = {}, cats = {}, rec = 0;
-    live.forEach(function (a) {
+    list.forEach(function (a) {
       if (a.level) levels[a.level] = (levels[a.level] || 0) + 1;
       if (a.cat) cats[a.cat] = (cats[a.cat] || 0) + 1;
       if (a.recover === '已恢复') rec++;
@@ -72,11 +74,11 @@
     var byLevel = pairs(levels);
     var byCat = pairs(cats);
     return {
-      list: live,
+      list: list,
       stats: {
-        total: live.length,
+        total: list.length,
         recovered: rec,
-        pending: live.length - rec,
+        pending: list.length - rec,
         byLevel: byLevel.length ? byLevel : [{ name: '无', value: 0 }],
         byCat: byCat.length ? byCat : [{ name: '采集', value: 0 }]
       }

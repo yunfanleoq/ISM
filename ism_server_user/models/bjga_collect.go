@@ -201,13 +201,20 @@ func BjgaCollectLive(project string) ([]bjgaCollectDevice, []map[string]interfac
 		Order("happen_time desc").
 		Limit(200).
 		Find(&als)
+	placeByDev := bjgaDevicePlaceIndex()
 	for _, a := range als {
+		room, floor := "", ""
+		if p, ok := placeByDev[a.DeviceName]; ok {
+			room, floor = p.room, p.floor
+		} else {
+			room, floor = bjgaGuessPlace(a.DeviceName, placeByDev)
+		}
 		alarms = append(alarms, map[string]interface{}{
 			"level":   bjgaAlarmLevelName(a.AlarmLevel),
 			"what":    a.AlarmMessage,
 			"obj":     a.DeviceName,
-			"room":    "",
-			"floor":   "",
+			"room":    room,
+			"floor":   floor,
 			"zone":    a.AlarmName,
 			"cat":     bjgaAlarmCat(a.DeviceName, a.AlarmName, a.AlarmMessage),
 			"time":    a.HappenTime.Format("2006-01-02 15:04:05"),
@@ -225,4 +232,62 @@ func BjgaCollectLive(project string) ([]bjgaCollectDevice, []map[string]interfac
 		})
 	}
 	return devices, alarms
+}
+
+type bjgaPlace struct {
+	room  string
+	floor string
+}
+
+func bjgaDevicePlaceIndex() map[string]bjgaPlace {
+	out := map[string]bjgaPlace{}
+	for _, row := range bjgaRows(bjgaPayloads("bjga_th_device")) {
+		m, ok := row.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		name := strings.TrimSpace(fmt.Sprint(m["name"]))
+		room := strings.TrimSpace(fmt.Sprint(m["room"]))
+		floor := strings.TrimSpace(fmt.Sprint(m["floor"]))
+		if name == "" || room == "" {
+			continue
+		}
+		out[name] = bjgaPlace{room: room, floor: floor}
+	}
+	for _, row := range bjgaRows(bjgaPayloads("bjga_room")) {
+		m, ok := row.(map[string]interface{})
+		if !ok {
+			continue
+		}
+		name := strings.TrimSpace(fmt.Sprint(m["name"]))
+		floor := strings.TrimSpace(fmt.Sprint(m["floor"]))
+		if name != "" {
+			out[name] = bjgaPlace{room: name, floor: floor}
+		}
+	}
+	return out
+}
+
+func bjgaGuessPlace(deviceName string, idx map[string]bjgaPlace) (string, string) {
+	dev := strings.TrimSpace(deviceName)
+	if dev == "" {
+		return "", ""
+	}
+	var best string
+	var bestLen int
+	for key := range idx {
+		if key == "" {
+			continue
+		}
+		if strings.Contains(dev, key) || strings.Contains(key, dev) {
+			if len(key) > bestLen {
+				best, bestLen = key, len(key)
+			}
+		}
+	}
+	if best == "" {
+		return "", ""
+	}
+	p := idx[best]
+	return p.room, p.floor
 }

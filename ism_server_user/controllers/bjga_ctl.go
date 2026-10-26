@@ -50,6 +50,10 @@ func (c *BjgaController) Bootstrap() {
 	c.ok(map[string]interface{}{"dcim": models.BjgaBootstrap()})
 }
 
+func (c *BjgaController) Live() {
+	c.ok(map[string]interface{}{"live": models.BjgaLiveBundle()})
+}
+
 func (c *BjgaController) AssetFlow() {
 	var req struct {
 		No     string `json:"no"`

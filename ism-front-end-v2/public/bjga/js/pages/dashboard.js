@@ -64,9 +64,10 @@
     return { temp: mean(ts), humi: mean(hs), n: Math.max(ts.length, hs.length) };
   }
 
-  /* 驾驶舱告警优先用未清除采集告警 */
-  function todayLevels() {
-    var D = window.DCIM, out = { 紧急: 0, 严重: 0, 重要: 0, 次要: 0, 预警: 0 };
+  /* 近 7 日统计：内部五级汇总为投标四级 */
+  function tierWeekCounts() {
+    var D = window.DCIM;
+    var out = { 紧急: 0, 重要: 0, 一般: 0, 提示: 0 };
     var list = (D && D.live && Array.isArray(D.live.alarms)) ? D.live.alarms : (D && D.alarms);
     if (!list || !list.length) return out;
     var latest = new Date(String(list[0].time || '').slice(0, 10).replace(/-/g, '/')).getTime();
@@ -75,15 +76,52 @@
       if (!a.time) return;
       var t = new Date(a.time.slice(0, 10).replace(/-/g, '/')).getTime();
       if (t < from) return;
-      if (out[a.level] != null) out[a.level] += 1;
+      var tier = A.alarmTier ? A.alarmTier(a.level) : a.level;
+      if (out[tier] != null) out[tier]++;
     });
     return out;
   }
 
+  function activeRows(limit) {
+    var list = A.activeAlarms ? A.activeAlarms() : [];
+    list.sort(function (a, b) {
+      var ta = String(a.time || '');
+      var tb = String(b.time || '');
+      return ta < tb ? 1 : ta > tb ? -1 : 0;
+    });
+    return list.slice(0, limit || 8);
+  }
+
+  function activeListHtml() {
+    var rows = activeRows(8);
+    if (!rows.length) {
+      return '<div class="act-al-empty">暂无活动告警 · 轮询 /bjga/live</div>';
+    }
+    return '<ul class="act-al-list">' + rows.map(function (a) {
+      var tier = A.alarmTier(a.level);
+      var c = A.alarmTierColor(tier);
+      var place = A.resolveAlarmPlace ? A.resolveAlarmPlace(a) : { room: a.room, floor: a.floor };
+      var loc = [place.floor, place.room].filter(Boolean).join(' · ') || '—';
+      return '<li class="act-al-item" data-al-key="' + A.esc([a.time, a.obj, a.what].join('|')) + '">' +
+        '<span class="act-al-tier" style="color:' + c + ';border-color:' + c + '">' + A.esc(tier) + '</span>' +
+        '<span class="act-al-what" title="' + A.esc(a.what) + '">' + A.esc(a.what) + '</span>' +
+        '<span class="act-al-loc">' + A.esc(loc) + '</span>' +
+        '<span class="act-al-time">' + A.esc(a.time || '') + '</span>' +
+      '</li>';
+    }).join('') + '</ul>';
+  }
+
   var timer = null;
+  var onAlarms = null;
 
   A.register('dashboard', {
-    unmount: function () { if (timer) { clearInterval(timer); timer = null; } },
+    unmount: function () {
+      if (timer) { clearInterval(timer); timer = null; }
+      if (onAlarms) {
+        window.removeEventListener('dcim:alarms', onAlarms);
+        onAlarms = null;
+      }
+    },
 
     render: function (root) {
       applyLive();
@@ -109,9 +147,11 @@
       }
       var hallN = 0, ri;
       for (ri = 0; ri < rooms.length; ri++) if (rooms[ri].type === '主机房') hallN++;
-      var lv = todayLevels();
-      var lvTotal = lv.紧急 + lv.严重 + lv.重要 + lv.次要 + lv.预警;
-      var pending = lv.紧急 + lv.严重;
+      var lv = tierWeekCounts();
+      var lvTotal = lv.紧急 + lv.重要 + lv.一般 + lv.提示;
+      var actN = A.activeAlarms ? A.activeAlarms().length : 0;
+      var actTier = A.tierCounts ? A.tierCounts(A.activeAlarms ? A.activeAlarms() : []) : lv;
+      var pending = actTier.紧急 + actTier.重要;
 
       root.innerHTML =
         '<main class="content">' +
@@ -207,6 +247,12 @@
               metric(String(window.DCIM.rooms.filter(function (r) { return r.type === '主机房'; }).length), '间', '数据机房') +
               metric(String(window.DCIM.assets.filter(function (a) { return a.cat === '采集器'; }).length), '台', '动环采集器') +
             '</div>' +
+            '<section class="card act-al-card" id="actAlarmCard">' +
+              '<div class="card-head"><i class="card-bar"></i><h2 class="card-title">活动告警挂屏</h2>' +
+                '<div class="card-extra"><span class="muted" style="font-size:12px">活动 <b id="actAlN" style="color:var(--cyan)">' +
+                  A.num(actN) + '</b> 条 · 2s 刷新</span></div></div>' +
+              '<div class="card-body act-al-body" id="actAlBody">' + activeListHtml() + '</div>' +
+            '</section>' +
           '</section>' +
 
           /* ---------- 右栏 ---------- */
@@ -243,17 +289,16 @@
             '</section>' +
 
             '<section class="card"' + goAttr('facility/alarm') + '>' +
-              '<div class="card-head"><i class="card-bar"></i><h2 class="card-title">告警统计（近 7 日）</h2></div>' +
-              '<div class="alert-grid">' +
-                alertItem('紧急告警', lv.紧急, '#FF4D5E') +
-                alertItem('严重告警', lv.严重, '#FF7849') +
-                alertItem('重要告警', lv.重要, '#FFA24D') +
-                alertItem('次要告警', lv.次要, '#FFD24D') +
-                alertItem('预警', lv.预警, '#00D8FF') +
+              '<div class="card-head"><i class="card-bar"></i><h2 class="card-title">告警统计（近 7 日 · 四级）</h2></div>' +
+              '<div class="alert-grid alert-grid-4">' +
+                alertItem('紧急', lv.紧急, '#FF4D5E') +
+                alertItem('重要', lv.重要, '#FF7849') +
+                alertItem('一般', lv.一般, '#FFA24D') +
+                alertItem('提示', lv.提示, '#FFD24D') +
               '</div>' +
               '<div class="alert-note"><span>近 7 日 ' + A.num(lvTotal) + ' 条</span>' +
                 '<span class="alert-note-sep">·</span>' +
-                '<span>紧急/严重 ' + A.num(pending) + ' 条</span></div>' +
+                '<span>当前活动 紧急+重要 ' + A.num(pending) + ' 条</span></div>' +
             '</section>' +
 
           '</aside>' +
@@ -338,6 +383,24 @@
         var r = box.getBoundingClientRect();
         box.style.setProperty('--mx', ((e.clientX - r.left) / r.width * 100).toFixed(1) + '%');
         box.style.setProperty('--my', ((e.clientY - r.top) / r.height * 100).toFixed(1) + '%');
+      });
+
+      function paintActive() {
+        var body = A.q('#actAlBody', root);
+        var nEl = A.q('#actAlN', root);
+        if (body) body.innerHTML = activeListHtml();
+        if (nEl && A.activeAlarms) nEl.textContent = A.num(A.activeAlarms().length);
+      }
+      onAlarms = function () { paintActive(); };
+      window.addEventListener('dcim:alarms', onAlarms);
+      root.addEventListener('click', function (e) {
+        var row = e.target.closest('.act-al-item');
+        if (!row || !root.contains(row)) return;
+        var key = row.getAttribute('data-al-key') || '';
+        var hit = (A.activeAlarms ? A.activeAlarms() : []).filter(function (a) {
+          return [a.time, a.obj, a.what].join('|') === key;
+        })[0];
+        if (hit && A.showAlarmLocate) A.showAlarmLocate(hit);
       });
     }
   });

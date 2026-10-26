@@ -1388,3 +1388,236 @@ html, body {
 
 .bld-svg .hit:hover,
 .bld-svg .hit.is-on { fill: rgba(0, 226, 255, 0.28); }
+
+.alert-grid-4 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.col-center .stage {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.act-al-card {
+  flex: 0 0 auto;
+  max-height: 220px;
+}
+
+.act-al-body {
+  padding: 0 4px 4px;
+  overflow: auto;
+  min-height: 0;
+}
+
+.act-al-empty {
+  font-size: 12px;
+  color: var(--t-muted);
+  text-align: center;
+  padding: 18px 8px;
+}
+
+.act-al-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.act-al-item {
+  display: grid;
+  grid-template-columns: 52px 1fr 140px 130px;
+  gap: 8px;
+  align-items: center;
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: rgba(8, 24, 52, 0.55);
+  box-shadow: inset 0 0 0 1px rgba(40, 100, 160, 0.35);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.act-al-item:hover {
+  background: rgba(14, 40, 82, 0.72);
+}
+
+.act-al-tier {
+  font-weight: 700;
+  font-size: 11px;
+  text-align: center;
+  padding: 2px 0;
+  border: 1px solid;
+  border-radius: 3px;
+}
+
+.act-al-what {
+  color: var(--t-title);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.act-al-loc {
+  color: var(--t-label);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.act-al-time {
+  font-family: var(--num);
+  color: var(--t-muted);
+  font-size: 11px;
+  text-align: right;
+}
+
+/* 告警房间定位弹层 */
+.alarm-locate-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 120;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: rgba(2, 8, 20, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.alarm-locate-panel {
+  width: min(920px, 92%);
+  max-height: 86%;
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(12, 36, 78, 0.96), rgba(6, 18, 42, 0.98));
+  box-shadow: inset 0 0 0 1px rgba(0, 200, 255, 0.45), 0 24px 80px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.alarm-locate-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 18px 10px;
+}
+
+.al-tier {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 2px 8px;
+  border: 1px solid;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+}
+
+.alarm-locate-title {
+  font-size: 16px;
+  color: var(--t-title);
+  font-weight: 600;
+}
+
+.alarm-locate-x {
+  border: 0;
+  background: transparent;
+  color: var(--t-muted);
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.alarm-locate-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 20px;
+  padding: 0 18px 12px;
+  font-size: 12px;
+  color: var(--t-label);
+}
+
+.alarm-locate-sub b {
+  color: var(--t-soft);
+  font-weight: 600;
+}
+
+.alarm-locate-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  padding: 0 18px 14px;
+}
+
+.alarm-locate-cap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--t-sub);
+  margin-bottom: 10px;
+}
+
+.al-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+
+.al-plan-room {
+  position: relative;
+  padding: 12px;
+  border-radius: 6px;
+  background: rgba(8, 28, 58, 0.65);
+  box-shadow: inset 0 0 0 1px rgba(60, 140, 210, 0.4);
+  min-height: 72px;
+}
+
+.al-plan-room.is-alarm {
+  animation: alRoomBlink 1.1s ease-in-out infinite;
+  box-shadow: inset 0 0 0 2px var(--al-c, #ff4d5e), 0 0 22px color-mix(in srgb, var(--al-c, #ff4d5e) 45%, transparent);
+}
+
+@keyframes alRoomBlink {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.25); }
+}
+
+.al-plan-nm {
+  font-size: 13px;
+  color: var(--t-title);
+  font-weight: 600;
+}
+
+.al-plan-meta {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--t-muted);
+}
+
+.al-plan-tag {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  color: #fff;
+  background: var(--al-c, #ff4d5e);
+}
+
+.al-plan-empty {
+  text-align: center;
+  padding: 40px;
+  color: var(--t-muted);
+  font-size: 13px;
+}
+
+.alarm-locate-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 12px 18px 16px;
+  border-top: 1px solid rgba(50, 120, 190, 0.35);
+}

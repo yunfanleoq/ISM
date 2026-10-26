@@ -105,6 +105,7 @@
     }
     window.DCIM = j.dcim;
     applyCollect(window.DCIM);
+    if (A.startAlarmPoll) A.startAlarmPoll(2000);
     if (A._ready) A._ready();
   }).catch(function (err) {
     if (!pr) return;

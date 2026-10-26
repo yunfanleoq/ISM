@@ -387,8 +387,9 @@
         '<div class="card-body">' + A.UI.table({
           cols: [
             { t: '等级', k: 'level', w: 84, html: function (r) {
-              var c = { 紧急: 'red', 严重: 'orange', 重要: 'orange', 次要: 'blue', 预警: '' }[r.level] || 'grey';
-              return '<span class="lv-' + A.esc(r.level) + '" style="font-weight:600">' + A.esc(r.level) + '</span>';
+              var tier = A.alarmTier ? A.alarmTier(r.level) : r.level;
+              var c = A.alarmTierColor ? A.alarmTierColor(tier) : '#9FC3E8';
+              return '<span class="lv-tier" style="font-weight:600;color:' + c + '" title="' + A.esc(r.level) + '">' + A.esc(tier) + '</span>';
             } },
             { t: '告警内容', k: 'what', w: 300 },
             { t: '监控对象', k: 'obj', w: 240 },

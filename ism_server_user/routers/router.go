@@ -525,6 +525,7 @@ func init() {
 
 	// ===== 公安局动环 =====
 	beego.Router("/bjga/bootstrap", &controllers.BjgaController{}, "get:Bootstrap")
+	beego.Router("/bjga/live", &controllers.BjgaController{}, "get:Live")
 	beego.Router("/bjga/assets/flow", &controllers.BjgaController{}, "post:AssetFlow")
 	beego.Router("/bjga/stocktake", &controllers.BjgaController{}, "get:StocktakeList;post:StocktakeAct")
 	beego.Router("/bjga/stock-bill", &controllers.BjgaController{}, "get:StockBills;post:StockBillCreate")

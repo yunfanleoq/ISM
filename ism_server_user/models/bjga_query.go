@@ -59,13 +59,18 @@ func BjgaBootstrap() map[string]interface{} {
 		}
 	}
 	dcim["series"] = series
+	dcim["live"] = BjgaLiveBundle()
+	dcim["extra"] = BjgaExtra()
+	return dcim
+}
+
+// BjgaLiveBundle 采集实时设备与活动告警，供 bootstrap 与 /bjga/live 轮询共用。
+func BjgaLiveBundle() map[string]interface{} {
 	live := BjgaLive()
 	devs, als := BjgaCollectLive(bjgaCollectProject)
 	live["devices"] = devs
 	live["alarms"] = als
-	dcim["live"] = live
-	dcim["extra"] = BjgaExtra()
-	return dcim
+	return live
 }
 
 func BjgaExtra() map[string]interface{} {
