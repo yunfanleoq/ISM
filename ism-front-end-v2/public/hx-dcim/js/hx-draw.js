@@ -147,6 +147,7 @@
         t: 'S', x: 772, y: 46, w: 56, h: 78, k: spec.mainKey,
         p: spec.mainPoint, dev: spec.mainDev, z: 5
       });
+      nodes.push({ t: 'L', x: 798, y: 124, w: 4, h: 48, a: 90, sw: 2, c: '#ff3b3b', z: 2 });
     }
     var x = 28;
     var y = 146;
@@ -168,6 +169,7 @@
         rowReady = false;
       }
       openRow();
+      var busY = y + 26;
       nodes.push({
         t: 'T', x: x, y: y, w: w, h: 22,
         s: String(br.num), k: single ? br.key : '', c: '#fff', fs: 16, z: 6
@@ -178,6 +180,9 @@
       var ky = y + 28;
       var ly = y + 164;
       if (single) {
+        nodes.push({
+          t: 'L', x: x + w / 2 - 2, y: busY, w: 4, h: Math.max(4, ky - busY), a: 90, sw: 1.35, c: '#ffffff', z: 2
+        });
         nodes.push({
           t: 'S', x: x + (w - kw) / 2, y: ky, w: kw, h: kh, decor: 1,
           k: br.key, p: br.p, dev: br.dev, z: 5
@@ -194,6 +199,9 @@
           var pk = (br.phaseKey && br.phaseKey[ph]) || '';
           var pp = shared ? br.p : ((br.phaseP && br.phaseP[ph]) || br.p || '');
           var pd = shared ? br.dev : ((br.phaseDev && br.phaseDev[ph]) || br.dev || '');
+          nodes.push({
+            t: 'L', x: kx + kw / 2 - 2, y: busY, w: 4, h: Math.max(4, ky - busY), a: 90, sw: 1.35, c: '#ffffff', z: 2
+          });
           nodes.push({ t: 'S', x: kx, y: ky, w: kw, h: kh, decor: 1, k: pk, p: pp, dev: pd, z: 5 });
           nodes.push({
             t: 'T', x: kx - 12, y: ly, w: kw + 24, h: 20,

@@ -97,7 +97,10 @@ export default {
     },
     sideMenuData() {
       const {layout, menuData, subMenu} = this
-      return layout === 'mix' ? subMenu : menuData
+      if (layout === 'mix') {
+        return (subMenu && subMenu.length) ? subMenu : menuData
+      }
+      return menuData
     }
   },
   methods: {

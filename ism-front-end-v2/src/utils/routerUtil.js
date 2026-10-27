@@ -182,6 +182,7 @@ function ensureHangxinScreenMenu(store) {
   if (exists) return
   menu.push({
     path: '/hx-dcim',
+    fullPath: '/hx-dcim',
     name: '新大屏',
     meta: {
       icon: 'dashboard',

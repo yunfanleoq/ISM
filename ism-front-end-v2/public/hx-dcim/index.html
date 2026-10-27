@@ -73,11 +73,12 @@
   </div>
 </div>
 
-<script src="js/hx-draw.js?v=20261025knife1"></script>
+<script src="js/hx-auth.js?v=20261027proj"></script>
+<script src="js/hx-draw.js?v=20261027gear"></script>
 <script src="js/hx-live.js?v=20261024hook"></script>
 <script src="js/hx-arch-tree.js?v=20261025treehint"></script>
-<script src="js/hx-screen.js?v=20261025treehint"></script>
-<script src="js/core.js?v=20261027admin"></script>
+<script src="js/hx-screen.js?v=20261027gear"></script>
+<script src="js/core.js?v=20261027proj"></script>
 <script src="js/charts.js?v=20261022pue"></script>
 <script src="js/components.js"></script>
 <script src="js/bld-svg.js?v=20261023cad2"></script>
@@ -139,7 +140,7 @@
     App.boot();
     document.getElementById('btnAlarm').addEventListener('click', function () { App.go('facility'); });
     document.getElementById('btnHome').addEventListener('click', function () { App.go('dashboard'); });
-    document.getElementById('btnAdmin').addEventListener('click', function () { App.leaveTo('/#/Project'); });
+    document.getElementById('btnAdmin').addEventListener('click', function () { App.leaveToAdmin(); });
     document.getElementById('btnMsg').addEventListener('click', function () { App.toast('暂无新消息'); });
     document.getElementById('btnFs').addEventListener('click', function () { App.fullscreen(); });
   });

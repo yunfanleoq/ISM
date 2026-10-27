@@ -9,7 +9,7 @@
     <iframe
       ref="frame"
       title="新大屏"
-      src="/hx-dcim/index.html?v=20261027load#/power"
+      src="/hx-dcim/index.html?v=20261027proj#/power"
       @load="onFrameLoad"
       @error="onFrameError"
     />
@@ -17,6 +17,11 @@
 </template>
 
 <script>
+import { AUTH_TYPE, setAuthorization } from '@/utils/request'
+
+/** 航信开发对照 UUID（docs/ISM-麒麟V10部署方案.md；现场以项目列表为准） */
+const HX_DCIM_PROJECT_UUID = '3ec5821f-b512-2adb-3e1c-473720d0a93e'
+
 export default {
   name: 'HxDcimScreen',
   data () {
@@ -24,6 +29,11 @@ export default {
       frameState: 'loading',
       shellHint: '正在加载 hx-dcim 静态壳（测点索引约 25MB，首次可能 1～2 分钟）…',
       loadTimer: null
+    }
+  },
+  created () {
+    if (HX_DCIM_PROJECT_UUID) {
+      setAuthorization({ token: HX_DCIM_PROJECT_UUID }, AUTH_TYPE.AUTH1)
     }
   },
   mounted () {

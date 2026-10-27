@@ -242,22 +242,34 @@ window.App = window.App || {};
     return true;
   };
 
-  /* 离开 hx-dcim 静态壳，进入主 Vue 后台（/#/Project 等）。必须在 top 窗口改址，
-     否则 iframe 内 location 只会把 SPA 嵌进 iframe → 白屏。 */
+  /* 离开 hx-dcim 进入主 Vue 后台。同源 iframe 内优先只改 top 的 hash，避免整页重载导致侧栏 menuData 丢失。 */
   A.leaveTo = function (href) {
     var path = String(href || '').trim();
     if (!path) return;
+    var hash = path.indexOf('#') >= 0 ? path.slice(path.indexOf('#')) : '#/' + path.replace(/^\//, '');
+    try {
+      if (window.top && window.top !== window && window.top.location.origin === window.location.origin) {
+        window.top.location.hash = hash;
+        return;
+      }
+    } catch (e) { /* cross-origin */ }
     var url = path.indexOf('://') >= 0 ? path : (window.location.origin || '') + (path.charAt(0) === '/' ? path : '/' + path);
     try {
       window.top.location.href = url;
       return;
-    } catch (e) { /* cross-origin 读 top 可能抛错，仍尝试写 parent / self */ }
+    } catch (e2) {}
     try {
       if (window.parent && window.parent !== window) window.parent.location.href = url;
       else window.location.href = url;
-    } catch (e2) {
-      try { window.open(url, '_top'); } catch (e3) { window.location.href = url; }
+    } catch (e3) {
+      try { window.open(url, '_top'); } catch (e4) { window.location.href = url; }
     }
+  };
+
+  A.leaveToAdmin = function () {
+    if (window.HXAuth && window.HXAuth.ensureHangxinProject) window.HXAuth.ensureHangxinProject();
+    if (window.HXAuth && window.HXAuth.persistProject) window.HXAuth.persistProject();
+    A.leaveTo('/#/dashboard');
   };
 
   /* 只有总览卡片下钻才带上来源。顶栏菜单是新进入，hash 里没有这段。 */

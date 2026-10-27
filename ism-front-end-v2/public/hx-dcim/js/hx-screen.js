@@ -215,8 +215,65 @@
     return '';
   }
 
+  /* 主分支各馈线开关应并联在顶母线上；工程里常有 y≈147 的短横线把开关画成串联，去掉并补竖直引下线。 */
+  function fixMainBranchParallel(pg) {
+    if (!pg || pg.kind !== 'power' || pg._mainParallelFixed) return;
+    var nodes = pg.nodes || [];
+    var busY = null;
+    var busSpan = 0;
+    nodes.forEach(function (n) {
+      if (n.t !== 'L') return;
+      var a = Math.abs((Number(n.a) || 0) % 180);
+      if (a > 5) return;
+      var y = Number(n.y) + Number(n.h || 0) / 2;
+      var w = Math.abs(Number(n.w) || 0);
+      if (y >= 95 && y <= 125 && w > 400 && w > busSpan) {
+        busY = y;
+        busSpan = w;
+      }
+    });
+    if (busY == null) {
+      pg._mainParallelFixed = 1;
+      return;
+    }
+    var feederX = {};
+    nodes.forEach(function (n) {
+      if (n.t !== 'I' && n.t !== 'S') return;
+      var y = Number(n.y);
+      if (y < 150 || y > 230) return;
+      var k = String(n.k || '');
+      if (!/(T[12]_4|_401|_402|_411|_412|_413|_414|_415|_416|_421|_422|_423|_445)/.test(k)) return;
+      var cx = Number(n.x) + Number(n.w || 0) / 2;
+      var bucket = Math.round(cx / 24) * 24;
+      feederX[bucket] = cx;
+    });
+    var kept = nodes.filter(function (n) {
+      if (n.t !== 'L') return true;
+      var a = Math.abs((Number(n.a) || 0) % 180);
+      if (a > 5) return true;
+      var y = Number(n.y) + Number(n.h || 0) / 2;
+      var w = Math.abs(Number(n.w) || 0);
+      if (y >= 138 && y <= 158 && w >= 55 && w <= 95) return false;
+      return true;
+    });
+    var maxZ = 0;
+    kept.forEach(function (n) { maxZ = Math.max(maxZ, Number(n.z) || 0); });
+    Object.keys(feederX).forEach(function (b) {
+      var cx = feederX[b];
+      var top = busY + 2;
+      var bot = busY + 68;
+      kept.push({
+        t: 'L', x: cx - 2, y: top, w: 4, h: Math.max(8, bot - top), a: 90, sw: 2,
+        c: '#ce0c18', z: maxZ + 1
+      });
+    });
+    pg.nodes = kept;
+    pg._mainParallelFixed = 1;
+  }
+
   function prep(pg) {
     if (!pg || pg._prepped) return pg;
+    fixMainBranchParallel(pg);
     (pg.nodes || []).forEach(function (n) {
       if (n.t === 'T' && !n.k) {
         var k = guessKey(pg, n.s);
