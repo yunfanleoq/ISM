@@ -178,10 +178,18 @@ function dedupRoutesByName(routes, seen) {
 function ensureHangxinScreenMenu(store) {
   const menu = store.state.setting.menuData
   if (!menu || !menu.length) return
-  const exists = menu.some(item => item && (item.path === '/hx-dcim' || item.path === 'hx-dcim'))
-  if (exists) return
+  const exists = menu.some(item => item && (item.path === '/hx-dcim' || item.path === 'hx-dcim' || item.fullPath === '/hx-dcim'))
+  if (exists) {
+    menu.forEach(item => {
+      if (item && (item.path === '/hx-dcim' || item.path === 'hx-dcim') && !item.fullPath) {
+        item.fullPath = '/hx-dcim'
+      }
+    })
+    return
+  }
   menu.push({
     path: '/hx-dcim',
+    fullPath: '/hx-dcim',
     name: '新大屏',
     meta: {
       icon: 'dashboard',
@@ -293,6 +301,9 @@ function formatAuthority(routes, pAuthorities = []) {
  * @returns {*}
  */
 function getI18nKey(path) {
+  if (typeof path !== 'string' || path === '') {
+    return ''
+  }
   const keys = path.split('/').filter(item => !item.startsWith(':') && item != '')
   keys.push('name')
   return keys.join('.')
