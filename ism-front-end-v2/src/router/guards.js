@@ -76,6 +76,10 @@ const authorityGuard = (to, from, next, options) => {
  */
 const redirectGuard = (to, from, next, options) => {
   const {store} = options
+  /* 混合导航下「新大屏」是独立全屏页，不能按一级菜单重定向到子菜单首项（否则会一直进不了 iframe） */
+  if (to.path === '/hx-dcim') {
+    return next()
+  }
   const getFirstChild = (routes) => {
     const route = routes[0]
     if (!route.children || route.children.length === 0) {

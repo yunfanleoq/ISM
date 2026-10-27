@@ -12,6 +12,7 @@
   var ws = null;
 
   function storeGet(key) {
+    if (w.HXAuth && w.HXAuth.get) return w.HXAuth.get(key);
     try {
       var s = sessionStorage.getItem(key);
       if (s) return s;
@@ -22,6 +23,7 @@
   }
 
   function headers() {
+    if (w.HXAuth && w.HXAuth.headers) return w.HXAuth.headers();
     var h = { 'Content-Type': 'application/json' };
     var token = storeGet('Authorization');
     var project = storeGet('ProjectUuid');
@@ -30,12 +32,32 @@
     return h;
   }
 
+  function fetchJson(url, ms) {
+    var timeout = ms == null ? 120000 : ms;
+    var ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    var timer = ctrl ? setTimeout(function () { try { ctrl.abort(); } catch (e) {} }, timeout) : null;
+    return fetch(url, ctrl ? { signal: ctrl.signal } : undefined).then(function (r) {
+      if (timer) clearTimeout(timer);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    }).catch(function (err) {
+      if (timer) clearTimeout(timer);
+      throw err;
+    });
+  }
+
   function post(path, body) {
     return fetch('/api' + path, {
       method: 'POST',
       headers: headers(),
       body: JSON.stringify(body || {})
-    }).then(function (r) { return r.json(); });
+    }).then(function (r) {
+      if (r.status === 401 || r.status === 403) {
+        var hint = (w.HXAuth && w.HXAuth.authHint) ? w.HXAuth.authHint() : '登录已失效';
+        if (w.HXBoot && w.HXBoot.warn) w.HXBoot.warn(hint);
+      }
+      return r.json();
+    });
   }
 
   function isCap(name) { return String(name || '').indexOf('电容补偿') >= 0; }
@@ -197,11 +219,12 @@
     tie(circuitKey(name), pt);
   }
 
+  var fieldLoadError = '';
+
   function loadField() {
-    return fetch('/hx-dcim/data/hx-field-index.json').then(function (r) {
-      if (!r.ok) throw new Error('no index');
-      return r.json();
-    }).then(function (j) {
+    fieldLoadError = '';
+    if (w.HXBoot && w.HXBoot.status) w.HXBoot.status('正在加载测点索引（约 25MB，请稍候）…');
+    return fetchJson('/hx-dcim/data/hx-field-index.json?v=20261027load', 120000).then(function (j) {
       byName = {};
       byCircuit = {};
       book = {};
@@ -210,11 +233,13 @@
       Object.keys(j.byDevice || {}).forEach(function (k) {
         (j.byDevice[k] || []).forEach(indexPoint);
       });
-    }).catch(function () {
+    }).catch(function (err) {
+      fieldLoadError = (err && err.name === 'AbortError') ? '测点索引下载超时（120s）' : ((err && err.message) || '测点索引加载失败');
       byName = {};
       byCircuit = {};
       book = {};
       treeCache = null;
+      if (w.HXBoot && w.HXBoot.warn) w.HXBoot.warn(fieldLoadError + '；一次图仍可显示，悬停/列头柜取数可能不完整。');
     });
   }
 
@@ -493,6 +518,7 @@
     uuidValue: function (id) { return values[id] || null; },
     clear: function () { active = {}; },
     connect: connect,
-    onChange: null
+    onChange: null,
+    fieldLoadError: function () { return fieldLoadError; }
   };
 })(window);

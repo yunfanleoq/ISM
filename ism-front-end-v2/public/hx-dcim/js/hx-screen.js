@@ -568,14 +568,35 @@
     window.addEventListener('resize', onResize);
   }
 
+  function withTimeout(p, ms, label) {
+    return Promise.race([
+      p,
+      new Promise(function (resolve) {
+        setTimeout(function () {
+          console.warn('[HXScreen] wait timeout: ' + label);
+          if (w.HXBoot && w.HXBoot.warn) {
+            w.HXBoot.warn(label + ' 等待超时，先展示画面（数据可能不完整）。');
+          }
+          resolve();
+        }, ms);
+      })
+    ]);
+  }
+
   L().onChange = paint;
 
   w.HXScreen = {
     ready: Promise.all([
-      L().ready,
-      loadScenes(),
-      (w.HXArch && w.HXArch.ready) || Promise.resolve()
-    ]).then(function () { L().connect(); }),
+      withTimeout(L().ready, 130000, '测点索引'),
+      withTimeout(loadScenes(), 45000, '一次图场景'),
+      withTimeout((w.HXArch && w.HXArch.ready) || Promise.resolve(), 45000, '架构树')
+    ]).then(function () {
+      if (w.HXBoot && w.HXBoot.hide) w.HXBoot.hide();
+      L().connect();
+    }).catch(function (err) {
+      if (w.HXBoot && w.HXBoot.warn) w.HXBoot.warn((err && err.message) || '初始化异常');
+      if (w.HXBoot && w.HXBoot.hide) w.HXBoot.hide();
+    }),
     mount: mount,
     leave: leave,
     bootBrand: bootBrand,

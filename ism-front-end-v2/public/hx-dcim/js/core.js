@@ -242,12 +242,21 @@ window.App = window.App || {};
     return true;
   };
 
+  /* 离开 hx-dcim 静态壳，进入主 Vue 后台（/#/Project 等）。必须在 top 窗口改址，
+     否则 iframe 内 location 只会把 SPA 嵌进 iframe → 白屏。 */
   A.leaveTo = function (href) {
+    var path = String(href || '').trim();
+    if (!path) return;
+    var url = path.indexOf('://') >= 0 ? path : (window.location.origin || '') + (path.charAt(0) === '/' ? path : '/' + path);
     try {
-      if (window.parent && window.parent !== window) window.parent.location.href = href;
-      else window.location.href = href;
-    } catch (e) {
-      window.open(href, '_top');
+      window.top.location.href = url;
+      return;
+    } catch (e) { /* cross-origin 读 top 可能抛错，仍尝试写 parent / self */ }
+    try {
+      if (window.parent && window.parent !== window) window.parent.location.href = url;
+      else window.location.href = url;
+    } catch (e2) {
+      try { window.open(url, '_top'); } catch (e3) { window.location.href = url; }
     }
   };
 

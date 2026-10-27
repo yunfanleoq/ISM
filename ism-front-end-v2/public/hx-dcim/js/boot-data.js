@@ -1,26 +1,28 @@
 (function (A) {
   'use strict';
 
-  function token() {
+  function apiHeaders() {
+    if (window.HXAuth && window.HXAuth.headers) return window.HXAuth.headers();
+    var headers = { 'Content-Type': 'application/json' };
     try {
       var s = sessionStorage.getItem('Authorization');
-      if (s) return s;
+      if (s) headers.Authorization = s;
     } catch (e) {}
-    var m = document.cookie.match(/(?:^|; )Authorization=([^;]*)/);
-    if (!m) return '';
-    try { return decodeURIComponent(m[1]); } catch (e2) { return m[1]; }
+    return headers;
   }
 
   A.api = function (path, opt) {
     opt = opt || {};
-    var headers = { 'Content-Type': 'application/json' };
-    var t = token();
-    if (t) headers.Authorization = t;
     return fetch('/api' + path, {
       method: opt.method || 'GET',
-      headers: headers,
+      headers: apiHeaders(),
       body: opt.body ? JSON.stringify(opt.body) : undefined
-    }).then(function (r) { return r.json(); });
+    }).then(function (r) {
+      if ((r.status === 401 || r.status === 403) && window.HXAuth && window.HXAuth.authHint) {
+        A.toast(window.HXAuth.authHint());
+      }
+      return r.json();
+    });
   };
 
   function num(v) {
