@@ -585,6 +585,24 @@
     },
 
     /* ---------------- L1 楼层平面 ---------------- */
+    /* 楼层点击可能命中房名、房号，或仍带着柜名的旧对象。都要落到这间房。 */
+    resolveRoom: function (name) {
+      var rooms = (D() && D().rooms) || [];
+      var i, j, r, cabs;
+      if (!name) return '';
+      for (i = 0; i < rooms.length; i++) {
+        r = rooms[i];
+        if (r.name === name || (r.code && r.code === name)) return r.name;
+      }
+      for (i = 0; i < rooms.length; i++) {
+        cabs = rooms[i].cabinets || [];
+        for (j = 0; j < cabs.length; j++) {
+          if (cabs[j].name === name) return rooms[i].name;
+        }
+      }
+      return '';
+    },
+
     viewFloor: function (floor, fromEl) {
       this.cleanChrome(false, true);
       var self = this, Dd = D();
@@ -659,8 +677,10 @@
         A.V3.mount(A.q('#v3Host', nx), 'floor', floor, {
           oblique: oblique,
           drill: function (name) {
-            self.state.room = name; self.state.cab = null;
-            self.viewRoom(name, null);
+            var room = self.resolveRoom(name);
+            if (!room) return;
+            self.state.room = room; self.state.cab = null;
+            self.viewRoom(room, null);
           },
           toast: A.toast
         });

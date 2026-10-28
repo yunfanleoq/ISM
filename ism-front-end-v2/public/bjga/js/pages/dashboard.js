@@ -232,10 +232,14 @@
                 });
                 f.main = mrooms.length;
                 f.shield = mrooms.length > 0 && mrooms.every(function (r) { return r.type === '屏蔽机房'; });
+                /* 间数、柜数跟楼层画面画出来的一致，不用台账里把井道也算进去的 rooms。 */
+                var shown = (A.V3 && A.V3.floorCensus) ? A.V3.floorCensus(f.floor) : null;
+                var roomN = shown ? shown.rooms : f.rooms;
+                var cabN = shown ? shown.cabs : f.cabCount;
                 return '<button class="fs-item" type="button" data-floor="' + f.floor + '">' +
                   '<span class="fs-head"><span class="fs-tag">' + f.floor + '</span>' +
                     '<span class="fs-name">' + A.esc(f.main ? (f.shield ? '屏蔽机房层 · ' : '主机房层 · ') + f.main + ' 间' : '配套与弱电层') + '</span></span>' +
-                  '<span class="fs-kv">机房 <b>' + f.rooms + '</b> 间 · 机柜 <b>' + A.num(f.cabCount) + '</b> 架</span>' +
+                  '<span class="fs-kv">机房 <b>' + roomN + '</b> 间 · 机柜 <b>' + A.num(cabN) + '</b> 架</span>' +
                   '<span class="fs-al">告警 <b' + (hot ? ' style="color:var(--red)"' : '') + '>' +
                     A.num(f.alarmN) + '</b> 条</span>' +
                 '</button>';

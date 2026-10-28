@@ -1082,6 +1082,12 @@
       var span = r.type === '主机房' ? cabSpanIn(hull, spanCabs) : null;
       if (span) {
         plate(faces, span.x0, span.y0, 0.01, span.x1 - span.x0, span.y1 - span.y0, C.roomFloor, { o: { stroke: '#5C7890', sw: 1, obj: id } });
+      } else if (poly && poly.length >= 3) {
+        var px0 = Math.min(poly[0][0], poly[1][0]), py0 = Math.min(poly[0][1], poly[2][1]);
+        var px1 = Math.max(poly[0][0], poly[1][0]), py1 = Math.max(poly[0][1], poly[2][1]);
+        if (px1 > px0 && py1 > py0) {
+          plate(faces, px0, py0, 0.02, px1 - px0, py1 - py0, C.roomFloor, { o: { stroke: '#5C7890', sw: 1, obj: id } });
+        }
       }
       var focus = span
         ? [(span.x0 + span.x1) / 2, (span.y0 + span.y1) / 2, 1.2]
@@ -1096,30 +1102,22 @@
         var cw = c.w || 0.6, cd = c.d || 1.2;
         if (!inWallBox(hull, c.x, c.y, cw, cd)) return;
         if (unnamedOutside(c, rings)) return;
-        var cid = 'cab:' + c.name;
         cabShadow(faces, c.x, c.y, cw, cd);
+        /* 楼层这一层点柜就是进这间房。drill 若写成柜名，viewRoom 对不上房间，画面不动。 */
         box(faces, c.x, c.y, 0.02, cw, cd, 2.0, cadCabColor(c), {
-          topK: 1.24, rightK: 0.66, frontK: 0.6, o: { obj: cid }
-        });
-        objs[cid] = {
-          kind: 'cab', name: c.name, drill: c.name,
-          focus: [c.x + cw / 2, c.y + cd / 2, 1.2],
-          hint: c.name
-        };
-        T(labels, c.x + cw / 2, c.y + cd / 2, 2.15, c.name, {
-          size: 11, col: '#F4FBFF', weight: '700', bg: 'rgba(3,12,24,.88)', obj: cid, lay: 2, dim: 1
+          topK: 1.24, rightK: 0.66, frontK: 0.6, o: { obj: id }
         });
       });
       if (r.type === '主机房' || r.type === '配电室' || r.type === '电池室' || r.type === '操作间' || r.type === '空调间') {
         var lx, ly, lz;
         if (r.type === '主机房' && span) {
           lx = (span.x0 + span.x1) / 2;
-          ly = span.y1 + 0.35;
-          lz = 2.35;
+          ly = (span.y0 + span.y1) / 2;
+          lz = 2.5;
         } else if (poly) {
           lx = (poly[0][0] + poly[1][0]) / 2;
           ly = (poly[0][1] + poly[2][1]) / 2;
-          lz = 0.45;
+          lz = 2.9;
         } else return;
         var at = spotName(lx, ly);
         T(labels, at.x, at.y, lz, roomLabelText(r), {
@@ -4235,9 +4233,54 @@
     return c;
   }
 
+  /* 总览楼层小方框用。口径与 floorCad 一致：只数画面上标出来的机房，
+     井道 / 风井 / 排风 / 无号柜不计入间数；「5层5层」这类重复前缀按显示名只计一次。
+     机柜只数围墙内、且没有被 unnamedOutside 丢掉的柜。 */
+  function floorCensus(floor) {
+    var D = window.DCIM || {};
+    var info = (D.floors || []).filter(function (f) { return f.floor === floor; })[0] || {};
+    var rs = (D.rooms || []).filter(function (r) { return r.floor === floor; });
+    var hull = wallBox(info);
+    var rings = [];
+    rs.forEach(function (r) {
+      if (r.type !== '主机房') return;
+      var g = roomRing(info, r);
+      if (g) rings.push(g);
+    });
+    var cabs = 0;
+    rs.forEach(function (r) {
+      (r.cabinets || []).forEach(function (c) {
+        if (c.x == null) return;
+        var cw = c.w || 0.6, cd = c.d || 1.2;
+        if (!inWallBox(hull, c.x, c.y, cw, cd)) return;
+        if (unnamedOutside(c, rings)) return;
+        cabs++;
+      });
+    });
+    var showType = { '主机房': 1, '配电室': 1, '电池室': 1, '操作间': 1, '空调间': 1 };
+    var seen = {};
+    var rooms = 0;
+    rs.forEach(function (r) {
+      if (!showType[r.type]) return;
+      var name = String(r.name || '');
+      var lab = roomLabelText(r);
+      if (!lab) return;
+      if (/井道|风井|排风|无号/.test(name) || /井道|风井|排风|无号/.test(lab)) return;
+      var spanCabs = (r.cabinets || []).filter(function (c) { return !unnamedOutside(c, rings); });
+      var span = r.type === '主机房' ? cabSpanIn(hull, spanCabs) : null;
+      var poly = r.poly;
+      if (!span && !(poly && poly.length >= 3)) return;
+      if (seen[lab]) return;
+      seen[lab] = 1;
+      rooms++;
+    });
+    return { rooms: rooms, cabs: cabs };
+  }
+
   /* ==================== 对外 API ==================== */
   A.V3 = {
     active: null,
+    floorCensus: floorCensus,
     mount: function (host, kind, key, api) {
       if (active) active.dispose();
       var inherit = null;
