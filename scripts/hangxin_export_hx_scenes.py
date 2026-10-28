@@ -29,6 +29,9 @@ ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 DEFAULT_DB = os.path.join(ROOT, "ism_server_user", "data", "db", "ism-hangxin-20261023.db")
 DEFAULT_OUT = os.path.join(ROOT, "ism-front-end-v2", "public", "hx-dcim", "data", "hx-scenes.json")
 DEFAULT_ARCH = os.path.join(ROOT, "ism-front-end-v2", "public", "hx-dcim", "data", "hx-arch-tree.json")
+DEFAULT_POWER_INDEX = os.path.join(
+    ROOT, "ism-front-end-v2", "public", "hx-dcim", "data", "hx-power-page-index.json"
+)
 MODEL_ID = "b620dc75-1da2-351b-b89e-05b5cb608886"
 
 POWER_PAGE_RE = re.compile(r"^配电室\d[AB]\d$")
@@ -302,6 +305,59 @@ def cmd_manifest(conn: sqlite3.Connection, model_id: str, arch_path: str, out_pa
     return 0
 
 
+def cmd_power_index(
+    conn: sqlite3.Connection,
+    model_id: str,
+    out_path: str,
+    arch_path: str,
+    patch_arch: bool,
+    db_path: str,
+) -> int:
+    rows = fetch_layers(conn, model_id)
+    pages = [
+        {"name": r["page_name"], "pageId": r["page_id"]}
+        for r in rows
+        if POWER_PAGE_RE.match(r["page_name"])
+    ]
+    pages.sort(key=lambda p: p["name"])
+    doc = {
+        "generatedAt": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "model": model_id,
+        "db": os.path.abspath(db_path),
+        "pages": pages,
+    }
+    os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
+    with open(out_path, "w", encoding="utf-8") as f:
+        json.dump(doc, f, ensure_ascii=False, indent=2)
+    print(f"Wrote power index ({len(pages)} pages): {out_path}")
+
+    if patch_arch and os.path.isfile(arch_path):
+        by_name = {p["name"]: p["pageId"] for p in pages}
+        with open(arch_path, encoding="utf-8") as f:
+            spec = json.load(f)
+
+        def walk(node: dict) -> None:
+            name = node.get("name") or ""
+            kids = node.get("children") or []
+            if not kids and POWER_PAGE_RE.match(name):
+                pid = by_name.get(name)
+                if pid:
+                    node["pageId"] = pid
+                elif "pageId" in node:
+                    del node["pageId"]
+                return
+            for ch in kids:
+                walk(ch)
+
+        for b in spec.get("branches") or []:
+            if b.get("name") == "配电室":
+                walk(b)
+        with open(arch_path, "w", encoding="utf-8") as f:
+            json.dump(spec, f, ensure_ascii=False, indent=2)
+        print(f"Patched arch tree pageId on {len(by_name)} power leaves: {arch_path}")
+    return 0
+
+
 def cmd_export(
     conn: sqlite3.Connection,
     model_id: str,
@@ -351,6 +407,18 @@ def main() -> int:
     parser.add_argument("--manifest", metavar="PATH", help="写出 pending 清单 JSON")
     parser.add_argument("--export-power", action="store_true", help="导出配电室一次图")
     parser.add_argument("--export-columns", action="store_true", help="导出列头柜页")
+    parser.add_argument(
+        "--export-power-index",
+        action="store_true",
+        help="写出 hx-power-page-index.json，并给架构树配电室叶子补 pageId",
+    )
+    parser.add_argument("--power-index-out", default=DEFAULT_POWER_INDEX, help="配电页索引 JSON")
+    parser.add_argument(
+        "--patch-arch",
+        action="store_true",
+        default=True,
+        help="--export-power-index 时同步 patch hx-arch-tree.json（默认开）",
+    )
     parser.add_argument("--merge", action="store_true", default=True, help="与已有 hx-scenes 按 page id 合并（默认开）")
     parser.add_argument("--replace", action="store_true", help="不合并，仅用本次导出覆盖 pages")
     args = parser.parse_args()
@@ -365,8 +433,17 @@ def main() -> int:
             return cmd_list(conn, args.model, args.arch)
         if args.manifest:
             return cmd_manifest(conn, args.model, args.arch, args.manifest)
+        if args.export_power_index:
+            return cmd_power_index(
+                conn,
+                args.model,
+                args.power_index_out,
+                args.arch,
+                patch_arch=args.patch_arch,
+                db_path=args.db,
+            )
         if not args.export_power and not args.export_columns:
-            parser.error("指定 --list、--manifest，或 --export-power / --export-columns")
+            parser.error("指定 --list、--manifest、--export-power-index，或 --export-power / --export-columns")
         return cmd_export(
             conn,
             args.model,

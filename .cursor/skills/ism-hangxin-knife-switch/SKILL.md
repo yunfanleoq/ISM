@@ -40,4 +40,9 @@ disable-model-invocation: false
 
 单相：没有 A/B/C 后缀的单独一把、不要框。307 就是这种。机房按实际支路画，编号可以比设计图多。
 
-母线、UPS 出线颜色不跟开关状态走。电容补偿柜不画。
+母线、UPS 出线颜色不跟开关状态走。
+
+按 CAD 改配电一次图时读 `ism-hx-power-oneline`（`.cursor/skills/ism-hx-power-oneline/SKILL.md`）。
+进线、电容补偿柜、顶母线分段和 UPS 主路/旁路连通以那份为准。
+本技能只定刀片红绿和刀形，不要在一次图布局里改半圆弧或斜刀坐标。
+补偿柜要画。5A1 的柜号不要套到其他配电室。

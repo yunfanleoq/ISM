@@ -20,6 +20,11 @@ disable-model-invocation: false
 
 适用：已有项目（含 `monitor_list` 设备树 + modbus 实时数据）想快速做出多层级监控大屏。
 
+航信 hx-dcim 配电一次图不在这里画。
+按 CAD 改 5A1、3A1、3A2、4B1 或其他配电室，读 `.cursor/skills/ism-hx-power-oneline/SKILL.md`。
+刀闸红绿见 `ism-hangxin-knife-switch`，不要在大屏 cells 里重写刀形。
+不要用本技能的 cells 流程去改一次图，也不要把 5A1 的柜号套到别的室。
+
 参考实现（航信机房）：`build_ncc_dashboard.py` + `scripts/*` + `docs/scada-dashboard-changelog.md`。
 
 ---

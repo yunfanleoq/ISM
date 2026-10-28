@@ -13,7 +13,7 @@
   function load() {
     if (spec) return Promise.resolve(spec);
     if (loadP) return loadP;
-    loadP = fetch('/hx-dcim/data/hx-arch-tree.json?v=20261025treehint').then(function (r) {
+    loadP = fetch('/hx-dcim/data/hx-arch-tree.json?v=20261028cad76').then(function (r) {
       if (!r.ok) throw new Error('no arch tree');
       return r.json();
     }).then(function (j) {
@@ -162,6 +162,11 @@
     if (isPowerLeaf(name)) {
       room = idx.byName[name];
       if (room) return { room: room, cab: null, ok: true, kind: 'power', design: name };
+      var leafNode = getNodeAt(path);
+      if (leafNode && leafNode.pageId) {
+        room = { name: name, kind: 'power', pageId: leafNode.pageId };
+        return { room: room, cab: null, ok: true, kind: 'power', design: name };
+      }
       return {
         ok: false,
         reason: '一次图未解开',
