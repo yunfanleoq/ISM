@@ -1102,7 +1102,8 @@
           topK: 1.24, rightK: 0.66, frontK: 0.6, o: { obj: cid }
         });
         objs[cid] = {
-          kind: 'cab', name: c.name, drill: c.name,
+          /* 楼层视图：机柜不单独下钻，点机柜 = 进所在机房（drill 传房间名，viewRoom 才能找到） */
+          kind: 'cab', name: c.name, drill: r.name,
           focus: [c.x + cw / 2, c.y + cd / 2, 1.2],
           hint: c.name
         };
@@ -2482,7 +2483,8 @@
     if (!w || !h) return;
     /* 位图固定超采样：一是边缘更平滑，二是位图必须大于 CSS 盒 ——
        等大时（dpr=1）合成器可能一直挂着空白纹理，画面整个发黑 */
-    var bm = (w * h > 900000) ? 1.5 : 2;
+    /* 性能：位图倍率 1.5/2 → 1.25/1.5（Canvas2D 光栅化像素量约降 30%，巡查卡顿主因） */
+    var bm = (w * h > 900000) ? 1.25 : 1.5;
     var bw = Math.round(w * bm), bh = Math.round(h * bm);
     if (this.cv.width !== bw || this.cv.height !== bh) {
       this.cv.width = bw;
@@ -3244,12 +3246,40 @@
   Viewer.prototype.considerCab = function () {
     return;
   };
+  /* 性能：巡查切柜的场景缓存（LRU 16）。键 = 机柜名 + 柜内/柜外；
+     DCIM / assets / rooms / thDevices 任一对象被整体替换（数据刷新）即清空 */
+  var RACK_CACHE_MAX = 16, rackCache = [], rackCacheSig = null;
+  function rackCached(name, inside) {
+    var D = window.DCIM || {};
+    if (!rackCacheSig || rackCacheSig.d !== D || rackCacheSig.a !== D.assets ||
+        rackCacheSig.r !== D.rooms || rackCacheSig.t !== D.thDevices) {
+      rackCache = [];
+      rackCacheSig = { d: D, a: D.assets, r: D.rooms, t: D.thDevices };
+    }
+    var k = name + '|' + (inside ? 1 : 0);
+    for (var i = 0; i < rackCache.length; i++) {
+      if (rackCache[i].k === k) {
+        var hit = rackCache.splice(i, 1)[0];
+        rackCache.push(hit);
+        return hit.sc;
+      }
+    }
+    var sc = S.rack(name, { inside: inside });
+    if (sc && sc.walk) {
+      rackCache.push({ k: k, sc: sc });
+      if (rackCache.length > RACK_CACHE_MAX) rackCache.shift();
+    }
+    return sc;
+  }
+  S.rackCacheClear = function () { rackCache = []; rackCacheSig = null; };
+  S.rackCacheSize = function () { return rackCache.length; };
+
   Viewer.prototype.switchCab = function (name, inside) {
     var want = !!inside;
     if (!name) return;
     if (name === this.key && !!this._sceneInside === want) return;
     var pose = { x: this.player.x, y: this.player.y, yaw: this.to.yaw, pitch: this.to.pitch };
-    var sc = S.rack(name, { inside: want });
+    var sc = rackCached(name, want);
     if (!sc || !sc.walk) return;
     this.key = name;
     this.sc = sc;
@@ -3302,7 +3332,8 @@
     var hh = this.host ? this.host.clientHeight : this.cv.clientHeight;
     if (hw !== this._lastW || hh !== this._lastH) { this._lastW = hw; this._lastH = hh; this.resize(); }
     this.frames++;
-    if (idle && this.frames % 3 !== 0 && !this.needDraw) return;
+    /* 性能：静止时只为指示灯动画低频重绘（每 6 帧一次，原每 3 帧） */
+    if (idle && this.frames % 6 !== 0 && !this.needDraw) return;
     this.needDraw = 0;
 
     this.draw(time);
@@ -3517,7 +3548,9 @@
 
       /* 逐顶点变换 + 近平面裁剪（vz = 沿 forward 的正向距离） */
       p = f.p; n = p.length;
-      var sxA = [], syA = [], vzA = [], zA = [];
+      /* 性能：复用逐面临时数组，减少每帧 ~1 万次分配 */
+      var sxA = this._sxA || (this._sxA = []), syA = this._syA || (this._syA = []), vzA = this._vzA || (this._vzA = []);
+      sxA.length = 0; syA.length = 0; vzA.length = 0;
       var clip = false, anyNear = false;
       var emph = (f.cab && emphMap[f.cab]) || 0;
       var cabScl = f.cab ? (0.97 + 0.19 * emph) : 1;

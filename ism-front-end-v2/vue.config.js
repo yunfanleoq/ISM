@@ -7,6 +7,63 @@ const {resolveCss} = require('./src/utils/theme-color-replacer-extend')
 const CompressionWebpackPlugin = require('compression-webpack-plugin')
 const TerserWebpackPlugin = require('terser-webpack-plugin');
 const productionGzipExtensions = ['js', 'css']
+// Bulk public/static trees are served as static files. They must not be copied
+// or watched by the dev server: MapStorage alone is ~7k images, and opening
+// them on Windows hits EMFILE. copy-webpack-plugin matches ignore globs
+// against paths relative to public/ (static/MapStorage/...), so a pattern
+// without the static/ prefix never matches. watchpack 1.7 also walks context
+// dependencies itself and does not honor watchOptions.ignored, so the public
+// directory dependency is narrowed after compile.
+const BULK_STATIC_DIRS = ['MapStorage', 'ISM', 'customPel', 'amis', 'upload']
+const bulkStaticWatchIgnore = new RegExp(
+  '[\\\\/]node_modules([\\\\/]|$)|[\\\\/]public[\\\\/]static[\\\\/](' +
+    BULK_STATIC_DIRS.join('|') +
+    ')([\\\\/]|$)'
+)
+const bulkStaticCopyIgnores = BULK_STATIC_DIRS.map(function (name) {
+  return '**/static/' + name + '/**'
+})
+
+function normWatchPath(p) {
+  return path.resolve(p).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase()
+}
+
+function narrowPublicContextDependencies(compilation) {
+  const deps = compilation.contextDependencies
+  if (!deps || typeof deps.delete !== 'function') return
+  const fs = require('fs')
+  const publicDir = path.resolve(__dirname, 'public')
+  const staticDir = path.join(publicDir, 'static')
+  const publicNorm = normWatchPath(publicDir)
+  const staticNorm = normWatchPath(staticDir)
+  const bulkNorms = BULK_STATIC_DIRS.map(name => normWatchPath(path.join(staticDir, name)))
+  let sawPublicTree = false
+  Array.from(deps).forEach(dep => {
+    const n = normWatchPath(dep)
+    const isBulk = bulkNorms.some(b => n === b || n.startsWith(b + '/'))
+    const isAncestor = n === publicNorm || n === staticNorm
+    if (isBulk || isAncestor) {
+      deps.delete(dep)
+      sawPublicTree = true
+    }
+  })
+  if (!sawPublicTree) return
+  const addDir = dir => {
+    try {
+      if (fs.statSync(dir).isDirectory()) deps.add(dir)
+    } catch (e) { /* folder missing */ }
+  }
+  fs.readdirSync(publicDir).forEach(name => {
+    if (name === 'static') return
+    addDir(path.join(publicDir, name))
+  })
+  if (fs.existsSync(staticDir)) {
+    fs.readdirSync(staticDir).forEach(name => {
+      if (BULK_STATIC_DIRS.indexOf(name) !== -1) return
+      addDir(path.join(staticDir, name))
+    })
+  }
+}
 //const isProd = process.env.NODE_ENV === 'production'
 const isProd = false
 const BuildMod = false
@@ -43,21 +100,17 @@ module.exports = {
     // 0.0.0.0 允许局域网访问页面；sockHost 强制 HMR 走本机回环，避免用 10.x IP 连 sockjs 超时
     host: '0.0.0.0',
     port: 7081,
-    public: '127.0.0.1:7080',
+    public: '127.0.0.1:7081',
     sockHost: '127.0.0.1',
-    sockPort: 7080,
+    sockPort: 7081,
     disableHostCheck: true,
     // 始终用本机地址打开，防止书签/历史记录里的局域网 IP 触发 sockjs 错连
-    open: 'http://127.0.0.1:7080',
+    open: 'http://127.0.0.1:7081',
     writeToDisk: true,
     watchOptions: {
       poll: 2000,        // 改大轮询间隔，进一步降低句柄占用
       aggregateTimeout: 500,
-      ignored: [
-        /node_modules/,
-        /public[\\/]static[\\/]MapStorage/,
-        /MapStorage/,
-      ],
+      ignored: [bulkStaticWatchIgnore],
     },
     proxy: {
       '/api': { //此处要与 /services/api.js 中的 API_PROXY_PREFIX 值保持一致
@@ -169,6 +222,13 @@ module.exports = {
     }
     // Ignore all locale files of moment.js
     config.plugins.push(new webpack.IgnorePlugin(/^\.\/locale$/, /moment$/))
+    config.plugins.push({
+      apply(compiler) {
+        compiler.hooks.afterCompile.tap('IgnoreBulkStaticWatch', compilation => {
+          narrowPublicContextDependencies(compilation)
+        })
+      }
+    })
     // 生产环境下将资源压缩成gzip格式
     if (isProd) {
       // add `CompressionWebpack` plugin to webpack plugins
@@ -194,9 +254,10 @@ module.exports = {
         patterns.forEach(p => {
           if (!p || typeof p !== 'object') return
           if (!p.ignore) p.ignore = []
-          if (!p.ignore.includes('MapStorage/**')) {
-            p.ignore.push('MapStorage/**')
-          }
+          p.ignore = p.ignore.filter(item => item !== 'MapStorage/**')
+          bulkStaticCopyIgnores.forEach(glob => {
+            if (!p.ignore.includes(glob)) p.ignore.push(glob)
+          })
         })
         return args
       })

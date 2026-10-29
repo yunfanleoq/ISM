@@ -54,7 +54,12 @@ function hasAnyRole(required, roles) {
  * @returns {boolean}
  */
 function hasAuthority(route, permissions, roles) {
-  const authorities = [...route.meta.pAuthorities, route.meta.authority]
+  const meta = (route && route.meta) || {}
+  const pAuthorities = Array.isArray(meta.pAuthorities) ? meta.pAuthorities : []
+  const authorities = pAuthorities.slice()
+  if (meta.authority !== undefined && meta.authority !== null) {
+    authorities.push(meta.authority)
+  }
   for (let authority of authorities) {
     if (!hasPermission(authority, permissions) && !hasRole(authority, roles)) {
       return false
@@ -70,6 +75,9 @@ function hasAuthority(route, permissions, roles) {
  * @param roles
  */
 function filterMenu(menuData, permissions, roles) {
+  if (!Array.isArray(menuData)) {
+    return []
+  }
   return menuData.filter(menu => {
     if (menu.meta && menu.meta.invisible === undefined) {
       if (!hasAuthority(menu, permissions, roles)) {

@@ -235,7 +235,7 @@
                 return '<button class="fs-item" type="button" data-floor="' + f.floor + '">' +
                   '<span class="fs-head"><span class="fs-tag">' + f.floor + '</span>' +
                     '<span class="fs-name">' + A.esc(f.main ? (f.shield ? '屏蔽机房层 · ' : '主机房层 · ') + f.main + ' 间' : '配套与弱电层') + '</span></span>' +
-                  '<span class="fs-kv">机房 <b>' + f.rooms + '</b> 间 · 机柜 <b>' + A.num(f.cabCount) + '</b> 架</span>' +
+                  '<span class="fs-kv">机房 <b>' + f.main + '</b> 间 · 机柜 <b>' + A.num(f.cabCount) + '</b> 架</span>' +
                   '<span class="fs-al">告警 <b' + (hot ? ' style="color:var(--red)"' : '') + '>' +
                     A.num(f.alarmN) + '</b> 条</span>' +
                 '</button>';
