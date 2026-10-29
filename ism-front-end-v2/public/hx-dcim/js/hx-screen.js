@@ -45,7 +45,7 @@
 
   function loadPowerIndex() {
     if (powerIndexP) return powerIndexP;
-    powerIndexP = fetch('/hx-dcim/data/hx-power-page-index.json?v=20261028cad76').then(function (r) {
+    powerIndexP = fetch('/hx-dcim/data/hx-power-page-index.json?v=20261029bus02').then(function (r) {
       if (!r.ok) return null;
       return r.json();
     }).then(function (j) {
@@ -71,17 +71,17 @@
   function loadScenes() {
     var jobs = [];
     if (w.HX5A1) {
-      jobs.push(w.HX5A1.load('20261028cad76').catch(function (e) {
+      jobs.push(w.HX5A1.load('20261029bus02').catch(function (e) {
         if (w.console) w.console.warn('[hx-5a1] 布局未加载，5A1 退回通用绘制', e);
       }));
     }
     if (w.HXRooms) {
-      jobs.push(w.HXRooms.load('20261028cad76').catch(function (e) {
+      jobs.push(w.HXRooms.load('20261029bus02').catch(function (e) {
         if (w.console) w.console.warn('[hx-rooms] 配电室布局未加载', e);
       }));
     }
     return Promise.all(jobs).then(function () {
-      return fetch('/hx-dcim/data/hx-scenes.json?v=20261028cad76');
+      return fetch('/hx-dcim/data/hx-scenes.json?v=20261029bus02');
     }).then(function (r) {
       if (!r.ok) throw new Error('no scenes');
       return r.json();
@@ -122,7 +122,18 @@
     return '';
   }
 
+  function paintTopoDevs() {
+    if (!hostEl) return;
+    var root = hostEl.querySelector('.hx-topo');
+    if (!root) return;
+    root.querySelectorAll('.hx-topo-dev[data-dev]').forEach(function (el) {
+      var st = topoDevState(el.getAttribute('data-dev'), el.getAttribute('data-uuid'));
+      applyTopoDevEl(el, st);
+    });
+  }
+
   function paint() {
+    paintTopoDevs();
     if (!page || !hostEl) return;
     hostEl.querySelectorAll('[data-hx-line]').forEach(function (el) {
       var n = page.nodes[Number(el.getAttribute('data-i'))];
@@ -151,6 +162,60 @@
       var known = L().uuidValue(el.getAttribute('data-hx-uuid'));
       if (known) el.textContent = L().showValue(known);
     });
+  }
+
+  /** 设备名 → 通讯状态测点（能接到就接，接不上返回 null，不编假数据） */
+  function topoCommPoint(devName) {
+    var name = String(devName || '');
+    if (!name || !L().pointOf) return null;
+    var cands = [name + '_通讯状态'];
+    if (name.indexOf('配电室') !== 0) cands.push('配电室' + name + '_通讯状态');
+    else cands.push(name.replace(/^配电室/, '') + '_通讯状态');
+    var i, pt;
+    for (i = 0; i < cands.length; i++) {
+      pt = L().pointOf(cands[i]);
+      if (pt && pt.uuid) return pt;
+    }
+    return null;
+  }
+
+  function topoCommOk(value) {
+    var s = String(value == null ? '' : value).trim();
+    if (s === '') return null;
+    if (s === '1' || s === '正常' || s === 'true' || s === 'OK' || s === 'ok') return true;
+    if (s === '0' || s === '故障' || s === '中断' || s === '异常' || s === 'false') return false;
+    var n = parseFloat(s);
+    if (!isNaN(n)) return n !== 0;
+    return null;
+  }
+
+  function topoDevState(devName, uuidHint) {
+    var pt = topoCommPoint(devName);
+    if (!pt || !pt.uuid) return { kind: 'unk', label: '未绑' };
+    var known = (uuidHint && L().uuidValue(uuidHint)) || L().remembered(pt);
+    var raw = known && known.value != null && known.value !== '' ? known.value : pt.value;
+    if (raw == null || raw === '') return { kind: 'wait', label: '—' };
+    var ok = topoCommOk(raw);
+    if (ok === true) return { kind: 'ok', label: '正常' };
+    if (ok === false) return { kind: 'bad', label: '故障' };
+    return { kind: 'wait', label: '—' };
+  }
+
+  function topoShortName(devName) {
+    return String(devName || '').replace(/^配电室/, '');
+  }
+
+  function applyTopoDevEl(el, st) {
+    var short = topoShortName(el.getAttribute('data-dev') || '');
+    el.classList.remove('is-ok', 'is-bad', 'is-unk', 'is-wait');
+    el.classList.add('is-' + (st.kind || 'unk'));
+    var flow = el.querySelector('.hx-topo-flow');
+    if (flow) flow.hidden = st.kind !== 'ok';
+    var lab = el.querySelector('.hx-topo-dev-lab');
+    if (lab) lab.textContent = short + (st.label || '');
+    el.title = st.kind === 'unk'
+      ? (short + ' · 未找到「' + short + '_通讯状态」测点，占位显示')
+      : (short + ' · 通讯' + (st.label || ''));
   }
 
   function labelOf(key) {
@@ -396,36 +461,20 @@
     fitEl.style.width = cw + 'px';
     fitEl.style.height = ch + 'px';
     fitEl.style.transform = 'none';
-    var box = page && page.kind === 'power' ? powerContentBox(page) : null;
-    var x0 = (page && page.x0) || 0;
-    var ox = 0;
-    var oy = 0;
+    /* 整张画布放进 #hxFit，四周留边。扁长室不再改按高度铺满，否则宽度溢出被裁。 */
     var bw = board.offsetWidth;
     var bh = board.offsetHeight;
-    if (box) {
-      ox = box.minX - x0;
-      oy = box.minY;
-      bw = box.maxX - box.minX;
-      bh = box.maxY - box.minY;
-    }
     if (!(bw > 1) || !(bh > 1)) return;
     var pad = Math.max(16, Math.round(Math.min(cw, ch) * 0.03));
     var availW = Math.max(1, cw - pad * 2);
     var availH = Math.max(1, ch - pad * 2);
-    var sW = availW / bw;
-    var sH = availH / bh;
-    var s = Math.min(sW, sH);
+    var s = Math.min(availW / bw, availH / bh);
     if (!isFinite(s) || s <= 0) s = 0.4;
-    /* 扁长图：整图塞进窗口后画高不到视口 55%，改按高度铺满，多出来的宽度平移。
-       1A2 约 12000×1300，按宽度适配只剩一条带子。接近视口比例的室（如 5A1）仍整图放进。 */
-    var viewAspect = cw / ch;
-    var contentAspect = bw / bh;
-    if (contentAspect > viewAspect * 2.5 && bh * s < ch * 0.55) s = sH;
     s = Math.max(0.05, Math.min(8, s));
     var contentW = bw * s;
     var contentH = bh * s;
-    var dx = contentW <= cw - pad ? (cw - contentW) / 2 - ox * s : pad - ox * s;
-    var dy = contentH <= ch - pad ? (ch - contentH) / 2 - oy * s : pad - oy * s;
+    var dx = (cw - contentW) / 2;
+    var dy = (ch - contentH) / 2;
     stage.baseS = s;
     stage.baseDx = dx;
     if (stage.user && page && page.kind === 'power') return;
@@ -441,8 +490,8 @@
       if (el.closest('.hx-zoom-bar, [data-hx-key], .hx-sym')) return false;
       return !!el.closest('.hx-fit');
     }
+    /* 编辑态仍要能缩放看清：滚轮/双击缩放、局部框选可用；空白平移仍让给编辑手势。 */
     main.addEventListener('wheel', function (ev) {
-      if (editOn()) return;
       if (!page || page.kind !== 'power' || !blank(ev.target) && !(ev.target.closest && ev.target.closest('.hx-fit'))) return;
       if (ev.target.closest && ev.target.closest('.hx-zoom-bar')) return;
       ev.preventDefault();
@@ -451,13 +500,13 @@
       zoomAt(ev.clientX, ev.clientY, (stage.sc || 1) * (dy > 0 ? 0.9 : 1.12));
     }, { passive: false });
     main.addEventListener('dblclick', function (ev) {
-      if (editOn()) return;
       if (!page || page.kind !== 'power') return;
       if (ev.target.closest && ev.target.closest('.hx-zoom-bar')) return;
+      /* 编辑改字优先；其它位置仍按原手势缩放 */
+      if (editOn() && ev.target.closest && ev.target.closest('.hx-tx')) return;
       zoomAt(ev.clientX, ev.clientY, (stage.sc || 1) * (ev.shiftKey ? 1 / 1.35 : 1.35));
     });
     main.addEventListener('pointerdown', function (ev) {
-      if (editOn()) return;
       if (!page || page.kind !== 'power' || ev.button !== 0) return;
       if (ev.target.closest && ev.target.closest('.hx-zoom-bar')) return;
       var fit = stageFit();
@@ -475,6 +524,7 @@
         if (main.setPointerCapture) main.setPointerCapture(ev.pointerId);
         return;
       }
+      if (editOn()) return;
       if (!blank(ev.target)) return;
       drag = { mode: 'pan', x: ev.clientX, y: ev.clientY, tx: stage.tx, ty: stage.ty, moved: false };
       if (main.setPointerCapture) main.setPointerCapture(ev.pointerId);
@@ -1608,6 +1658,108 @@
     return null;
   }
 
+  function showTopoComm(main, resolved, item) {
+    if (!main || !w.HXArch) return;
+    page = null;
+    var mgrName = (resolved && resolved.mgr) || (item && item.name) || '';
+    var coms = w.HXArch.mgrComPorts(mgrName);
+    var title = (resolved && resolved.pageHint) || (mgrName.split('(')[0] + '通讯图');
+    var rules = (resolved && resolved.rules) || w.HXArch.netRules || {};
+    var rows = [];
+    var bound = 0;
+    var total = 0;
+    var i, j, com, devs, dev, pt, st, short, uuid;
+
+    function comBlockHtml(comNode, role) {
+      if (!comNode) return '<div class="hx-topo-com is-empty"></div>';
+      var kids = comNode.children || [];
+      var body = kids.map(function (d) {
+        var nm = d.name || '';
+        total++;
+        pt = topoCommPoint(nm);
+        uuid = pt && pt.uuid ? pt.uuid : '';
+        if (uuid) {
+          bound++;
+          rows.push(pt);
+        }
+        st = topoDevState(nm, uuid);
+        short = topoShortName(nm);
+        return '<div class="hx-topo-dev is-' + esc(st.kind) + '" data-dev="' + esc(nm) + '"' +
+          (uuid ? ' data-uuid="' + esc(uuid) + '"' : '') +
+          ' title="' + esc(st.kind === 'unk' ? (short + ' · 未绑通讯状态测点') : (short + ' · 通讯' + st.label)) + '">' +
+          '<span class="hx-topo-flow" ' + (st.kind === 'ok' ? '' : 'hidden') + '></span>' +
+          '<span class="hx-topo-dev-lab">' + esc(short + (st.label || '')) + '</span>' +
+          '</div>';
+      }).join('');
+      var roleCls = role ? (' hx-topo-com--' + role) : '';
+      /* 列竖干只接到 COM 标题；设备挂在 COM 下独立竖干上 */
+      var branch = kids.length
+        ? ('<div class="hx-topo-com-branch">' +
+            '<div class="hx-topo-com-spine" aria-hidden="true"></div>' +
+            '<div class="hx-topo-com-devs">' + body + '</div>' +
+          '</div>')
+        : '';
+      return '<div class="hx-topo-com' + roleCls + '">' +
+        '<div class="hx-topo-com-h">' + esc(comNode.name) + '</div>' +
+        branch +
+        '</div>';
+    }
+
+    /* 奇偶 COM 成列：主母线垂下竖干 → 短横接 COM → COM 下再竖干树状挂设备 */
+    var cols = [];
+    for (i = 0; i < coms.length; i += 2) {
+      cols.push({ top: coms[i], bottom: coms[i + 1] || null });
+    }
+
+    var colsHtml = cols.map(function (col) {
+      var hasBot = !!col.bottom;
+      return '<div class="hx-topo-col' + (hasBot ? ' has-bot' : '') + '">' +
+        '<div class="hx-topo-col-spine" aria-hidden="true"></div>' +
+        comBlockHtml(col.top, 'top') +
+        (col.bottom ? comBlockHtml(col.bottom, 'bot') : '<div class="hx-topo-com is-empty"></div>') +
+        '</div>';
+    }).join('');
+
+    var note = bound
+      ? ('已绑通讯状态 ' + bound + '/' + total + '；绿=正常（流动框可见），红=故障（流动框隐藏）；灰·未绑为占位')
+      : ('本机 ' + total + ' 个设备暂未接到「*_通讯状态」测点，全部占位显示，不假闪');
+
+    main.innerHTML =
+      '<div class="hx-topo">' +
+        '<div class="hx-topo-head">' +
+          '<div class="hx-topo-title">' + esc(title) + '</div>' +
+          '<div class="hx-topo-sub">' + esc(mgrName) +
+            (coms.length ? (' · ' + coms.length + ' 个 COM') : '') +
+            ' · ' + esc(note) + '</div>' +
+        '</div>' +
+        '<div class="hx-topo-canvas">' +
+          '<div class="hx-topo-mgr" title="' + esc(mgrName) + '">' +
+            '<div class="hx-topo-mgr-ico" aria-hidden="true">' +
+              '<svg viewBox="0 0 48 40" width="44" height="36">' +
+                '<rect x="4" y="6" width="40" height="28" rx="3" fill="#1a4a7a" stroke="#9fd0ff" stroke-width="1.6"/>' +
+                '<path d="M12 20c4-8 20-8 24 0" fill="none" stroke="#dff4ff" stroke-width="2"/>' +
+                '<circle cx="24" cy="20" r="3" fill="#7fe9ff"/>' +
+              '</svg>' +
+            '</div>' +
+            '<div class="hx-topo-mgr-name">' + esc(mgrName.split('(')[0]) + '</div>' +
+          '</div>' +
+          '<div class="hx-topo-stem"></div>' +
+          '<div class="hx-topo-bus"></div>' +
+          '<div class="hx-topo-cols">' + (colsHtml || '<div class="hx-pt">该管理机下没有 COM 口</div>') + '</div>' +
+        '</div>' +
+        '<div class="hx-topo-legend">' +
+          esc(rules.ok || '绿=正常且外框流动可见') + ' · ' +
+          esc(rules.bad || '红=异常且流动框不可见') + ' · ' +
+          esc(rules.bind || '设备只绑通讯状态') +
+        '</div>' +
+      '</div>';
+
+    pageRows = rows;
+    L().allow(pageRows);
+    if (pageRows.length) L().fetch(pageRows).then(paintTopoDevs);
+    else paintTopoDevs();
+  }
+
   function showStub(main, resolved, item) {
     if (!main) return;
     var links = (resolved && resolved.links) || [];
@@ -1649,6 +1801,17 @@
     });
     L().allow([]);
     pageRows = [];
+  }
+
+  function findPageByName(name) {
+    if (!name) return null;
+    var i, p;
+    for (i = 0; i < scenes.length; i++) {
+      p = scenes[i];
+      if (p && p.name === name) return p;
+    }
+    if (powerByName[name]) return { name: name, id: powerByName[name], kind: 'topo' };
+    return null;
   }
 
   function setCrumb(labels) {
@@ -1693,6 +1856,15 @@
     var labels = w.HXArch ? w.HXArch.crumbLabels(item && item.ancestors, item && item.name, cab && cab.name) : [];
     setCrumb(labels);
     var resolved = item && item.resolved;
+    if (resolved && resolved.kind === 'topo') {
+      if (resolved.ok && resolved.mgr && !resolved.com) {
+        showTopoComm(main, resolved, item);
+      } else {
+        showStub(main, resolved, item);
+      }
+      setDrillLinks(null);
+      return;
+    }
     if (resolved && resolved.ok && room) {
       openRoomCab(hostEl, room, cab);
       if (resolved.kind === 'power' || (item && /^配电室/.test(item.name || ''))) {
@@ -1898,16 +2070,16 @@
     host.innerHTML =
       '<div class="hx-wrap">' +
         '<div class="hx-tree-slot" id="hxTreeSlot">' +
-          '<div class="hx-tree-bar"><span>配电室</span><span class="hx-tree-acts">' +
+          '<div class="hx-tree-bar"><span>架构树</span><span class="hx-tree-acts">' +
             '<button type="button" data-hx-tree="min" title="最小化" aria-label="最小化菜单">−</button>' +
             '<button type="button" data-hx-tree="hide" title="隐藏" aria-label="隐藏菜单">×</button>' +
           '</span></div>' +
           '<aside class="hx-tree" id="hxTree"></aside>' +
-          '<button type="button" class="hx-tree-nub" data-hx-tree="show" title="展开配电室" aria-label="展开配电室"></button>' +
+          '<button type="button" class="hx-tree-nub" data-hx-tree="show" title="展开架构树" aria-label="展开架构树"></button>' +
         '</div>' +
         '<div class="hx-body">' +
           '<div class="hx-drill-bar">' +
-            '<button type="button" class="hx-tree-dock" data-hx-tree="show" hidden>配电室</button>' +
+            '<button type="button" class="hx-tree-dock" data-hx-tree="show" hidden>架构树</button>' +
             '<div class="hx-crumb" id="hxCrumb"></div>' +
             '<span class="hx-drill-hint" id="hxDrillHint">已解开一次图正常显示；灰显配电室可下钻关联机房</span>' +
             '<div class="hx-drill-links" id="hxDrillLinks"></div>' +
@@ -1919,13 +2091,14 @@
     var arch = w.HXArch;
     if (arch && arch.renderTree && arch.branches && arch.branches.length) {
       var pickMode = mode === 'room' ? 'room' : (mode === 'power' ? 'power' : (mode === 'all' || mode === 'drill' ? 'drill' : ''));
+      var preferRoom = mode === 'room' ? '机房模块2A1' : '配电室5A1';
+      var preferCab = mode === 'room' ? 'A列头' : null;
       treeFlat = arch.renderTree(tree, {
         mode: pickMode,
         active: drillActive,
+        preferRoom: preferRoom,
         onPick: function (room, cab, item) { applyPick(room, cab, item); }
       });
-      var preferRoom = mode === 'room' ? '机房模块2A1' : '配电室5A1';
-      var preferCab = mode === 'room' ? 'A列头' : null;
       var pi = arch.findPrefer(treeFlat.flat, preferRoom, preferCab);
       if (pi >= 0) {
         var item = treeFlat.flat[pi];
@@ -2061,6 +2234,7 @@
     catalog: catalog,
     openIn: openIn,
     applyPick: applyPick,
-    setCrumb: setCrumb
+    setCrumb: setCrumb,
+    findPageByName: findPageByName
   };
 })(window);

@@ -63,10 +63,18 @@
   background: transparent; border-right: 0; padding: 8px 6px;
 }
 .hx-node, .hx-sw {
+  display: flex; align-items: center; gap: 6px; width: 100%;
   text-align: left; color: #e7f2ff; background: transparent;
   border: 0; border-radius: 2px; padding: 6px 8px; cursor: pointer; font-size: 13px;
 }
+.hx-node-lab { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hx-node-meta {
+  flex: 0 0 auto; font-size: 10px; font-weight: 500; color: #7fa8c4;
+  background: rgba(255,255,255,.06); border-radius: 8px; padding: 1px 6px;
+}
+.hx-node.is-mgr { font-weight: 600; }
 .hx-node.is-on { background: #1f8f7a; color: #fff; }
+.hx-node.is-on .hx-node-meta { color: #dff6ef; background: rgba(0,0,0,.18); }
 .hx-node:hover { background: rgba(255,255,255,.08); }
 .hx-main {
   position: relative; flex: 1; min-width: 0; min-height: 0; overflow: hidden;
@@ -141,6 +149,8 @@
   line-height: 1; white-space: nowrap; font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
   cursor: pointer;
 }
+/* 刀下柜号/电流/负荷。编辑层会按布局 y 重写 top，用平移离开刀下白三角，不挪刀、不挪三角。 */
+.hx-tx.hx-under-knife { transform: translateY(18px); }
 .hx-glow {
   border: 1px solid rgba(150, 220, 255, .78); border-radius: 12px; pointer-events: none;
   background: transparent;
@@ -149,7 +159,31 @@
 .hx-frame {
   border: 2px solid #ff2a2a; border-radius: 2px; pointer-events: none; background: transparent;
 }
-.hx-folder { color: #9fd0ff; font-size: 12px; padding: 10px 8px 2px; }
+.hx-fold-block { display: flex; flex-direction: column; gap: 2px; }
+.hx-fold-block.is-collapsed > .hx-fold { display: none; }
+.hx-fold { display: flex; flex-direction: column; gap: 2px; }
+.hx-folder {
+  display: flex; align-items: center; gap: 6px; width: 100%;
+  text-align: left; color: #9fd0ff; font-size: 12px; font-weight: 600;
+  padding: 8px 6px 4px; cursor: pointer; user-select: none;
+  background: transparent; border: 0; border-radius: 2px;
+}
+.hx-folder:hover { background: rgba(255,255,255,.06); }
+.hx-folder-tog {
+  flex: 0 0 10px; width: 0; height: 0;
+  border-top: 4px solid transparent; border-bottom: 4px solid transparent;
+  border-left: 6px solid #7fb7e8;
+  transition: transform .12s ease;
+}
+.hx-fold-block:not(.is-collapsed) > .hx-folder .hx-folder-tog {
+  transform: rotate(90deg);
+}
+.hx-folder-lab { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hx-folder-meta {
+  flex: 0 0 auto; font-size: 10px; font-weight: 500; color: #7fa8c4;
+  background: rgba(255,255,255,.06); border-radius: 8px; padding: 1px 6px;
+}
+.hx-node.is-topo { color: #cfe7ff; }
 .hx-sub { padding-left: 18px; font-size: 12px; }
 .hx-sub2 { padding-left: 28px; font-size: 12px; }
 .hx-sub3 { padding-left: 38px; font-size: 12px; }
@@ -246,4 +280,122 @@
   position: absolute; width: 12px; height: 12px; box-sizing: border-box;
   border-radius: 50%; background: #ffd24d; border: 1px solid #072044;
   z-index: 7000; cursor: grab;
+}
+
+/* —— 网络通讯图（管理机 → COM 列 → 设备） —— */
+.hx-topo {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  padding: 10px 14px 12px; overflow: auto; color: #e7f2ff;
+}
+.hx-topo-head { flex: 0 0 auto; margin-bottom: 6px; }
+.hx-topo-title { font-size: 16px; font-weight: 700; color: #f4f8ff; }
+.hx-topo-sub { margin-top: 4px; font-size: 11px; color: #9fc4de; line-height: 1.45; }
+.hx-topo-canvas {
+  flex: 1 1 auto; min-height: 280px; position: relative;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 8px 4px 16px;
+}
+.hx-topo-mgr { display: flex; flex-direction: column; align-items: center; gap: 4px; z-index: 2; }
+.hx-topo-mgr-ico {
+  width: 52px; height: 42px; display: flex; align-items: center; justify-content: center;
+  background: rgba(8, 36, 72, .75); border: 1px solid rgba(159, 208, 255, .65);
+  border-radius: 4px; box-shadow: 0 0 10px rgba(80, 180, 255, .35);
+}
+.hx-topo-mgr-name { font-size: 12px; font-weight: 700; color: #dff4ff; }
+.hx-topo-stem {
+  width: 2px; height: 18px; background: #e8f2ff; margin: 0 auto;
+  box-shadow: 0 0 4px rgba(255,255,255,.35);
+}
+.hx-topo-bus {
+  width: calc(100% - 24px); max-width: 100%; height: 2px; background: #e8f2ff;
+  margin: 0 12px; box-shadow: 0 0 4px rgba(255,255,255,.35);
+}
+.hx-topo-cols {
+  width: 100%; display: flex; flex-wrap: nowrap; justify-content: space-around;
+  align-items: flex-start; gap: 6px; padding: 0 4px; overflow-x: auto;
+  margin-top: -1px; /* 列竖干顶与主横母线相接 */
+}
+/* 列竖干：主母线 → 只短横接到 COM 标题；偶 COM 同列下方仍接此干 */
+.hx-topo-col {
+  --spine-x: 12px;
+  --stub: 10px;
+  flex: 1 1 0; min-width: 112px; max-width: 172px;
+  display: flex; flex-direction: column; align-items: stretch; gap: 14px;
+  position: relative; padding-top: 0;
+}
+.hx-topo-col-spine {
+  position: absolute; left: var(--spine-x); top: 0; bottom: 8px;
+  width: 2px; margin-left: -1px; background: #e8f2ff;
+  box-shadow: 0 0 3px rgba(255, 255, 255, .3);
+  pointer-events: none; z-index: 0;
+}
+.hx-topo-com {
+  width: 100%; display: flex; flex-direction: column; align-items: stretch;
+  position: relative; min-height: 40px; z-index: 1;
+  padding-left: calc(var(--spine-x) + 1px); box-sizing: border-box;
+}
+.hx-topo-com.is-empty { min-height: 0; visibility: hidden; padding: 0; }
+.hx-topo-com-h {
+  position: relative; align-self: flex-start; margin: 0 0 2px var(--stub);
+  font-size: 11px; font-weight: 700; color: #9eebff;
+  background: rgba(6, 28, 58, .88); border: 1px solid rgba(127, 208, 255, .45);
+  border-radius: 3px; padding: 2px 8px; z-index: 1;
+}
+/* 列竖干 → COM 标题短横 */
+.hx-topo-com-h::before {
+  content: ''; position: absolute; left: calc(-1 * var(--stub)); top: 50%;
+  width: var(--stub); height: 2px; margin-top: -1px; background: #e8f2ff;
+  box-shadow: 0 0 2px rgba(255, 255, 255, .25);
+}
+/* 每个 COM 下独立竖干：设备短横从此干分出（不挂列竖干） */
+.hx-topo-com-branch {
+  position: relative;
+  margin-left: var(--stub);
+  padding-top: 2px;
+  min-height: 4px;
+}
+.hx-topo-com-spine {
+  position: absolute; left: 0; top: 0; bottom: 4px;
+  width: 2px; margin-left: -1px; background: #e8f2ff;
+  box-shadow: 0 0 3px rgba(255, 255, 255, .3);
+  pointer-events: none; z-index: 0;
+}
+.hx-topo-com-devs {
+  width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 3px;
+  position: relative; padding-left: var(--stub); box-sizing: border-box;
+}
+.hx-topo-dev {
+  position: relative; z-index: 1; margin: 0; width: 100%;
+  box-sizing: border-box; padding: 2px 5px; text-align: left;
+  font-size: 10px; line-height: 1.35; font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  background: rgba(4, 22, 48, .82); border: 1px solid rgba(100, 140, 180, .35);
+  border-radius: 2px; cursor: default; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* 设备树状短横：挂在该 COM 支路竖干上 */
+.hx-topo-dev::before {
+  content: ''; position: absolute; left: calc(-1 * var(--stub)); top: 50%;
+  width: var(--stub); height: 2px; margin-top: -1px; background: #7fb7e8;
+  pointer-events: none; z-index: 0;
+}
+.hx-topo-dev-lab { position: relative; z-index: 1; }
+.hx-topo-flow {
+  position: absolute; inset: -2px; border-radius: 2px; pointer-events: none; z-index: 0;
+  border: 1px solid transparent;
+  background:
+    linear-gradient(rgba(4, 22, 48, .92), rgba(4, 22, 48, .92)) padding-box,
+    repeating-linear-gradient(90deg, #00e676 0 6px, transparent 6px 12px) border-box;
+  animation: hx-topo-flow 0.7s linear infinite;
+}
+.hx-topo-flow[hidden] { display: none !important; }
+@keyframes hx-topo-flow {
+  from { background-position: 0 0, 0 0; }
+  to { background-position: 0 0, 12px 0; }
+}
+.hx-topo-dev.is-ok { color: #00e676; border-color: rgba(0, 230, 118, .55); }
+.hx-topo-dev.is-bad { color: #ff3b3b; border-color: rgba(255, 60, 60, .55); background: rgba(48, 8, 12, .55); }
+.hx-topo-dev.is-unk { color: #8aa0b8; border-color: rgba(120, 140, 160, .35); border-style: dashed; }
+.hx-topo-dev.is-wait { color: #b8c8d8; }
+.hx-topo-legend {
+  flex: 0 0 auto; margin-top: 6px; font-size: 11px; color: #7fa8c4;
+  border-top: 1px solid rgba(127, 208, 255, .18); padding-top: 6px;
 }

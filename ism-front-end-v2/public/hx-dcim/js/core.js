@@ -167,26 +167,16 @@ window.App = window.App || {};
 
   A.register = function (id, def) { A.pages[id] = def; };
 
-  /* screen：macro 领导可见，work 业务可见，admin 仅管理员。管理员三者都可见。 */
+  /* 航信专业壳：仅配电一次图 + 机房列头；公安总览/治理等不在顶栏展示。 */
+  A.HX_PRO = true;
   A.NAV = [
-    { id: 'dashboard', name: '总览', screen: 'macro' },
-    { id: 'building',  name: '空间巡检', screen: 'macro' },
-    { id: 'facility',  name: '运行监控', screen: 'macro' },
-    { id: 'energy',    name: '能效碳排', screen: 'macro' },
-    { id: 'capacity',  name: '容量总览', screen: 'macro' },
-    { id: 'report',    name: '报表报告', screen: 'macro' },
-    { id: 'power',     name: '配电专业', screen: 'work' },
-    { id: 'assetmgr',  name: '资产管理', screen: 'work' },
-    { id: 'ops',       name: '运维中心', screen: 'work' },
-    { id: 'audit',     name: '安全审计', screen: 'work' }
+    { id: 'power',    name: '配电一次图', screen: 'work' },
+    { id: 'building', name: '机房列头', screen: 'work' }
   ];
   A.MORE = [
-    { id: 'govern',  name: '数据治理', screen: 'admin' },
-    { id: 'config',  name: '工程配置', screen: 'admin' },
-    { id: 'selfmon', name: '自监控', screen: 'admin' },
-    { id: 'admin',   name: '系统管理', screen: 'admin' },
     { id: 'backend', name: '进入后台', screen: 'admin', href: '/#/Project' }
   ];
+  A.DEFAULT_PAGE = 'power';
 
   /* 读现有登录用户的 role。读不到时按管理员，避免本机调试被空菜单挡住。 */
   A.role = function () {
@@ -226,6 +216,10 @@ window.App = window.App || {};
 
   A.allow = function (id) {
     var top = String(id || '').split('/')[0];
+    if (A.HX_PRO) {
+      if (top === 'backend') return true;
+      return top === 'power' || top === 'building';
+    }
     var item = null;
     A.NAV.concat(A.MORE).some(function (n) {
       if (n.id === top) { item = n; return true; }
@@ -267,7 +261,6 @@ window.App = window.App || {};
   };
 
   A.leaveToAdmin = function () {
-    if (window.HXAuth && window.HXAuth.ensureHangxinProject) window.HXAuth.ensureHangxinProject();
     if (window.HXAuth && window.HXAuth.persistProject) window.HXAuth.persistProject();
     A.leaveTo('/#/dashboard');
   };
@@ -288,12 +281,13 @@ window.App = window.App || {};
   };
 
   A.go = function (id) {
+    var fallback = A.DEFAULT_PAGE || 'dashboard';
     var top = String(id || '').split('/')[0];
-    if (!A.pages[top]) id = 'dashboard';
+    if (!A.pages[top]) id = fallback;
     top = String(id).split('/')[0];
     if (!A.allow(top)) {
       A.toast('当前角色无权进入该页');
-      id = 'dashboard';
+      id = fallback;
     }
     var next = '#/' + id;
     if (location.hash === next) return;
@@ -313,16 +307,17 @@ window.App = window.App || {};
       A.origin = 'dashboard';
       parts.pop();
     }
-    var id = parts[0] || 'dashboard';
+    var fallback = A.DEFAULT_PAGE || 'dashboard';
+    var id = parts[0] || fallback;
     A.subArg = parts[1] || '';
-    if (!A.pages[id]) id = 'dashboard';
+    if (!A.pages[id]) id = fallback;
     if (!A.allow(id)) {
-      A.toast('当前角色无权进入该页');
-      if ((location.hash || '') !== '#/dashboard') {
-        location.hash = '#/dashboard';
+      A.toast(A.HX_PRO ? '该页未纳入航信专业大屏' : '当前角色无权进入该页');
+      if ((location.hash || '') !== '#/' + fallback) {
+        location.hash = '#/' + fallback;
         return;
       }
-      id = 'dashboard';
+      id = fallback;
       A.subArg = '';
       A.origin = '';
     }

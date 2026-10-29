@@ -20,7 +20,7 @@ from cad_room_layout import OUT_DY, layout_room
 from cad_rooms import build_rooms, summary_rows
 
 MD5 = "c58f0fb1dfacc088b8f6f470ffd2b6d5"
-VERSION = "20261028cad76"
+VERSION = "20261029bus02"
 DWG_REL = Path("docs/refs/gongan-dashboard/group-files/配电系统图.dwg")
 DXF = Path("/tmp/hx-power-system.dxf")
 

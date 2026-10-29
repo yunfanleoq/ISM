@@ -61,6 +61,10 @@
     function onDown(ev) {
       if (!A.isOn() || ev.button !== 0) return;
       if (ev.target.closest && ev.target.closest('.hx-zoom-bar, .hx-edit-pal')) return;
+      /* 「局部」框选放大时让给舞台缩放，结束后仍回到编辑拖拽 */
+      var host0 = A.host();
+      var fit0 = host0 && host0.querySelector('.hx-fit');
+      if (fit0 && fit0.classList.contains('is-marquee')) return;
       var handle = ev.target.closest && ev.target.closest('.hx-edit-handle');
       if (handle) {
         beginItem(ev, handle.getAttribute('data-hx-edit-id'), handle.getAttribute('data-end'));

@@ -41,6 +41,25 @@
     return 'left:' + n.x + 'px;top:' + n.y + 'px;width:' + b.w + 'px;height:' + b.h + 'px;z-index:' + ((Number(n.z) || 0) + 2000);
   }
 
+  /* 刀下柜号、电流、负荷名。白三角在刀框底边外约 8px，文字再下移 18px 离开三角。不改刀、不改三角。 */
+  var KNIFE_TEXT_DROP = 18;
+
+  function underKnifeTextDrop(n, knives) {
+    var tw = Number(n.w) || 0;
+    var cx = Number(n.x) + tw / 2;
+    var ty = Number(n.y);
+    var i;
+    for (i = 0; i < knives.length; i++) {
+      var k = knives[i];
+      if (knifeHorizontal(k)) continue;
+      var kcx = Number(k.x) + (Number(k.w) || KNIFE_W) / 2;
+      if (Math.abs(cx - kcx) > 40) continue;
+      var rel = ty - (Number(k.y) + (Number(k.h) || KNIFE_H));
+      if (rel >= -12 && rel <= 60) return KNIFE_TEXT_DROP;
+    }
+    return 0;
+  }
+
   /* 母线、UPS 出线用原图固定色。合闸红、分闸绿只留给开关本身。 */
   function lineColor(page, n) {
     if (!page || page.kind === 'column') return n.c || '#ffffff';
@@ -111,7 +130,6 @@
     var inner = knifeInner(decor && !power);
     if (decor && power) {
       inner = knifeInner(false) +
-        '<div class="hx-k-out hx-k-out-pwr">OUT</div>' +
         '<svg class="hx-k-tri hx-k-tri-pwr" viewBox="0 0 20 14" aria-hidden="true"><polygon points="1.5,1 18.5,1 10,13" fill="#ffffff"/></svg>';
     }
     return '<div class="' + cls + '" data-hx-knife' + keyAttr(n, i) + ' style="color:#00ff00;' + pos(n) + '">' + inner + '</div>';
@@ -281,6 +299,11 @@
 
   function html(page) {
     var nodes = page.nodes || [];
+    var knifeNodes = [];
+    var ki;
+    for (ki = 0; ki < nodes.length; ki++) {
+      if (nodes[ki].t === 'I' || nodes[ki].t === 'S') knifeNodes.push(nodes[ki]);
+    }
     var lines = [];
     var rest = [];
     var powerRedLines = [];
@@ -314,7 +337,9 @@
         var pe = n.k ? '' : 'pointer-events:none;';
         var wrap = n.s && String(n.s).indexOf('\n') >= 0 ? 'white-space:normal;text-align:center;line-height:1.15;' : '';
         var align = TEXT_ALIGN[n.al] || '';
-        rest.push('<div class="hx-abs hx-tx"' + keyAttr(n, i) + ' style="' + pe + wrap + align + 'color:' + esc(n.c || '#fff') + ';font-size:' + (n.fs || 18) + 'px;' + pos(n) + '">' + esc(n.s || '').replace(/\n/g, '<br>') + '</div>');
+        var drop = page.kind === 'power' ? underKnifeTextDrop(n, knifeNodes) : 0;
+        var txCls = 'hx-abs hx-tx' + (drop ? ' hx-under-knife' : '');
+        rest.push('<div class="' + txCls + '"' + keyAttr(n, i) + ' style="' + pe + wrap + align + 'color:' + esc(n.c || '#fff') + ';font-size:' + (n.fs || 18) + 'px;' + pos(n) + '">' + esc(n.s || '').replace(/\n/g, '<br>') + '</div>');
         return;
       }
       if (n.t === 'B') {

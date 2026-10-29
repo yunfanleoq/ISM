@@ -36,9 +36,9 @@
     render: function (root) {
       root.innerHTML = '<div id="hxBuilding" class="grow" style="min-height:0"></div>';
       var host = document.getElementById('hxBuilding');
-      /* 与 #/power 相同：架构树 + 面包屑 + 主区钻取 */
+      /* 默认进机房模块列头；架构树 + 面包屑 + 主区钻取 */
       var run = function () {
-        if (window.HXScreen) window.HXScreen.mount(host, 'drill');
+        if (window.HXScreen) window.HXScreen.mount(host, 'room');
       };
       if (window.HXScreen && window.HXScreen.ready) window.HXScreen.ready.then(run);
       else run();

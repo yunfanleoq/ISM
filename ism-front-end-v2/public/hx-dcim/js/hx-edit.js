@@ -2,7 +2,7 @@
 (function (w) {
   'use strict';
 
-  var VER = '20261028cad76';
+  var VER = '20261029bus02';
   var inboxSeen = '';
   var palMode = 'full';
   var editing = false;
