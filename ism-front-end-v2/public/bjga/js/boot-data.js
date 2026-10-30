@@ -1,6 +1,9 @@
 (function (A) {
   'use strict';
 
+  // 与主站 request.js 一致：Authorization 存在 sessionStorage / Cookie
+  var DEMO_MD5 = 'e10adc3949ba59abbe56e057f20f883e'; // MD5('123456')，仅无令牌时兜底
+
   function token() {
     try {
       var s = sessionStorage.getItem('Authorization');
@@ -9,6 +12,32 @@
     var m = document.cookie.match(/(?:^|; )Authorization=([^;]*)/);
     if (!m) return '';
     try { return decodeURIComponent(m[1]); } catch (e2) { return m[1]; }
+  }
+
+  function saveToken(tok, expireAt) {
+    if (!tok) return;
+    try { sessionStorage.setItem('Authorization', tok); } catch (e) {}
+    var maxAge = '';
+    var n = Number(expireAt);
+    if (isFinite(n) && n > 1e6) {
+      var sec = Math.floor(n - Date.now() / 1000);
+      if (sec > 0) maxAge = '; max-age=' + sec;
+    }
+    document.cookie = 'Authorization=' + encodeURIComponent(tok) + '; path=/' + maxAge;
+  }
+
+  function parseJsonResponse(r) {
+    return r.text().then(function (t) {
+      var s = (t || '').replace(/^\uFEFF/, '').trim();
+      if (!s || s.charAt(0) === '<') {
+        throw new Error('接口未返回 JSON（HTTP ' + r.status + '）。通常是未登录被重定向到登录页。');
+      }
+      try {
+        return JSON.parse(s);
+      } catch (e) {
+        throw new Error('接口 JSON 解析失败（HTTP ' + r.status + '）');
+      }
+    });
   }
 
   A.api = function (path, opt) {
@@ -20,8 +49,23 @@
       method: opt.method || 'GET',
       headers: headers,
       body: opt.body ? JSON.stringify(opt.body) : undefined
-    }).then(function (r) { return r.json(); });
+    }).then(parseJsonResponse);
   };
+
+  /** 无令牌时：本机演示用 admin/123456（MD5）自动登录，避免直开大屏白屏 */
+  function ensureAuth() {
+    if (token()) return Promise.resolve();
+    return fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ Username: 'admin', password: DEMO_MD5 })
+    }).then(parseJsonResponse).then(function (j) {
+      if (!j || j.code !== 1000 || !j.data || !j.data.token) {
+        throw new Error((j && (j.message || j.msg)) || '登录失败');
+      }
+      saveToken(j.data.token, j.data.expireAt);
+    });
+  }
 
   function num(v) {
     var n = Number(v);
@@ -99,7 +143,9 @@
   if (pr) {
     pr.innerHTML = '<div class="empty">正在加载动环数据…</div>';
   }
-  A.api('/bjga/bootstrap').then(function (j) {
+  ensureAuth().then(function () {
+    return A.api('/bjga/bootstrap');
+  }).then(function (j) {
     if (!j || j.code !== 1000 || !j.dcim) {
       throw new Error((j && (j.message || j.msg)) || 'bootstrap 失败');
     }
@@ -110,6 +156,6 @@
   }).catch(function (err) {
     if (!pr) return;
     pr.innerHTML = '<div class="empty">动环数据未加载<br>' + A.esc(err.message || err) +
-      '<br><span style="color:#7FA8D9">请先登录系统，再打开本页。</span></div>';
+      '<br><span style="color:#7FA8D9">请确认后端 8082 可用，或先登录主站后再打开本页。</span></div>';
   });
 })(window.App);

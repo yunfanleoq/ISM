@@ -60,7 +60,8 @@
   A.register('building', {
     render: function (root) {
       var self = this;
-      this.state = { site: true, floor: null, room: null, cab: null, dev: null };
+      /* site 保留兼容字段；空园区页与楼层重复，默认直接落整栋楼图 */
+      this.state = { site: false, floor: null, room: null, cab: null, dev: null };
       this.drill5 = drill5Pick(D());
       this.entryBack = '';
       if (!this.mode) this.mode = '3d';   /* 2D / 3D 在下钻时保持一致；默认 3D 进入沉浸式巡检 */
@@ -107,7 +108,7 @@
         if (v && v.fitRack) v.fitRack();
       });
 
-      if (!this.openFromHash()) this.viewCampus(null, true);
+      if (!this.openFromHash()) this.viewBuilding(null, true);
     },
 
     /* 只读 hash：#/building/floor/4F/assetmgr 或 #/building/room/机房名/assetmgr
@@ -120,7 +121,7 @@
       if (fromDash) parts.pop();
       if (parts[1] === 'drill5') {
         this.entryBack = '';
-        this.viewCampus(null, true);
+        this.viewBuilding(null, true);
         return true;
       }
       if (parts[0] !== 'building' || (parts[1] !== 'floor' && parts[1] !== 'room')) return false;
@@ -178,7 +179,6 @@
       else if (s.cab) this.viewCab(s.cab, null);
       else if (s.room) this.viewRoom(s.room, null);
       else if (s.floor) this.viewFloor(s.floor, null);
-      else if (s.site) this.viewCampus(null, true);
       else this.viewBuilding(null, true);
     },
     isoLegend: function (tip) {
@@ -284,20 +284,17 @@
       };
     },
 
-    /* ---------------- 面包屑 ---------------- */
+    /* ---------------- 面包屑 ----------------
+       空园区层已跳过：根节点即整栋楼（园区名仅作项目标签），再下钻房/柜/设备 */
     crumbs: function () {
       var s = this.state, out = [];
       var Dd = D();
-      var cur0 = !!s.site;
-      var cur1 = !s.site && !s.room && !s.cab && !s.dev;
+      var cur1 = !s.room && !s.cab && !s.dev;
       var cur2 = !!s.room && !s.cab && !s.dev;
       var cur3 = !!s.cab && !s.dev;
       var cur4 = !!s.dev;
-      out.push('<span class="crumb-item' + (cur0 ? ' is-cur' : '') + '" data-lv="0">' + A.esc(campusLabel(Dd)) + '</span>');
-      if (!s.site) {
-        out.push('<span class="crumb-sep">›</span><span class="crumb-item' + (cur1 ? ' is-cur' : '') + '" data-lv="1">' +
-          A.esc(buildingLabel()) + (s.floor ? ' · ' + s.floor : '') + '</span>');
-      }
+      out.push('<span class="crumb-item' + (cur1 ? ' is-cur' : '') + '" data-lv="1">' +
+        A.esc(campusLabel(Dd) + ' · ' + buildingLabel()) + (s.floor ? ' · ' + s.floor : '') + '</span>');
       if (s.room) {
         out.push('<span class="crumb-sep">›</span><span class="crumb-item' + (cur2 ? ' is-cur' : '') + '" data-lv="2">' + A.esc(s.room) + '</span>');
       }
@@ -315,13 +312,11 @@
 
     jump: function (lv) {
       var s = this.state;
-      if (lv === 0) {
-        if (this.entryBack && s.site) { A.go(this.entryBack); return; }
-        s.site = true; s.floor = s.room = s.cab = s.dev = null;
-        this.viewCampus(this.cam, true);
-      }
-      else if (lv === 1) {
-        s.site = false; s.room = s.cab = s.dev = null;
+      if (lv === 0 || lv === 1) {
+        if (this.entryBack && lv === 0 && !s.floor && !s.room && !s.cab && !s.dev) {
+          A.go(this.entryBack); return;
+        }
+        s.site = false; s.floor = s.room = s.cab = s.dev = null;
         this.viewBuilding(this.cam, true);
       }
       else if (lv === 2) { s.cab = s.dev = null; this.viewRoom(s.room, this.cam); }
@@ -334,80 +329,14 @@
       else if (s.cab) { s.cab = null; this.viewRoom(s.room, null); }
       else if (s.room) { s.room = null; if (s.floor) this.viewFloor(s.floor, null); else this.viewBuilding(null); }
       else if (s.floor) { s.floor = null; this.viewBuilding(null); }
-      else if (!s.site) { s.site = true; this.viewCampus(null); }
       else if (this.entryBack) { A.go(this.entryBack); }
+      /* 已在整栋楼顶：不再退回空园区页 */
     },
 
-    /* ---------------- L0 园区 ---------------- */
+    /* 兼容旧入口：园区层与楼宇重复，直接落到整栋楼图 */
     viewCampus: function (fromEl, instant) {
-      this.cleanChrome(false, true);
-      var self = this, Dd = D();
-      this.state.site = true;
-      this.state.floor = this.state.room = this.state.cab = this.state.dev = null;
-      var hint = document.getElementById('tourHint');
-      if (hint) hint.innerHTML = '五级钻取：<b>园区</b> → 楼 → 房 → 柜 → 设备 · 点击主体建筑进入';
-
-      var html = '<div class="campus-wrap">' +
-        '<div class="campus-map">' +
-          '<div class="campus-plate"></div>' +
-          '<button type="button" class="campus-bld is-main" data-act="enter-bld">' +
-            '<span class="campus-bld-nm">' + A.esc(buildingLabel()) + '</span>' +
-            '<span class="campus-bld-sub">' + A.esc(Dd.meta.project || '') + '</span>' +
-            '<span class="campus-bld-kv">' + Dd.floors.length + ' 个楼层 · ' + Dd.meta.roomTotal + ' 间机房 · ' +
-              A.num(Dd.meta.cabTotal) + ' 架机柜</span>' +
-          '</button>' +
-          '<div class="campus-anno">园区总览 · 单击建筑下钻</div>' +
-        '</div>' +
-        '<div class="campus-rail">' +
-          '<div class="campus-rail-title"><i class="card-bar"></i>五级演示路径</div>' +
-          '<ol class="campus-steps">' +
-            '<li class="is-on"><b>1 园区</b><span>当前</span></li>' +
-            '<li><b>2 楼</b><span>主体建筑立面</span></li>' +
-            '<li><b>3 房</b><span>' + A.esc(this.drill5.room || '主机房') + '</span></li>' +
-            '<li><b>4 柜</b><span>机柜 42U</span></li>' +
-            '<li><b>5 设备</b><span>在架服务器/网络</span></li>' +
-          '</ol>' +
-        '</div></div>';
-
-      var nx = this.fly(html, this.focusOf(fromEl), fromEl ? -1 : 1, instant);
-      A.q('[data-act="enter-bld"]', nx).addEventListener('click', function () {
-        self.state.site = false;
-        self.viewBuilding(null);
-      });
-      this.crumbs();
-      this.sideCampus();
-    },
-
-    sideCampus: function () {
-      var Dd = D();
-      var d = this.drill5;
-      this.side.innerHTML =
-        A.UI.card({ title: campusLabel(Dd), body:
-          A.UI.stats([
-            { v: 1, u: '栋', l: '主体建筑' },
-            { v: Dd.floors.length, u: '层', l: '楼层' },
-            { v: Dd.meta.roomTotal, u: '间', l: '机房' },
-            { v: A.num(Dd.meta.cabTotal), u: '架', l: '机柜' }
-          ]) +
-          '<p class="campus-side-note">演示账号 admin 可完整走通五级。右侧步骤与顶栏面包屑同步高亮。</p>' +
-          '<button type="button" class="btn is-primary campus-go" style="width:100%;margin-top:12px">进入 ' +
-            A.esc(buildingLabel()) + ' ›</button>' +
-          (d.room ? '<button type="button" class="btn is-ghost campus-skip" style="width:100%;margin-top:8px">快捷：直达演示机房 ' +
-            A.esc(d.room) + '</button>' : '')
-        });
-      var self = this;
-      A.q('.campus-go', this.side).addEventListener('click', function () {
-        self.state.site = false;
-        self.viewBuilding(null);
-      });
-      var skip = A.q('.campus-skip', this.side);
-      if (skip) skip.addEventListener('click', function () {
-        self.state.site = false;
-        self.state.floor = d.floor;
-        self.state.room = d.room;
-        self.state.cab = self.state.dev = null;
-        self.viewRoom(d.room, null);
-      });
+      this.state.site = false;
+      this.viewBuilding(fromEl, instant);
     },
 
     /* ---------------- L1 楼（整栋） ---------------- */
@@ -419,6 +348,8 @@
       if (!fromEl && !this.state.floor) {
         this.state.room = this.state.cab = null;
       }
+      var hint = document.getElementById('tourHint');
+      if (hint) hint.innerHTML = '钻取：<b>整栋楼</b> → 房 → 柜 → 设备 · 点击楼层色块进入';
       var floors = Dd.floors.slice().sort(function (a, b) { return b.floor < a.floor ? -1 : 1; });
       var maxAlarm = Math.max.apply(null, Dd.rooms.map(function (r) { return r.alarmN; }));
 

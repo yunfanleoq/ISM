@@ -16,15 +16,15 @@
 
   function buildAsset() {
     var D = window.DCIM;
-    var rows = D.rooms.slice().sort(function (a, b) { return b.dev - a.dev; });
+    var rows = (D.rooms || []).slice().sort(function (a, b) { return b.dev - a.dev; });
     return {
       title: '数据中心资产台账报表',
       cols: ['机房名称', '楼层', '机柜数', '设备数', '额定功率(kW)', '空间使用率', '主要类型'],
       rows: rows.map(function (r) {
-        return [r.name, r.floor, r.cabCount, r.dev, A.num(r.kw), r.rate + '%',
-          r.cats.slice(0, 2).map(function (c) { return c.name; }).join('/')];
+        return [r.name, r.floor, r.cabCount, r.dev, A.num(r.kw), (r.rate != null ? r.rate : '-') + '%',
+          (r.cats || []).slice(0, 2).map(function (c) { return c.name; }).join('/') || '-'];
       }),
-      sum: ['合计', '-', A.num(D.meta.cabTotal), A.num(D.meta.assetTotal), A.num(D.assetStats.powerSum), '-', '-']
+      sum: ['合计', '-', A.num((D.meta || {}).cabTotal), A.num((D.meta || {}).assetTotal), A.num((D.assetStats || {}).powerSum), '-', '-']
     };
   }
 
@@ -46,7 +46,7 @@
   }
 
   function buildTH() {
-    var list = window.DCIM.thDevices.slice(0, 40);
+    var list = (window.DCIM.thDevices || []).slice(0, 40);
     return {
       title: '机房温湿度日报表',
       cols: ['测点名称', '所属机房', '通道', '平均温度(℃)', '最高(℃)', '最低(℃)', '平均湿度(%)', '状态'],
