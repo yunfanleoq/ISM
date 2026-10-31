@@ -1,0 +1,2810 @@
+{
+  "version": 1,
+  "source": "架构层级机构.html",
+  "ui": {
+    "hidePowerWithoutScene": false
+  },
+  "drill": {
+    "note": "同楼层编码关联：配电室{code} ↔ 数据机房{code} ↔ 机房模块{code}（测点/监控树命名）",
+    "codePattern": "\\d[AB]\\d"
+  },
+  "links": [],
+  "branches": [
+    {
+      "name": "配电室",
+      "children": [
+        {
+          "name": "F1",
+          "children": [
+            {
+              "name": "配电室1A1",
+              "children": [],
+              "pageId": "cad-1A1"
+            },
+            {
+              "name": "配电室1A2",
+              "children": [],
+              "pageId": "cad-1A2"
+            },
+            {
+              "name": "配电室1A3",
+              "children": [],
+              "pageId": "cad-1A3"
+            },
+            {
+              "name": "配电室1A4",
+              "children": [],
+              "pageId": "cad-1A4"
+            },
+            {
+              "name": "配电室1A5",
+              "children": [],
+              "pageId": "cad-1A5"
+            },
+            {
+              "name": "配电室1B1",
+              "children": [],
+              "pageId": "cad-1B1"
+            },
+            {
+              "name": "配电室1B2",
+              "children": [],
+              "pageId": "cad-1B2"
+            },
+            {
+              "name": "配电室1B3",
+              "children": [],
+              "pageId": "cad-1B3"
+            },
+            {
+              "name": "配电室1B4",
+              "children": [],
+              "pageId": "cad-1B4"
+            },
+            {
+              "name": "配电室1B5",
+              "children": [],
+              "pageId": "cad-1B5"
+            }
+          ]
+        },
+        {
+          "name": "F2",
+          "children": [
+            {
+              "name": "配电室2A1",
+              "children": [],
+              "pageId": "cad-2A1"
+            },
+            {
+              "name": "配电室2A2",
+              "children": [],
+              "pageId": "cad-2A2"
+            },
+            {
+              "name": "配电室2B1",
+              "children": [],
+              "pageId": "cad-2B1"
+            },
+            {
+              "name": "配电室2B2",
+              "children": [],
+              "pageId": "cad-2B2"
+            }
+          ]
+        },
+        {
+          "name": "F3",
+          "children": [
+            {
+              "name": "配电室3A1",
+              "children": [],
+              "pageId": "80816ac0-e606-9a9f-540c-30bf3b70d5f3"
+            },
+            {
+              "name": "配电室3A2",
+              "children": [],
+              "pageId": "66b085b2-9c15-9db5-486c-4b74e9c62713"
+            },
+            {
+              "name": "配电室3B1",
+              "children": [],
+              "pageId": "cad-3B1"
+            },
+            {
+              "name": "配电室3B2",
+              "children": [],
+              "pageId": "cad-3B2"
+            }
+          ]
+        },
+        {
+          "name": "F4",
+          "children": [
+            {
+              "name": "配电室4A1",
+              "children": [],
+              "pageId": "cad-4A1"
+            },
+            {
+              "name": "配电室4A2",
+              "children": [],
+              "pageId": "cad-4A2"
+            },
+            {
+              "name": "配电室4B1",
+              "children": [],
+              "pageId": "8cd37944-78f3-55ae-68c1-3d9380e256b0"
+            },
+            {
+              "name": "配电室4B2",
+              "children": [],
+              "pageId": "cad-4B2"
+            }
+          ]
+        },
+        {
+          "name": "F5",
+          "children": [
+            {
+              "name": "配电室5A1",
+              "children": [],
+              "pageId": "0ade1010-c2ef-a54c-eef5-c1bfa94d253a"
+            },
+            {
+              "name": "配电室5A2",
+              "children": [],
+              "pageId": "cad-5A2"
+            },
+            {
+              "name": "配电室5A3",
+              "children": [],
+              "pageId": "cad-5A3"
+            },
+            {
+              "name": "配电室5A4",
+              "children": [],
+              "pageId": "cad-5A4"
+            },
+            {
+              "name": "配电室5B1",
+              "children": [],
+              "pageId": "cad-5B1"
+            },
+            {
+              "name": "配电室5B2",
+              "children": [],
+              "pageId": "cad-5B2"
+            },
+            {
+              "name": "配电室5B3",
+              "children": [],
+              "pageId": "cad-5B3"
+            },
+            {
+              "name": "配电室5B4",
+              "children": [],
+              "pageId": "cad-5B4"
+            }
+          ]
+        },
+        {
+          "name": "ECC",
+          "children": [
+            {
+              "name": "ECC1",
+              "children": [],
+              "pageId": "cad-ECC1"
+            },
+            {
+              "name": "ECC2",
+              "children": [],
+              "pageId": "cad-ECC2"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "机房",
+      "children": [
+        {
+          "name": "2F",
+          "children": [
+            {
+              "name": "数据机房2A1",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TI",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WI",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房2A2",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房2A3",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房2A4",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房2B1",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房2B2",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房2B3",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房2B4",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "3F",
+          "children": [
+            {
+              "name": "数据机房3A1",
+              "children": [
+                {
+                  "name": "机房模块3A1_1",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A1_2",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A1_3",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A1_4",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A1_5",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A1_6",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A1_7",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A1_8",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A1_9",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A1_10",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房3A2",
+              "children": [
+                {
+                  "name": "机房模块3A2_1",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A2_2",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A2_3",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A2_4",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A2_5",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A2_6",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A2_7",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A2_8",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A2_9",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A2_10",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A2_11",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A2_12",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房3A3",
+              "children": [
+                {
+                  "name": "机房模块3A3_1",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A3_2",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A3_3",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A3_4",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A3_5",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A3_6",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A3_7",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A3_8",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A3_9",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A3_10",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A3_11",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A3_12",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A3_13",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A3_14",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房3A4",
+              "children": [
+                {
+                  "name": "机房模块3A4_1",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A4_2",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A4_3",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A4_4",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A4_5",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A4_6",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A4_7",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A4_8",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A4_9",
+                  "children": []
+                },
+                {
+                  "name": "机房模块3A4_10",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房3B1",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房3B2",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房3B3",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房3B4",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "4F",
+          "children": [
+            {
+              "name": "数据机房4A1",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TI",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WI",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房4A2",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TI",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WI",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房4A3",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TI",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WI",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房4A4",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TI",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WI",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房4B1",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房4B2",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房4B3",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房4B4",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "5F",
+          "children": [
+            {
+              "name": "数据机房5A1",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TI",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WI",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房5A2",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TI",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WI",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房5A3",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TI",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WI",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房5A4",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房5B1",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房5B2",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房5B3",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "数据机房5B4",
+              "children": [
+                {
+                  "name": "TA",
+                  "children": []
+                },
+                {
+                  "name": "TB",
+                  "children": []
+                },
+                {
+                  "name": "TC",
+                  "children": []
+                },
+                {
+                  "name": "TD",
+                  "children": []
+                },
+                {
+                  "name": "TE",
+                  "children": []
+                },
+                {
+                  "name": "TF",
+                  "children": []
+                },
+                {
+                  "name": "TG",
+                  "children": []
+                },
+                {
+                  "name": "TH",
+                  "children": []
+                },
+                {
+                  "name": "TJ",
+                  "children": []
+                },
+                {
+                  "name": "TK",
+                  "children": []
+                },
+                {
+                  "name": "WA",
+                  "children": []
+                },
+                {
+                  "name": "WB",
+                  "children": []
+                },
+                {
+                  "name": "WC",
+                  "children": []
+                },
+                {
+                  "name": "WD",
+                  "children": []
+                },
+                {
+                  "name": "WE",
+                  "children": []
+                },
+                {
+                  "name": "WF",
+                  "children": []
+                },
+                {
+                  "name": "WG",
+                  "children": []
+                },
+                {
+                  "name": "WH",
+                  "children": []
+                },
+                {
+                  "name": "WJ",
+                  "children": []
+                },
+                {
+                  "name": "WK",
+                  "children": []
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "generatedAt": "2026-10-27T08:41:04Z",
+  "model": "b620dc75-1da2-351b-b89e-05b5cb608886",
+  "db": "/Users/yunfanleo/cursorProjects/ISM源码/ism_server_user/data/db/ism-hangxin-20261023.db",
+  "pages": [
+    {
+      "name": "配电室3A1",
+      "pageId": "80816ac0-e606-9a9f-540c-30bf3b70d5f3"
+    },
+    {
+      "name": "配电室3A2",
+      "pageId": "66b085b2-9c15-9db5-486c-4b74e9c62713"
+    },
+    {
+      "name": "配电室4B1",
+      "pageId": "8cd37944-78f3-55ae-68c1-3d9380e256b0"
+    },
+    {
+      "name": "配电室5A1",
+      "pageId": "0ade1010-c2ef-a54c-eef5-c1bfa94d253a"
+    }
+  ]
+}

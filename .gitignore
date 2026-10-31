@@ -34,7 +34,7 @@ releases/
 *.sqlite.bak*
 ism_server_user/data/db/ism-hangxin-20261023.db
 ism_server_user/data/db/ism-hangxin-20261023.db-*
-ism-front-end-v2/public/hx-dcim/data/
+# hx-dcim/data/ 需入 git：多机拉齐一次图 JSON（约 28MB，含 field-index）
 
 # ============================================
 # 项目级备份 (scripts/backup_project.py 产物)
