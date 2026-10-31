@@ -240,6 +240,13 @@ window.App = window.App || {};
   A.leaveTo = function (href) {
     var path = String(href || '').trim();
     if (!path) return;
+    if (/#\/Project/i.test(path) || /\/Project\/?$/i.test(path)) {
+      var HX_PROJECT = '31bc90be-ebc4-dd61-ba9d-ce6e075e40e2';
+      try {
+        document.cookie = 'ProjectUuid=' + encodeURIComponent(HX_PROJECT) + '; path=/';
+        if (window.sessionStorage) sessionStorage.setItem('ProjectUuid', HX_PROJECT);
+      } catch (e) {}
+    }
     var hash = path.indexOf('#') >= 0 ? path.slice(path.indexOf('#')) : '#/' + path.replace(/^\//, '');
     try {
       if (window.top && window.top !== window && window.top.location.origin === window.location.origin) {
@@ -259,6 +266,7 @@ window.App = window.App || {};
       try { window.open(url, '_top'); } catch (e4) { window.location.href = url; }
     }
   };
+
 
   A.leaveToAdmin = function () {
     if (window.HXAuth && window.HXAuth.persistProject) window.HXAuth.persistProject();
