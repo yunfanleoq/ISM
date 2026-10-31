@@ -1,12 +1,9 @@
 {
-  "knives": 99,
+  "knives": 97,
   "incomers": [
     "T1-401",
     "T2-402"
   ],
-  "caps": [
-    "T2-420",
-    "T1-410"
-  ],
+  "caps": [],
   "untouched": []
 }
