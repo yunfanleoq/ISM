@@ -13,6 +13,7 @@
   var hoverRows = [];
   var hotKey = '';
   var pinned = false;
+  var hoverAnchor = null;
   var hostEl = null;
   var onResize = null;
   var treeFlat = null;
@@ -71,12 +72,12 @@
   function loadScenes() {
     var jobs = [];
     if (w.HX5A1) {
-      jobs.push(w.HX5A1.load('20261102knifesz').catch(function (e) {
+      jobs.push(w.HX5A1.load('20261102kntip').catch(function (e) {
         if (w.console) w.console.warn('[hx-5a1] 布局未加载，5A1 退回通用绘制', e);
       }));
     }
     if (w.HXRooms) {
-      jobs.push(w.HXRooms.load('20261102knifesz').catch(function (e) {
+      jobs.push(w.HXRooms.load('20261102kntip').catch(function (e) {
         if (w.console) w.console.warn('[hx-rooms] 配电室布局未加载', e);
       }));
     }
@@ -241,11 +242,76 @@
       var known = L().remembered(p) || p;
       return '<div class="hx-pt"><span>' + esc(p.name) + '</span><b data-hx-uuid="' + esc(p.uuid) + '">' + esc(L().showValue(known)) + '</b></div>';
     }).join('') : '<div class="hx-pt"><span>这一回路还没有测点</span></div>';
-    return '<div class="hx-hover-title">' + esc(labelOf(key)) + '</div>' + body + powerDrillBtn(key);
+    return '<i class="hx-hover-caret" aria-hidden="true"></i><div class="hx-hover-body"><div class="hx-hover-title">' +
+      esc(labelOf(key)) + '</div>' + body + powerDrillBtn(key) + '</div>';
+  }
+
+  function knifeOf(node) {
+    return node && node.closest ? node.closest('[data-hx-knife]') : null;
+  }
+
+  function clearKnifeClass(root, cls, except) {
+    if (!root) return;
+    var nodes = root.querySelectorAll('[data-hx-knife].' + cls);
+    var i;
+    for (i = 0; i < nodes.length; i++) {
+      if (nodes[i] !== except) nodes[i].classList.remove(cls);
+    }
+  }
+
+  /* fixed 提示框的包含块是带 transform 的 .page，不是视口。把刀的视口矩形换到这个包含块里。 */
+  function localIn(origin, el) {
+    var r = el.getBoundingClientRect();
+    if (!origin) {
+      return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, cx: (r.left + r.right) / 2, cy: (r.top + r.bottom) / 2, viewW: window.innerWidth, viewH: window.innerHeight };
+    }
+    var o = origin.getBoundingClientRect();
+    var sx = o.width ? origin.offsetWidth / o.width : 1;
+    var sy = o.height ? origin.offsetHeight / o.height : 1;
+    var left = (r.left - o.left) * sx;
+    var right = (r.right - o.left) * sx;
+    var top = (r.top - o.top) * sy;
+    var bottom = (r.bottom - o.top) * sy;
+    return { left: left, right: right, top: top, bottom: bottom, cx: (left + right) / 2, cy: (top + bottom) / 2, viewW: origin.offsetWidth, viewH: origin.offsetHeight };
+  }
+
+  /* 提示框贴在刀的一侧，三角指向刀心。靠近屏幕边缘时翻到另一侧，三角仍指向这把刀。 */
+  function placeHoverOnKnife(box, el) {
+    var k = localIn(box.offsetParent, el);
+    var bw = box.offsetWidth || 420;
+    var bh = box.offsetHeight || 160;
+    var gap = 18;
+    var left = k.right + gap;
+    var side = 'left';
+    if (left + bw > k.viewW - 8) {
+      left = k.left - gap - bw;
+      side = 'right';
+    }
+    if (left < 8) {
+      left = 8;
+      side = 'left';
+    }
+    var top = k.cy - bh / 2;
+    if (top < 8) top = 8;
+    if (top + bh > k.viewH - 8) top = Math.max(8, k.viewH - bh - 8);
+    box.style.left = left + 'px';
+    box.style.top = top + 'px';
+    var caret = k.cy - top - 8;
+    if (caret < 12) caret = 12;
+    if (caret > bh - 28) caret = Math.max(12, bh - 28);
+    box.style.setProperty('--hx-caret-y', caret + 'px');
+    box.classList.toggle('is-caret-left', side === 'left');
+    box.classList.toggle('is-caret-right', side === 'right');
   }
 
   function placeHover(box, ev) {
-    if (!box || !ev) return;
+    if (!box) return;
+    if (hoverAnchor && hoverAnchor.isConnected) {
+      placeHoverOnKnife(box, hoverAnchor);
+      return;
+    }
+    box.classList.remove('is-caret-left', 'is-caret-right');
+    if (!ev) return;
     var x = ev.clientX + 14;
     var y = ev.clientY + 14;
     if (x + 440 > window.innerWidth) x = Math.max(8, ev.clientX - 440);
@@ -254,7 +320,8 @@
     box.style.top = y + 'px';
   }
 
-  function openHover(key, ev) {
+  function openHover(key, ev, anchor) {
+    hoverAnchor = (anchor && anchor.hasAttribute && anchor.hasAttribute('data-hx-knife')) ? anchor : null;
     hoverRows = L().pointsFor(key, devOf(key));
     L().allow(pageRows.concat(hoverRows));
     var box = document.getElementById('hxHover');
@@ -264,7 +331,10 @@
       placeHover(box, ev);
     }
     L().fetch(hoverRows).then(function () {
-      if (box && !box.hidden && hotKey === key) box.innerHTML = hoverHtml(key, hoverRows);
+      if (box && !box.hidden && hotKey === key) {
+        box.innerHTML = hoverHtml(key, hoverRows);
+        placeHover(box, ev);
+      }
     });
   }
 
@@ -272,8 +342,12 @@
     if (pinned) return;
     hotKey = '';
     hoverRows = [];
+    hoverAnchor = null;
     var box = document.getElementById('hxHover');
-    if (box) box.hidden = true;
+    if (box) {
+      box.hidden = true;
+      box.classList.remove('is-caret-left', 'is-caret-right');
+    }
     L().allow(pageRows);
   }
 
@@ -284,38 +358,76 @@
   function bindHover(host) {
     host.addEventListener('mouseover', function (ev) {
       if (editOn()) return;
+      var knife = knifeOf(ev.target);
+      if (knife) {
+        clearKnifeClass(host, 'hx-knife-hot', knife);
+        knife.classList.add('hx-knife-hot');
+        if (pinned) return;
+        var key = knife.getAttribute('data-hx-key');
+        if (!key || key === hotKey) {
+          if (key && hoverAnchor !== knife) {
+            hoverAnchor = knife;
+            var stay = document.getElementById('hxHover');
+            if (stay && !stay.hidden) placeHover(stay, ev);
+          }
+          return;
+        }
+        hotKey = key;
+        openHover(key, ev, knife);
+        return;
+      }
       if (pinned) return;
       var el = ev.target.closest ? ev.target.closest('[data-hx-key]') : null;
       if (!el) return;
-      var key = el.getAttribute('data-hx-key');
-      if (!key || key === hotKey) return;
-      hotKey = key;
-      openHover(key, ev);
+      var key2 = el.getAttribute('data-hx-key');
+      if (!key2 || key2 === hotKey) return;
+      hotKey = key2;
+      openHover(key2, ev, null);
     });
     host.addEventListener('mousemove', function (ev) {
       var box = document.getElementById('hxHover');
       if (box && !box.hidden && !pinned) placeHover(box, ev);
     });
     host.addEventListener('mouseout', function (ev) {
+      var knife = knifeOf(ev.target);
+      if (knife) {
+        var inside = ev.relatedTarget;
+        if (!inside || !knife.contains(inside)) knife.classList.remove('hx-knife-hot');
+      }
       var to = ev.relatedTarget;
       if (to && to.closest && (to.closest('[data-hx-key]') || to.closest('#hxHover'))) return;
       closeHover();
     });
     host.addEventListener('click', function (ev) {
       if (editOn()) return;
+      var knife = knifeOf(ev.target);
+      if (knife) {
+        clearKnifeClass(host, 'hx-knife-pin', knife);
+        knife.classList.add('hx-knife-pin');
+        pinned = true;
+        hotKey = knife.getAttribute('data-hx-key');
+        openHover(hotKey, ev, knife);
+        return;
+      }
       var el = ev.target.closest ? ev.target.closest('[data-hx-key]') : null;
       if (!el) {
         pinned = false;
         hotKey = '';
         hoverRows = [];
+        hoverAnchor = null;
+        clearKnifeClass(host, 'hx-knife-pin', null);
         var box = document.getElementById('hxHover');
-        if (box) box.hidden = true;
+        if (box) {
+          box.hidden = true;
+          box.classList.remove('is-caret-left', 'is-caret-right');
+        }
         L().allow(pageRows);
         return;
       }
+      clearKnifeClass(host, 'hx-knife-pin', null);
       pinned = true;
       hotKey = el.getAttribute('data-hx-key');
-      openHover(hotKey, ev);
+      openHover(hotKey, ev, null);
     });
   }
 
@@ -2150,7 +2262,7 @@
     if (pane.getAttribute('data-loaded') === code) return;
     pane.setAttribute('data-loaded', code);
     pane.innerHTML = '<div class="hx-pt">正在打开 ' + esc(code) + ' 的 CAD…</div>';
-    fetch('/hx-dcim/cad/' + encodeURIComponent(code) + '.svg?v=20261102knifesz')
+    fetch('/hx-dcim/cad/' + encodeURIComponent(code) + '.svg?v=20261102kntip')
       .then(function (r) {
         var ct = (r.headers.get('content-type') || '').toLowerCase();
         if (!r.ok || ct.indexOf('svg') < 0) throw new Error('missing');
@@ -2246,6 +2358,7 @@
     pinned = false;
     hotKey = '';
     hoverRows = [];
+    hoverAnchor = null;
     var main = host.querySelector('.hx-main');
     if (!id) {
       page = null;
@@ -2483,6 +2596,7 @@
     hoverRows = [];
     hotKey = '';
     pinned = false;
+    hoverAnchor = null;
     page = null;
     if (onResize) window.removeEventListener('resize', onResize);
     onResize = null;

@@ -147,6 +147,24 @@
 .hx-wires line { pointer-events: stroke; cursor: pointer; }
 .hx-img { object-fit: fill; cursor: pointer; }
 .hx-sym { cursor: pointer; color: #00ff00; overflow: visible; }
+/* 划过 / 选中只动刀符号。从刀框中心缩放，进线和出线坐标不动，线仍落在刀片上。 */
+.hx-sym.hx-knife-hot,
+.hx-sym.hx-knife-pin {
+  transform-origin: 50% 50%;
+  z-index: 2060 !important;
+}
+.hx-sym.hx-knife-hot {
+  transform: scale(1.07);
+  filter: drop-shadow(0 0 2px rgba(190, 255, 210, .5));
+}
+.hx-sym.hx-knife-pin {
+  transform: scale(1.14);
+  filter: drop-shadow(0 0 1.5px #ffffff) drop-shadow(0 0 7px rgba(150, 255, 190, .95));
+}
+.hx-sym.hx-knife-hot.hx-knife-pin {
+  transform: scale(1.14);
+  filter: drop-shadow(0 0 1.5px #ffffff) drop-shadow(0 0 7px rgba(150, 255, 190, .95));
+}
 .hx-sym.is-open .hx-k-closed { display: none; }
 .hx-sym.is-closed .hx-k-open { display: none; }
 .hx-sym .hx-blade {
@@ -240,9 +258,22 @@
 .hx-node.is-muted { opacity: .45; cursor: default; }
 .hx-title { font-size: 18px; color: #f4f8ff; margin-bottom: 8px; }
 .hx-hover {
-  position: fixed; z-index: 40; width: 420px; max-height: 340px; overflow: auto;
-  padding: 8px 10px; border: 1px solid #7fd0ff; background: rgba(6, 22, 40, .94);
+  position: fixed; z-index: 40; width: 420px; overflow: visible;
+  border: 1px solid #7fd0ff; background: rgba(6, 22, 40, .94);
   box-shadow: 0 8px 24px rgba(0,0,0,.35);
+}
+.hx-hover-body { max-height: 340px; overflow: auto; padding: 8px 10px; }
+.hx-hover-caret {
+  display: none; position: absolute; width: 0; height: 0;
+  border: 8px solid transparent; pointer-events: none;
+}
+.hx-hover.is-caret-left .hx-hover-caret {
+  display: block; left: -16px; top: var(--hx-caret-y, 24px);
+  border-right-color: #7fd0ff;
+}
+.hx-hover.is-caret-right .hx-hover-caret {
+  display: block; right: -16px; top: var(--hx-caret-y, 24px);
+  border-left-color: #7fd0ff;
 }
 .hx-hover-title { color: #ffd24d; margin-bottom: 6px; font-size: 13px; }
 .hx-pt { display: flex; justify-content: space-between; gap: 12px; color: #e7f2ff; padding: 3px 0; font-size: 12px; }
