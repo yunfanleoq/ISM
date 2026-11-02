@@ -45,7 +45,7 @@
 
   function loadPowerIndex() {
     if (powerIndexP) return powerIndexP;
-    powerIndexP = fetch('/hx-dcim/data/hx-power-page-index.json?v=20261029bus02').then(function (r) {
+    powerIndexP = fetch('/hx-dcim/data/hx-power-page-index.json?v=20261102f5').then(function (r) {
       if (!r.ok) return null;
       return r.json();
     }).then(function (j) {
@@ -71,17 +71,17 @@
   function loadScenes() {
     var jobs = [];
     if (w.HX5A1) {
-      jobs.push(w.HX5A1.load('20261029bus02').catch(function (e) {
+      jobs.push(w.HX5A1.load('20261102knifesz').catch(function (e) {
         if (w.console) w.console.warn('[hx-5a1] 布局未加载，5A1 退回通用绘制', e);
       }));
     }
     if (w.HXRooms) {
-      jobs.push(w.HXRooms.load('20261029bus02').catch(function (e) {
+      jobs.push(w.HXRooms.load('20261102knifesz').catch(function (e) {
         if (w.console) w.console.warn('[hx-rooms] 配电室布局未加载', e);
       }));
     }
     return Promise.all(jobs).then(function () {
-      return fetch('/hx-dcim/data/hx-scenes.json?v=20261029bus02');
+      return fetch('/hx-dcim/data/hx-scenes.json?v=20261102f5');
     }).then(function (r) {
       if (!r.ok) throw new Error('no scenes');
       return r.json();
@@ -501,7 +501,7 @@
     }, { passive: false });
     main.addEventListener('dblclick', function (ev) {
       if (!page || page.kind !== 'power') return;
-      if (ev.target.closest && ev.target.closest('.hx-zoom-bar')) return;
+      if (ev.target.closest && ev.target.closest('.hx-cad-pane, .hx-zoom-bar')) return;
       /* 编辑改字优先；其它位置仍按原手势缩放 */
       if (editOn() && ev.target.closest && ev.target.closest('.hx-tx')) return;
       zoomAt(ev.clientX, ev.clientY, (stage.sc || 1) * (ev.shiftKey ? 1 / 1.35 : 1.35));
@@ -700,6 +700,8 @@
   var BLADE_VX = 18;
   var BLADE_VW = 48;
   var BLADE_VH = 124;
+  /* 与 hx.css --hx-blade-long 相同：0.92 * 60。竖刀只在 bladeFit 的五层单室用这个长轴。 */
+  var BLADE_LONG = 0.92 * KNIFE_W;
 
   function symDisplayBox(n) {
     if (knifeHorizontal(n)) return { w: KNIFE_H, h: KNIFE_W };
@@ -723,11 +725,17 @@
       ox = (box.w - rw) / 2;
       oy = (box.h - rh) / 2;
     } else if (horiz) {
-      rh = box.h * 0.92;
+      rh = BLADE_LONG;
       s = rh / BLADE_VH;
       rw = BLADE_VW * s;
       ox = (box.w - rw) / 2;
       oy = (box.h - rh) / 2;
+    } else if (n.bladeFit) {
+      s = BLADE_LONG / BLADE_VH;
+      rw = BLADE_VW * s;
+      rh = BLADE_LONG;
+      ox = (box.w - rw) / 2;
+      oy = 0;
     } else if (decor) {
       rw = box.w * 0.84;
       s = rw / BLADE_VW;
@@ -1882,6 +1890,295 @@
     if (room) openRoomCab(hostEl, room, cab);
   }
 
+  function roomCodeOf(pg) {
+    return String((pg && pg.name) || '').replace(/^配电室/, '');
+  }
+
+  /* CAD 原图：100% = 8px / 图上单位。放大、缩小、滚轮、拖动、局部框选跟一次图同一套。 */
+  var CAD_PX = 8;
+
+  function cadState(pane) {
+    return pane && pane._cad;
+  }
+
+  function applyCad(pane) {
+    var st = cadState(pane);
+    var stage = pane && pane.querySelector('.hx-cad-stage');
+    if (!st || !stage) return;
+    stage.style.width = st.baseW + 'px';
+    stage.style.height = st.baseH + 'px';
+    stage.style.transformOrigin = '0 0';
+    stage.style.transform = 'translate(' + st.tx + 'px,' + st.ty + 'px) scale(' + st.sc + ')';
+  }
+
+  function cadFit(pane) {
+    var st = cadState(pane);
+    var view = pane && pane.querySelector('.hx-cad-view');
+    if (!st || !view) return;
+    var cw = view.clientWidth;
+    var ch = view.clientHeight;
+    if (cw < 40 || ch < 40 || !(st.baseW > 1) || !(st.baseH > 1)) return;
+    var pad = 28;
+    var s = Math.min((cw - pad * 2) / st.baseW, (ch - pad * 2) / st.baseH);
+    if (!isFinite(s) || s <= 0) s = 0.4;
+    st.sc = Math.max(0.05, Math.min(12, s));
+    st.tx = (cw - st.baseW * st.sc) / 2;
+    st.ty = (ch - st.baseH * st.sc) / 2;
+    st.user = false;
+    st.marquee = false;
+    view.classList.remove('is-marquee');
+    var btn = pane.querySelector('[data-hx-cad-zoom="area"]');
+    if (btn) btn.classList.remove('is-on');
+    applyCad(pane);
+  }
+
+  function cadZoomAt(pane, clientX, clientY, next) {
+    var st = cadState(pane);
+    var view = pane && pane.querySelector('.hx-cad-view');
+    if (!st || !view) return;
+    var rect = view.getBoundingClientRect();
+    var px = clientX - rect.left;
+    var py = clientY - rect.top;
+    var sc = st.sc || 1;
+    next = Math.max(0.05, Math.min(12, next));
+    var bx = (px - st.tx) / sc;
+    var by = (py - st.ty) / sc;
+    st.user = true;
+    st.sc = next;
+    st.tx = px - bx * next;
+    st.ty = py - by * next;
+    applyCad(pane);
+  }
+
+  function cadZoomCenter(pane, factor) {
+    var view = pane && pane.querySelector('.hx-cad-view');
+    if (!view) return;
+    var rect = view.getBoundingClientRect();
+    var st = cadState(pane);
+    cadZoomAt(pane, rect.left + rect.width / 2, rect.top + rect.height / 2, (st && st.sc || 1) * factor);
+  }
+
+  function cadZoom100(pane) {
+    var st = cadState(pane);
+    var view = pane && pane.querySelector('.hx-cad-view');
+    if (!st || !view) return;
+    st.user = true;
+    st.sc = 1;
+    st.tx = (view.clientWidth - st.baseW) / 2;
+    st.ty = (view.clientHeight - st.baseH) / 2;
+    applyCad(pane);
+  }
+
+  function bindCadControls(main) {
+    if (main._hxCad) return;
+    main._hxCad = 1;
+    var drag = null;
+    function paneOf(el) {
+      return el && el.closest ? el.closest('.hx-cad-pane') : null;
+    }
+    function viewOf(pane) {
+      return pane && pane.querySelector('.hx-cad-view');
+    }
+    main.addEventListener('wheel', function (ev) {
+      if (!main.classList.contains('is-cad')) return;
+      var pane = paneOf(ev.target);
+      if (!pane || !cadState(pane)) return;
+      if (ev.target.closest && ev.target.closest('.hx-zoom-bar')) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      var dy = ev.deltaY;
+      if (ev.deltaMode === 1) dy *= 16;
+      var st = cadState(pane);
+      cadZoomAt(pane, ev.clientX, ev.clientY, (st.sc || 1) * (dy > 0 ? 0.9 : 1.12));
+    }, { passive: false, capture: true });
+    main.addEventListener('dblclick', function (ev) {
+      if (!main.classList.contains('is-cad')) return;
+      var pane = paneOf(ev.target);
+      if (!pane || !cadState(pane)) return;
+      if (ev.target.closest && ev.target.closest('.hx-zoom-bar')) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      var st = cadState(pane);
+      cadZoomAt(pane, ev.clientX, ev.clientY, (st.sc || 1) * (ev.shiftKey ? 1 / 1.35 : 1.35));
+    }, true);
+    main.addEventListener('pointerdown', function (ev) {
+      if (!main.classList.contains('is-cad') || ev.button !== 0) return;
+      var pane = paneOf(ev.target);
+      var st = cadState(pane);
+      var view = viewOf(pane);
+      if (!st || !view) return;
+      if (ev.target.closest && ev.target.closest('.hx-zoom-bar, .hx-view-tabs')) return;
+      if (!ev.target.closest('.hx-cad-view')) return;
+      if (st.marquee) {
+        /* 框画在 .hx-cad-view 上。跟一次图一样用 fitLocal：client 减去这块的
+           getBoundingClientRect，再换回它自己的 CSS 像素。不要用 SVG 局部坐标。 */
+        var p0 = fitLocal(view, ev.clientX, ev.clientY);
+        drag = { mode: 'area', pane: pane, view: view, x: p0.x, y: p0.y };
+        var box = document.createElement('div');
+        box.className = 'hx-marquee';
+        box.style.left = p0.x + 'px';
+        box.style.top = p0.y + 'px';
+        view.appendChild(box);
+        drag.box = box;
+        if (view.setPointerCapture) view.setPointerCapture(ev.pointerId);
+        return;
+      }
+      drag = { mode: 'pan', pane: pane, view: view, x: ev.clientX, y: ev.clientY, tx: st.tx, ty: st.ty, moved: false };
+      view.classList.add('is-pan');
+      if (view.setPointerCapture) view.setPointerCapture(ev.pointerId);
+    });
+    main.addEventListener('pointermove', function (ev) {
+      if (!drag) return;
+      if (drag.mode === 'pan') {
+        var dx = ev.clientX - drag.x;
+        var dy = ev.clientY - drag.y;
+        if (!drag.moved && Math.hypot(dx, dy) < 4) return;
+        drag.moved = true;
+        var st = cadState(drag.pane);
+        if (!st) return;
+        st.user = true;
+        st.tx = drag.tx + dx;
+        st.ty = drag.ty + dy;
+        applyCad(drag.pane);
+        return;
+      }
+      if (!drag.box) return;
+      var p = fitLocal(drag.view, ev.clientX, ev.clientY);
+      var x = p.x;
+      var y = p.y;
+      var x0 = Math.min(drag.x, x);
+      var y0 = Math.min(drag.y, y);
+      drag.box.style.left = x0 + 'px';
+      drag.box.style.top = y0 + 'px';
+      drag.box.style.width = Math.abs(x - drag.x) + 'px';
+      drag.box.style.height = Math.abs(y - drag.y) + 'px';
+    });
+    function endCadDrag() {
+      if (!drag) return;
+      var d = drag;
+      drag = null;
+      if (d.view) d.view.classList.remove('is-pan');
+      if (d.mode !== 'area' || !d.box) return;
+      var w = parseFloat(d.box.style.width) || 0;
+      var h = parseFloat(d.box.style.height) || 0;
+      var x0 = parseFloat(d.box.style.left) || 0;
+      var y0 = parseFloat(d.box.style.top) || 0;
+      if (d.box.parentNode) d.box.parentNode.removeChild(d.box);
+      var st = cadState(d.pane);
+      if (st) {
+        st.marquee = false;
+        if (d.view) d.view.classList.remove('is-marquee');
+        var areaBtn = d.pane.querySelector('[data-hx-cad-zoom="area"]');
+        if (areaBtn) areaBtn.classList.remove('is-on');
+      }
+      if (!st || w < 12 || h < 12) return;
+      var cw = d.view.clientWidth;
+      var ch = d.view.clientHeight;
+      var sc0 = st.sc || 1;
+      var b0x = (x0 - st.tx) / sc0;
+      var b0y = (y0 - st.ty) / sc0;
+      var bw = w / sc0;
+      var bh = h / sc0;
+      var sc = Math.min(cw / bw, ch / bh) * 0.94;
+      st.user = true;
+      st.sc = Math.max(0.05, Math.min(12, sc));
+      st.tx = (cw - bw * st.sc) / 2 - b0x * st.sc;
+      st.ty = (ch - bh * st.sc) / 2 - b0y * st.sc;
+      applyCad(d.pane);
+    }
+    main.addEventListener('pointerup', endCadDrag);
+    main.addEventListener('pointercancel', endCadDrag);
+    main.addEventListener('click', function (ev) {
+      var btn = ev.target.closest ? ev.target.closest('[data-hx-cad-zoom]') : null;
+      if (!btn) return;
+      var pane = paneOf(btn);
+      if (!pane || !cadState(pane)) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      var act = btn.getAttribute('data-hx-cad-zoom');
+      var st = cadState(pane);
+      var view = viewOf(pane);
+      if (act === 'in') cadZoomCenter(pane, 1.2);
+      else if (act === 'out') cadZoomCenter(pane, 1 / 1.2);
+      else if (act === 'fit') cadFit(pane);
+      else if (act === '100') cadZoom100(pane);
+      else if (act === 'area' && view) {
+        st.marquee = !st.marquee;
+        btn.classList.toggle('is-on', st.marquee);
+        view.classList.toggle('is-marquee', st.marquee);
+      }
+    });
+    window.addEventListener('resize', function () {
+      if (!main.classList.contains('is-cad')) return;
+      var pane = main.querySelector('.hx-cad-pane');
+      var st = cadState(pane);
+      if (!st || st.user) return;
+      cadFit(pane);
+    });
+  }
+
+  function mountCadSvg(pane, code, svg) {
+    svg = String(svg).replace(/<script[\s\S]*?<\/script>/gi, '');
+    pane.innerHTML =
+      '<div class="hx-cad-view"><div class="hx-cad-stage">' + svg + '</div></div>' +
+      '<div class="hx-cad-cap">' + esc(code) + ' · 2026-10-30 单室 CAD</div>' +
+      '<div class="hx-zoom-bar">' +
+        '<button type="button" data-hx-cad-zoom="in">放大</button>' +
+        '<button type="button" data-hx-cad-zoom="out">缩小</button>' +
+        '<button type="button" data-hx-cad-zoom="fit">适应窗口</button>' +
+        '<button type="button" data-hx-cad-zoom="100">100%</button>' +
+        '<button type="button" data-hx-cad-zoom="area">局部</button>' +
+      '</div>';
+    var svgEl = pane.querySelector('svg');
+    var vb = svgEl && svgEl.viewBox && svgEl.viewBox.baseVal;
+    var uw = vb && vb.width > 1 ? vb.width : 240;
+    var uh = vb && vb.height > 1 ? vb.height : 160;
+    pane._cad = { sc: 1, tx: 0, ty: 0, baseW: uw * CAD_PX, baseH: uh * CAD_PX, user: false, marquee: false };
+    function fitReady(tries) {
+      var view = pane.querySelector('.hx-cad-view');
+      if (view && view.clientWidth > 40) {
+        cadFit(pane);
+        return;
+      }
+      if (tries < 8) requestAnimationFrame(function () { fitReady(tries + 1); });
+    }
+    fitReady(0);
+  }
+
+  function loadCadPane(pane, code) {
+    if (!pane) return;
+    if (pane.getAttribute('data-loaded') === code) return;
+    pane.setAttribute('data-loaded', code);
+    pane.innerHTML = '<div class="hx-pt">正在打开 ' + esc(code) + ' 的 CAD…</div>';
+    fetch('/hx-dcim/cad/' + encodeURIComponent(code) + '.svg?v=20261102knifesz')
+      .then(function (r) {
+        var ct = (r.headers.get('content-type') || '').toLowerCase();
+        if (!r.ok || ct.indexOf('svg') < 0) throw new Error('missing');
+        return r.text();
+      })
+      .then(function (svg) {
+        if (String(svg).indexOf('<svg') < 0) throw new Error('missing');
+        mountCadSvg(pane, code, svg);
+      })
+      .catch(function () {
+        pane.innerHTML = '<div class="hx-pt">这间配电室还没有单独的 CAD 原图。<br>目前嵌进来的是 5A1、5A2、5A3、5B1、5B2、5B3。</div>';
+      });
+  }
+
+  function showMainPane(main, which) {
+    if (!main) return;
+    var cad = main.querySelector('.hx-cad-pane');
+    main.querySelectorAll('[data-hx-pane]').forEach(function (b) {
+      b.classList.toggle('is-on', b.getAttribute('data-hx-pane') === which);
+    });
+    main.classList.toggle('is-cad', which === 'cad');
+    if (which === 'cad') {
+      if (cad) loadCadPane(cad, cad.getAttribute('data-room') || '');
+      return;
+    }
+    fit();
+  }
+
   function renderLoadedPage(host) {
     var main = host.querySelector('.hx-main');
     if (!page || !w.HXDraw) {
@@ -1891,10 +2188,18 @@
       return;
     }
     if (!main) return;
+    main.classList.remove('is-cad');
     stage.user = false;
     stage.marquee = false;
     main.innerHTML = w.HXDraw.html(page);
     if (page.kind === 'power') {
+      var roomCode = roomCodeOf(page);
+      main.insertAdjacentHTML('afterbegin',
+        '<div class="hx-view-tabs">' +
+          '<button type="button" class="is-on" data-hx-pane="screen">一次图</button>' +
+          '<button type="button" data-hx-pane="cad">CAD原图</button>' +
+        '</div>' +
+        '<div class="hx-cad-pane" hidden data-room="' + esc(roomCode) + '"></div>');
       main.insertAdjacentHTML('beforeend',
         '<div class="hx-zoom-bar">' +
         '<button type="button" data-hx-zoom="in">放大</button>' +
@@ -1905,6 +2210,16 @@
         '</div>');
     }
     bindStage(main);
+    bindCadControls(main);
+    if (!main._hxPane) {
+      main._hxPane = 1;
+      main.addEventListener('click', function (ev) {
+        var paneBtn = ev.target.closest ? ev.target.closest('[data-hx-pane]') : null;
+        if (!paneBtn || !main.contains(paneBtn)) return;
+        ev.stopPropagation();
+        showMainPane(main, paneBtn.getAttribute('data-hx-pane'));
+      });
+    }
     if (!main._hxBound) {
       main._hxBound = 1;
       bindHover(main);

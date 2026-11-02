@@ -126,6 +126,8 @@
     if (decor && power) cls += ' hx-sym-has-out';
     else if (decor) cls += ' hx-sym-full';
     if (knifeHorizontal(n)) cls += ' hx-sym-h';
+    if (n.bladeFit) cls += ' hx-blade-fit';
+    if (n.bladeLeft) cls += ' hx-blade-left';
     if (n.hfull) cls += ' hx-sym-hf';
     var inner = knifeInner(decor && !power);
     if (decor && power) {
@@ -287,7 +289,7 @@
 
   function symbolMarkup(n) {
     var svg = {
-      xfmr: '<svg viewBox="0 0 64 88" width="100%" height="100%" aria-hidden="true"><g fill="none" stroke="#e8eef6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="26" cy="16" r="15"/><polygon points="26,6 15,24 37,24"/><circle cx="26" cy="46" r="15"/><path d="M26 46 V34 M26 46 L16 56 M26 46 L36 56"/><path d="M26 46 H48 V64 M42 64 H54 M44 68 H52 M46 72 H50"/></g></svg>',
+      xfmr: '<svg viewBox="0 0 64 88" width="100%" height="100%" aria-hidden="true"><g fill="none" stroke="#e8eef6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="26" cy="16" r="15"/><polygon points="26,6 15,24 37,24"/><circle cx="26" cy="46" r="15"/><path d="M26 46 V34 M26 46 L16 56 M26 46 L36 56"/></g></svg>',
       rect: '<svg viewBox="0 0 26 22" width="100%" height="100%" aria-hidden="true"><g fill="none" stroke="#d24dff" stroke-width="1.4" stroke-linecap="round"><rect x="1.2" y="1.2" width="23.6" height="19.6" rx="1.5"/><path d="M5 8 Q8.5 4.2 13 8 T21 8"/><path d="M6 15.5 H20"/></g></svg>',
       inv: '<svg viewBox="0 0 26 22" width="100%" height="100%" aria-hidden="true"><g fill="none" stroke="#d24dff" stroke-width="1.4" stroke-linecap="round"><rect x="1.2" y="1.2" width="23.6" height="19.6" rx="1.5"/><path d="M6 6.5 H20"/><path d="M5 15 Q8.5 11.2 13 15 T21 15"/></g></svg>',
       ssw: '<svg viewBox="0 0 28 26" width="100%" height="100%" aria-hidden="true"><g fill="none" stroke="#00e676" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"><rect x="1.2" y="1.2" width="25.6" height="23.6" rx="1.5"/><polygon points="7,7 16,13 7,19"/><polygon points="21,7 12,13 21,19"/><path d="M16 13 H22 M6 13 H12"/></g></svg>',
@@ -335,7 +337,13 @@
       }
       if (n.t === 'T') {
         var pe = n.k ? '' : 'pointer-events:none;';
-        var wrap = n.s && String(n.s).indexOf('\n') >= 0 ? 'white-space:normal;text-align:center;line-height:1.15;' : '';
+        var wrap = '';
+        if (n.stack) {
+          /* 5A1 多行柜号按框宽折行。flex+nowrap 会把两行拉成一条，盖住旁边的刀和线。 */
+          wrap = 'display:block;white-space:normal;overflow:hidden;line-height:1.15;';
+        } else if (n.s && String(n.s).indexOf('\n') >= 0) {
+          wrap = 'white-space:normal;text-align:center;line-height:1.15;';
+        }
         var align = TEXT_ALIGN[n.al] || '';
         var drop = page.kind === 'power' ? underKnifeTextDrop(n, knifeNodes) : 0;
         var txCls = 'hx-abs hx-tx' + (drop ? ' hx-under-knife' : '');

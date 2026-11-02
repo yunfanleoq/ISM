@@ -55,12 +55,15 @@
     n.z = 5;
     n.lay = 1;
     n.cad = spec.cad;
-    /* 5A1 全部竖刀。横置 orient 是已废弃的 pargroup 画法。 */
-    delete n.orient;
+    /* 文件里 rot≈90 的是横刀，各自从竖母线引出，不是串成一列的竖干线。 */
     delete n.hfull;
     delete n.rot;
+    if (spec.orient === 'h') n.orient = 'h';
+    else delete n.orient;
     if (spec.out) n.decor = 1; else delete n.decor;
     if (spec.outWire) n.outWire = 1; else delete n.outWire;
+    if (spec.bladeLeft) n.bladeLeft = 1;
+    n.bladeFit = 1;
     return n;
   }
 
@@ -109,6 +112,7 @@
     });
     lay.texts.forEach(function (t) {
       var n = { t: 'T', s: t.s, x: t.x, y: t.y, w: t.w, h: t.h, fs: t.fs, c: t.c || '#ffffff', z: 6, lay: 1, al: t.al || 'c' };
+      if (t.s && String(t.s).indexOf('\n') >= 0) n.stack = 1;
       if (t.capDraw) n.capDraw = 1;
       if (t.k && cadToKey[t.k]) n.k = cadToKey[t.k];
       nodes.push(n);

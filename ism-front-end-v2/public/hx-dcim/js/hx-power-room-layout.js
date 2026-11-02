@@ -61,12 +61,13 @@
     return map;
   }
 
-  function knifeNode(spec, src) {
+  function knifeNode(spec, src, fit) {
     var n = {};
     if (src) Object.keys(src).forEach(function (key) { n[key] = src[key]; });
     delete n.rot;
     delete n.orient;
     delete n.hfull;
+    if (spec.orient === 'h') n.orient = 'h';
     n.t = 'I';
     n.x = spec.x;
     n.y = spec.y;
@@ -77,6 +78,8 @@
     n.cad = spec.cad;
     if (spec.out) n.decor = 1; else delete n.decor;
     if (spec.role === 'cap') n.capDraw = 1;
+    if (fit) n.bladeFit = 1;
+    if (spec.bladeLeft) n.bladeLeft = 1;
     return n;
   }
 
@@ -99,6 +102,8 @@
 
   function build(pg, lay) {
     var prefix = pg.name + '_';
+    var code = codeOf(pg.name);
+    var fit = code === '5A2' || code === '5A3' || code === '5B1' || code === '5B2' || code === '5B3';
     var scene = indexSceneKnives(pg.nodes || [], prefix);
     var nodes = [];
     var missing = [];
@@ -117,7 +122,7 @@
     (lay.knives || []).forEach(function (spec) {
       var src = scene[spec.cad] || scene[String(spec.cad).split('#')[0]];
       if (!src) missing.push(spec.cad);
-      nodes.push(knifeNode(spec, src));
+      nodes.push(knifeNode(spec, src, fit));
     });
     (lay.texts || []).forEach(function (t) {
       var n = { t: 'T', s: t.s, x: t.x, y: t.y, w: t.w, h: t.h, fs: t.fs, c: t.c || '#ffffff', z: 6, lay: 1, al: t.al || 'c' };
