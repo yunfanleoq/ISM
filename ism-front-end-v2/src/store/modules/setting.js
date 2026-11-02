@@ -39,15 +39,16 @@ export default {
   },
   getters: {
     menuData(state, getters, rootState, rootGetters) {
+      const rawMenu = Array.isArray(state.menuData) ? state.menuData : []
       if (state.filterMenu) {
         const permissions = rootGetters['account/permissions'] || []
         const roles = rootGetters['account/roles'] || []
-        return filterMenu(deepClone(state.menuData), permissions, roles)
+        return filterMenu(deepClone(rawMenu), permissions, roles)
       }
-      return state.menuData
+      return rawMenu
     },
     firstMenu(state, getters) {
-      const {menuData} = getters
+      const menuData = getters.menuData || []
       if (menuData.length > 0 && !menuData[0].fullPath) {
         formatFullPath(menuData)
       }

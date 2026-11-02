@@ -12,28 +12,48 @@ import (
 const (
 	bjgaCollectProject = "d96005d5-dd28-3ad2-bc4d-983316c3f218"
 	bjgaDisplayUID     = "a7b91292-dc10-4f00-8000-0000000000b1"
+	// 应用卡片封面。必须走 /static，8082 不提供 /bjga/assets 下的图片。
+	bjgaDisplayImage = "/static/images/bjga-building.png"
 )
+
+func ensureBjgaDisplayImageFile() {
+	dst := "static/images/bjga-building.png"
+	if _, err := os.Stat(dst); err == nil {
+		return
+	}
+	for _, src := range []string{
+		"../ism-front-end-v2/public/bjga/assets/building.png",
+		"ism-front-end-v2/public/bjga/assets/building.png",
+		"../ism-front-end-v2/public/static/images/bjga-building.png",
+	} {
+		b, err := os.ReadFile(src)
+		if err != nil {
+			continue
+		}
+		if err = os.MkdirAll("static/images", 0777); err != nil {
+			return
+		}
+		_ = os.WriteFile(dst, b, 0644)
+		return
+	}
+}
 
 // EnsureBjgaDisplayModel 应用管理里补一条公安局动环。已有同 uuid 则不再插入。
 func EnsureBjgaDisplayModel() {
+	ensureBjgaDisplayImageFile()
 	var n int64
 	if err := Db.Model(&DisplayModels{}).Where("display_model_uid = ?", bjgaDisplayUID).Count(&n).Error; err != nil {
 		gormlog.Info("bjga display count: %v", err)
 		return
 	}
 	if n > 0 {
+		Db.Model(&DisplayModels{}).Where(
+			"display_model_uid = ? AND (display_image = '' OR display_image = ? OR display_image IS NULL)",
+			bjgaDisplayUID, "/bjga/assets/building.png",
+		).Update("display_image", bjgaDisplayImage)
 		return
 	}
-	img := ""
-	for _, p := range []string{
-		"../ism-front-end-v2/public/bjga/assets/building.png",
-		"ism-front-end-v2/public/bjga/assets/building.png",
-	} {
-		if _, err := os.Stat(p); err == nil {
-			img = "/bjga/assets/building.png"
-			break
-		}
-	}
+	img := bjgaDisplayImage
 	row := DisplayModels{
 		Name:            "公安局动环监控",
 		ProjectUuid:     bjgaCollectProject,

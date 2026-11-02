@@ -83,6 +83,8 @@ func (c *DisplayModelController) ModelList() {
 	var code int
 	type GetModelList struct {
 		DisplayType int `json:"DisplayType"`
+		// 8082 内置旧前端提交 type，新前端提交 DisplayType
+		Type int `json:"type"`
 	}
 	var getModel GetModelList
 
@@ -95,7 +97,11 @@ func (c *DisplayModelController) ModelList() {
 		if err != nil {
 			code = -1
 		} else {
-			getLists, code = models.DisplayModelList(ProjectUuid, getModel.DisplayType)
+			displayType := getModel.DisplayType
+			if displayType == 0 {
+				displayType = getModel.Type
+			}
+			getLists, code = models.DisplayModelList(ProjectUuid, displayType)
 		}
 
 	} else {

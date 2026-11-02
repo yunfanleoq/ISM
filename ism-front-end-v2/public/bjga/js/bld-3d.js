@@ -196,8 +196,8 @@
     mk([[x, y, z], [x, y + d, z], [x + w, y + d, z], [x + w, y, z]], Bt);               /* 底 -z */
     if (!opt.skipRight) mk([[x + w, y, z], [x + w, y + d, z], [x + w, y + d, z + h], [x + w, y, z + h]], R, px); /* 右 +x */
     if (!opt.skipLeft) mk([[x, y, z], [x, y, z + h], [x, y + d, z + h], [x, y + d, z]], L, px);               /* 左 -x */
-    mk([[x, y + d, z], [x, y + d, z + h], [x + w, y + d, z + h], [x + w, y + d, z]], Fr, py); /* 前 +y */
-    mk([[x, y, z], [x + w, y, z], [x + w, y, z + h], [x, y, z + h]], Bk, py);               /* 后 -y */
+    if (!opt.skipFront) mk([[x, y + d, z], [x, y + d, z + h], [x + w, y + d, z + h], [x + w, y + d, z]], Fr, py); /* 前 +y */
+    if (!opt.skipBack) mk([[x, y, z], [x + w, y, z], [x + w, y, z + h], [x, y, z + h]], Bk, py);               /* 后 -y */
     return out;
   }
   /* 水平面（地板/楼板/通道色带）。lay 默认 0 = 背景层：
@@ -502,25 +502,29 @@
   var S = {};   /* S.floor / S.room / S.rack —— 返回 {faces,lines,labels,bb,cam,objs,parts} */
 
   /* ---------- 图纸楼层：墙线、门、机柜都用台账坐标 ---------- */
-  function cadWall(faces, lines, x1, y1, x2, y2) {
+  function cadWall(faces, lines, x1, y1, x2, y2, span) {
     var dx = x2 - x1, dy = y2 - y1;
     var len = Math.sqrt(dx * dx + dy * dy);
-    if (len < 0.35) return;
-    var h = 2.72;
+    var minLen = (span && span.minLen != null) ? span.minLen : 0.35;
+    if (len < minLen) return;
+    var z0 = (span && span.z0 != null) ? span.z0 : 0;
+    var z1 = (span && span.z1 != null) ? span.z1 : 2.72;
+    if (!(z1 > z0 + 0.04)) return;
     /* 正反两片，法线相反。绘制只留朝向相机的那一面，换到背面仍有实墙。
        不淡出：fade 会把比场景中心更近的墙压到透明度 0.06，
-       同一面墙转个角度就从白变透。图纸墙始终不透明 #E6E9ED。 */
+       同一面墙转个角度就从白变透。图纸墙始终不透明 #E6E9ED。
+       span 只给机房门洞的过梁用；楼层总览不传，仍是整段落地墙。 */
     var opt = { k: 1, fade: 0, op: 1, noFog: 1, wall: 1, lay: 1 };
     faces.push(new F(
-      [[x1, y1, 0], [x2, y2, 0], [x2, y2, h], [x1, y1, h]],
+      [[x1, y1, z0], [x2, y2, z0], [x2, y2, z1], [x1, y1, z1]],
       WALL_COL, opt
     ));
     faces.push(new F(
-      [[x1, y1, 0], [x1, y1, h], [x2, y2, h], [x2, y2, 0]],
+      [[x1, y1, z0], [x1, y1, z1], [x2, y2, z1], [x2, y2, z0]],
       WALL_COL, opt
     ));
-    wallRim(lines, [x1, y1, h], [x2, y2, h]);
-    wallRim(lines, [x1, y1, 0.02], [x2, y2, 0.02]);
+    wallRim(lines, [x1, y1, z1], [x2, y2, z1]);
+    wallRim(lines, [x1, y1, z0 + 0.02], [x2, y2, z0 + 0.02]);
   }
   function wallBox(info) {
     var ws = info.walls || [], i, w, x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
@@ -843,6 +847,306 @@
     if (!comp) return C.cabBlue;
     return comp > 90 ? C.cabRed : comp >= 70 ? C.cabYellow : C.cabBlue;
   }
+  /* 图纸机房俯视：深灰外壳，600mm 面朝走道的一侧外贴网孔门，负载色只留在顶盖靠门的一条横线。 */
+  function cadShellSkin(kind) {
+    if (!cadShellSkin.cache) {
+      var cnv = document.createElement('canvas');
+      var W = 160, Hn = 520;
+      cnv.width = W; cnv.height = Hn;
+      var g = cnv.getContext('2d');
+      g.fillStyle = '#0C1016';
+      g.fillRect(0, 0, W, Hn);
+      g.fillStyle = '#3A424C';
+      g.fillRect(16, 18, W - 32, Hn - 36);
+      g.fillStyle = '#05070A';
+      var gap = 16, hw = 11, hh = 8, row = 0, yy, xx;
+      for (yy = 24; yy < Hn - 24; yy += gap) {
+        var shift = (row++ % 2) ? gap * 0.5 : 0;
+        for (xx = 20 + shift; xx < W - 22; xx += gap) g.fillRect(xx, yy, hw, hh);
+      }
+      g.fillStyle = '#10141A';
+      g.fillRect(0, 0, 16, Hn);
+      g.fillRect(W - 16, 0, 16, Hn);
+      g.fillRect(0, 0, W, 18);
+      g.fillRect(0, Hn - 18, W, 18);
+      g.strokeStyle = '#5C6772';
+      g.lineWidth = 2;
+      g.strokeRect(8, 9, W - 16, Hn - 18);
+      cadShellSkin.cache = { mesh: cnv };
+    }
+    return cadShellSkin.cache[kind] || null;
+  }
+  /* 同一列共用一个门向。背靠背（缝 < 0.35m）的那一侧是柜背，
+     门朝另一侧走道；列端缺邻居的柜子跟着整列，不单独翻面。
+     两侧都是走道时，朝更宽的那一侧。sign>0 为 +Y（进深更大）或 +X。 */
+  function cadDoorSigns(list) {
+    var groups = {}, out = {}, i, c, w, d, alongY, origin, k, row, b, ob;
+    var bestPos, bestNeg, gapPos, gapNeg, sign, spanA, spanB, ov;
+    function depthOf(row) {
+      var a = 1e9, b = -1e9, j, it, p0, p1;
+      for (j = 0; j < row.items.length; j++) {
+        it = row.items[j];
+        if (row.alongY) { p0 = it.y; p1 = it.y + (it.d || 1.2); }
+        else { p0 = it.x; p1 = it.x + (it.w || 0.6); }
+        if (p0 < a) a = p0;
+        if (p1 > b) b = p1;
+      }
+      return { min: a, max: b };
+    }
+    function spanOf(row) {
+      var a = 1e9, b = -1e9, j, it, p0, p1;
+      for (j = 0; j < row.items.length; j++) {
+        it = row.items[j];
+        if (row.alongY) { p0 = it.x; p1 = it.x + (it.w || 0.6); }
+        else { p0 = it.y; p1 = it.y + (it.d || 1.2); }
+        if (p0 < a) a = p0;
+        if (p1 > b) b = p1;
+      }
+      return [a, b];
+    }
+    for (i = 0; i < list.length; i++) {
+      c = list[i];
+      if (!c || c.x == null) continue;
+      w = c.w || 0.6; d = c.d || 1.2;
+      alongY = w <= d;
+      origin = alongY ? c.y : c.x;
+      k = (alongY ? 'Y' : 'X') + ':' + (Math.round(origin * 20) / 20).toFixed(2);
+      if (!groups[k]) groups[k] = { alongY: alongY, items: [] };
+      groups[k].items.push(c);
+    }
+    var rows = [];
+    for (k in groups) if (groups.hasOwnProperty(k)) rows.push(groups[k]);
+    for (i = 0; i < rows.length; i++) {
+      row = rows[i];
+      b = depthOf(row);
+      spanA = spanOf(row);
+      bestPos = 1e9; bestNeg = 1e9;
+      for (var j = 0; j < rows.length; j++) {
+        if (rows[j] === row || rows[j].alongY !== row.alongY) continue;
+        spanB = spanOf(rows[j]);
+        ov = Math.min(spanA[1], spanB[1]) - Math.max(spanA[0], spanB[0]);
+        if (ov < 0.4) continue;
+        ob = depthOf(rows[j]);
+        gapPos = ob.min - b.max;
+        gapNeg = b.min - ob.max;
+        if (gapPos > -0.3 && gapPos < bestPos) bestPos = gapPos;
+        if (gapNeg > -0.3 && gapNeg < bestNeg) bestNeg = gapNeg;
+      }
+      if (bestPos < 0.35 && !(bestNeg < 0.35)) sign = -1;
+      else if (bestNeg < 0.35 && !(bestPos < 0.35)) sign = 1;
+      else sign = bestNeg > bestPos ? -1 : 1;
+      for (var t = 0; t < row.items.length; t++) out[row.items[t].name] = sign;
+    }
+    return out;
+  }
+  /* 俯视和巡视共用这一份柜位。柜列来自图纸坐标，门向跟 cadDoorSigns 一致：
+     门朝冷通道，柜背朝热通道。冷通道已经落在列间空档上就只记色带，不挪柜。
+     背靠背贴死（空档 < 0.8m，人过不去）时，沿法线把两列拉开到 1.2m 热通道。
+     不改原柜的 x/y，围墙仍按图纸柜位算。 */
+  function cadAislePlan(list) {
+    var HOT = 1.2, BLOCK = 0.8;
+    var signs = cadDoorSigns(list || []);
+    var groups = {}, i, c, w, d, alongY, origin, k;
+    for (i = 0; i < (list || []).length; i++) {
+      c = list[i];
+      if (!c || c.x == null) continue;
+      w = c.w || 0.6; d = c.d || 1.2;
+      alongY = w <= d;
+      origin = alongY ? c.y : c.x;
+      k = (alongY ? 'Y' : 'X') + ':' + (Math.round(origin * 20) / 20).toFixed(2);
+      if (!groups[k]) groups[k] = { alongY: alongY, items: [], id: k };
+      groups[k].items.push(c);
+    }
+    var rows = [];
+    for (k in groups) if (groups.hasOwnProperty(k)) rows.push(groups[k]);
+    function depthOf(row) {
+      var a = 1e9, b = -1e9, j, it, p0, p1;
+      for (j = 0; j < row.items.length; j++) {
+        it = row.items[j];
+        if (row.alongY) { p0 = it.y; p1 = it.y + (it.d || 1.2); }
+        else { p0 = it.x; p1 = it.x + (it.w || 0.6); }
+        if (p0 < a) a = p0;
+        if (p1 > b) b = p1;
+      }
+      return { min: a, max: b };
+    }
+    function spanOf(row) {
+      var a = 1e9, b = -1e9, j, it, p0, p1;
+      for (j = 0; j < row.items.length; j++) {
+        it = row.items[j];
+        if (row.alongY) { p0 = it.x; p1 = it.x + (it.w || 0.6); }
+        else { p0 = it.y; p1 = it.y + (it.d || 1.2); }
+        if (p0 < a) a = p0;
+        if (p1 > b) b = p1;
+      }
+      return { min: a, max: b };
+    }
+    for (i = 0; i < rows.length; i++) {
+      var dep = depthOf(rows[i]), sp = spanOf(rows[i]);
+      rows[i].min = dep.min; rows[i].max = dep.max;
+      rows[i].span0 = sp.min; rows[i].span1 = sp.max;
+      rows[i].sign = signs[rows[i].items[0].name] || 1;
+      rows[i].shift = 0;
+      rows[i].front = 4;
+    }
+    var pairs = [], seen = {};
+    for (i = 0; i < rows.length; i++) {
+      var row = rows[i], best = null, bestGap = 1e9, j, other, ov, gap;
+      for (j = 0; j < rows.length; j++) {
+        other = rows[j];
+        if (other === row || other.alongY !== row.alongY) continue;
+        ov = Math.min(row.span1, other.span1) - Math.max(row.span0, other.span0);
+        if (ov < 0.4) continue;
+        gap = other.min - row.max;
+        if (gap > -0.35 && gap < bestGap) { bestGap = gap; best = other; }
+      }
+      if (!best) continue;
+      var pk = row.id < best.id ? row.id + '|' + best.id : best.id + '|' + row.id;
+      if (seen[pk]) continue;
+      seen[pk] = 1;
+      var hot = row.sign < 0 && best.sign > 0;
+      var cold = row.sign > 0 && best.sign < 0;
+      if (!hot && !cold) cold = true;
+      pairs.push({ lo: row, hi: best, hot: hot, cold: cold, gap: bestGap });
+    }
+    var moved = false;
+    for (i = 0; i < pairs.length; i++) {
+      var p = pairs[i];
+      if (!(p.hot && p.gap < BLOCK)) continue;
+      var need = HOT - p.gap;
+      p.lo.shift -= need / 2;
+      p.hi.shift += need / 2;
+      moved = true;
+    }
+    var aisles = [];
+    for (i = 0; i < pairs.length; i++) {
+      var p2 = pairs[i];
+      var openLo, openHi, x0, y0, ww, dd;
+      if (p2.lo.alongY) {
+        openLo = p2.lo.max + p2.lo.shift;
+        openHi = p2.hi.min + p2.hi.shift;
+        x0 = Math.min(p2.lo.span0, p2.hi.span0);
+        y0 = openLo;
+        ww = Math.max(p2.lo.span1, p2.hi.span1) - x0;
+        dd = openHi - openLo;
+      } else {
+        openLo = p2.lo.max + p2.lo.shift;
+        openHi = p2.hi.min + p2.hi.shift;
+        y0 = Math.min(p2.lo.span0, p2.hi.span0);
+        x0 = openLo;
+        ww = openHi - openLo;
+        dd = Math.max(p2.lo.span1, p2.hi.span1) - y0;
+      }
+      if (ww < 0.08 || dd < 0.08) continue;
+      var open = p2.lo.alongY ? dd : ww;
+      if (p2.cold) {
+        if (p2.lo.sign > 0) p2.lo.front = open;
+        if (p2.hi.sign < 0) p2.hi.front = open;
+      }
+      aisles.push({ cold: !!p2.cold, x: x0, y: y0, w: ww, d: dd });
+    }
+    var out = [], byName = {};
+    for (i = 0; i < rows.length; i++) {
+      var rw = rows[i];
+      for (var t = 0; t < rw.items.length; t++) {
+        var it = rw.items[t];
+        var dx = rw.alongY ? 0 : rw.shift;
+        var dy = rw.alongY ? rw.shift : 0;
+        var rec = {
+          name: it.name, cab: it,
+          x: it.x + dx, y: it.y + dy,
+          w: it.w || 0.6, d: it.d || 1.2,
+          sign: signs[it.name] || rw.sign || 1,
+          alongY: rw.alongY, front: rw.front
+        };
+        out.push(rec);
+        byName[it.name] = rec;
+      }
+    }
+    return { list: out, byName: byName, aisles: aisles, moved: moved };
+  }
+  function paintAisleBand(faces, a) {
+    if (!a || a.w < 0.08 || a.d < 0.08) return;
+    var col = a.cold ? C.cold : C.hot;
+    var mid = a.cold ? '#7EC8F0' : '#F0A06A';
+    plate(faces, a.x, a.y, 0.012, a.w, a.d, col, { o: { op: 0.92, noFog: 1 } });
+    if (a.w >= a.d) {
+      plate(faces, a.x + 0.06, a.y + a.d * 0.36, 0.02, Math.max(0.1, a.w - 0.12), Math.max(0.05, a.d * 0.28), mid,
+        { o: { op: 0.72, noFog: 1 } });
+    } else {
+      plate(faces, a.x + a.w * 0.36, a.y + 0.06, 0.02, Math.max(0.05, a.w * 0.28), Math.max(0.1, a.d - 0.12), mid,
+        { o: { op: 0.72, noFog: 1 } });
+    }
+  }
+  function aisleWords(labels, a) {
+    if (!labels || !a) return;
+    var text = a.cold ? '冷通道' : '热通道';
+    var opt = {
+      size: 12, col: a.cold ? '#E7F7FF' : '#FFE6CC', weight: '700',
+      bg: a.cold ? 'rgba(6,36,64,.88)' : 'rgba(64,24,8,.88)', lay: 2
+    };
+    var longX = a.w >= a.d;
+    var len = longX ? a.w : a.d;
+    var n = len > 8 ? 2 : 1, i, t, x, y;
+    for (i = 0; i < n; i++) {
+      t = n === 1 ? 0.5 : (0.32 + i * 0.36);
+      x = a.x + (longX ? a.w * t : a.w / 2);
+      y = a.y + (longX ? a.d / 2 : a.d * t);
+      T(labels, x, y, 0.18, text, opt);
+    }
+  }
+  function drawCadShell(faces, x, y, w, d, h, tint, id, doorSign) {
+    var alongY = w <= d;
+    if (doorSign !== 1 && doorSign !== -1) doorSign = 1;
+    box(faces, x - 0.012, y - 0.01, 0, w + 0.024, d + 0.02, 0.05, '#121820', {
+      topK: 1.05, rightK: 0.7, frontK: 0.6, leftK: 0.48, backK: 0.42, quiet: 1, o: { obj: id }
+    });
+    /* 六面都在。顶盖和四壁共边，不留可以看进空腔的口。 */
+    box(faces, x, y, 0.045, w, d, h - 0.045, '#2A3442', {
+      topK: 1.7, rightK: 0.86, frontK: 0.78, leftK: 0.58, backK: 0.46, quiet: 1, o: { obj: id }
+    });
+    var band = 0.07, lift = 0.004;
+    if (alongY) {
+      var yy = doorSign > 0 ? (y + Math.max(0.04, d - band - 0.04)) : (y + 0.04);
+      plate(faces, x + 0.04, yy, h + lift, Math.max(0.1, w - 0.08), band, tint, {
+        k: 1.35, lay: 1, quiet: 1, o: { obj: id }
+      });
+    } else {
+      var xx = doorSign > 0 ? (x + Math.max(0.04, w - band - 0.04)) : (x + 0.04);
+      plate(faces, xx, y + 0.04, h + lift, band, Math.max(0.1, d - 0.08), tint, {
+        k: 1.35, lay: 1, quiet: 1, o: { obj: id }
+      });
+    }
+    /* 走线口是顶盖上的小色块，实心顶仍在下面，俯视进不了柜。 */
+    var pw = Math.min(0.10, w * 0.22), pd = Math.min(0.06, d * 0.12);
+    var portX, portY;
+    if (alongY) {
+      portX = x + (w - pw) * 0.5;
+      portY = doorSign > 0 ? (y + 0.16) : (y + d - 0.16 - pd);
+    } else {
+      portY = y + (d - pd) * 0.5;
+      portX = doorSign > 0 ? (x + 0.16) : (x + w - 0.16 - pw);
+    }
+    plate(faces, portX, portY, h + 0.008, pw, pd, '#141A22', {
+      k: 0.55, lay: 1, quiet: 1, o: { obj: id }
+    });
+    /* 网孔门贴在柜外，沿法线突出 2cm，盖住整面门洞。法线朝外，背面剔除仍有效。 */
+    var z0 = 0.05, doorH = h - z0, proud = 0.02;
+    function doorX(px, sign) {
+      var p = sign > 0
+        ? [[px, y + d, z0], [px, y + d, z0 + doorH], [px, y, z0 + doorH], [px, y, z0]]
+        : [[px, y, z0], [px, y, z0 + doorH], [px, y + d, z0 + doorH], [px, y + d, z0]];
+      faces.push(new F(p, '#10141A', { k: 1.05, obj: id, lay: 1, quiet: 1, skin: 'mesh' }));
+    }
+    function doorY(py, sign) {
+      var p = sign > 0
+        ? [[x, py, z0], [x, py, z0 + doorH], [x + w, py, z0 + doorH], [x + w, py, z0]]
+        : [[x + w, py, z0], [x + w, py, z0 + doorH], [x, py, z0 + doorH], [x, py, z0]];
+      faces.push(new F(p, '#10141A', { k: 1.05, obj: id, lay: 1, quiet: 1, skin: 'mesh' }));
+    }
+    if (alongY) doorY(doorSign > 0 ? y + d + proud : y - proud, doorSign);
+    else doorX(doorSign > 0 ? x + w + proud : x - proud, doorSign);
+  }
   function roomLabelText(r) {
     var s = (r.type === '主机房' && r.code) ? String(r.code) : String(r.name || '');
     return s.replace(/(\d+层)\1+/g, '$1');
@@ -962,37 +1266,31 @@
       y1 = Math.min(s.y1, maxY + 2.8);
     }
     if (!(y1 > y0 + 2)) return null;
-    var innerL = L ? Math.max.apply(null, L.items.map(function (a) { return a.line; })) : (minX - 0.6);
-    var innerR = R ? Math.min.apply(null, R.items.map(function (a) { return a.line; })) : (maxX + 0.6);
-    if (!(innerR > innerL + 1)) return null;
-    var segs = [];
-    function pushY(w) {
-      var x = (w[0] + w[2]) / 2;
-      var a = Math.min(w[1], w[3]), b = Math.max(w[1], w[3]);
-      var c0 = Math.max(a, y0 - 0.15), c1 = Math.min(b, y1 + 0.15);
-      if (c1 - c0 < 0.35) return;
-      segs.push([x, c0, x, c1]);
-    }
-    if (L) L.items.forEach(function (a) { pushY(a.w); });
-    if (R) R.items.forEach(function (a) { pushY(a.w); });
-    walls.forEach(function (w) {
-      if (Math.abs(w[1] - w[3]) > 0.35) return;
-      var y = (w[1] + w[3]) / 2;
-      if (Math.abs(y - y0) > 1.05 && Math.abs(y - y1) > 1.05) return;
-      if (y > minY + 0.5 && y < maxY - 0.5) return;
-      var a = Math.min(w[0], w[2]), b = Math.max(w[0], w[2]);
-      var c0 = Math.max(a, innerL - 0.3), c1 = Math.min(b, innerR + 0.3);
-      if (c1 - c0 < 0.35) return;
-      segs.push([c0, y, c1, y]);
-    });
-    return loosenRing({ x0: innerL, y0: y0, x1: innerR, y1: y1, segs: segs }, r);
+    /* 图纸墙是双线（约 0.2m）。同一侧只留靠近机柜的那一条，
+       四面用同一组角点接上，不再把两条边线都拉成墙。 */
+    var leftX = L ? Math.max.apply(null, L.items.map(function (a) { return a.line; })) : (minX - 0.6);
+    var rightX = R ? Math.min.apply(null, R.items.map(function (a) { return a.line; })) : (maxX + 0.6);
+    if (!(rightX > leftX + 1)) return null;
+    var segs = [
+      [leftX, y0, leftX, y1],
+      [rightX, y0, rightX, y1],
+      [leftX, y0, rightX, y0],
+      [leftX, y1, rightX, y1]
+    ];
+    return loosenRing({ x0: leftX, y0: y0, x1: rightX, y1: y1, segs: segs }, r);
   }
   /* 图纸墙若贴着柜边（3层1# 左侧只有约 0.4 米），沿远离柜心的方向推到净空。
-     机柜坐标不动，只挪墙线。已经宽于净空的边保持图纸位置。 */
+     机柜坐标不动，只挪墙线。已经宽于净空的边保持图纸位置。
+     外推之后按最终的左右 X、上下 Y 重接四条边，端点必须是同一组角点。 */
   function loosenRing(ring, r) {
     var CLEAR = 1.2;
     if (!ring || !ring.segs) return ring;
-    var cabs = (r.cabinets || []).filter(function (c) { return c.x != null; });
+    /* 净空只看围墙附近的柜。2# 的无号柜在围墙南边十几米，不能把南墙拖过去。 */
+    var cabs = (r.cabinets || []).filter(function (c) {
+      if (c.x == null) return false;
+      var cx = c.x + (c.w || 0.6) / 2, cy = c.y + (c.d || 1.2) / 2;
+      return cx >= ring.x0 - 2 && cx <= ring.x1 + 2 && cy >= ring.y0 - 2 && cy <= ring.y1 + 2;
+    });
     if (cabs.length < 4) return ring;
     var minX = 1e9, minY = 1e9, maxX = -1e9, maxY = -1e9, i, c, w, d;
     for (i = 0; i < cabs.length; i++) {
@@ -1002,37 +1300,45 @@
       if (c.x + w > maxX) maxX = c.x + w;
       if (c.y + d > maxY) maxY = c.y + d;
     }
-    var cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-    var nudges = [];
-    ring.segs = ring.segs.map(function (s) {
-      var x1 = s[0], y1 = s[1], x2 = s[2], y2 = s[3];
-      if (Math.abs(x1 - x2) < 0.35) {
-        var x = (x1 + x2) / 2;
-        var edge = x < cx ? minX : maxX;
-        var gap = x < cx ? (edge - x) : (x - edge);
-        if (gap < CLEAR) {
-          var nx = x < cx ? (edge - CLEAR) : (edge + CLEAR);
-          nudges.push({ axis: 'x', from: x, to: nx, a0: Math.min(y1, y2), a1: Math.max(y1, y2) });
-          return [nx, y1, nx, y2];
-        }
-      } else if (Math.abs(y1 - y2) < 0.35) {
-        var y = (y1 + y2) / 2;
-        var edgeY = y < cy ? minY : maxY;
-        var gapY = y < cy ? (edgeY - y) : (y - edgeY);
-        if (gapY < CLEAR) {
-          var ny = y < cy ? (edgeY - CLEAR) : (edgeY + CLEAR);
-          nudges.push({ axis: 'y', from: y, to: ny, a0: Math.min(x1, x2), a1: Math.max(x1, x2) });
-          return [x1, ny, x2, ny];
-        }
-      }
-      return s;
-    });
+    var vxs = [], hys = [];
     ring.segs.forEach(function (s) {
-      ring.x0 = Math.min(ring.x0, s[0], s[2]);
-      ring.x1 = Math.max(ring.x1, s[0], s[2]);
-      ring.y0 = Math.min(ring.y0, s[1], s[3]);
-      ring.y1 = Math.max(ring.y1, s[1], s[3]);
+      if (Math.abs(s[0] - s[2]) < 0.35) vxs.push((s[0] + s[2]) / 2);
+      else if (Math.abs(s[1] - s[3]) < 0.35) hys.push((s[1] + s[3]) / 2);
     });
+    if (vxs.length < 2 || hys.length < 2) return ring;
+    vxs.sort(function (a, b) { return a - b; });
+    hys.sort(function (a, b) { return a - b; });
+    var left = vxs[0], right = vxs[vxs.length - 1];
+    var bot = hys[0], top = hys[hys.length - 1];
+    var nLeft = left, nRight = right, nBot = bot, nTop = top;
+    var nudges = [];
+    if (minX - left < CLEAR) {
+      nLeft = minX - CLEAR;
+      nudges.push({ axis: 'x', from: left, to: nLeft, a0: bot, a1: top });
+    }
+    if (right - maxX < CLEAR) {
+      nRight = maxX + CLEAR;
+      nudges.push({ axis: 'x', from: right, to: nRight, a0: bot, a1: top });
+    }
+    if (minY - bot < CLEAR) {
+      nBot = minY - CLEAR;
+      nudges.push({ axis: 'y', from: bot, to: nBot, a0: left, a1: right });
+    }
+    if (top - maxY < CLEAR) {
+      nTop = maxY + CLEAR;
+      nudges.push({ axis: 'y', from: top, to: nTop, a0: left, a1: right });
+    }
+    if (!(nRight > nLeft + 1 && nTop > nBot + 1)) return ring;
+    ring.segs = [
+      [nLeft, nBot, nLeft, nTop],
+      [nRight, nBot, nRight, nTop],
+      [nLeft, nBot, nRight, nBot],
+      [nLeft, nTop, nRight, nTop]
+    ];
+    ring.x0 = nLeft;
+    ring.x1 = nRight;
+    ring.y0 = nBot;
+    ring.y1 = nTop;
     ring.nudges = nudges;
     return ring;
   }
@@ -1097,17 +1403,50 @@
         focus: focus,
         hint: roomLabelText(r) || r.name
       };
-      (r.cabinets || []).forEach(function (c) {
-        if (c.x == null) return;
-        var cw = c.w || 0.6, cd = c.d || 1.2;
-        if (!inWallBox(hull, c.x, c.y, cw, cd)) return;
-        if (unnamedOutside(c, rings)) return;
-        cabShadow(faces, c.x, c.y, cw, cd);
-        /* 楼层这一层点柜就是进这间房。drill 若写成柜名，viewRoom 对不上房间，画面不动。 */
-        box(faces, c.x, c.y, 0.02, cw, cd, 2.0, cadCabColor(c), {
-          topK: 1.24, rightK: 0.66, frontK: 0.6, o: { obj: id }
+/* 主机房与机房俯视、巡视共用 cadAislePlan 柜位和 drawCadShell 外壳。
+         配套间、井道没有图纸柜位，这里不补服务器柜。点柜仍进所在机房。 */
+      if (r.type === '主机房') {
+        var plan = cadAislePlan(r.cabinets || []);
+        var doorSign = {};
+        var drawnBox = null;
+        plan.list.forEach(function (p) { doorSign[p.name] = p.sign; });
+        (r.cabinets || []).forEach(function (c) {
+          if (c.x == null) return;
+          var cw = c.w || 0.6, cd = c.d || 1.2;
+          if (!inWallBox(hull, c.x, c.y, cw, cd)) return;
+          if (unnamedOutside(c, rings)) return;
+          var p = plan.byName[c.name];
+          var x = p ? p.x : c.x, y = p ? p.y : c.y;
+          var cid = 'cab:' + c.name;
+          cabShadow(faces, x, y, cw, cd);
+          drawCadShell(faces, x, y, cw, cd, 2.0, cadCabColor(c), cid, doorSign[c.name]);
+          objs[cid] = {
+            /* 楼层视图：机柜不单独下钻，点机柜 = 进所在机房（drill 传房间名，viewRoom 才能找到） */
+            kind: 'cab', name: c.name, drill: r.name,
+            focus: [x + cw / 2, y + cd / 2, 1.2],
+            hint: c.name
+          };
+          T(labels, x + cw / 2, y + cd / 2, 2.15, c.name, {
+            size: 11, col: '#F4FBFF', weight: '700', bg: 'rgba(3,12,24,.88)', obj: cid, lay: 2, dim: 1
+          });
+          if (!drawnBox) drawnBox = { x0: x, y0: y, x1: x + cw, y1: y + cd };
+          else {
+            if (x < drawnBox.x0) drawnBox.x0 = x;
+            if (y < drawnBox.y0) drawnBox.y0 = y;
+            if (x + cw > drawnBox.x1) drawnBox.x1 = x + cw;
+            if (y + cd > drawnBox.y1) drawnBox.y1 = y + cd;
+          }
         });
-      });
+        plan.aisles.forEach(function (a) {
+          /* 围墙外的无号柜不画，但它会和南侧列配出一条十几米的假通道。色带只铺在已画柜列之间。 */
+          if (drawnBox) {
+            var mx = a.x + a.w / 2, my = a.y + a.d / 2;
+            if (mx < drawnBox.x0 - 0.05 || mx > drawnBox.x1 + 0.05 || my < drawnBox.y0 - 0.05 || my > drawnBox.y1 + 0.05) return;
+          }
+          paintAisleBand(faces, a);
+          aisleWords(labels, a);
+        });
+      }
       if (r.type === '主机房' || r.type === '配电室' || r.type === '电池室' || r.type === '操作间' || r.type === '空调间') {
         var lx, ly, lz;
         if (r.type === '主机房' && span) {
@@ -1128,11 +1467,75 @@
     });
     T(labels, W - 0.4, Dp + 0.3, 0.2, floor + ' · ' + info.cabCount + ' 柜', { size: 12, col: '#9FB6CE', align: 'end' });
     return {
-      faces: faces, lines: lines, labels: labels,
+      faces: faces, lines: lines, labels: labels, shellSkin: cadShellSkin,
       bb: { x0: -1.5, y0: -1.5, z0: -0.3, x1: W + 1.5, y1: Dp + 1.5, z1: 4.3 },
       cam: { yaw: 0.62, pitch: 0.58, dist: Math.max(W, Dp) * 1.15, tx: W / 2, ty: Dp / 2, tz: 0.5 },
       objs: objs, parts: parts, kind: 'floor'
     };
+  }
+  /* 围墙按四边画。门洞只开在这间房自己的门上，门宽用 len，门头上方留过梁。 */
+  function roomWalls(faces, lines, objs, segs, doors) {
+    var WALL_H = 2.72, DOOR_H = 2.12;
+    var used = {};
+    function holeLen(d) {
+      return Math.max(0.9, Math.min(1.5, d.len || 1.2));
+    }
+    function drawSpan(x1, y1, x2, y2, holes, vertical) {
+      holes.sort(function (a, b) { return a.c - b.c; });
+      var cursor = vertical ? Math.min(y1, y2) : Math.min(x1, x2);
+      var end = vertical ? Math.max(y1, y2) : Math.max(x1, x2);
+      var fixed = vertical ? ((x1 + x2) / 2) : ((y1 + y2) / 2);
+      holes.forEach(function (h) {
+        var g0 = Math.max(cursor, h.c - h.len / 2);
+        var g1 = Math.min(end, h.c + h.len / 2);
+        if (g1 - g0 < 0.3) return;
+        if (g0 - cursor > 0.02) {
+          if (vertical) cadWall(faces, lines, fixed, cursor, fixed, g0, { minLen: 0.02 });
+          else cadWall(faces, lines, cursor, fixed, g0, fixed, { minLen: 0.02 });
+        }
+        if (vertical) cadWall(faces, lines, fixed, g0, fixed, g1, { z0: DOOR_H, z1: WALL_H, minLen: 0.02 });
+        else cadWall(faces, lines, g0, fixed, g1, fixed, { z0: DOOR_H, z1: WALL_H, minLen: 0.02 });
+        used[h.i] = 1;
+        var mid = (g0 + g1) / 2;
+        cadDoor(faces, objs, vertical
+          ? { x: fixed, y: mid, dx: 0, dy: g1 - g0, len: g1 - g0, room: h.door.room }
+          : { x: mid, y: fixed, dx: g1 - g0, dy: 0, len: g1 - g0, room: h.door.room });
+        cursor = g1;
+      });
+      if (end - cursor > 0.02) {
+        if (vertical) cadWall(faces, lines, fixed, cursor, fixed, end, { minLen: 0.02 });
+        else cadWall(faces, lines, cursor, fixed, end, fixed, { minLen: 0.02 });
+      }
+    }
+    (segs || []).forEach(function (w) {
+      var x1 = w[0], y1 = w[1], x2 = w[2], y2 = w[3];
+      var vertical = Math.abs(x1 - x2) <= Math.abs(y1 - y2);
+      var holes = [];
+      (doors || []).forEach(function (d, i) {
+        if (used[i]) return;
+        var len = holeLen(d);
+        if (vertical) {
+          var x = (x1 + x2) / 2;
+          if (Math.abs(d.x - x) > 0.4) return;
+          if (Math.abs(d.dx || 0) > Math.abs(d.dy || 0)) return;
+          var a0 = Math.min(y1, y2), a1 = Math.max(y1, y2);
+          if (d.y < a0 - 0.35 || d.y > a1 + 0.35) return;
+          holes.push({ i: i, c: Math.min(a1 - len / 2, Math.max(a0 + len / 2, d.y)), len: len, door: d });
+        } else {
+          var y = (y1 + y2) / 2;
+          if (Math.abs(d.y - y) > 0.4) return;
+          if (Math.abs(d.dy || 0) > Math.abs(d.dx || 0)) return;
+          var b0 = Math.min(x1, x2), b1 = Math.max(x1, x2);
+          if (d.x < b0 - 0.35 || d.x > b1 + 0.35) return;
+          holes.push({ i: i, c: Math.min(b1 - len / 2, Math.max(b0 + len / 2, d.x)), len: len, door: d });
+        }
+      });
+      if (!holes.length) cadWall(faces, lines, x1, y1, x2, y2);
+      else drawSpan(x1, y1, x2, y2, holes, vertical);
+    });
+    (doors || []).forEach(function (d, i) {
+      if (!used[i]) cadDoor(faces, objs, d);
+    });
   }
   function roomCad(r) {
     var D = window.DCIM;
@@ -1166,20 +1569,28 @@
     plate(faces, x0 + inset, y0 + inset, -0.06,
       Math.max(0.4, x1 - x0 - inset * 2), Math.max(0.4, y1 - y0 - inset * 2),
       C.roomFloor, { o: { stroke: '#5C7890', sw: 1, noFog: 1 } });
-    if (ring) ring.segs.forEach(function (w) { cadWall(faces, lines, w[0], w[1], w[2], w[3]); });
+    var ownDoors = [];
+    var seenOwn = {};
     (info.doors || []).forEach(function (d) {
-      if (d.room !== r.name) return;
-      var door = d;
+      if (!d || d.room !== r.name) return;
+      var door = { x: d.x, y: d.y, dx: d.dx, dy: d.dy, len: d.len, room: d.room };
       (ring && ring.nudges || []).forEach(function (n) {
-        if (n.axis === 'x' && Math.abs(d.x - n.from) < 0.45 && d.y >= n.a0 - 0.5 && d.y <= n.a1 + 0.5) {
-          door = { x: n.to, y: d.y, dx: d.dx, dy: d.dy, len: d.len, room: d.room };
-        } else if (n.axis === 'y' && Math.abs(d.y - n.from) < 0.45 && d.x >= n.a0 - 0.5 && d.x <= n.a1 + 0.5) {
-          door = { x: d.x, y: n.to, dx: d.dx, dy: d.dy, len: d.len, room: d.room };
-        }
+        var lo = Math.min(n.a0, n.a1) - 0.5, hi = Math.max(n.a0, n.a1) + 0.5;
+        if (n.axis === 'x' && Math.abs(d.x - n.from) < 0.45 && d.y >= lo && d.y <= hi) door.x = n.to;
+        else if (n.axis === 'y' && Math.abs(d.y - n.from) < 0.45 && d.x >= lo && d.x <= hi) door.y = n.to;
       });
       if (door.x < x0 - 1.6 || door.x > x1 + 1.6 || door.y < y0 - 1.6 || door.y > y1 + 1.6) return;
-      cadDoor(faces, objs, door);
+      var key = door.x.toFixed(2) + ':' + door.y.toFixed(2);
+      if (seenOwn[key]) return;
+      seenOwn[key] = 1;
+      ownDoors.push(door);
     });
+    if (ring) roomWalls(faces, lines, objs, ring.segs, ownDoors);
+    else ownDoors.forEach(function (d) { cadDoor(faces, objs, d); });
+    /* 和巡视同一份柜位、同一套冷热通道。成员仍按原柜心是否在围墙内决定，挪开的是绘制坐标。 */
+    var plan = cadAislePlan(r.cabinets || []);
+    var doorSign = {};
+    plan.list.forEach(function (p) { doorSign[p.name] = p.sign; });
     (r.cabinets || []).forEach(function (c) {
       if (c.x == null) return;
       var cw = c.w || 0.6, cd = c.d || 1.2;
@@ -1187,30 +1598,34 @@
          5M2-无号 在 (40.85, -6.6)，离围墙约 17m，不再画到远处空地上。 */
       var edge = ring ? 0.08 : 0;
       if (!centerIn({ x0: x0, y0: y0, x1: x1, y1: y1 }, c.x, c.y, cw, cd, edge)) return;
+      var p = plan.byName[c.name];
+      var x = p ? p.x : c.x, y = p ? p.y : c.y;
       var id = 'cab:' + c.name;
-      cabShadow(faces, c.x, c.y, cw, cd);
-      box(faces, c.x, c.y, 0.02, cw, cd, 2.0, cadCabColor(c), {
-        topK: 1.24, rightK: 0.66, frontK: 0.6, o: { obj: id }
-      });
+      cabShadow(faces, x, y, cw, cd);
+      drawCadShell(faces, x, y, cw, cd, 2.0, cadCabColor(c), id, doorSign[c.name]);
       objs[id] = {
         kind: 'cab', name: c.name, drill: c.name,
-        focus: [c.x + (c.w || 0.6) / 2, c.y + (c.d || 1.2) / 2, 1.2],
+        focus: [x + cw / 2, y + cd / 2, 1.2],
         hint: c.name + ' · ' + c.kind + ' mm · 模拟'
       };
-      if (c.seq === 1 || c.seq === 8) {
-        T(labels, c.x + (c.w || 0.6) / 2, c.y + (c.d || 1) / 2, 2.3, c.name.split('-').pop(), {
+      if (c.seq === 1 || c.seq === 5 || c.seq === 8) {
+        T(labels, x + cw / 2, y + cd / 2, 2.3, c.name, {
           size: 9, col: '#E6F4FF', obj: id, lay: 2
         });
       }
+    });
+    plan.aisles.forEach(function (a) {
+      paintAisleBand(faces, a);
+      aisleWords(labels, a);
     });
     T(labels, (x0 + x1) / 2, y1 + 0.4, 0.1, r.name + ' · ' + r.cabCount + ' 柜', {
       size: 13, col: '#E6F4FF', weight: '600', bg: 'rgba(3,12,24,.86)', obj: roomId, lay: 2
     });
     return {
-      faces: faces, lines: lines, labels: labels,
+      faces: faces, lines: lines, labels: labels, shellSkin: cadShellSkin,
       bb: { x0: x0 - 1, y0: y0 - 1, z0: -0.06, x1: x1 + 1, y1: y1 + 1, z1: 3 },
       cam: { yaw: 0.7, pitch: 0.62, dist: Math.max(x1 - x0, y1 - y0) * 1.35, tx: (x0 + x1) / 2, ty: (y0 + y1) / 2, tz: 0.8 },
-      objs: objs, parts: parts, kind: 'room'
+      objs: objs, parts: parts, kind: 'room', aisleShare: plan
     };
   }
 
@@ -1796,7 +2211,12 @@
   /* 局部 +y = 前面板法线（朝通道），+x = 柜宽，+z = 上。
      right = (ny, -nx)，是旋转不是镜像。 */
   function posePoint(pose, lx, ly, lz) {
-    return [pose.ox + lx * pose.rx + ly * pose.nx, pose.oy + lx * pose.ry + ly * pose.ny, lz];
+    var sx = pose.sx || 1, sy = pose.sy || 1;
+    return [
+      pose.ox + lx * pose.rx * sx + ly * pose.nx * sy,
+      pose.oy + lx * pose.ry * sx + ly * pose.ny * sy,
+      lz
+    ];
   }
   function posedFace(out, ly, lx, lz, w, h, col, opt, pose) {
     opt = opt || {};
@@ -1904,9 +2324,49 @@
       (byCab[a.cabinet] = byCab[a.cabinet] || []).push(a);
     });
 
+    /* 有图纸坐标时，巡视和俯视用同一份柜位、同一套冷热通道。没有坐标的机房仍按列序号排。 */
+    var plan = (room.cad && cab0.x != null) ? cadAislePlan(room.cabinets) : null;
+    var useCad = !!(plan && plan.list.length);
+    if (useCad) { width = 0.6; depth = 1.2; }
     var y0 = 0.45;
     var poses = [];
-    keys.forEach(function (key, i) {
+    if (useCad) {
+      plan.list.forEach(function (p) {
+        var sign = p.sign > 0 ? 1 : -1;
+        var faceW = p.alongY ? p.w : p.d;
+        var faceD = p.alongY ? p.d : p.w;
+        var nx, ny, rx, ry, ox, oy, fx, fy;
+        if (p.alongY) {
+          if (sign > 0) {
+            nx = 0; ny = 1; rx = 1; ry = 0;
+            ox = p.x; oy = p.y;
+            fx = p.x + p.w / 2; fy = p.y + p.d;
+          } else {
+            nx = 0; ny = -1; rx = -1; ry = 0;
+            ox = p.x + p.w; oy = p.y + p.d;
+            fx = p.x + p.w / 2; fy = p.y;
+          }
+        } else if (sign > 0) {
+          nx = 1; ny = 0; rx = 0; ry = -1;
+          ox = p.x; oy = p.y + p.d;
+          fx = p.x + p.w; fy = p.y + p.d / 2;
+        } else {
+          nx = -1; ny = 0; rx = 0; ry = 1;
+          ox = p.x + p.w; oy = p.y;
+          fx = p.x; fy = p.y + p.d / 2;
+        }
+        poses.push({
+          cab: p.cab, key: p.cab.col, seq: p.cab.seq,
+          gx: p.x, gy: p.y,
+          nx: nx, ny: ny, rx: rx, ry: ry,
+          sx: faceW / width, sy: faceD / depth,
+          ox: ox, oy: oy, fx: fx, fy: fy,
+          cx: p.x + p.w / 2, cy: p.y + p.d / 2,
+          halfW: faceW / 2, frontGap: p.front,
+          box: { x0: p.x, y0: p.y, x1: p.x + p.w, y1: p.y + p.d }
+        });
+      });
+    } else keys.forEach(function (key, i) {
       var face = (i % 2 === 0) ? 1 : -1;
       var gx = i * (depth + aisle);
       var nx = face, ny = 0, rx = ny, ry = -nx;
@@ -1938,10 +2398,21 @@
     /* 柜位不改。墙向外退，柜边到墙内皮留 1.6 米，转角处走得开。
        原先北端只有约 0.6 米、左右约 1.0 米，人一拐弯就顶在柜角上。 */
     var wallT = 0.16, clear = 1.6;
-    var cabX0 = 0;
-    var cabX1 = Math.max(depth, (keys.length - 1) * (depth + aisle) + depth);
-    var cabY0 = y0;
-    var cabY1 = y0 + Math.max(0, maxPer - 1) * (width + gap) + width;
+    var cabX0, cabX1, cabY0, cabY1;
+    if (useCad) {
+      cabX0 = 1e9; cabY0 = 1e9; cabX1 = -1e9; cabY1 = -1e9;
+      poses.forEach(function (p) {
+        if (p.box.x0 < cabX0) cabX0 = p.box.x0;
+        if (p.box.y0 < cabY0) cabY0 = p.box.y0;
+        if (p.box.x1 > cabX1) cabX1 = p.box.x1;
+        if (p.box.y1 > cabY1) cabY1 = p.box.y1;
+      });
+    } else {
+      cabX0 = 0;
+      cabX1 = Math.max(depth, (keys.length - 1) * (depth + aisle) + depth);
+      cabY0 = y0;
+      cabY1 = y0 + Math.max(0, maxPer - 1) * (width + gap) + width;
+    }
     var rx0 = cabX0 - clear - wallT;
     var ry0 = cabY0 - clear - wallT;
     var rw = (cabX1 + clear + wallT) - rx0;
@@ -1965,7 +2436,32 @@
     var coldT = aisleMean('冷通道');
     var hotT = aisleMean('热通道');
     var aisleMarks = [];
-    keys.forEach(function (key, i) {
+    if (useCad) {
+      plan.aisles.forEach(function (a) {
+        paintAisleBand(faces, a);
+        aisleMarks.push({
+          x0: a.x, x1: a.x + a.w, y0: a.y, y1: a.y + a.d,
+          text: a.cold ? '冷通道' : '热通道',
+          col: a.cold ? '#E7F7FF' : '#FFE6CC',
+          bg: a.cold ? 'rgba(6,36,64,.88)' : 'rgba(64,24,8,.88)'
+        });
+        if (!a.cold) return;
+        var longX = a.w >= a.d;
+        var len = longX ? a.w : a.d;
+        var nLit = Math.max(1, Math.ceil(len / 1.7)), li, pos;
+        for (li = 0; li < nLit; li++) {
+          pos = 0.45 + li * 1.7;
+          if (pos > len - 0.4) break;
+          if (longX) {
+            downFace(a.x + pos, a.y + Math.max(0.04, (a.d - 0.36) / 2), 2.66,
+              0.7, Math.min(0.36, a.d * 0.5), '#E4F0FA', 1.65);
+          } else {
+            downFace(a.x + Math.max(0.04, (a.w - 0.36) / 2), a.y + pos, 2.66,
+              Math.min(0.36, a.w * 0.5), 0.7, '#E4F0FA', 1.65);
+          }
+        }
+      });
+    } else keys.forEach(function (key, i) {
       if (i >= keys.length - 1) return;
       var cold = i % 2 === 0;
       var xA = i * (depth + aisle) + depth;
@@ -2225,7 +2721,7 @@
 
     poses.forEach(function (pose) {
       /* 只挡柜体。打开的门不占通道，人可以左右、前后挪到正对设备。 */
-      blocks.push({ x0: pose.gx, y0: pose.gy, x1: pose.gx + depth, y1: pose.gy + width });
+      blocks.push(pose.box || { x0: pose.gx, y0: pose.gy, x1: pose.gx + depth, y1: pose.gy + width });
       if (inside && pose.cab.name === cabName) drawDetail(pose);
       else drawSimple(pose);
     });
@@ -2233,8 +2729,9 @@
     /* 通道宽 1.7 米。站得太近（原先 0.82 米）一进画面就切掉柜顶和柜底。
        默认退到约 1.38 米，整柜落在画面里。 */
     var stand = 1.38;
+    if (focus.frontGap && focus.frontGap < stand + 0.55) stand = Math.max(0.62, focus.frontGap * 0.42);
     var px = focus.fx + focus.nx * stand;
-    var py = focus.cy;
+    var py = focus.fy + (focus.ny || 0) * stand;
     var spawnYaw = Math.atan2(-focus.nx, -focus.ny || 0);
     /* 设备一般先占下半柜，视高从 1.62 降到 1.18，并略向下看。 */
     var eyeZ = 1.18;
@@ -2248,6 +2745,7 @@
       fitBB: { x0: px - 0.4, y0: py - 0.4, z0: 0, x1: px + 0.4, y1: py + 0.4, z1: 2 },
       cam: { yaw: spawnYaw, pitch: pit, dist: 6, tx: px, ty: py, tz: eyeZ },
       objs: objs, parts: [], kind: 'rack', aisleMarks: aisleMarks,
+      aisleShare: useCad ? plan : null,
       walk: {
         x: px, y: py, yaw: spawnYaw, pitch: pit, eye: eyeZ, zoom: zoom0,
         stand: stand,
@@ -2480,7 +2978,8 @@
     if (!w || !h) return;
     /* 位图固定超采样：一是边缘更平滑，二是位图必须大于 CSS 盒 ——
        等大时（dpr=1）合成器可能一直挂着空白纹理，画面整个发黑 */
-    var bm = (w * h > 900000) ? 1.5 : 2;
+    /* 性能：位图倍率 1.5/2 → 1.25/1.5（Canvas2D 光栅化像素量约降 30%，巡查卡顿主因） */
+    var bm = (w * h > 900000) ? 1.25 : 1.5;
     var bw = Math.round(w * bm), bh = Math.round(h * bm);
     if (this.cv.width !== bw || this.cv.height !== bh) {
       this.cv.width = bw;
@@ -3242,12 +3741,40 @@
   Viewer.prototype.considerCab = function () {
     return;
   };
+  /* 性能：巡查切柜的场景缓存（LRU 16）。键 = 机柜名 + 柜内/柜外；
+     DCIM / assets / rooms / thDevices 任一对象被整体替换（数据刷新）即清空 */
+  var RACK_CACHE_MAX = 16, rackCache = [], rackCacheSig = null;
+  function rackCached(name, inside) {
+    var D = window.DCIM || {};
+    if (!rackCacheSig || rackCacheSig.d !== D || rackCacheSig.a !== D.assets ||
+        rackCacheSig.r !== D.rooms || rackCacheSig.t !== D.thDevices) {
+      rackCache = [];
+      rackCacheSig = { d: D, a: D.assets, r: D.rooms, t: D.thDevices };
+    }
+    var k = name + '|' + (inside ? 1 : 0);
+    for (var i = 0; i < rackCache.length; i++) {
+      if (rackCache[i].k === k) {
+        var hit = rackCache.splice(i, 1)[0];
+        rackCache.push(hit);
+        return hit.sc;
+      }
+    }
+    var sc = S.rack(name, { inside: inside });
+    if (sc && sc.walk) {
+      rackCache.push({ k: k, sc: sc });
+      if (rackCache.length > RACK_CACHE_MAX) rackCache.shift();
+    }
+    return sc;
+  }
+  S.rackCacheClear = function () { rackCache = []; rackCacheSig = null; };
+  S.rackCacheSize = function () { return rackCache.length; };
+
   Viewer.prototype.switchCab = function (name, inside) {
     var want = !!inside;
     if (!name) return;
     if (name === this.key && !!this._sceneInside === want) return;
     var pose = { x: this.player.x, y: this.player.y, yaw: this.to.yaw, pitch: this.to.pitch };
-    var sc = S.rack(name, { inside: want });
+    var sc = rackCached(name, want);
     if (!sc || !sc.walk) return;
     this.key = name;
     this.sc = sc;
@@ -3300,7 +3827,8 @@
     var hh = this.host ? this.host.clientHeight : this.cv.clientHeight;
     if (hw !== this._lastW || hh !== this._lastH) { this._lastW = hw; this._lastH = hh; this.resize(); }
     this.frames++;
-    if (idle && this.frames % 3 !== 0 && !this.needDraw) return;
+    /* 性能：静止时只为指示灯动画低频重绘（每 6 帧一次，原每 3 帧） */
+    if (idle && this.frames % 6 !== 0 && !this.needDraw) return;
     this.needDraw = 0;
 
     this.draw(time);
@@ -3515,7 +4043,9 @@
 
       /* 逐顶点变换 + 近平面裁剪（vz = 沿 forward 的正向距离） */
       p = f.p; n = p.length;
-      var sxA = [], syA = [], vzA = [], zA = [];
+      /* 性能：复用逐面临时数组，减少每帧 ~1 万次分配 */
+      var sxA = this._sxA || (this._sxA = []), syA = this._syA || (this._syA = []), vzA = this._vzA || (this._vzA = []);
+      sxA.length = 0; syA.length = 0; vzA.length = 0;
       var clip = false, anyNear = false;
       var emph = (f.cab && emphMap[f.cab]) || 0;
       var cabScl = f.cab ? (0.97 + 0.19 * emph) : 1;
@@ -3641,18 +4171,34 @@
         col: ln.noFog ? ln.c : fogLine(ln.c, tt2), op: ln.op, w: ln.w, dash: ln.dash, blend: ln.blend });
     }
 
-    /* 通道温度：只有落在当前画面里的通道才标，一条通道只标一个。 */
+    /* 通道名：只有落在当前画面里的通道才标，一条通道只标一个。
+       旧数据是沿 Y 的一条线（mk.x）；图纸通道是地面矩形（x0/x1/y0/y1）。 */
     var marks = this.sc.aisleMarks;
     if (marks && marks.length) {
-      var ai, mk, sy, sp, sd, steps, yy, best, bestD;
+      var ai, mk, sy, sx, sp, sd, steps, yy, xx, best, bestD, pts, pi;
       for (ai = 0; ai < marks.length; ai++) {
         mk = marks[ai];
         best = null;
         bestD = 1e9;
-        steps = Math.max(6, Math.ceil((mk.y1 - mk.y0) / 0.6));
-        for (sy = 0; sy <= steps; sy++) {
-          yy = mk.y0 + (mk.y1 - mk.y0) * (sy / steps);
-          sp = this.markSeen([mk.x, yy, 0.12]);
+        pts = [];
+        if (mk.x0 != null) {
+          steps = Math.max(2, Math.ceil(Math.max(mk.x1 - mk.x0, mk.y1 - mk.y0) / 0.8));
+          for (sy = 0; sy <= steps; sy++) {
+            yy = mk.y0 + (mk.y1 - mk.y0) * (sy / steps);
+            for (sx = 0; sx <= steps; sx++) {
+              xx = mk.x0 + (mk.x1 - mk.x0) * (sx / steps);
+              pts.push([xx, yy, 0.12]);
+            }
+          }
+        } else {
+          steps = Math.max(6, Math.ceil((mk.y1 - mk.y0) / 0.6));
+          for (sy = 0; sy <= steps; sy++) {
+            yy = mk.y0 + (mk.y1 - mk.y0) * (sy / steps);
+            pts.push([mk.x, yy, 0.12]);
+          }
+        }
+        for (pi = 0; pi < pts.length; pi++) {
+          sp = this.markSeen(pts[pi]);
           if (!sp) continue;
           sd = (sp[0] - this.cx) * (sp[0] - this.cx) + (sp[1] - this.cy) * (sp[1] - this.cy);
           if (sd < bestD) { bestD = sd; best = sp; }
