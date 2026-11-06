@@ -953,14 +953,18 @@ def build(room, dxf_path):
             if best is None or d < best:
                 best = d
         miss_d.append(round(best, 1) if best is not None else None)
-    src = (
-        "docs/refs/hangxin-screen-drawings/floor5-20261105/%s.dwg" % room
-        if room in ("5A4", "5B4")
-        else "docs/refs/hangxin-screen-drawings/floor3-floor4-20261105/%s.dwg" % room
-    )
+    if room in ("5A4", "5B4"):
+        src = "docs/refs/hangxin-screen-drawings/floor5-20261105/%s.dwg" % room
+        ver = "20261106a4b4"
+    elif room[0] == "2":
+        src = "docs/refs/hangxin-screen-drawings/floor2-20261106/%s.dwg" % room
+        ver = "20261106f2"
+    else:
+        src = "docs/refs/hangxin-screen-drawings/floor3-floor4-20261105/%s.dwg" % room
+        ver = VERSION
     title = next((t["s"].replace("\n", "") for t in texts if "配电室" in t["s"] and t["h"] >= 8), room + "配电室")
     doc = {
-        "version": VERSION if room not in ("5A4", "5B4") else "20261106a4b4",
+        "version": ver,
         "room": room,
         "name": "配电室" + room,
         "floor": int(room[0]),
@@ -993,10 +997,13 @@ def build(room, dxf_path):
 
 
 def main():
+    import os
     root = Path(__file__).resolve().parents[1]
-    dxf_dir = Path.home() / "AppData/Local/Temp/hx-cad-20261105"
-    if not dxf_dir.exists():
-        dxf_dir = Path(__import__("os").environ["TEMP"]) / "hx-cad-20261105"
+    dxf_dir = Path(os.environ["HX_DXF_DIR"]) if os.environ.get("HX_DXF_DIR") else None
+    if dxf_dir is None:
+        dxf_dir = Path.home() / "AppData/Local/Temp/hx-cad-20261105"
+        if not dxf_dir.exists():
+            dxf_dir = Path(os.environ["TEMP"]) / "hx-cad-20261105"
     out_dir = root / "data" / "hx-power-rooms"
     out_dir.mkdir(parents=True, exist_ok=True)
     rooms = sys.argv[1:] or ROOMS

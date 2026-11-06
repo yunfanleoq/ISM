@@ -72,12 +72,12 @@
   function loadScenes() {
     var jobs = [];
     if (w.HX5A1) {
-      jobs.push(w.HX5A1.load('20261102kntip').catch(function (e) {
+      jobs.push(w.HX5A1.load('20261106p12').catch(function (e) {
         if (w.console) w.console.warn('[hx-5a1] 布局未加载，5A1 退回通用绘制', e);
       }));
     }
     if (w.HXRooms) {
-      jobs.push(w.HXRooms.load('20261102kntip').catch(function (e) {
+      jobs.push(w.HXRooms.load('20261106p12').catch(function (e) {
         if (w.console) w.console.warn('[hx-rooms] 配电室布局未加载', e);
       }));
     }
@@ -133,12 +133,54 @@
     });
   }
 
+  /** 合闸=红=状态1，分闸=绿=状态0。优先读「开关状态」，不用电压>0 冒充合闸。 */
+  function knifeIsClosed(n) {
+    if (!n) return false;
+    var live = L();
+    var base = String(n.k || '').replace(/_+$/, '');
+    var statusName = base ? base + '_开关状态' : '';
+    var pt = statusName && live.pointOf ? live.pointOf(statusName, n.dev) : null;
+    if (!pt && n.p && String(n.p).slice(-4) === '开关状态' && live.pointOf) {
+      pt = live.pointOf(n.p, n.dev);
+    }
+    if (pt) {
+      var sv = live.uuidValue ? live.uuidValue(pt.uuid) : (pt.value != null ? String(pt.value) : null);
+      if (sv == null || sv === '') sv = pt.value != null ? String(pt.value) : null;
+      return sv != null && sv !== '' && live.matchOp(sv, '==', '1');
+    }
+    var v = live.nodeValue(n);
+    if (n.op) return v != null && v !== '' && live.matchOp(v, n.op, n.val);
+    return v != null && v !== '' && live.matchOp(v, '==', '1');
+  }
+
   function paint() {
     paintTopoDevs();
     if (!page || !hostEl) return;
+    var closedByKey = {};
+    (page.nodes || []).forEach(function (n) {
+      if (!n || (n.t !== 'I' && n.t !== 'S') || !n.k) return;
+      closedByKey[n.k] = knifeIsClosed(n);
+      closedByKey[String(n.k).replace(/_+$/, '')] = closedByKey[n.k];
+    });
     hostEl.querySelectorAll('[data-hx-line]').forEach(function (el) {
       var n = page.nodes[Number(el.getAttribute('data-i'))];
-      if (n && w.HXDraw && w.HXDraw.lineColor) el.setAttribute('stroke', w.HXDraw.lineColor(page, n));
+      if (!n) return;
+      var col = null;
+      /* 刀下游出线（followKnife）整段跟闸：合红分绿；其余也只落红/绿，不留 CAD 蓝紫灰 */
+      if (n.followKnife && n.k && Object.prototype.hasOwnProperty.call(closedByKey, n.k)) {
+        col = closedByKey[n.k] ? '#ff0000' : '#00ff00';
+      } else if (n.k && !n.fixc && Object.prototype.hasOwnProperty.call(closedByKey, n.k)) {
+        col = closedByKey[n.k] ? '#ff0000' : '#00ff00';
+      } else if (w.HXDraw && w.HXDraw.lineColor) {
+        col = w.HXDraw.lineColor(page, n);
+      }
+      if (w.HXDraw && w.HXDraw.powerWireColor) {
+        col = w.HXDraw.powerWireColor(col, true);
+        if (col === '#ce0c18') col = '#ff0000';
+      } else if (col && col !== '#00ff00' && col !== '#ff0000') {
+        col = '#ff0000';
+      }
+      if (col) el.setAttribute('stroke', col);
     });
     hostEl.querySelectorAll('[data-hx-img]').forEach(function (el) {
       var n = page.nodes[Number(el.getAttribute('data-i'))];
@@ -151,13 +193,53 @@
     hostEl.querySelectorAll('[data-hx-knife]').forEach(function (el) {
       var n = page.nodes[Number(el.getAttribute('data-i'))];
       if (!n) return;
-      var v = L().nodeValue(n);
-      var closed = false;
-      if (n.op) closed = v != null && v !== '' && L().matchOp(v, n.op, n.val);
-      else closed = v != null && v !== '' && L().matchOp(v, '==', '1');
+      var closed = knifeIsClosed(n);
       el.classList.toggle('is-closed', closed);
       el.classList.toggle('is-open', !closed);
       el.style.color = closed ? '#ff0000' : '#00ff00';
+    });
+    /* 出线侧铭牌跟闸；UPS 铭牌：进线或出线任一侧有电则红 */
+    hostEl.querySelectorAll('.hx-tx').forEach(function (el) {
+      var n = page.nodes[Number(el.getAttribute('data-i'))];
+      if (!n) return;
+      var col = null;
+      if (n.upsPlate && n.w && n.h) {
+        var inLive = false;
+        var outLive = false;
+        (page.nodes || []).forEach(function (ln) {
+          if (!ln || ln.t !== 'L') return;
+          var cx = ln.x + ln.w / 2;
+          var cy = ln.y + 13;
+          var half = ln.w / 2;
+          var horiz = Math.abs((Number(ln.a) || 0) % 180) < 1;
+          var ends = horiz
+            ? [{ x: cx - half, y: cy }, { x: cx + half, y: cy }]
+            : [{ x: cx, y: cy - half }, { x: cx, y: cy + half }];
+          var live;
+          if (ln.followKnife && ln.k && Object.prototype.hasOwnProperty.call(closedByKey, ln.k)) {
+            live = !!closedByKey[ln.k];
+          } else {
+            live = true;
+          }
+          ends.forEach(function (e) {
+            if (e.x < n.x - 8 || e.x > n.x + n.w + 8) return;
+            if (e.y >= n.y - 10 && e.y <= n.y + 14) {
+              if (live) inLive = true;
+            }
+            var bot = n.y + n.h;
+            if (e.y >= bot - 14 && e.y <= bot + 10) {
+              if (live) outLive = true;
+            }
+          });
+        });
+        col = (inLive || outLive) ? '#ff0000' : '#00ff00';
+      } else if (n.followKnife && n.k && Object.prototype.hasOwnProperty.call(closedByKey, n.k)) {
+        col = closedByKey[n.k] ? '#ff0000' : '#00ff00';
+      }
+      if (!col) return;
+      el.style.color = col;
+      el.style.borderColor = col;
+      el.classList.add('hx-plate-live');
     });
     hostEl.querySelectorAll('[data-hx-uuid]').forEach(function (el) {
       var known = L().uuidValue(el.getAttribute('data-hx-uuid'));
@@ -306,22 +388,40 @@
 
   function placeHover(box, ev) {
     if (!box) return;
+    /* 一律贴在目标旁，不盖住目标，否则点不到别的设备 */
     if (hoverAnchor && hoverAnchor.isConnected) {
       placeHoverOnKnife(box, hoverAnchor);
       return;
     }
     box.classList.remove('is-caret-left', 'is-caret-right');
     if (!ev) return;
-    var x = ev.clientX + 14;
-    var y = ev.clientY + 14;
-    if (x + 440 > window.innerWidth) x = Math.max(8, ev.clientX - 440);
-    if (y + 340 > window.innerHeight) y = Math.max(8, ev.clientY - 280);
-    box.style.left = x + 'px';
-    box.style.top = y + 'px';
+    var origin = box.offsetParent;
+    var r = ev.target && ev.target.getBoundingClientRect ? ev.target.getBoundingClientRect() : null;
+    var bw = box.offsetWidth || 420;
+    var bh = box.offsetHeight || 160;
+    var gap = 16;
+    var left;
+    var top;
+    if (r && r.width) {
+      var loc = localIn(origin, ev.target.closest ? (ev.target.closest('[data-hx-key]') || ev.target) : ev.target);
+      left = loc.right + gap;
+      if (left + bw > loc.viewW - 8) left = loc.left - gap - bw;
+      if (left < 8) left = 8;
+      top = loc.cy - bh / 2;
+      if (top < 8) top = 8;
+      if (top + bh > loc.viewH - 8) top = Math.max(8, loc.viewH - bh - 8);
+    } else {
+      left = ev.clientX + gap;
+      top = ev.clientY + gap;
+      if (left + bw > window.innerWidth) left = Math.max(8, ev.clientX - bw - gap);
+      if (top + bh > window.innerHeight) top = Math.max(8, ev.clientY - bh - gap);
+    }
+    box.style.left = left + 'px';
+    box.style.top = top + 'px';
   }
 
   function openHover(key, ev, anchor) {
-    hoverAnchor = (anchor && anchor.hasAttribute && anchor.hasAttribute('data-hx-knife')) ? anchor : null;
+    hoverAnchor = (anchor && anchor.getBoundingClientRect) ? anchor : null;
     hoverRows = L().pointsFor(key, devOf(key));
     L().allow(pageRows.concat(hoverRows));
     var box = document.getElementById('hxHover');
@@ -2262,7 +2362,7 @@
     if (pane.getAttribute('data-loaded') === code) return;
     pane.setAttribute('data-loaded', code);
     pane.innerHTML = '<div class="hx-pt">正在打开 ' + esc(code) + ' 的 CAD…</div>';
-    fetch('/hx-dcim/cad/' + encodeURIComponent(code) + '.svg?v=20261106a4b4')
+    fetch('/hx-dcim/cad/' + encodeURIComponent(code) + '.svg?v=20261106p5')
       .then(function (r) {
         var ct = (r.headers.get('content-type') || '').toLowerCase();
         if (!r.ok || ct.indexOf('svg') < 0) throw new Error('missing');

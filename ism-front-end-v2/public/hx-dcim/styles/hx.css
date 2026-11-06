@@ -216,6 +216,14 @@
   line-height: 1; white-space: nowrap; font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
   cursor: pointer;
 }
+/* 跟闸铭牌：边框随合红分绿，底不透明挡住穿线 */
+.hx-tx.hx-plate-live {
+  box-sizing: border-box;
+  border: 1px solid currentColor;
+  background: rgba(7, 32, 68, .92);
+  border-radius: 2px;
+  padding: 1px 2px;
+}
 /* 刀下柜号/电流/负荷。编辑层会按布局 y 重写 top，用平移离开刀下白三角，不挪刀、不挪三角。 */
 .hx-tx.hx-under-knife { transform: translateY(18px); }
 .hx-glow {
