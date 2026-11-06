@@ -381,6 +381,10 @@ func waitForGather() {
 	}
 }
 func ModbusGatherStart() {
+	if protocolCommon.DevPauseCollect() {
+		logs.Error("dev_pause_collect=true，Modbus 采集未启动")
+		return
+	}
 
 	var is_starting = 0
 	// 正式环境默认不写 modbus 协议明细日志，避免无谓写盘；仅 ModbusDebug=true 时落盘
@@ -636,6 +640,9 @@ func ModbusStopDevice(deviceUuid string) {
 
 // ModbusReloadDevice 单设备热更新：TCP 仅重启目标协程，串口仍全量重启
 func ModbusReloadDevice(deviceUuid string) {
+	if protocolCommon.DevPauseCollect() {
+		return
+	}
 	if deviceUuid == "" {
 		ModbusCloseChan()
 		return

@@ -60,16 +60,25 @@
     return 0;
   }
 
-  /* 母线、UPS 出线用原图固定色。合闸红、分闸绿只留给开关本身。 */
+  /* 配电电源线只要红/绿：红=有电，绿=无电。蓝/紫/灰 CAD 色一律归并。 */
+  function isPowerGreen(c) {
+    var s = String(c || '').toLowerCase();
+    return s === '#00ff00' || s === '#00e676' || s === '#0f0' || s === 'lime' || s === '#39ff14';
+  }
+  function powerWireColor(c, fallbackLive) {
+    return isPowerGreen(c) ? '#00ff00' : (fallbackLive === false ? '#00ff00' : '#ce0c18');
+  }
+  /* 默认线色。刀下端出线是否跟闸，由 hx-screen paint（followKnife / 同 k）决定。 */
   function lineColor(page, n) {
     if (!page || page.kind === 'column') return n.c || '#ffffff';
-    /* 5A1 显式布局线（fixc）保留蓝/紫/绿/红，不改其它配电室。 */
-    if (n.fixc && n.c) return n.c;
+    if (n.followKnife) return powerWireColor(n.c, true);
+    /* fixc 原蓝/紫/灰也只出红或绿，paint 再按闸态覆盖 */
+    if (n.fixc && n.c) return powerWireColor(n.c, true);
     var k = String(n.k || '');
-    /* UPS 进出线、旁路、汇流固定绿。普通母线和馈线固定红，不跟开关状态变。 */
+    /* 未跟闸时：UPS 进出线/旁路固定绿；普通母线馈线固定红。 */
     if (/_U\d+_X|_U\d+_Y|_XBP|_U\d{2}$/.test(k)) return '#00ff00';
     if (!k && n.c === '#8d9191' && Math.abs((Number(n.a) || 0) % 180) < 1 && Number(n.w) > 400) return '#00ff00';
-    return '#ce0c18';
+    return powerWireColor(n.c, true);
   }
 
   function capNode(n) {
@@ -339,16 +348,32 @@
       if (n.t === 'T') {
         var pe = n.k ? '' : 'pointer-events:none;';
         var wrap = '';
+        var fs = Number(n.fs) || 18;
+        var raw = String(n.s || '');
+        /* 字进框：不改框宽高，过长则缩字号并允许换行（P1） */
+        if (n.w && raw && !n.stack && raw.indexOf('\n') < 0) {
+          var approx = raw.length * fs * 0.6;
+          if (approx > Number(n.w)) {
+            fs = Math.max(10, Math.floor(Number(n.w) / (raw.length * 0.6)));
+            wrap = 'display:block;white-space:normal;overflow:hidden;line-height:1.15;';
+          }
+        }
         if (n.stack) {
           /* 5A1 多行柜号按框宽折行。flex+nowrap 会把两行拉成一条，盖住旁边的刀和线。 */
           wrap = 'display:block;white-space:normal;overflow:hidden;line-height:1.15;';
-        } else if (n.s && String(n.s).indexOf('\n') >= 0) {
+          if (n.w && n.h) {
+            /* 禁止用 var lines —— 会提升遮蔽外层 SVG lines[]，紫/绿 followKnife 线一 push 就整页空白 */
+            var stackRows = Math.max(1, raw.split('\n').length);
+            var fitFs = Math.floor(Number(n.h) / (stackRows * 1.2));
+            if (fitFs > 0 && fitFs < fs) fs = Math.max(10, fitFs);
+          }
+        } else if (raw.indexOf('\n') >= 0) {
           wrap = 'white-space:normal;text-align:center;line-height:1.15;';
         }
         var align = TEXT_ALIGN[n.al] || '';
         var drop = page.kind === 'power' ? underKnifeTextDrop(n, knifeNodes) : 0;
         var txCls = 'hx-abs hx-tx' + (drop ? ' hx-under-knife' : '');
-        rest.push('<div class="' + txCls + '"' + keyAttr(n, i) + ' style="' + pe + wrap + align + 'color:' + esc(n.c || '#fff') + ';font-size:' + (n.fs || 18) + 'px;' + pos(n) + '">' + esc(n.s || '').replace(/\n/g, '<br>') + '</div>');
+        rest.push('<div class="' + txCls + '"' + keyAttr(n, i) + ' style="' + pe + wrap + align + 'color:' + esc(n.c || '#fff') + ';font-size:' + fs + 'px;' + pos(n) + '">' + esc(raw).replace(/\n/g, '<br>') + '</div>');
         return;
       }
       if (n.t === 'B') {
@@ -466,5 +491,5 @@
     };
   }
 
-  w.HXDraw = { html: html, cabinet: cabinet, lineColor: lineColor };
+  w.HXDraw = { html: html, cabinet: cabinet, lineColor: lineColor, powerWireColor: powerWireColor, isPowerGreen: isPowerGreen };
 })(window);

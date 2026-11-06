@@ -103,7 +103,7 @@ import {mapState, mapMutations} from 'vuex'
 import md5 from 'js-md5';
 import {GetSystemParams} from "@/services/system";
 import {ProjectList} from "@/services/project";
-import {applyHomeProjectAuth} from '@/config/homeDashboard'
+import {HANGXIN_SCREEN_PATH, applyHomeProjectAuth} from '@/config/homeDashboard'
 export default {
   name: 'Login',
   components: {},
@@ -208,19 +208,17 @@ export default {
         this.$message.error(this.$t('loginPage.logonFailed'), 3)
       }
     },
-    // 根据当前用户可访问项目数量决定登录落地页：
-    //  - User/Operator：已绑定单一项目，写入 ProjectUuid 后直接进航信新大屏
-    //  - Admin/其它：仅 1 个项目则自动选中并进航信新大屏；多个项目则进项目选择页
-    // 旧组态大屏仍由菜单「监控大屏」（homeDashboardPath → /AppRun/:uid）进入
+    // 登录后进入航信新大屏，并写入已知项目的 ProjectUuid。
+    // 旧组态大屏仍由菜单「监控大屏」进入。
     enterAfterAuth(roles, user) {
       const _t = this
       const roleId = (roles && roles[0]) ? roles[0].id : ''
       const goHome = () => {
         _t.$store.dispatch('setting/fetchSystemHomeDashboard').then(function () {
           applyHomeProjectAuth(_t.$store)
-          _t.$router.push('/hx-dcim')
+          _t.$router.push(HANGXIN_SCREEN_PATH)
         }).catch(function () {
-          _t.$router.push('/hx-dcim')
+          _t.$router.push(HANGXIN_SCREEN_PATH)
         })
       }
       if (roleId == "User" || roleId == "Operator") {
@@ -234,12 +232,10 @@ export default {
         const list = (res && res.data && res.data.code == 0 && res.data.list) ? res.data.list : []
         if (list.length == 1 && list[0].ProjectInfo) {
           setAuthorization({token: list[0].ProjectInfo.uuid}, AUTH_TYPE.AUTH1)
-          goHome()
-        } else {
-          _t.$router.push('/project')
         }
+        goHome()
       }).catch(function () {
-        _t.$router.push('/dashboard')
+        goHome()
       })
     },
     GetSystemCas(){

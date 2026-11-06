@@ -10,10 +10,14 @@ import zipfile
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 ZIP_PATH = os.environ.get(
     "HANGXIN_SQL_ZIP",
-    "/Users/yunfanleo/Library/Containers/com.tencent.xinWeChat/Data/Documents/xwechat_files/wxid_h1l5gtwyy3eu11_eb51/msg/file/2026-10/制作画面文件.zip",
+    os.path.join(ROOT, "docs", "data_dbbackup_Mysql_Backup_2026-11-06_15-04-18.zip"),
 )
-OUT_DB = os.path.join(ROOT, "ism_server_user", "data", "db", "ism-hangxin-20261023.db")
+OUT_DB = os.environ.get(
+    "HANGXIN_OUT_DB",
+    os.path.join(ROOT, "ism_server_user", "data", "db", "ism-hangxin-20261106.db"),
+)
 OUT_INDEX = os.path.join(ROOT, "ism-front-end-v2", "public", "hx-dcim", "data", "hx-field-index.json")
+ALLOWED_DB = ("ism-hangxin-20261023.db", "ism-hangxin-20261106.db")
 
 
 def convert_create(sql):
@@ -53,8 +57,8 @@ def iter_statements(stream):
 
 
 def main():
-    if not OUT_DB.endswith("ism-hangxin-20261023.db"):
-        sys.exit("refuse to write unexpected db path")
+    if os.path.basename(OUT_DB) not in ALLOWED_DB:
+        sys.exit("refuse to write unexpected db path: " + OUT_DB)
     if os.path.basename(OUT_DB) == "ism.db":
         sys.exit("refuse to overwrite ism.db")
     os.makedirs(os.path.dirname(OUT_DB), exist_ok=True)

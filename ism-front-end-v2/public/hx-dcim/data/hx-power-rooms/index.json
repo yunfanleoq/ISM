@@ -1,5 +1,5 @@
 {
-  "version": "20261102f6file",
+  "version": "20261107merge",
   "rooms": [
     {
       "code": "1A1",
@@ -76,14 +76,14 @@
       "name": "配电室2A1",
       "floor": 2,
       "file": "2A1.json",
-      "knives": 102
+      "knives": 100
     },
     {
       "code": "2A2",
       "name": "配电室2A2",
       "floor": 2,
       "file": "2A2.json",
-      "knives": 102
+      "knives": 100
     },
     {
       "code": "2B1",
@@ -104,14 +104,14 @@
       "name": "配电室3A1",
       "floor": 3,
       "file": "3A1.json",
-      "knives": 96
+      "knives": 94
     },
     {
       "code": "3A2",
       "name": "配电室3A2",
       "floor": 3,
       "file": "3A2.json",
-      "knives": 102
+      "knives": 100
     },
     {
       "code": "3B1",
@@ -132,21 +132,21 @@
       "name": "配电室4A1",
       "floor": 4,
       "file": "4A1.json",
-      "knives": 117
+      "knives": 115
     },
     {
       "code": "4A2",
       "name": "配电室4A2",
       "floor": 4,
       "file": "4A2.json",
-      "knives": 117
+      "knives": 115
     },
     {
       "code": "4B1",
       "name": "配电室4B1",
       "floor": 4,
       "file": "4B1.json",
-      "knives": 113
+      "knives": 111
     },
     {
       "code": "4B2",

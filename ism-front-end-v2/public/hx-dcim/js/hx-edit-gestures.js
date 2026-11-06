@@ -37,6 +37,85 @@
       return A.kindOf(el) ? el : null;
     }
 
+    /* 点到线段距离（板坐标） */
+    function distToSeg(px, py, x1, y1, x2, y2) {
+      var dx = x2 - x1;
+      var dy = y2 - y1;
+      var len2 = dx * dx + dy * dy;
+      var t = len2 < 1e-6 ? 0 : Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / len2));
+      var qx = x1 + t * dx;
+      var qy = y1 + t * dy;
+      return Math.hypot(px - qx, py - qy);
+    }
+
+    function lineGeom(el) {
+      var tag = (el.tagName || '').toLowerCase();
+      if (tag === 'line') {
+        return {
+          x1: Number(el.getAttribute('x1')), y1: Number(el.getAttribute('y1')),
+          x2: Number(el.getAttribute('x2')), y2: Number(el.getAttribute('y2'))
+        };
+      }
+      if (tag === 'path') {
+        var d = String(el.getAttribute('d') || '');
+        var m = d.match(/M\s*([-\d.]+)\s*([-\d.]+)/i);
+        var nums = d.match(/[-\d.]+/g) || [];
+        if (!m || nums.length < 4) return null;
+        return {
+          x1: Number(nums[0]), y1: Number(nums[1]),
+          x2: Number(nums[nums.length - 2]), y2: Number(nums[nums.length - 1])
+        };
+      }
+      return null;
+    }
+
+    /* 在点击处找出被铭牌/刀盖住的电源线（含无 data-hx-key 的 CAD 线） */
+    function wiresUnder(clientX, clientY, tol) {
+      var host = A.host();
+      var shift = host && host.querySelector('.hx-shift');
+      if (!shift || !A.pageXY) return [];
+      var pt = A.pageXY(clientX, clientY);
+      if (!pt) return [];
+      var hitTol = tol == null ? 10 : tol;
+      var out = [];
+      var seen = {};
+      Array.prototype.forEach.call(shift.querySelectorAll('.hx-wires [data-hx-line]'), function (el) {
+        if (el.getAttribute('stroke') === 'transparent') return;
+        var i = el.getAttribute('data-i');
+        if (i == null || seen[i]) return;
+        var g = lineGeom(el);
+        if (!g) return;
+        if (distToSeg(pt.x, pt.y, g.x1, g.y1, g.x2, g.y2) > hitTol) return;
+        seen[i] = 1;
+        out.push(el);
+      });
+      return out;
+    }
+
+    var lastPick = null;
+
+    function pickBase(ev) {
+      var top = closestBase(ev.target);
+      var wires = wiresUnder(ev.clientX, ev.clientY, 12);
+      var pierce = !!(ev.altKey || ev.ctrlKey || ev.metaKey);
+      if (pierce && wires.length) return wires[0];
+      /* 同一位置再点：在顶层件与下方线之间切换 */
+      if (top && wires.length) {
+        var key = Math.round(ev.clientX) + ',' + Math.round(ev.clientY);
+        var topKind = A.kindOf(top);
+        if (topKind && topKind !== 'line') {
+          if (lastPick && lastPick.key === key && lastPick.i === top.getAttribute('data-i')) {
+            lastPick = { key: key, i: wires[0].getAttribute('data-i') };
+            return wires[0];
+          }
+          lastPick = { key: key, i: top.getAttribute('data-i') };
+          return top;
+        }
+      }
+      if (top) return top;
+      return wires[0] || null;
+    }
+
     function disarm() {
       document.removeEventListener('pointermove', onMove);
       document.removeEventListener('pointerup', onUp);
@@ -71,11 +150,16 @@
         return;
       }
       var itemEl = ev.target.closest && ev.target.closest('[data-hx-edit-id]');
-      if (itemEl && !itemEl.classList.contains('hx-edit-handle')) {
+      /* Alt/Ctrl：优先点穿到下层线，不抢编辑层新加的线 */
+      if (itemEl && !itemEl.classList.contains('hx-edit-handle') && !(ev.altKey || ev.ctrlKey || ev.metaKey)) {
         beginItem(ev, itemEl.getAttribute('data-hx-edit-id'), '');
         return;
       }
-      var base = closestBase(ev.target);
+      if ((ev.altKey || ev.ctrlKey || ev.metaKey) && itemEl) {
+        var under = wiresUnder(ev.clientX, ev.clientY, 12);
+        if (under.length) { beginBase(ev, under[0]); return; }
+      }
+      var base = pickBase(ev);
       if (base) { beginBase(ev, base); return; }
       A.setSel(null);
       A.renderItems();
@@ -244,22 +328,31 @@
       A.markSel();
     }
 
+    function applyText(el, next) {
+      if (A.textOf) A.textOf(el, next);
+      else el.innerHTML = String(next == null ? '' : next)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/\n/g, '<br>');
+    }
+
     function onDbl(ev) {
       if (!A.isOn()) return;
       var el = ev.target.closest ? ev.target.closest('.hx-tx') : null;
       if (!el) return;
       ev.preventDefault();
       ev.stopPropagation();
-      var cur = (el.textContent || '').replace(/\s+/g, ' ').trim();
-      var next = w.prompt('文字', cur);
+      /* 设备名牌等多行：用换行保留，prompt 里用 \n 表示 */
+      var cur = (el.innerText || el.textContent || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      var next = w.prompt('设备名牌文字（换行输入 \\n）', cur.replace(/\n/g, '\\n'));
       if (next == null) return;
+      next = String(next).replace(/\\n/g, '\n');
       if (el.closest('.hx-edit-layer')) {
         var id = el.getAttribute('data-hx-edit-id');
         A.commit(function (ov) {
           var i;
           for (i = 0; i < ov.items.length; i++) if (ov.items[i].id === id) ov.items[i].s = next;
         });
-        el.textContent = next;
+        applyText(el, next);
         return;
       }
       var i = el.getAttribute('data-i');
@@ -269,7 +362,7 @@
         mv.s = next;
         ov.moves[i] = mv;
       });
-      el.textContent = next;
+      applyText(el, next);
     }
 
     document.addEventListener('keydown', function (ev) {

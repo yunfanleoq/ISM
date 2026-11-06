@@ -260,6 +260,10 @@ func snapshotDueTimedPoints(now time.Time) (wrote, fromDB, reusedLast, skippedNo
 
 // DealWithTimedRealtimeHistorySnapshot 定时从实时库快照写历史。
 func DealWithTimedRealtimeHistorySnapshot() {
+	if protocol_common.DevPauseCollect() {
+		logs.Error("dev_pause_collect=true，定时历史快照未启动")
+		return
+	}
 	time.Sleep(15 * time.Second)
 	reloadTimedHistoryPoints()
 

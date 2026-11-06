@@ -4,6 +4,8 @@ import { AUTH_TYPE, setAuthorization } from '@/utils/request'
 export const HOME_DASHBOARD_UUID = ''
 export const HOME_PROJECT_UUID = ''
 export const HOME_DASHBOARD_PATH = `/AppRun/${HOME_DASHBOARD_UUID}`
+/** 登录后的系统默认页：航信新大屏。不绑组态 UUID。 */
+export const HANGXIN_SCREEN_PATH = '/hx-dcim'
 export const LEGACY_NCC_DASHBOARD_UUID = ''
 export const LEGACY_NCC_PROJECT_UUID = ''
 export const XUNAN_DASHBOARD_UUID_ALT = ''
@@ -67,13 +69,5 @@ export function resolveHomeProjectUuid(dashboardUid, store) {
 }
 
 export function createHomeDashboardRedirect() {
-  return () => {
-    const store = require('@/store').default
-    // 未配置当前项目默认大屏时，回到项目管理页，勿跳到别的项目大屏
-    if (!getHomeDashboardUuid(store)) {
-      return '/dashboard'
-    }
-    applyHomeProjectAuth(store)
-    return getHomeDashboardPath(store)
-  }
+  return () => HANGXIN_SCREEN_PATH
 }

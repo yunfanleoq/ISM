@@ -1,15 +1,15 @@
 ---
 name: ism-hangxin-knife-switch
 description: >
-  航信新大屏和组态闸刀的画法。红是合闸、绿是分闸。合闸保留半圆弧、竖线连通、不画斜刀片；分闸是半圆弧加斜直线、竖线在铰接处断开。
-  触发词：闸刀、刀闸、合闸、分闸、半圆弧、斜刀、列头柜、hx-dcim、hx-draw、航信一次图。
-  画航信开关、列头柜支路刀、或改 hx-draw.js 的刀片时先读本技能。
+  公用闸刀画法（用户级）。红是合闸、绿是分闸。合闸保留半圆弧、竖线连通、不画斜刀片；分闸是半圆弧加斜直线、竖线在铰接处断开。
+  触发词：闸刀、刀闸、合闸、分闸、半圆弧、斜刀、列头柜、hx-dcim、hx-draw、航信一次图、CAD 开关。
+  画开关、列头柜支路刀、或改 hx-draw.js 的刀片时先读本技能；CAD 总入口见 cad-read-draw。
 disable-model-invocation: false
 ---
 
 # 航信闸刀画法
 
-设计稿在 `docs/refs/hangxin-screen-drawings/`，规则正文是同目录的 `绘图方法.txt`。新大屏实现在 `ism-front-end-v2/public/hx-dcim/js/hx-draw.js` 的 `knifeInner`。改完刀形要改 `public/hx-dcim/index.html` 里 `hx-draw.js` 的缓存参数。取数逻辑不要跟着刀形改。
+本技能在用户 Agent Store，全环境可用。产品绘画规则原文见 [references/绘图方法.txt](references/绘图方法.txt)（与 ISM 仓库 `docs/refs/hangxin-screen-drawings/绘图方法.txt` 同步）。ISM 里新大屏实现在 `ism-front-end-v2/public/hx-dcim/js/hx-draw.js` 的 `knifeInner`。改完刀形要改 `public/hx-dcim/index.html` 里 `hx-draw.js` 的缓存参数。取数逻辑不要跟着刀形改。
 
 一把刀只有一种颜色。合闸整把红，分闸整把绿。`is-closed` 只画合闸组，`is-open` 只画分闸组，不要两层叠在同一把刀上。
 
@@ -40,9 +40,10 @@ disable-model-invocation: false
 
 单相：没有 A/B/C 后缀的单独一把、不要框。307 就是这种。机房按实际支路画，编号可以比设计图多。
 
-母线、UPS 出线颜色不跟开关状态走。
+刀闸本身：合闸全红、分闸全绿。出线侧跟闸状态走（竖刀下方 / 横刀右侧；合红=有电，分绿=无电），出线侧铭牌同色。母线、进线上游线不跟单刀变色。母联（两端都接电源母线）开合都不把两侧涂绿。
 
-按 CAD 改配电一次图时读 `ism-hx-power-oneline`（`.cursor/skills/ism-hx-power-oneline/SKILL.md`）。
+按 CAD 改配电一次图时读 `ism-hx-power-oneline`（用户 Store 与项目 `.cursor/skills/` 各有一份）。
 进线、电容补偿柜、顶母线分段和 UPS 主路/旁路连通以那份为准。
 本技能只定刀片红绿和刀形，不要在一次图布局里改半圆弧或斜刀坐标。
-补偿柜要画。5A1 的柜号不要套到其他配电室。
+补偿柜：产品规则（绘图方法）写界面不展示；一次图仍按该室 CAD——有则画、无则不硬补。5A1 的柜号不要套到其他配电室。
+CAD 总入口：`cad-read-draw`。

@@ -55,11 +55,11 @@ import CommonLayout from '@/layouts/CommonLayout'
 import {login} from '@/services/user'
 import {AUTH_TYPE, setAuthorization} from '@/utils/request'
 import {loadRoutes} from '@/utils/routerUtil'
-import {mapMutations, mapGetters} from 'vuex'
+import {mapMutations} from 'vuex'
 import {mapState} from 'vuex'
 import md5 from 'js-md5'
 import {ProjectList} from '@/services/project'
-import {applyHomeProjectAuth} from '@/config/homeDashboard'
+import {HANGXIN_SCREEN_PATH} from '@/config/homeDashboard'
 export default {
   name: 'LoginPhone',
   i18n: require('@/i18n/language'),
@@ -88,7 +88,6 @@ export default {
   },
   computed: {
     ...mapState('setting', ['langList','isMobile','lang',]),
-    ...mapGetters('setting', ['homeDashboardPath']),
     systemName () {
       return this.$store.state.setting.systemName
     },
@@ -158,21 +157,12 @@ export default {
         this.$message.error(this.$t('loginPage.logonFailed'), 3)
       }
     },
-    // 与 Login.vue 保持一致：Admin/单项目自动进该项目默认大屏，多项目进项目选择页
+    // 与 Login.vue 一致：登录后进入航信新大屏
     enterAfterAuth(roles, user) {
       const _t = this
       const roleId = (roles && roles[0]) ? roles[0].id : ''
       const goHome = () => {
-        _t.$store.dispatch('setting/fetchSystemHomeDashboard').then(function () {
-          applyHomeProjectAuth(_t.$store)
-          if (!_t.$store.getters['setting/homeDashboardUuid']) {
-            _t.$router.push('/dashboard')
-            return
-          }
-          _t.$router.push(_t.homeDashboardPath)
-        }).catch(function () {
-          _t.$router.push('/dashboard')
-        })
+        _t.$router.push(HANGXIN_SCREEN_PATH)
       }
       if (roleId === 'User' || roleId === 'Operator') {
         if (user && user.ProjectUUID) {
@@ -185,12 +175,10 @@ export default {
         const list = (res && res.data && res.data.code == 0 && res.data.list) ? res.data.list : []
         if (list.length == 1 && list[0].ProjectInfo) {
           setAuthorization({token: list[0].ProjectInfo.uuid}, AUTH_TYPE.AUTH1)
-          goHome()
-        } else {
-          _t.$router.push('/project')
         }
+        goHome()
       }).catch(function () {
-        _t.$router.push('/project')
+        goHome()
       })
     }
   }

@@ -9,7 +9,7 @@
     <iframe
       ref="frame"
       title="新大屏"
-      src="/hx-dcim/index.html?v=20261104edge#/power"
+      src="/hx-dcim/index.html?v=20261107merge#/power"
       @load="onFrameLoad"
       @error="onFrameError"
     />
@@ -89,3 +89,5 @@ export default {
   background: #040c1c;
 }
 </style>
+
+
