@@ -14,6 +14,10 @@ import {formatDate} from '@/utils/common';
 import {checkAuthorization,getAuthorization} from '@/utils/request'
 import {AUTH_TYPE} from "./utils/request";
 import {GetSystemAuthInfo,GetSystemCodeCheck,GetSystemParams} from "@/services/system";
+import {
+  backendUnreachableMessage,
+  isBackendUnreachableError,
+} from '@/utils/backendReachability'
 
 
 export default {
@@ -334,7 +338,10 @@ export default {
           _t.$router.push('/auth')
         }
       }).catch(function(e){
-        _t.$message.error("授权信息丢失了，请联系管理员重新获取.", 6)
+        const msg = isBackendUnreachableError(e)
+          ? backendUnreachableMessage()
+          : '授权信息丢失了，请联系管理员重新获取.'
+        _t.$message.error(msg, 6)
         _t.$router.push('/auth')
       })
     },
@@ -367,7 +374,10 @@ export default {
         _t.$store.state.setting.skeletonLoading = false
         _t.setHtmlTitle()
       }).catch(function(e){
-        _t.$message.error("授权信息丢失了，请联系管理员重新获取.", 6)
+        const msg = isBackendUnreachableError(e)
+          ? backendUnreachableMessage()
+          : '授权信息丢失了，请联系管理员重新获取.'
+        _t.$message.error(msg, 6)
       })
     },
     GetSystemParams(){

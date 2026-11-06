@@ -18,7 +18,7 @@
         index = j;
         var rooms = j.rooms || [];
         return Promise.all(rooms.map(function (room) {
-          return fetch('/hx-dcim/data/hx-power-rooms/' + room.file + '?v=' + ver)
+          return fetch('/hx-dcim/data/hx-power-rooms/' + room.file + '?v=' + ver, { cache: 'no-store' })
             .then(function (r) { if (!r.ok) throw new Error(room.file); return r.json(); })
             .then(function (lay) { layouts[room.code] = lay; });
         }));
@@ -103,7 +103,7 @@
   function build(pg, lay) {
     var prefix = pg.name + '_';
     var code = codeOf(pg.name);
-    var fit = code === '5A2' || code === '5A3' || code === '5B1' || code === '5B2' || code === '5B3';
+    var fit = code === '5A2' || code === '5A3' || code === '5A4' || code === '5B1' || code === '5B2' || code === '5B3' || code === '5B4';
     var scene = indexSceneKnives(pg.nodes || [], prefix);
     var nodes = [];
     var missing = [];
@@ -151,9 +151,19 @@
     return (index && index.rooms) || [];
   }
 
+  function getLayout(code) {
+    return layouts[code] || null;
+  }
+
+  function setLayout(code, lay) {
+    if (code && lay) layouts[code] = lay;
+  }
+
   w.HXRooms = {
     load: load,
     setLayouts: setLayouts,
+    getLayout: getLayout,
+    setLayout: setLayout,
     applies: applies,
     apply: apply,
     knifeTaps: knifeTaps,

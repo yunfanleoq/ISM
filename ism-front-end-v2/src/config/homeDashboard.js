@@ -33,7 +33,11 @@ export function getHomeProjectUuid(store) {
 }
 
 export function getHomeDashboardPath(store) {
-  return `/AppRun/${getHomeDashboardUuid(store)}`
+  const uuid = getHomeDashboardUuid(store)
+  if (!uuid || !String(uuid).trim()) {
+    return '/dashboard'
+  }
+  return `/AppRun/${uuid}`
 }
 
 /** 进入项目默认大屏前，将 ProjectUuid 请求头同步为该大屏所属项目（避免组态 API 因项目不一致一直 loading） */

@@ -47,10 +47,15 @@ must(knives.every((n) => n.k && n.p && n.dev), 'scene k/p/dev');
 must(!pg._lay5a1Missing || pg._lay5a1Missing.length === 0, 'missing scene ' + (pg._lay5a1Missing || []).join(','));
 must(!knives.some((n) => /410|420/.test(n.cad)), 'capacitor cabinet drawn');
 
+/* 并联横排：同 y、x 排开；电气是 -1 + 小横母线，不是竖列串联 */
+const x411 = [1, 2, 3, 4, 5].map((i) => knife('T1-411-' + i).x);
 const y411 = [1, 2, 3, 4, 5].map((i) => knife('T1-411-' + i).y);
-must(Math.max(...y411) - Math.min(...y411) < 1, '411 not side by side');
-const x421 = [5, 4, 3, 2, 1].map((i) => knife('T2-421-' + i).x);
-must(x421.every((x, i) => i === 0 || x > x421[i - 1]), '421 order');
+must(Math.max(...y411) - Math.min(...y411) < 1, '411 not horizontal parallel');
+must(Math.max(...x411) - Math.min(...x411) > 200, '411 not spread');
+const x421 = [1, 2, 3, 4, 5].map((i) => knife('T2-421-' + i).x);
+const y421 = [1, 2, 3, 4, 5].map((i) => knife('T2-421-' + i).y);
+must(Math.max(...y421) - Math.min(...y421) < 1, '421 not horizontal parallel');
+must(Math.max(...x421) - Math.min(...x421) > 200, '421 not spread');
 
 const k401 = knife('T1-401');
 const k402 = knife('T2-402');
@@ -86,19 +91,10 @@ riserOff('xfmr-5A1-T1', busI, busIy);
 riserOff('xfmr-5A1-T2', busII, busIIy);
 must(segs.some((s) => s.net === 'xfmr-5A1-T1' && touches(s, t401.out.x, t401.out.y, TOL)), 'T1 not wired into 401');
 must(segs.some((s) => s.net === 'xfmr-5A1-T2' && touches(s, t402.out.x, t402.out.y, TOL)), 'T2 not wired into 402');
-['drop-T1-410', 'drop-T2-420'].forEach((net) => {
-  const d = segs.find((s) => s.net === net);
-  must(!!d, net + ' missing');
-  if (!d) return;
-  const top = Math.min(d.y1, d.y2);
-  const bus = net === 'drop-T1-410' ? busI : busII;
-  const by = net === 'drop-T1-410' ? busIy : busIIy;
-  must(Math.abs(top - by) < 1.5, net + ' not from bus');
-  reach({ x: d.cx, y: top }, { x: bus.cx, y: by }, net + ' not on bus');
-});
-must(pg.nodes.filter((n) => n.sym === 'cap').length === 2, 'cap symbols');
-must(pg.nodes.some((n) => n.t === 'T' && /T1-410/.test(n.s || '')), '410 label');
-must(pg.nodes.some((n) => n.t === 'T' && /T2-420/.test(n.s || '')), '420 label');
+/* 5A1-新.dwg 无 410/420 补偿柜，禁止再画 */
+must(pg.nodes.filter((n) => n.sym === 'cap').length === 0, 'cap symbols should be absent');
+must(!pg.nodes.some((n) => n.t === 'T' && /T1-410|T2-420/.test(n.s || '')), '410/420 label should be absent');
+must(!segs.some((s) => /410|420/.test(String(s.net || ''))), '410/420 drop should be absent');
 apart({ x: busI.cx, y: busIy }, { x: busII.cx, y: (busII.y1 + busII.y2) / 2 }, 'bus I directly tied to bus II');
 const uf445 = withLink(t445.in.x, t445.in.y, t445.out.x, t445.out.y);
 const s445 = segs.concat([{ horiz: false, x1: t445.in.x, y1: t445.in.y, x2: t445.out.x, y2: t445.out.y }]);
@@ -109,15 +105,18 @@ must(
 );
 reach(t445.in, { x: (busI.x1 + busI.x2) / 2, y: busIy }, '445 top not on bus I');
 
-reach(taps(knife('T1-411-5')).in, { x: busI.cx, y: busIy }, '411-5 not on bus I');
-reach(taps(knife('T1-411-1')).in, taps(knife('T1-411-5')).in, '411 small bus');
+reach(taps(knife('T1-411-1')).in, { x: busI.cx, y: busIy }, '411-1 not on bus I');
+reach(taps(knife('T1-411-1')).in, taps(knife('T1-411-5')).in, '411 small-bus parallel');
 must(segs.filter((s) => s.net === 'drop-T1-411').length === 1, '411 drops');
+must(segs.some((s) => s.net === 'small-T1-411'), '411 small bus');
 const d425 = segs.filter((s) => s.net === 'drop-T2-425');
 must(d425.length === 1, '425 drop missing');
 must(Math.abs(d425[0].cx - taps(knife('T2-425-1')).in.x) < 1, '425 drop not on -1');
 must(segs.some((s) => s.net === 'drop-T2-425' && /漏画/.test(String(ctx.layout.wires.find((w) => w.net === 'drop-T2-425').note || ''))), '425 note');
 reach(taps(knife('T2-421-1')).in, { x: busII.cx, y: (busII.y1 + busII.y2) / 2 }, '421-1 not on bus II');
 must(segs.filter((s) => s.net === 'drop-T2-421').length === 1, '421 drops');
+must(segs.some((s) => s.net === 'small-T2-421'), '421 small bus');
+reach(taps(knife('T2-421-1')).in, taps(knife('T2-421-5')).in, '421 small-bus parallel');
 
 function colorNet(net, hex) {
   const hit = segs.filter((s) => s.net === net);

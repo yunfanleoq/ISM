@@ -28,6 +28,12 @@ const progressStart = (to, from, next) => {
  */
 const loginGuard = (to, from, next, options) => {
   const {message} = options
+  if (to.path.indexOf('/AppRun') >= 0) {
+    const uid = to.params && to.params.uid
+    if (!uid || !String(uid).trim()) {
+      return next({ path: '/dashboard', replace: true })
+    }
+  }
   if ((to.path.indexOf('/AppRun')>=0) && !checkAuthorization())
   {
 

@@ -99,7 +99,7 @@ import CommonLayout from '@/layouts/CommonLayout'
 import {login, getRoutesConfig} from '@/services/user'
 import {AUTH_TYPE, checkAuthorization, setAuthorization} from '@/utils/request'
 import {loadRoutes} from '@/utils/routerUtil'
-import {mapState, mapMutations, mapGetters} from 'vuex'
+import {mapState, mapMutations} from 'vuex'
 import md5 from 'js-md5';
 import {GetSystemParams} from "@/services/system";
 import {ProjectList} from "@/services/project";
@@ -117,7 +117,6 @@ export default {
   },
   computed: {
     ...mapState('setting', ['langList','isMobile','lang','skeletonLoading']),
-    ...mapGetters('setting', ['homeDashboardPath']),
     systemName () {
       return this.$store.state.setting.systemName
     },
@@ -210,14 +209,19 @@ export default {
       }
     },
     // 根据当前用户可访问项目数量决定登录落地页：
-    //  - User/Operator：已绑定单一项目，写入 ProjectUuid 后直接进大屏
-    //  - Admin/其它：仅 1 个项目则自动选中并进大屏；多个项目则进项目选择页
+    //  - User/Operator：已绑定单一项目，写入 ProjectUuid 后直接进航信新大屏
+    //  - Admin/其它：仅 1 个项目则自动选中并进航信新大屏；多个项目则进项目选择页
+    // 旧组态大屏仍由菜单「监控大屏」（homeDashboardPath → /AppRun/:uid）进入
     enterAfterAuth(roles, user) {
       const _t = this
       const roleId = (roles && roles[0]) ? roles[0].id : ''
       const goHome = () => {
-        applyHomeProjectAuth(_t.$store)
-        _t.$router.push(_t.homeDashboardPath)
+        _t.$store.dispatch('setting/fetchSystemHomeDashboard').then(function () {
+          applyHomeProjectAuth(_t.$store)
+          _t.$router.push('/hx-dcim')
+        }).catch(function () {
+          _t.$router.push('/hx-dcim')
+        })
       }
       if (roleId == "User" || roleId == "Operator") {
         if (user && user.ProjectUUID) {
@@ -235,8 +239,7 @@ export default {
           _t.$router.push('/project')
         }
       }).catch(function () {
-        applyHomeProjectAuth(_t.$store)
-        goHome()
+        _t.$router.push('/dashboard')
       })
     },
     GetSystemCas(){
@@ -350,12 +353,16 @@ export default {
     background: rgba(8, 28, 58, 0.55);
     border: 1px solid rgba(19, 194, 194, 0.25);
   }
+  /* flex 避免 float 在窄屏换行后被 overflow:hidden 整块裁掉（右侧登录区空白） */
   .middle1 {
     overflow: hidden;
+    display: flex;
+    align-items: stretch;
   }
   .middle_left {
-    float: left;
+    float: none;
     width: 560px;
+    flex: 0 0 560px;
     height: 600px;
     display: flex;
     align-items: center;
@@ -403,9 +410,11 @@ export default {
     font-size: 15px;
   }
   .middle_right {
-    width: 500px;
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
     height: 600px;
-    float: right;
+    float: none;
     background: rgba(255, 255, 255, 0.96);
   }
   .mr_box {
@@ -483,7 +492,8 @@ export default {
       margin-top: 40px;
     }
     .middle_left {
-      width: 560px;
+      width: 540px;
+      flex: 0 0 540px;
       height: 470px;
     }
     .middle1 {
@@ -491,7 +501,8 @@ export default {
       height: 470px;
     }
     .middle_right {
-      width: 400px;
+      width: auto;
+      flex: 1 1 auto;
       overflow: hidden;
       height: 470px;
     }
@@ -514,12 +525,16 @@ export default {
       display: none;
       float: none;
     }
+    .middle1 {
+      justify-content: center;
+    }
     .middle_right {
       float: none;
       margin: 0 auto;
       overflow: hidden;
       height: 470px;
       width: 418px;
+      flex: 0 0 418px;
     }
     .xunan-footer {
       bottom: 16px;

@@ -1,8 +1,8 @@
-/* 一次图编辑叠加层。不改各室电气 json。按房间写入 localStorage，键 hx-dcim-edit:<室号>。 */
+/* 一次图编辑。拖动先记在 localStorage（hx-dcim-edit:<室号>）。点保存才写回这间一次图 JSON。 */
 (function (w) {
   'use strict';
 
-  var VER = '20261029bus02';
+  var VER = '20261102f5';
   var inboxSeen = '';
   var palMode = 'full';
   var editing = false;
@@ -344,7 +344,7 @@
       '</span></div>' + groups +
       '<form class="hx-edit-cmd"><input name="cmd" placeholder="指令：加3把竖刀" autocomplete="off"/><button type="submit">执行</button>' +
       '<p class="hx-edit-cmd-msg"></p></form>' +
-      '<p class="hx-edit-tip">分组标题可折叠。点一下或拖进图里。双击文字、自定义改字。指令例：加UPS、加接地、加母线、加自定义 接地。Delete 删除。改动记在这台浏览器里。</p></aside>' +
+      '<p class="hx-edit-tip">分组标题可折叠。点一下或拖进图里。双击文字、自定义改字。指令例：加UPS、加接地、加母线、加自定义 接地。Delete 删除。改完要点保存，才写进这间一次图。</p></aside>' +
       '<button type="button" class="hx-edit-pal-dock" data-hx-pal="show" hidden>组件</button>';
   }
 
@@ -385,6 +385,9 @@
     var body = host && host.querySelector('.hx-body');
     if (body && !body.querySelector('.hx-edit-pal')) {
       body.insertAdjacentHTML('beforeend', palHtml());
+      var dock = body.querySelector('.hx-edit-pal-dock');
+      var drillBar = body.querySelector('.hx-drill-bar');
+      if (dock && drillBar) drillBar.insertBefore(dock, drillBar.firstChild);
       var pal = body.querySelector('.hx-edit-pal');
       pal.addEventListener('pointerdown', gestures.onPalDown);
       var form = pal.querySelector('.hx-edit-cmd');
@@ -405,6 +408,7 @@
     if (bar && !bar.querySelector('[data-hx-edit]')) {
       bar.insertAdjacentHTML('afterbegin',
         '<button type="button" data-hx-edit="toggle">编辑</button>' +
+        '<button type="button" data-hx-edit="save" hidden>保存</button>' +
         '<button type="button" data-hx-edit="del" hidden>删除</button>' +
         '<button type="button" data-hx-edit="export" hidden>导出</button>' +
         '<button type="button" data-hx-edit="restore" hidden>还原</button>');
@@ -585,6 +589,183 @@
     apply();
   }
 
+  function r2(n) { return Math.round(Number(n) * 100) / 100; }
+
+  function segKept(a, b) {
+    var horiz = Math.abs(a[1] - b[1]) < 0.8;
+    var len = horiz ? Math.abs(b[0] - a[0]) : Math.abs(b[1] - a[1]);
+    return len >= 0.5;
+  }
+
+  function buildPatch(lay, ov) {
+    var baked = JSON.parse(JSON.stringify(lay));
+    var patch = {
+      room: roomOf(page),
+      texts: [], knives: [], boxes: [], wires: [],
+      remove: { texts: [], knives: [], boxes: [], wires: [] },
+      add: { texts: [], knives: [], boxes: [], wires: [] }
+    };
+    var del = {};
+    (ov.deleted || []).forEach(function (id) { del[String(id)] = 1; });
+    var moves = ov.moves || {};
+    var i = 0;
+    var wireNode = [];
+    (baked.wires || []).forEach(function (w, wi) {
+      var s, n = 0;
+      for (s = 1; s < (w.pts || []).length; s++) {
+        if (!segKept(w.pts[s - 1], w.pts[s])) continue;
+        wireNode.push({ wi: wi, seg: s, i: i });
+        n++;
+        i++;
+      }
+      w._n = n;
+    });
+    var boxAt = (baked.boxes || []).map(function () { return i++; });
+    var knifeAt = (baked.knives || []).map(function () { return i++; });
+    var textAt = (baked.texts || []).map(function () { return i++; });
+    var byWire = {};
+    wireNode.forEach(function (seg) {
+      var id = String(seg.i);
+      if (!byWire[seg.wi]) byWire[seg.wi] = { del: 0, segs: [] };
+      var info = byWire[seg.wi];
+      if (del[id]) info.del++;
+      var mv = moves[id];
+      if (mv && ((mv.dx || 0) || (mv.dy || 0))) info.segs.push({ seg: seg.seg, dx: mv.dx || 0, dy: mv.dy || 0 });
+    });
+    Object.keys(byWire).forEach(function (wis) {
+      var wi = Number(wis);
+      var info = byWire[wi];
+      var w = baked.wires[wi];
+      if (info.del && info.del === w._n) {
+        patch.remove.wires.push(wi);
+        return;
+      }
+      if (!info.segs.length) return;
+      var pts = w.pts.map(function (p) { return [p[0], p[1]]; });
+      var pointDelta = {};
+      var conflict = false;
+      info.segs.forEach(function (s) {
+        [s.seg - 1, s.seg].forEach(function (pi) {
+          var prev = pointDelta[pi];
+          if (!prev) pointDelta[pi] = { dx: s.dx, dy: s.dy };
+          else if (prev.dx !== s.dx || prev.dy !== s.dy) conflict = true;
+        });
+      });
+      if (conflict) return;
+      Object.keys(pointDelta).forEach(function (pi) {
+        var d = pointDelta[pi];
+        pts[pi][0] = r2(pts[pi][0] + d.dx);
+        pts[pi][1] = r2(pts[pi][1] + d.dy);
+      });
+      w.pts = pts;
+      patch.wires.push({ i: wi, pts: pts });
+    });
+    function takeBox(arr, at, bucket, removed, withText) {
+      arr.forEach(function (n, bi) {
+        var idx = at[bi];
+        if (del[String(idx)]) { removed.push(bi); return; }
+        var mv = moves[String(idx)];
+        if (!mv) return;
+        var dx = mv.dx || 0;
+        var dy = mv.dy || 0;
+        var rec = null;
+        if (dx || dy) {
+          n.x = r2(Number(n.x) + dx);
+          n.y = r2(Number(n.y) + dy);
+          rec = { i: bi, x: n.x, y: n.y };
+        }
+        if (withText && mv.s != null) {
+          n.s = mv.s;
+          rec = rec || { i: bi };
+          rec.s = mv.s;
+        }
+        if (rec) bucket.push(rec);
+      });
+    }
+    baked.boxes = baked.boxes || [];
+    baked.knives = baked.knives || [];
+    baked.texts = baked.texts || [];
+    baked.wires = baked.wires || [];
+    takeBox(baked.boxes, boxAt, patch.boxes, patch.remove.boxes, false);
+    takeBox(baked.knives, knifeAt, patch.knives, patch.remove.knives, false);
+    takeBox(baked.texts, textAt, patch.texts, patch.remove.texts, true);
+    (baked.wires || []).forEach(function (w) { delete w._n; });
+    function drop(arr, idx) {
+      idx.slice().sort(function (a, b) { return b - a; }).forEach(function (k) { arr.splice(k, 1); });
+    }
+    drop(baked.wires, patch.remove.wires);
+    drop(baked.boxes, patch.remove.boxes);
+    drop(baked.knives, patch.remove.knives);
+    drop(baked.texts, patch.remove.texts);
+    (ov.items || []).forEach(function (it) {
+      if (it.kind === 'text' || it.kind === 'custom') {
+        var tx = { s: it.s || '', x: r2(it.x), y: r2(it.y), w: it.w || 96, h: it.h || 28, fs: 14, c: '#ffffff', al: 'c' };
+        patch.add.texts.push(tx);
+        baked.texts.push(tx);
+      } else if (it.kind === 'knife') {
+        var kn = { cad: it.id || 'new', x: r2(it.x), y: r2(it.y), out: false, role: '', amp: '', use: '' };
+        patch.add.knives.push(kn);
+        baked.knives.push(kn);
+      } else if (it.kind === 'xfmr' || it.kind === 'cap') {
+        var bx = { x: r2(it.x), y: r2(it.y), w: it.w, h: it.h, sym: it.kind, id: it.id || it.kind };
+        patch.add.boxes.push(bx);
+        baked.boxes.push(bx);
+      } else if (it.kind === 'hline' || it.kind === 'vline' || it.kind === 'bus' || it.kind === 'ortho') {
+        var wr = {
+          net: 'w',
+          pts: [[r2(it.x1), r2(it.y1)], [r2(it.x2), r2(it.y2)]],
+          c: '#ce0c18',
+          sw: it.kind === 'bus' ? 3 : 2
+        };
+        patch.add.wires.push(wr);
+        baked.wires.push(wr);
+      }
+    });
+    return { patch: patch, baked: baked };
+  }
+
+  function flashSave(text) {
+    var btn = host && host.querySelector('[data-hx-edit="save"]');
+    if (!btn) return;
+    btn.disabled = false;
+    btn.textContent = text;
+    if (text !== '保存') {
+      w.setTimeout(function () {
+        if (btn.textContent === text) btn.textContent = '保存';
+      }, 1600);
+    }
+  }
+
+  function saveRoom() {
+    if (!page || page.kind !== 'power') return;
+    var code = roomOf(page);
+    var lay = w.HXRooms && w.HXRooms.getLayout && w.HXRooms.getLayout(code);
+    var btn = host && host.querySelector('[data-hx-edit="save"]');
+    if (!lay) {
+      if (btn) btn.textContent = '保存不了';
+      flashSave('保存不了');
+      return;
+    }
+    if (btn) { btn.disabled = true; btn.textContent = '保存中'; }
+    var built = buildPatch(lay, load());
+    var headers = (w.HXAuth && w.HXAuth.headers) ? w.HXAuth.headers() : { 'Content-Type': 'application/json' };
+    if (!headers['Content-Type']) headers['Content-Type'] = 'application/json';
+    fetch('/api/hxPowerRoomSave', {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: headers,
+      body: JSON.stringify(built.patch)
+    }).then(function (res) { return res.json(); }).then(function (j) {
+      if (!j || j.code !== 200) throw new Error((j && j.msg) || '保存失败');
+      if (w.HXRooms.setLayout) w.HXRooms.setLayout(code, built.baked);
+      try { w.localStorage.removeItem(key()); } catch (e) {}
+      if (w.HXScreen && w.HXScreen.reloadCurrent) w.HXScreen.reloadCurrent();
+      flashSave('已保存');
+    }).catch(function (err) {
+      flashSave((err && err.message) ? '保存失败' : '保存失败');
+    });
+  }
+
   function onBarClick(ev) {
     var b = ev.target.closest ? ev.target.closest('[data-hx-edit]') : null;
     if (!b) return;
@@ -592,6 +773,7 @@
     ev.stopPropagation();
     var act = b.getAttribute('data-hx-edit');
     if (act === 'toggle') toggle();
+    else if (act === 'save') saveRoom();
     else if (act === 'del') removeSelected();
     else if (act === 'export') exportJson();
     else if (act === 'restore') restore();

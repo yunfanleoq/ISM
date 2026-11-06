@@ -72,12 +72,12 @@
   function loadScenes() {
     var jobs = [];
     if (w.HX5A1) {
-      jobs.push(w.HX5A1.load('20261102kntip').catch(function (e) {
+      jobs.push(w.HX5A1.load('20261104edge').catch(function (e) {
         if (w.console) w.console.warn('[hx-5a1] 布局未加载，5A1 退回通用绘制', e);
       }));
     }
     if (w.HXRooms) {
-      jobs.push(w.HXRooms.load('20261102kntip').catch(function (e) {
+      jobs.push(w.HXRooms.load('20261104edge').catch(function (e) {
         if (w.console) w.console.warn('[hx-rooms] 配电室布局未加载', e);
       }));
     }
@@ -562,6 +562,49 @@
     return box;
   }
 
+  /* 5A4：标题和线路的外接矩形。空画布不算进去，否则图会沉在底下。 */
+  function contentBoxAll(pg) {
+    var nodes = (pg && pg.nodes) || [];
+    var box = null;
+    function take(x0, y0, x1, y1) {
+      if (!isFinite(x0) || !isFinite(y0) || !isFinite(x1) || !isFinite(y1)) return;
+      var loX = Math.min(x0, x1);
+      var loY = Math.min(y0, y1);
+      var hiX = Math.max(x0, x1);
+      var hiY = Math.max(y0, y1);
+      if (!box) box = { minX: loX, minY: loY, maxX: hiX, maxY: hiY };
+      else {
+        if (loX < box.minX) box.minX = loX;
+        if (loY < box.minY) box.minY = loY;
+        if (hiX > box.maxX) box.maxX = hiX;
+        if (hiY > box.maxY) box.maxY = hiY;
+      }
+    }
+    nodes.forEach(function (n) {
+      if (!n) return;
+      if (n.t === 'L') {
+        var e = lineEnds(n);
+        var x0 = Math.min(e.x1, e.x2);
+        var x1 = Math.max(e.x1, e.x2);
+        var y0 = Math.min(e.y1, e.y2);
+        var y1 = Math.max(e.y1, e.y2);
+        var thick = Math.max(4, Number(n.sw) || 2) / 2;
+        if (isHorizLine(n)) { y0 -= thick; y1 += thick; }
+        else if (isVertLine(n)) { x0 -= thick; x1 += thick; }
+        else { x0 -= thick; x1 += thick; y0 -= thick; y1 += thick; }
+        take(x0, y0, x1, y1);
+        return;
+      }
+      if (n.t === 'I' || n.t === 'S' || n.t === 'T' || n.t === 'B') {
+        var x = Number(n.x);
+        var y = Number(n.y);
+        take(x, y, x + (Number(n.w) || 0), y + (Number(n.h) || 0));
+      }
+    });
+    if (!box || !(box.maxX > box.minX) || !(box.maxY > box.minY)) return null;
+    return box;
+  }
+
   function fit() {
     var main = hostEl && hostEl.querySelector('.hx-main');
     var fitEl = stageFit();
@@ -576,6 +619,18 @@
     /* 整张画布放进 #hxFit，四周留边。扁长室不再改按高度铺满，否则宽度溢出被裁。 */
     var bw = board.offsetWidth;
     var bh = board.offsetHeight;
+    var ox = 0;
+    var oy = 0;
+    if (page && page.kind === 'power' && roomCodeOf(page) === '5A4') {
+      var box = contentBoxAll(page);
+      if (box) {
+        var x0 = Number(page.x0) || 0;
+        bw = box.maxX - box.minX;
+        bh = box.maxY - box.minY;
+        ox = box.minX - x0;
+        oy = box.minY;
+      }
+    }
     if (!(bw > 1) || !(bh > 1)) return;
     var pad = Math.max(16, Math.round(Math.min(cw, ch) * 0.03));
     var availW = Math.max(1, cw - pad * 2);
@@ -585,8 +640,8 @@
     s = Math.max(0.05, Math.min(8, s));
     var contentW = bw * s;
     var contentH = bh * s;
-    var dx = (cw - contentW) / 2;
-    var dy = (ch - contentH) / 2;
+    var dx = (cw - contentW) / 2 - ox * s;
+    var dy = (ch - contentH) / 2 - oy * s;
     stage.baseS = s;
     stage.baseDx = dx;
     if (stage.user && page && page.kind === 'power') return;
@@ -2233,7 +2288,7 @@
     svg = String(svg).replace(/<script[\s\S]*?<\/script>/gi, '');
     pane.innerHTML =
       '<div class="hx-cad-view"><div class="hx-cad-stage">' + svg + '</div></div>' +
-      '<div class="hx-cad-cap">' + esc(code) + ' · 2026-10-30 单室 CAD</div>' +
+      '<div class="hx-cad-cap">' + esc(code) + (code === '5A4' || code === '5B4' ? ' · 总图裁出' : ' · 2026-10-30 单室 CAD') + '</div>' +
       '<div class="hx-zoom-bar">' +
         '<button type="button" data-hx-cad-zoom="in">放大</button>' +
         '<button type="button" data-hx-cad-zoom="out">缩小</button>' +
@@ -2262,7 +2317,7 @@
     if (pane.getAttribute('data-loaded') === code) return;
     pane.setAttribute('data-loaded', code);
     pane.innerHTML = '<div class="hx-pt">正在打开 ' + esc(code) + ' 的 CAD…</div>';
-    fetch('/hx-dcim/cad/' + encodeURIComponent(code) + '.svg?v=20261102kntip')
+    fetch('/hx-dcim/cad/' + encodeURIComponent(code) + '.svg?v=20261103xfmr')
       .then(function (r) {
         var ct = (r.headers.get('content-type') || '').toLowerCase();
         if (!r.ok || ct.indexOf('svg') < 0) throw new Error('missing');
@@ -2273,7 +2328,7 @@
         mountCadSvg(pane, code, svg);
       })
       .catch(function () {
-        pane.innerHTML = '<div class="hx-pt">这间配电室还没有单独的 CAD 原图。<br>目前嵌进来的是 5A1、5A2、5A3、5B1、5B2、5B3。</div>';
+        pane.innerHTML = '<div class="hx-pt">这间配电室还没有单独的 CAD 原图。<br>目前嵌进来的是 5A1、5A2、5A3、5A4、5B1、5B2、5B3、5B4。</div>';
       });
   }
 
@@ -2643,6 +2698,15 @@
   }
 
   w.HXScreen = {
+    reloadCurrent: function () {
+      if (!page || !hostEl) return;
+      page._prepped = 0;
+      page._layRoom = 0;
+      page._cadLinesFixed = 0;
+      page._mainParallelFixed = 0;
+      page = prep(page);
+      renderLoadedPage(hostEl);
+    },
     ready: Promise.all([
       withTimeout(L().ready, 130000, '测点索引'),
       withTimeout(loadScenes(), 45000, '一次图场景'),

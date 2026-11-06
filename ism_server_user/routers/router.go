@@ -374,6 +374,7 @@ func init() {
 	beego.Router("/BackupUpload", &controllers.ISMSystem{}, "*:BackupUpload")
 
 	beego.Router("/DiyUpload", &controllers.ISMSystem{}, "*:DiyUpload")
+	beego.Router("/hxPowerRoomSave", &controllers.HxPowerRoomController{}, "post:Save")
 
 	//任务计划
 	beego.Router("/AddTaskPlan", &controllers.TaskPlanController{}, "*:AddTaskPlan")

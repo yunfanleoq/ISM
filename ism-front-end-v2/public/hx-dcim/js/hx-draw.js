@@ -293,7 +293,8 @@
       rect: '<svg viewBox="0 0 26 22" width="100%" height="100%" aria-hidden="true"><g fill="none" stroke="#d24dff" stroke-width="1.4" stroke-linecap="round"><rect x="1.2" y="1.2" width="23.6" height="19.6" rx="1.5"/><path d="M5 8 Q8.5 4.2 13 8 T21 8"/><path d="M6 15.5 H20"/></g></svg>',
       inv: '<svg viewBox="0 0 26 22" width="100%" height="100%" aria-hidden="true"><g fill="none" stroke="#d24dff" stroke-width="1.4" stroke-linecap="round"><rect x="1.2" y="1.2" width="23.6" height="19.6" rx="1.5"/><path d="M6 6.5 H20"/><path d="M5 15 Q8.5 11.2 13 15 T21 15"/></g></svg>',
       ssw: '<svg viewBox="0 0 28 26" width="100%" height="100%" aria-hidden="true"><g fill="none" stroke="#00e676" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"><rect x="1.2" y="1.2" width="25.6" height="23.6" rx="1.5"/><polygon points="7,7 16,13 7,19"/><polygon points="21,7 12,13 21,19"/><path d="M16 13 H22 M6 13 H12"/></g></svg>',
-      cap: capCabinetSvg()
+      cap: capCabinetSvg(),
+      node: '<svg viewBox="0 0 36 36" width="100%" height="100%" aria-hidden="true"><circle cx="18" cy="18" r="15.2" fill="none" stroke="#f4f7fb" stroke-width="2.4"/></svg>'
     }[n.sym];
     if (!svg) return '';
     return '<div class="hx-abs" style="pointer-events:none;' + pos(n) + '">' + svg + '</div>';

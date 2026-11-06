@@ -159,16 +159,21 @@ export default {
   actions: {
     fetchSystemHomeDashboard({commit}) {
       return GetSystemHomeDashboard().then(res => {
-        if (res.data && res.data.code === 0) {
+        const data = res && res.data
+        if (data && typeof data.code === 'number' && data.code === 0) {
           commit('setSystemHomeDashboard', {
-            dashboardUuid: res.data.dashboardUuid || '',
-            projectUuid: res.data.projectUuid || '',
-            dashboardName: res.data.dashboardName || '',
+            dashboardUuid: data.dashboardUuid || '',
+            projectUuid: data.projectUuid || '',
+            dashboardName: data.dashboardName || '',
           })
-          // 侧栏固定「监控大屏」，不按应用名覆盖
           commit('patchScadaMonitorMenuName', '监控大屏')
+        } else {
+          commit('setSystemHomeDashboard', null)
         }
         return res
+      }).catch(() => {
+        commit('setSystemHomeDashboard', null)
+        return Promise.reject(new Error('GetSystemHomeDashboard failed'))
       })
     },
     saveSystemHomeDashboard({commit, dispatch}, payload) {
