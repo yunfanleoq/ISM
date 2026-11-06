@@ -99,11 +99,11 @@ import CommonLayout from '@/layouts/CommonLayout'
 import {login, getRoutesConfig} from '@/services/user'
 import {AUTH_TYPE, checkAuthorization, setAuthorization} from '@/utils/request'
 import {loadRoutes} from '@/utils/routerUtil'
-import {mapState, mapMutations, mapGetters} from 'vuex'
+import {mapState, mapMutations} from 'vuex'
 import md5 from 'js-md5';
 import {GetSystemParams} from "@/services/system";
 import {ProjectList} from "@/services/project";
-import {applyHomeProjectAuth} from '@/config/homeDashboard'
+import {HANGXIN_SCREEN_PATH} from '@/config/homeDashboard'
 export default {
   name: 'Login',
   components: {},
@@ -117,7 +117,6 @@ export default {
   },
   computed: {
     ...mapState('setting', ['langList','isMobile','lang','skeletonLoading']),
-    ...mapGetters('setting', ['homeDashboardPath']),
     systemName () {
       return this.$store.state.setting.systemName
     },
@@ -209,15 +208,12 @@ export default {
         this.$message.error(this.$t('loginPage.logonFailed'), 3)
       }
     },
-    // 根据当前用户可访问项目数量决定登录落地页：
-    //  - User/Operator：已绑定单一项目，写入 ProjectUuid 后直接进大屏
-    //  - Admin/其它：仅 1 个项目则自动选中并进大屏；多个项目则进项目选择页
+    // 登录后一律进入航信新大屏。仍写入已知项目的 ProjectUuid，供其它页面使用。
     enterAfterAuth(roles, user) {
       const _t = this
       const roleId = (roles && roles[0]) ? roles[0].id : ''
       const goHome = () => {
-        applyHomeProjectAuth(_t.$store)
-        _t.$router.push(_t.homeDashboardPath)
+        _t.$router.push(HANGXIN_SCREEN_PATH)
       }
       if (roleId == "User" || roleId == "Operator") {
         if (user && user.ProjectUUID) {
@@ -230,12 +226,9 @@ export default {
         const list = (res && res.data && res.data.code == 0 && res.data.list) ? res.data.list : []
         if (list.length == 1 && list[0].ProjectInfo) {
           setAuthorization({token: list[0].ProjectInfo.uuid}, AUTH_TYPE.AUTH1)
-          goHome()
-        } else {
-          _t.$router.push('/project')
         }
+        goHome()
       }).catch(function () {
-        applyHomeProjectAuth(_t.$store)
         goHome()
       })
     },

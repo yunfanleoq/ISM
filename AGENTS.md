@@ -56,3 +56,17 @@ Default login: `admin` / `123456`.
 Some heavy configuration pages (e.g. `#/Setting/UserManager`) can crash the Chrome tab
 ("Aw, Snap!") under memory pressure on this constrained VM. Core flows (login, project CRUD, dashboards)
 work; if a specific page crashes, it is usually tab memory pressure, not a backend failure.
+
+### Skills (must use from repo)
+Cloud agents do **not** inherit the maintainer's local Cursor Agent Store. All ISM skills
+live in **`.cursor/skills/`** in this repo — read them from there.
+
+| Task | Skill |
+|---|---|
+| CAD 读图 / 一次图 / CAD 原图总入口 | `.cursor/skills/cad-read-draw/SKILL.md` |
+| 按 DWG/DXF 实体画配电室一次图 | `.cursor/skills/ism-hx-power-oneline/SKILL.md` |
+| 刀闸红合绿分 | `.cursor/skills/ism-hangxin-knife-switch/SKILL.md` |
+| 现场踩坑 / 打包微信 | `.cursor/skills/ism-field-lessons/SKILL.md` |
+
+配电室问题当前计划：`docs/ISM-配电室问题恢复与逐项修复.md`（副本 `.cursor/plans/ism-配电室问题恢复与逐项修复.plan.md`）。
+现场问题文档与材料：`docs/配电室画面问题.docx`、`docs/CAD图2层.zip`、`docs/data_dbbackup_Mysql_Backup_2026-11-06_15-04-18.zip`。

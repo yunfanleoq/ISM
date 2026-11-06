@@ -1,14 +1,16 @@
 ---
 name: ism-hx-power-oneline
 description: >
-  按 CAD 改航信配电室一次图（hx-dcim 电力单线图）。总图标准是 docs/refs 里未改过的配电系统图.dwg；5A1 专用新图是 docs/refs/hangxin-screen-drawings/5A1-新.dwg。macOS 用 MiniCAD 看图。一次图和 CAD 原图只按 DWG/DXF 实体里的线和字来画，不用缩小截图或看图画面；接线要通到设备且不能穿符号。5A1（新 CAD）：竖刀 60×98、411/421/Y 组竖列、无 410/420、两端变压器与进线刀要画全、UPS 紫/绿按 CAD、两段母线不要并成一条。改其他室先定位该室并出网表，不要套 5A1 柜号，不要用已废弃的横刀纵排。刀闸红绿以 ism-hangxin-knife-switch 为准。
-  触发：配电一次图、一次系统图、配电室、5A1、3A1、3A2、4B1、按 CAD 改图、hx-dcim 电力图、电容补偿、母联、进线刀、UPS 旁路、MiniCAD、配电系统图.dwg、5A1-新.dwg。
+  公用：按 CAD 改配电室一次图（用户级，全环境可用；ISM 上实现为 hx-dcim 电力单线图）。总图标准是 docs/refs 里未改过的配电系统图.dwg；5A1 专用新图是 docs/refs/hangxin-screen-drawings/5A1-新.dwg。macOS 用 MiniCAD 看图。一次图和 CAD 原图只按 DWG/DXF 实体里的线和字来画，不用缩小截图或看图画面；接线要通到设备且不能穿符号。5A1（新 CAD）：竖刀 60×98、411/421/Y 组竖列、无 410/420、两端变压器与进线刀要画全、UPS 紫/绿按 CAD、两段母线不要并成一条。改其他室先定位该室并出网表，不要套 5A1 柜号，不要用已废弃的横刀纵排。刀闸红绿以 ism-hangxin-knife-switch 为准。CAD 总入口见 cad-read-draw。
+  触发：CAD、DWG、DXF、配电一次图、一次系统图、配电室、5A1、3A1、3A2、4B1、按 CAD 改图、hx-dcim 电力图、电容补偿、母联、进线刀、UPS 旁路、MiniCAD、配电系统图.dwg、5A1-新.dwg、缺线、铭牌。
 disable-model-invocation: false
 ---
 
 # 按 CAD 改配电一次图
 
-改 `hx-dcim` 配电室一次图时先读本页。刀闸红合绿分、分合刀形、`knifePickId` 去重以 `ism-hangxin-knife-switch` 为准，本页不重复那些规则，也不要在布局里改刀形。
+本技能在用户 Agent Store，全环境可用；ISM 仓库 `.cursor/skills/ism-hx-power-oneline/` 有协作副本。CAD 总入口见 `cad-read-draw`。
+
+改 `hx-dcim` 配电室一次图时先读本页。刀闸红合绿分、分合刀形、`knifePickId` 去重以 `ism-hangxin-knife-switch` 为准，本页不重复那些规则，也不要在布局里改刀形。产品绘画规则原文见该技能下的 `references/绘图方法.txt`。
 
 组态大屏 cells 走 `ism-scada-dashboard`。本页只处理按 CAD 改的电力单线图。
 

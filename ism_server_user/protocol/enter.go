@@ -17,29 +17,40 @@ import (
 	ismnode "ISMServer/protocol/netnode"
 	opcuaprotocols "ISMServer/protocol/opcua"
 	opcuapub "ISMServer/protocol/opcuapub"
+	protocolCommon "ISMServer/protocol/common"
 	snmpprotocols "ISMServer/protocol/snmp"
 	systemdata "ISMServer/protocol/systemData"
 	videoToWeb "ISMServer/protocol/videoServer"
 	ismWebsocket "ISMServer/protocol/websocket"
+
+	"github.com/beego/beego/v2/core/logs"
 )
 
 func ProtocolsServer() {
+	paused := protocolCommon.DevPauseCollect()
+	if paused {
+		logs.Error("dev_pause_collect=true，已跳过设备采集、重连和设备连接")
+	}
 	go mqttbroken.MqttBrokenServer()
+	go ismWebsocket.RunWebSocketServer()
+	go systemdata.MakeSystemDataPthread()
+	go ismWebsocket.PthreadSendSystemDataQueue()
+	go ismWebsocket.PthreadSendDataQueue()
+	go ismWebsocket.PthreadSendAlarmQueue()
+	go ismWebsocket.PthreadSendNodeDataQueue()
+	if paused {
+		return
+	}
 	go videoToWeb.StartGB28281Server()
 	go videoToWeb.Server()
-	go ismWebsocket.RunWebSocketServer()
 	go snmpprotocols.SnmpServer()
 	go modbusprotocols.ModbusGatherStart()
 	go modbusprotocols.ModbusTcpServer()
 	go opcuaprotocols.OpcuaGatherStart()
 	go opcuapub.StartServer()
 	go sims7protocols.SimS7GatherStart()
-	go systemdata.MakeSystemDataPthread()
 	go ismDlt645.DLT645GatherStart()
 	go ismDlt645.Dlt645TcpServer()
-	go ismWebsocket.PthreadSendSystemDataQueue()
-	go ismWebsocket.PthreadSendDataQueue()
-	go ismWebsocket.PthreadSendAlarmQueue()
 	go ismmqtt.MqttGatherStart()
 	go ismiec104Task.Iec104GatherStart()
 	go iec61850.Iec61850GatherStart()
@@ -47,7 +58,6 @@ func ProtocolsServer() {
 	go ismnode.NetNodeTcpClient()
 	go ismHj212.HJ212GatherStart()
 	go ismHj212.HJ212TcpServer()
-	go ismWebsocket.PthreadSendNodeDataQueue()
 	go dataface.AllDataInterfaceServer()
 	go BACnetProtocol.BacnetGatherStart()
 	go ismCjt188.Cjt188GatherStart()

@@ -346,11 +346,21 @@
     return rows;
   }
 
-  function pointsFor(key, dev) {
+  /* 场景刀闸 key 常带末尾下划线（配电室5A1_U1_XBP_），测点索引在剥掉单位后缀后没有这根下划线。 */
+  function circuitRows(key) {
+    var k = String(key || '');
+    if (!k) return [];
+    if (byCircuit[k] && byCircuit[k].length) return byCircuit[k];
+    var stripped = k.replace(/_+$/, '');
+    if (stripped !== k && byCircuit[stripped] && byCircuit[stripped].length) return byCircuit[stripped];
+    return [];
+  }
+
+  function takePoints(pool, key, dev) {
     var seen = {};
     var rows = [];
     var open = String(key || '').indexOf('数据机房') === 0;
-    (byCircuit[key] || []).forEach(function (p) {
+    pool.forEach(function (p) {
       if (!p.uuid || seen[p.uuid] || isCap(p.name)) return;
       if (!open && dev && p.device && p.device !== dev) return;
       seen[p.uuid] = 1;
@@ -359,8 +369,16 @@
     return rows;
   }
 
+  function pointsFor(key, dev) {
+    var pool = circuitRows(key);
+    var rows = takePoints(pool, key, dev);
+    /* 刀上写的设备名和测点设备不一致时（如 U1_XBP 写成了 5A2），不要把这一回路显示成没有测点。 */
+    if (!rows.length && dev) rows = takePoints(pool, key, '');
+    return rows;
+  }
+
   function hasCircuit(key) {
-    return !!(key && byCircuit[key] && byCircuit[key].length);
+    return circuitRows(key).length > 0;
   }
 
   function cabRank(name) {

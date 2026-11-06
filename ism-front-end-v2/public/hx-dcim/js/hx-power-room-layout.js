@@ -18,7 +18,10 @@
         index = j;
         var rooms = j.rooms || [];
         return Promise.all(rooms.map(function (room) {
-          return fetch('/hx-dcim/data/hx-power-rooms/' + room.file + '?v=' + ver)
+          var fileVer = ver;
+          if (/^[34][AB][12]$/.test(room.code)) fileVer = '20261105f34';
+          if (room.code === '5A4' || room.code === '5B4') fileVer = '20261106a4b4';
+          return fetch('/hx-dcim/data/hx-power-rooms/' + room.file + '?v=' + fileVer)
             .then(function (r) { if (!r.ok) throw new Error(room.file); return r.json(); })
             .then(function (lay) { layouts[room.code] = lay; });
         }));

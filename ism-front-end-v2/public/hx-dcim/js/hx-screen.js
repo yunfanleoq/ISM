@@ -2233,7 +2233,7 @@
     svg = String(svg).replace(/<script[\s\S]*?<\/script>/gi, '');
     pane.innerHTML =
       '<div class="hx-cad-view"><div class="hx-cad-stage">' + svg + '</div></div>' +
-      '<div class="hx-cad-cap">' + esc(code) + ' · 2026-10-30 单室 CAD</div>' +
+      '<div class="hx-cad-cap">' + esc(code) + ' · ' + ((code === '5A4' || code === '5B4' || /^[34][AB][12]$/.test(code)) ? '2026-11-05 单室 CAD' : '2026-10-30 单室 CAD') + '</div>' +
       '<div class="hx-zoom-bar">' +
         '<button type="button" data-hx-cad-zoom="in">放大</button>' +
         '<button type="button" data-hx-cad-zoom="out">缩小</button>' +
@@ -2262,7 +2262,7 @@
     if (pane.getAttribute('data-loaded') === code) return;
     pane.setAttribute('data-loaded', code);
     pane.innerHTML = '<div class="hx-pt">正在打开 ' + esc(code) + ' 的 CAD…</div>';
-    fetch('/hx-dcim/cad/' + encodeURIComponent(code) + '.svg?v=20261102kntip')
+    fetch('/hx-dcim/cad/' + encodeURIComponent(code) + '.svg?v=20261106a4b4')
       .then(function (r) {
         var ct = (r.headers.get('content-type') || '').toLowerCase();
         if (!r.ok || ct.indexOf('svg') < 0) throw new Error('missing');
@@ -2273,7 +2273,7 @@
         mountCadSvg(pane, code, svg);
       })
       .catch(function () {
-        pane.innerHTML = '<div class="hx-pt">这间配电室还没有单独的 CAD 原图。<br>目前嵌进来的是 5A1、5A2、5A3、5B1、5B2、5B3。</div>';
+        pane.innerHTML = '<div class="hx-pt">这间配电室还没有单独的 CAD 原图。</div>';
       });
   }
 

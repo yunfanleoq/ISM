@@ -51,7 +51,7 @@ module.exports = {
     open: 'http://127.0.0.1:7080',
     writeToDisk: true,
     watchOptions: {
-      poll: 2000,        // 改大轮询间隔，进一步降低句柄占用
+      poll: 60000,       // 轮询间隔 60s，降低对 public/static 下约 1.2 万个文件反复 stat 带来的空闲 CPU
       aggregateTimeout: 500,
       ignored: [
         /node_modules/,
@@ -194,9 +194,11 @@ module.exports = {
         patterns.forEach(p => {
           if (!p || typeof p !== 'object') return
           if (!p.ignore) p.ignore = []
-          if (!p.ignore.includes('MapStorage/**')) {
-            p.ignore.push('MapStorage/**')
-          }
+          // copy 的 from 是 public/，资源实际在 public/static/MapStorage。
+          // 只写 MapStorage/** 匹配不到，CopyPlugin 仍会打开上万张图并触发 EMFILE。
+          ;['**/MapStorage/**', 'static/MapStorage/**', 'MapStorage/**'].forEach(glob => {
+            if (!p.ignore.includes(glob)) p.ignore.push(glob)
+          })
         })
         return args
       })
