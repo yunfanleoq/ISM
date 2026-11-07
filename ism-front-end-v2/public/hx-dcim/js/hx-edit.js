@@ -350,7 +350,7 @@
       '</span></div>' + groups +
       '<form class="hx-edit-cmd"><input name="cmd" placeholder="指令：加3把竖刀" autocomplete="off"/><button type="submit">执行</button>' +
       '<p class="hx-edit-cmd-msg"></p></form>' +
-      '<p class="hx-edit-tip">分组标题可折叠。点一下或拖进图里。双击文字、自定义改字（多行用 \\n）。点选被盖住的线：按住 Alt 再点，或在同一位置再点一次切换。指令例：加UPS、加接地、加母线、加自定义 接地。Delete 删除。改完要点保存，才写进这间一次图。</p></aside>' +
+      '<p class="hx-edit-tip">分组标题可折叠。点一下或拖进图里。双击名牌直接改字，Enter 保存，Shift+Enter 换行。点选被盖住的线：按住 Alt 再点，或在同一位置再点一次切换。指令例：加UPS、加接地、加母线、加自定义 接地。Delete 删除。改完要点保存，才写进这间一次图。</p></aside>' +
       '<button type="button" class="hx-edit-pal-dock" data-hx-pal="show" hidden>组件</button>';
   }
 

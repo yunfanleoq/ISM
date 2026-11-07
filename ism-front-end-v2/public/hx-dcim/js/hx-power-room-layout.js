@@ -122,12 +122,14 @@
     return n;
   }
 
+  /* 横刀导线轴在刀框顶向下 30px。出线点在框右沿外侧，刀开着则这一侧整段跟绿。 */
   function knifeTaps(n) {
     var midX = n.x + KNIFE_W / 2;
     var midY = n.y + KNIFE_H / 2;
     if (n.orient === 'h') {
+      var axisY = n.y + 30;
       var long = n.bladeFit ? 55.2 : (114 * KNIFE_H / 124);
-      return { in: { x: midX - long / 2, y: midY }, out: { x: midX + long / 2, y: midY } };
+      return { in: { x: midX - long / 2, y: axisY }, out: { x: midX + KNIFE_W / 2 + 18, y: axisY } };
     }
     var d = 114 * KNIFE_H / 124;
     return { in: { x: midX, y: n.y }, out: { x: midX, y: n.y + d } };
@@ -236,6 +238,7 @@
       var ox = taps.out.x;
       var oy = taps.out.y;
       var horizKnife = kn.orient === 'h';
+      var floor5 = /^配电室5/.test(String(kn.k || ''));
       var queue = [];
       var seen = {};
       lines.forEach(function (ln, i) {
@@ -244,21 +247,77 @@
         seen[i] = 1;
         queue.push(i);
       });
+      function isUpsPlate(tx) {
+        var s = String(tx.s || '');
+        return /500\s*kVA/i.test(s) || /(?:^|[^0-9])U1[1-4](?:\b|$)|(?:^|[^0-9])U2[1-4](?:\b|$)/.test(s);
+      }
+      function hitsPlateTop(e, tx) {
+        return e.x >= tx.x - 6 && e.x <= tx.x + tx.w + 6 &&
+          e.y >= tx.y - 10 && e.y <= tx.y + 12;
+      }
+      function hitsPlateBottom(e, tx) {
+        var bot = tx.y + tx.h;
+        return e.x >= tx.x - 6 && e.x <= tx.x + tx.w + 6 &&
+          e.y >= bot - 12 && e.y <= bot + 10;
+      }
+      /* 五层：铭牌把竖线隔开时，出线侧仍跟这把刀。母线不跟着涂绿。 */
+      function throughLabel(e, other) {
+        if (!floor5) return false;
+        if (Math.abs((Number(other.a) || 0) % 180 - 90) > 1) return false;
+        var oends = lineEnds(other);
+        var oe = oends[0];
+        if (Math.abs(oe.x - e.x) > 10) return false;
+        var oy0 = Math.min(oends[0].y, oends[1].y);
+        var oy1 = Math.max(oends[0].y, oends[1].y);
+        var gapLo = Math.min(e.y, oy1);
+        var gapHi = Math.max(e.y, oy0);
+        if (oy0 >= e.y - 2) {
+          gapLo = e.y;
+          gapHi = oy0;
+        } else if (oy1 <= e.y + 2) {
+          gapLo = oy1;
+          gapHi = e.y;
+        } else return false;
+        if (gapHi - gapLo < 8 || gapHi - gapLo > 120) return false;
+        var i;
+        for (i = 0; i < texts.length; i++) {
+          var tx = texts[i];
+          if (!tx.w || !tx.h) continue;
+          if (e.x < tx.x - 8 || e.x > tx.x + tx.w + 8) continue;
+          if (tx.y <= gapLo + 4 && tx.y + tx.h >= gapHi - 4) {
+            if (isUpsPlate(tx)) return 'ups';
+            return 'label';
+          }
+        }
+        return false;
+      }
       while (queue.length) {
         var idx = queue.shift();
         var cur = lines[idx];
         mark(cur, kn.k);
         lineEnds(cur).forEach(function (e) {
           if (isUpstream(e, taps, horizKnife)) return;
+          var stopUps = floor5 && texts.some(function (tx) {
+            return tx.w && tx.h && isUpsPlate(tx) && hitsPlateTop(e, tx);
+          });
+          if (stopUps) return;
           lines.forEach(function (other, j) {
             if (seen[j] || isMainBus(other)) return;
             var oends = lineEnds(other);
             var conn = oends.some(function (oe) {
               return Math.abs(oe.x - e.x) <= 8 && Math.abs(oe.y - e.y) <= 8;
             });
-            if (!conn) return;
+            if (!conn) {
+              var bridge = throughLabel(e, other);
+              if (bridge === 'ups' || bridge === false) return;
+            }
             if (oends.some(function (oe) { return isUpstream(oe, taps, horizKnife); }) &&
                 !oends.some(function (oe) { return !isUpstream(oe, taps, horizKnife); })) return;
+            if (floor5 && oends.some(function (oe) {
+              return texts.some(function (tx) {
+                return tx.w && tx.h && isUpsPlate(tx) && hitsPlateBottom(oe, tx);
+              });
+            })) return;
             seen[j] = 1;
             queue.push(j);
           });

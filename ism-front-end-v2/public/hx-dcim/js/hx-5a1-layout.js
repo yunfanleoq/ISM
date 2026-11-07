@@ -92,13 +92,16 @@
     return n;
   }
 
-  /* 竖刀：上进下出。横刀（rotate -90°）：左进右出。 */
+  /* 竖刀：上进下出。横刀（rotate -90°）：左进右出。
+     横刀导线轴在刀框顶向下 30px，不在 98px 框中心（中心低 19px，吸不到出线）。
+     出线点放到框右沿外侧 18px，盖住刀尖到出线起点约 12px 的空档。 */
   function knifeTaps(n) {
     var midX = n.x + KNIFE_W / 2;
     var midY = n.y + KNIFE_H / 2;
     if (n.orient === 'h') {
+      var axisY = n.y + 30;
       var long = n.bladeFit ? 55.2 : (114 * KNIFE_H / 124);
-      return { in: { x: midX - long / 2, y: midY }, out: { x: midX + long / 2, y: midY } };
+      return { in: { x: midX - long / 2, y: axisY }, out: { x: midX + KNIFE_W / 2 + 18, y: axisY } };
     }
     var d = 114 * KNIFE_H / 124;
     return { in: { x: midX, y: n.y }, out: { x: midX, y: n.y + d } };

@@ -216,7 +216,9 @@
   line-height: 1; white-space: nowrap; font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
   cursor: pointer;
 }
-/* 跟闸铭牌：边框随合红分绿，底不透明挡住穿线 */
+/* 跟闸铭牌：底不透明，挡住穿进框里的线。
+   这圈 border 只留给没有 CAD 铭牌矩形的字。
+   有 net:frame 矩形时，画面把 borderColor 设成透明，只留 CAD 那一圈。 */
 .hx-tx.hx-plate-live {
   box-sizing: border-box;
   border: 1px solid currentColor;
@@ -226,6 +228,13 @@
 }
 /* 刀下柜号/电流/负荷。编辑层会按布局 y 重写 top，用平移离开刀下白三角，不挪刀、不挪三角。 */
 .hx-tx.hx-under-knife { transform: translateY(18px); }
+.hx-tx.is-hx-texting {
+  z-index: 8000 !important;
+  outline: 1px solid #7fd0ff;
+  background: rgba(7, 32, 68, .96);
+  cursor: text;
+  white-space: pre-wrap;
+}
 .hx-glow {
   border: 1px solid rgba(150, 220, 255, .78); border-radius: 12px; pointer-events: none;
   background: transparent;

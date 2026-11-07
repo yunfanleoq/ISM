@@ -335,17 +335,7 @@
         .replace(/\n/g, '<br>');
     }
 
-    function onDbl(ev) {
-      if (!A.isOn()) return;
-      var el = ev.target.closest ? ev.target.closest('.hx-tx') : null;
-      if (!el) return;
-      ev.preventDefault();
-      ev.stopPropagation();
-      /* 设备名牌等多行：用换行保留，prompt 里用 \n 表示 */
-      var cur = (el.innerText || el.textContent || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-      var next = w.prompt('设备名牌文字（换行输入 \\n）', cur.replace(/\n/g, '\\n'));
-      if (next == null) return;
-      next = String(next).replace(/\\n/g, '\n');
+    function commitText(el, next) {
       if (el.closest('.hx-edit-layer')) {
         var id = el.getAttribute('data-hx-edit-id');
         A.commit(function (ov) {
@@ -363,6 +353,57 @@
         ov.moves[i] = mv;
       });
       applyText(el, next);
+    }
+
+    /* 双击名牌就地改字。Enter 保存，Shift+Enter 换行，Esc 取消。 */
+    function onDbl(ev) {
+      if (!A.isOn()) return;
+      var el = ev.target.closest ? ev.target.closest('.hx-tx') : null;
+      if (!el || el.getAttribute('contenteditable') === 'true') return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      var cur = (el.innerText || el.textContent || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      var done = false;
+      el.classList.add('is-hx-texting');
+      el.setAttribute('contenteditable', 'true');
+      el.focus();
+      try {
+        var sel = w.getSelection();
+        var range = w.document.createRange();
+        range.selectNodeContents(el);
+        sel.removeAllRanges();
+        sel.addRange(range);
+      } catch (e) {}
+      function finish(save) {
+        if (done) return;
+        done = true;
+        el.removeEventListener('blur', onBlur);
+        el.removeEventListener('keydown', onKey);
+        var next = save ? (el.innerText || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n').replace(/\n$/, '') : cur;
+        el.removeAttribute('contenteditable');
+        el.classList.remove('is-hx-texting');
+        if (!save || next === cur) {
+          applyText(el, cur);
+          return;
+        }
+        commitText(el, next);
+      }
+      function onBlur() { finish(true); }
+      function onKey(e) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          e.stopPropagation();
+          finish(false);
+          return;
+        }
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          el.blur();
+        }
+      }
+      el.addEventListener('blur', onBlur);
+      el.addEventListener('keydown', onKey);
     }
 
     document.addEventListener('keydown', function (ev) {

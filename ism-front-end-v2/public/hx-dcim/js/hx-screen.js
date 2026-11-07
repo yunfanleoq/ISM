@@ -153,6 +153,227 @@
     return v != null && v !== '' && live.matchOp(v, '==', '1');
   }
 
+  function lineEndsOf(n) {
+    var cx = n.x + n.w / 2;
+    var cy = n.y + (n.h || 26) / 2;
+    var half = n.w / 2;
+    if (Math.abs((Number(n.a) || 0) % 180) < 1) {
+      return [{ x: cx - half, y: cy }, { x: cx + half, y: cy }];
+    }
+    return [{ x: cx, y: cy - half }, { x: cx, y: cy + half }];
+  }
+
+  function isGreenStroke(c) {
+    var s = String(c || '').toLowerCase();
+    return s === '#00ff00' || s === '#00e676';
+  }
+
+  function hitsPlate(ends, tx, pad) {
+    var i;
+    for (i = 0; i < ends.length; i++) {
+      var e = ends[i];
+      if (e.x < tx.x - pad || e.x > tx.x + (Number(tx.w) || 0) + pad) continue;
+      if (e.y < tx.y - pad || e.y > tx.y + (Number(tx.h) || 0) + pad) continue;
+      return true;
+    }
+    return false;
+  }
+
+  function normPaintColor(c) {
+    var s = String(c || '').replace(/\s/g, '').toLowerCase();
+    if (s === '#00ff00' || s === '#0f0' || s === 'rgb(0,255,0)') return '#00ff00';
+    if (s === '#ff0000' || s === '#f00' || s === 'rgb(255,0,0)') return '#ff0000';
+    return '';
+  }
+
+  /* 端点先收到 0.01，再当同一点。否则 116.25 和 116.25000000000001 会把同一只铭牌框拆成两截。 */
+  function frameCornerKey(x, y) {
+    return (Math.round(x * 100) / 100) + ',' + (Math.round(y * 100) / 100);
+  }
+
+  function groupFrameRects(segs) {
+    var parent = [];
+    var k;
+    for (k = 0; k < segs.length; k++) parent.push(k);
+    function find(a) {
+      while (parent[a] !== a) {
+        parent[a] = parent[parent[a]];
+        a = parent[a];
+      }
+      return a;
+    }
+    function unite(a, b) {
+      a = find(a);
+      b = find(b);
+      if (a !== b) parent[b] = a;
+    }
+    var at = {};
+    for (k = 0; k < segs.length; k++) {
+      var s = segs[k];
+      var c1 = frameCornerKey(s.x1, s.y1);
+      var c2 = frameCornerKey(s.x2, s.y2);
+      if (at[c1] != null) unite(k, at[c1]);
+      else at[c1] = k;
+      if (at[c2] != null) unite(k, at[c2]);
+      else at[c2] = k;
+    }
+    var groups = {};
+    for (k = 0; k < segs.length; k++) {
+      var id = find(k);
+      if (!groups[id]) groups[id] = [];
+      groups[id].push(segs[k]);
+    }
+    var rects = [];
+    Object.keys(groups).forEach(function (id) {
+      var g = groups[id];
+      var x0 = Infinity;
+      var y0 = Infinity;
+      var x1 = -Infinity;
+      var y1 = -Infinity;
+      var i;
+      for (i = 0; i < g.length; i++) {
+        x0 = Math.min(x0, g[i].x1, g[i].x2);
+        y0 = Math.min(y0, g[i].y1, g[i].y2);
+        x1 = Math.max(x1, g[i].x1, g[i].x2);
+        y1 = Math.max(y1, g[i].y1, g[i].y2);
+      }
+      rects.push({ x0: x0, y0: y0, x1: x1, y1: y1, segs: g });
+    });
+    return rects;
+  }
+
+  /* 铭牌只留 CAD 那一圈框，颜色跟字。文字上的 CSS 边框藏掉，避免绿框外面再套一圈红。
+     边长超过 160 的框当房间框，不改色。母线和进线不是 net:frame，这里碰不到。 */
+  function syncPlateFrames() {
+    if (!page || page.kind !== 'power' || !hostEl) return;
+    var nodes = page.nodes || [];
+    var plates = [];
+    hostEl.querySelectorAll('.hx-tx.hx-plate-live').forEach(function (el) {
+      if (el.getAttribute('contenteditable') === 'true') return;
+      var tx = nodes[Number(el.getAttribute('data-i'))];
+      if (!tx || !tx.w || !tx.h) return;
+      var col = normPaintColor(el.style.color);
+      if (!col) return;
+      plates.push({ el: el, tx: tx, col: col });
+    });
+    if (!plates.length) return;
+    var segs = [];
+    hostEl.querySelectorAll('[data-hx-line]').forEach(function (el) {
+      if ((el.getAttribute('stroke') || '') === 'transparent') return;
+      var n = nodes[Number(el.getAttribute('data-i'))];
+      if (!n || n.t !== 'L' || n.net !== 'frame') return;
+      var ends = lineEndsOf(n);
+      if (!ends || ends.length < 2) return;
+      segs.push({ el: el, x1: ends[0].x, y1: ends[0].y, x2: ends[1].x, y2: ends[1].y });
+    });
+    if (!segs.length) return;
+    var rects = groupFrameRects(segs);
+    var i;
+    var j;
+    for (i = 0; i < rects.length; i++) {
+      var r = rects[i];
+      var rw = r.x1 - r.x0;
+      var rh = r.y1 - r.y0;
+      if (!(rw >= 8 && rh >= 8 && rw <= 160 && rh <= 160)) continue;
+      var best = null;
+      var bestScore = Infinity;
+      var area = rw * rh;
+      for (j = 0; j < plates.length; j++) {
+        var tx = plates[j].tx;
+        var cx = tx.x + tx.w / 2;
+        var cy = tx.y + tx.h / 2;
+        if (cx < r.x0 - 2 || cx > r.x1 + 2 || cy < r.y0 - 2 || cy > r.y1 + 2) continue;
+        var score = Math.abs(area - tx.w * tx.h);
+        if (score < bestScore) {
+          bestScore = score;
+          best = plates[j];
+        }
+      }
+      if (best) r.col = best.col;
+    }
+    for (i = 0; i < rects.length; i++) {
+      var inner = rects[i];
+      if (inner.col) continue;
+      var iw = inner.x1 - inner.x0;
+      var ih = inner.y1 - inner.y0;
+      if (!(iw >= 8 && ih >= 8 && iw <= 160 && ih <= 160)) continue;
+      var host = null;
+      var hostArea = Infinity;
+      for (j = 0; j < rects.length; j++) {
+        var outer = rects[j];
+        if (!outer.col || outer === inner) continue;
+        if (inner.x0 < outer.x0 - 0.8 || inner.y0 < outer.y0 - 0.8) continue;
+        if (inner.x1 > outer.x1 + 0.8 || inner.y1 > outer.y1 + 0.8) continue;
+        var oa = (outer.x1 - outer.x0) * (outer.y1 - outer.y0);
+        if ((iw * ih) >= oa - 1) continue;
+        if (oa < hostArea) {
+          hostArea = oa;
+          host = outer;
+        }
+      }
+      if (host) inner.col = host.col;
+    }
+    var hide = {};
+    for (i = 0; i < rects.length; i++) {
+      var rr = rects[i];
+      if (!rr.col) continue;
+      for (j = 0; j < rr.segs.length; j++) rr.segs[j].el.setAttribute('stroke', rr.col);
+      for (j = 0; j < plates.length; j++) {
+        var p = plates[j];
+        var pcx = p.tx.x + p.tx.w / 2;
+        var pcy = p.tx.y + p.tx.h / 2;
+        if (pcx < rr.x0 - 2 || pcx > rr.x1 + 2 || pcy < rr.y0 - 2 || pcy > rr.y1 + 2) continue;
+        hide[j] = 1;
+      }
+    }
+    for (j = 0; j < plates.length; j++) {
+      if (hide[j]) plates[j].el.style.borderColor = 'transparent';
+    }
+  }
+
+  function syncFloor5OpenPlates() {
+    var nodes = page.nodes || [];
+    var lines = [];
+    hostEl.querySelectorAll('[data-hx-line]').forEach(function (el) {
+      if ((el.getAttribute('stroke') || '') === 'transparent') return;
+      var n = nodes[Number(el.getAttribute('data-i'))];
+      if (!n || n.t !== 'L' || n.net === 'frame' || n.net === 'bus') return;
+      lines.push({
+        el: el,
+        n: n,
+        ends: lineEndsOf(n),
+        green: isGreenStroke(el.getAttribute('stroke'))
+      });
+    });
+    hostEl.querySelectorAll('.hx-tx').forEach(function (el) {
+      if (el.getAttribute('contenteditable') === 'true') return;
+      var tx = nodes[Number(el.getAttribute('data-i'))];
+      if (!tx || !tx.w || !tx.h) return;
+      var touch = [];
+      lines.forEach(function (ln) {
+        if (hitsPlate(ln.ends, tx, 12)) touch.push(ln);
+      });
+      var openLine = touch.some(function (ln) { return ln.green; });
+      if (openLine) {
+        el.style.color = '#00ff00';
+        el.style.borderColor = '#00ff00';
+        el.classList.add('hx-plate-live');
+        touch.forEach(function (ln) {
+          if (ln.green) return;
+          ln.el.setAttribute('stroke', '#00ff00');
+          ln.green = true;
+          ln.n.followKnife = 1;
+        });
+        return;
+      }
+      if (touch.some(function (ln) { return !ln.green; })) {
+        el.style.color = '#ff0000';
+        el.style.borderColor = '#ff0000';
+        el.classList.add('hx-plate-live');
+      }
+    });
+  }
+
   function paint() {
     paintTopoDevs();
     if (!page || !hostEl) return;
@@ -241,6 +462,10 @@
       el.style.borderColor = col;
       el.classList.add('hx-plate-live');
     });
+    /* 五层：开闸绿线碰到的铭牌改绿，隔着铭牌的出线也改绿。母线保持红。 */
+    if (page && /^配电室5/.test(String(page.name || ''))) syncFloor5OpenPlates();
+    /* 铭牌框跟字同色，并藏掉文字上的第二圈 CSS 边框。 */
+    syncPlateFrames();
     hostEl.querySelectorAll('[data-hx-uuid]').forEach(function (el) {
       var known = L().uuidValue(el.getAttribute('data-hx-uuid'));
       if (known) el.textContent = L().showValue(known);
@@ -545,14 +770,60 @@
     return { x: (clientX - r.left) * kx, y: (clientY - r.top) * ky };
   }
 
+  /* #screen 自己还有一层 scale（core.js）。画布平移要再乘上这一层，才落到物理像素。 */
+  function outerScreenScale() {
+    var s = w.App && Number(w.App.scale);
+    if (s > 0 && isFinite(s)) return s;
+    var el = document.getElementById('screen');
+    if (el && el.style && el.style.transform) {
+      var m = /scale\(\s*([0-9.]+)\s*\)/.exec(el.style.transform);
+      if (m) {
+        s = parseFloat(m[1]);
+        if (s > 0 && isFinite(s)) return s;
+      }
+    }
+    return 1;
+  }
+
+  /* 平移落到物理像素上。Windows 上半像素的 translate 会把细线整段裁掉。 */
+  function snapPx(v) {
+    var dpr = w.devicePixelRatio || 1;
+    var unit = dpr * outerScreenScale();
+    if (!(unit > 0)) unit = 1;
+    return Math.round(v * unit) / unit;
+  }
+
+  /* 缩进小窗口后，线在屏幕上至少 1.35px。画布缩放和整屏缩放都要算进去。
+     否则华硕这类屏上 Chrome 会把线丢掉，苹果视网膜还能看见。 */
+  function thickenStrokes(root, selector, screenScale) {
+    if (!root || !(screenScale > 0)) return;
+    var outer = outerScreenScale();
+    var min = 1.35 / (screenScale * outer);
+    root.querySelectorAll(selector).forEach(function (el) {
+      var orig = el.getAttribute('data-hx-sw');
+      if (orig == null) {
+        var raw = (el.style && el.style.strokeWidth) || el.getAttribute('stroke-width') || '1.5';
+        orig = String(parseFloat(raw) || 1.5);
+        el.setAttribute('data-hx-sw', orig);
+      }
+      var base = parseFloat(orig) || 1.5;
+      var sw = Math.max(base, min);
+      if (el.style && el.style.strokeWidth) el.style.strokeWidth = sw.toFixed(3);
+      else el.setAttribute('stroke-width', sw.toFixed(3));
+    });
+  }
+
   function applyStage(tx, ty, sc) {
     var board = stageBoard();
     if (!board) return;
+    tx = snapPx(tx);
+    ty = snapPx(ty);
     stage.tx = tx;
     stage.ty = ty;
     stage.sc = sc;
     board.style.transformOrigin = '0 0';
     board.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + sc + ')';
+    thickenStrokes(board, '[data-hx-line]', sc);
   }
 
   function zoomAt(clientX, clientY, next) {
@@ -2174,8 +2445,12 @@
     if (!st || !stage) return;
     stage.style.width = st.baseW + 'px';
     stage.style.height = st.baseH + 'px';
+    st.tx = snapPx(st.tx);
+    st.ty = snapPx(st.ty);
     stage.style.transformOrigin = '0 0';
     stage.style.transform = 'translate(' + st.tx + 'px,' + st.ty + 'px) scale(' + st.sc + ')';
+    /* CAD 用户单位先按 8px 铺开，再被适应窗口缩放。线宽仍按原文件比例，只抬高到屏幕上看得见。 */
+    thickenStrokes(stage, 'line, path, polyline, polygon, circle, ellipse', CAD_PX * st.sc);
   }
 
   function cadFit(pane) {
