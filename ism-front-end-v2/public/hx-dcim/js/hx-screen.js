@@ -77,7 +77,7 @@
       }));
     }
     if (w.HXRooms) {
-      jobs.push(w.HXRooms.load('20261107merge').catch(function (e) {
+      jobs.push(w.HXRooms.load('20261108bt').catch(function (e) {
         if (w.console) w.console.warn('[hx-rooms] 配电室布局未加载', e);
       }));
     }
@@ -154,6 +154,9 @@
   }
 
   function lineEndsOf(n) {
+    if (n.x1 != null && n.y1 != null && n.x2 != null && n.y2 != null) {
+      return [{ x: Number(n.x1), y: Number(n.y1) }, { x: Number(n.x2), y: Number(n.y2) }];
+    }
     var cx = n.x + n.w / 2;
     var cy = n.y + (n.h || 26) / 2;
     var half = n.w / 2;
@@ -242,8 +245,16 @@
     return rects;
   }
 
-  /* 铭牌只留 CAD 那一圈框，颜色跟字。文字上的 CSS 边框藏掉，避免绿框外面再套一圈红。
-     边长超过 160 的框当房间框，不改色。母线和进线不是 net:frame，这里碰不到。 */
+  /* 铭牌矩形：net 标成 frame，或 CAD 铭牌灰 #8aa0b8。没标 net 的也是同一类框。 */
+  function isPlateFrameLine(n) {
+    if (!n || n.t !== 'L') return false;
+    if (n.net === 'frame') return true;
+    return String(n.c || '').replace(/\s/g, '').toLowerCase() === '#8aa0b8';
+  }
+
+  /* 铭牌只留一圈几何描边，颜色跟字。文字上的 CSS 边框藏掉。
+     两只矩形套在一起、四边都缩进一点的，内圈是第二笔，描边藏掉。
+     边长超过 560 的框当房间框，不改色。二层按实体等比放大后，铭牌可以大于 160。母线和进线不是铭牌框，这里碰不到。 */
   function syncPlateFrames() {
     if (!page || page.kind !== 'power' || !hostEl) return;
     var nodes = page.nodes || [];
@@ -261,7 +272,7 @@
     hostEl.querySelectorAll('[data-hx-line]').forEach(function (el) {
       if ((el.getAttribute('stroke') || '') === 'transparent') return;
       var n = nodes[Number(el.getAttribute('data-i'))];
-      if (!n || n.t !== 'L' || n.net !== 'frame') return;
+      if (!isPlateFrameLine(n)) return;
       var ends = lineEndsOf(n);
       if (!ends || ends.length < 2) return;
       segs.push({ el: el, x1: ends[0].x, y1: ends[0].y, x2: ends[1].x, y2: ends[1].y });
@@ -274,7 +285,7 @@
       var r = rects[i];
       var rw = r.x1 - r.x0;
       var rh = r.y1 - r.y0;
-      if (!(rw >= 8 && rh >= 8 && rw <= 160 && rh <= 160)) continue;
+      if (!(rw >= 8 && rh >= 8 && rw <= 560 && rh <= 560)) continue;
       var best = null;
       var bestScore = Infinity;
       var area = rw * rh;
@@ -296,7 +307,7 @@
       if (inner.col) continue;
       var iw = inner.x1 - inner.x0;
       var ih = inner.y1 - inner.y0;
-      if (!(iw >= 8 && ih >= 8 && iw <= 160 && ih <= 160)) continue;
+      if (!(iw >= 8 && ih >= 8 && iw <= 560 && ih <= 560)) continue;
       var host = null;
       var hostArea = Infinity;
       for (j = 0; j < rects.length; j++) {
@@ -313,11 +324,38 @@
       }
       if (host) inner.col = host.col;
     }
+    /* 四边都缩进 1～8px 的内圈是同一只铭牌的第二笔，不描。贴边的横线不是这一种。 */
+    for (i = 0; i < rects.length; i++) {
+      var innerBox = rects[i];
+      var outerBox;
+      for (j = 0; j < rects.length; j++) {
+        if (i === j) continue;
+        outerBox = rects[j];
+        var gapL = innerBox.x0 - outerBox.x0;
+        var gapT = innerBox.y0 - outerBox.y0;
+        var gapR = outerBox.x1 - innerBox.x1;
+        var gapB = outerBox.y1 - innerBox.y1;
+        if (gapL >= 0.8 && gapT >= 0.8 && gapR >= 0.8 && gapB >= 0.8 &&
+            gapL <= 8 && gapT <= 8 && gapR <= 8 && gapB <= 8) {
+          innerBox.drop = 1;
+          break;
+        }
+      }
+    }
     var hide = {};
     for (i = 0; i < rects.length; i++) {
       var rr = rects[i];
+      if (rr.drop) {
+        for (j = 0; j < rr.segs.length; j++) rr.segs[j].el.setAttribute('stroke', 'transparent');
+        continue;
+      }
       if (!rr.col) continue;
-      for (j = 0; j < rr.segs.length; j++) rr.segs[j].el.setAttribute('stroke', rr.col);
+      var holdGray = false;
+      for (j = 0; j < rr.segs.length; j++) {
+        var gn = nodes[Number(rr.segs[j].el.getAttribute('data-i'))];
+        if (gn && gn.holdGray) holdGray = true;
+      }
+      for (j = 0; j < rr.segs.length; j++) rr.segs[j].el.setAttribute('stroke', holdGray ? '#8aa0b8' : rr.col);
       for (j = 0; j < plates.length; j++) {
         var p = plates[j];
         var pcx = p.tx.x + p.tx.w / 2;
@@ -337,7 +375,7 @@
     hostEl.querySelectorAll('[data-hx-line]').forEach(function (el) {
       if ((el.getAttribute('stroke') || '') === 'transparent') return;
       var n = nodes[Number(el.getAttribute('data-i'))];
-      if (!n || n.t !== 'L' || n.net === 'frame' || n.net === 'bus') return;
+      if (!n || n.t !== 'L' || isPlateFrameLine(n) || n.net === 'bus') return;
       lines.push({
         el: el,
         n: n,
@@ -386,6 +424,10 @@
     hostEl.querySelectorAll('[data-hx-line]').forEach(function (el) {
       var n = page.nodes[Number(el.getAttribute('data-i'))];
       if (!n) return;
+      if (n.net === 'frame') {
+        el.setAttribute('stroke', '#8aa0b8');
+        return;
+      }
       var col = null;
       /* 刀下游出线（followKnife）整段跟闸：合红分绿；其余也只落红/绿，不留 CAD 蓝紫灰 */
       if (n.followKnife && n.k && Object.prototype.hasOwnProperty.call(closedByKey, n.k)) {
@@ -1165,6 +1207,13 @@
   }
 
   function lineEnds(n) {
+    if (n.x1 != null && n.y1 != null && n.x2 != null && n.y2 != null) {
+      var x1 = Number(n.x1);
+      var y1 = Number(n.y1);
+      var x2 = Number(n.x2);
+      var y2 = Number(n.y2);
+      return { cx: (x1 + x2) / 2, cy: (y1 + y2) / 2, x1: x1, y1: y1, x2: x2, y2: y2 };
+    }
     var rad = (Number(n.a) || 0) * Math.PI / 180;
     var cos = Math.cos(rad);
     var sin = Math.sin(rad);
@@ -1238,8 +1287,9 @@
   var BLADE_VX = 18;
   var BLADE_VW = 48;
   var BLADE_VH = 124;
-  /* 与 hx.css --hx-blade-long 相同：0.92 * 60。竖刀只在 bladeFit 的五层单室用这个长轴。 */
-  var BLADE_LONG = 0.92 * KNIFE_W;
+  /* 与 hx.css --hx-blade-long 相同。横竖同一长轴，现为 140px，不要再缩回 96px 或 55px。 */
+  var BLADE_LONG = 140;
+  var BLADE_LONG_OLD = 55.2;
 
   function symDisplayBox(n) {
     if (knifeHorizontal(n)) return { w: KNIFE_H, h: KNIFE_W };
@@ -2161,9 +2211,206 @@
     pg._mainParallelFixed = 1;
   }
 
+  /* 刀符号放大后，只挪贴着旧刀端子的线头，让导体仍接到新端子。母线、铭牌不动。 */
+  function bladeAnchors(n, long) {
+    var horiz = knifeHorizontal(n);
+    var boxW = horiz ? KNIFE_H : KNIFE_W;
+    var boxH = horiz ? KNIFE_W : KNIFE_H;
+    var s = long / BLADE_VH;
+    var rw = BLADE_VW * s;
+    /* 刀片 viewBox 从 x=-6 起，导线 x=18 正在图形正中，不是从 0 量 18。 */
+    var lineX = ((BLADE_VX + 6) / BLADE_VW) * rw;
+    var vys = [0, 44, 86, 114];
+    var pts = {};
+    var i;
+    var vy;
+    if (!horiz) {
+      var ox = (boxW - rw) / 2;
+      for (i = 0; i < vys.length; i++) {
+        vy = vys[i];
+        pts[vy] = { x: Number(n.x) + ox + lineX, y: Number(n.y) + vy * s };
+      }
+      return pts;
+    }
+    var oxH = (boxW - rw) / 2;
+    var oy = (boxH - long) / 2;
+    var cx = boxW / 2;
+    var cy = boxH / 2;
+    var flip = !!n.bladeFlip;
+    for (i = 0; i < vys.length; i++) {
+      vy = vys[i];
+      var px = oxH + lineX;
+      var py = oy + vy * s;
+      var dx = px - cx;
+      var dy = py - cy;
+      var sx = flip ? (cx - dy) : (cx + dy);
+      var sy = flip ? (cy + dx) : (cy - dx);
+      pts[vy] = { x: Number(n.x) + sx, y: Number(n.y) + sy };
+    }
+    return pts;
+  }
+
+  function writeLineEnds(n, x1, y1, x2, y2) {
+    var len = Math.sqrt((x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1));
+    if (len < 0.8) {
+      n._dropLead = 1;
+      return;
+    }
+    var horiz = Math.abs(y1 - y2) <= Math.abs(x1 - x2);
+    var cx = (x1 + x2) / 2;
+    var cy = (y1 + y2) / 2;
+    var h = Number(n.h) || 26;
+    n.a = horiz ? 0 : 90;
+    n.w = len;
+    n.h = h;
+    n.x = cx - len / 2;
+    n.y = cy - h / 2;
+    if (n.x1 != null) {
+      n.x1 = x1;
+      n.y1 = y1;
+      n.x2 = x2;
+      n.y2 = y2;
+    }
+  }
+
+  function alignKnifeLeads(nodes) {
+    if (!nodes || !nodes.length) return;
+    var knives = [];
+    nodes.forEach(function (n) {
+      if (n.t !== 'I' && n.t !== 'S') return;
+      /* 竖刀只有 bladeFit 才是 140；横刀样式一律按 140。没放大的刀不要按 140 去剪线。 */
+      if (!n.bladeFit && !knifeHorizontal(n)) return;
+      knives.push(n);
+    });
+    knives.forEach(function (kn) {
+      var born = [];
+      var neu = bladeAnchors(kn, BLADE_LONG);
+      var horiz = knifeHorizontal(kn);
+      var axisAt = horiz ? (neu[0].y + neu[114].y) / 2 : (neu[0].x + neu[114].x) / 2;
+      var tipLo = horiz ? Math.min(neu[0].x, neu[114].x) : Math.min(neu[0].y, neu[114].y);
+      var tipHi = horiz ? Math.max(neu[0].x, neu[114].x) : Math.max(neu[0].y, neu[114].y);
+      /* 横刀长轴居中后会越过旁边的母线。把靠近母线的那一端收到母线上，出线端跟着走。 */
+      if (horiz) {
+        var joint = busJointOnAxis(nodes, axisAt, tipLo, tipHi);
+        if (joint != null) {
+          var dLo = Math.abs(joint - tipLo);
+          var dHi = Math.abs(joint - tipHi);
+          var d = Math.min(dLo, dHi);
+          if (d >= 4 && d <= 60) {
+            var tip = dLo <= dHi ? tipLo : tipHi;
+            kn.x = Number(kn.x) + (joint - tip);
+            neu = bladeAnchors(kn, BLADE_LONG);
+            axisAt = (neu[0].y + neu[114].y) / 2;
+            tipLo = Math.min(neu[0].x, neu[114].x);
+            tipHi = Math.max(neu[0].x, neu[114].x);
+          }
+        }
+      }
+      nodes.forEach(function (ln) {
+        if (ln.t !== 'L' || ln.net === 'frame' || ln.net === 'bus' || ln.holdGray || ln._dropLead) return;
+        var e = lineEnds(ln);
+        if (horiz) {
+          if (Math.abs(e.y1 - e.y2) > 2.5 || Math.abs(e.cy - axisAt) > 6) return;
+          var lo = Math.min(e.x1, e.x2);
+          var hi = Math.max(e.x1, e.x2);
+          if (hi < tipLo - 0.8 || lo > tipHi + 0.8) {
+            pullOutside(ln, e, true, tipLo, tipHi, axisAt);
+            return;
+          }
+          applyParts(ln, clipSpan(lo, hi, tipLo, tipHi), axisAt, true, born);
+        } else {
+          if (Math.abs(e.x1 - e.x2) > 2.5 || Math.abs(e.cx - axisAt) > 6) return;
+          var ylo = Math.min(e.y1, e.y2);
+          var yhi = Math.max(e.y1, e.y2);
+          if (yhi < tipLo - 0.8 || ylo > tipHi + 0.8) {
+            pullOutside(ln, e, false, tipLo, tipHi, axisAt);
+            return;
+          }
+          applyParts(ln, clipSpan(ylo, yhi, tipLo, tipHi), axisAt, false, born);
+        }
+      });
+      born.forEach(function (n) { nodes.push(n); });
+    });
+    var kept = [];
+    nodes.forEach(function (n) {
+      if (!n._dropLead) kept.push(n);
+    });
+    nodes.length = 0;
+    kept.forEach(function (n) { nodes.push(n); });
+
+    function clipSpan(lo, hi, c0, c1) {
+      if (hi <= c0 + 0.6 || lo >= c1 - 0.6) return [[lo, hi]];
+      var out = [];
+      if (lo < c0 - 0.6) out.push([lo, Math.min(hi, c0)]);
+      if (hi > c1 + 0.6) out.push([Math.max(lo, c1), hi]);
+      return out;
+    }
+    function applyParts(ln, parts, at, isH, bucket) {
+      if (!parts.length) {
+        ln._dropLead = 1;
+        return;
+      }
+      putSpan(ln, parts[0][0], parts[0][1], at, isH);
+      var i;
+      for (i = 1; i < parts.length; i++) {
+        var copy = {};
+        Object.keys(ln).forEach(function (k) { copy[k] = ln[k]; });
+        delete copy._dropLead;
+        putSpan(copy, parts[i][0], parts[i][1], at, isH);
+        bucket.push(copy);
+      }
+    }
+    function putSpan(ln, lo, hi, at, isH) {
+      if (isH) writeLineEnds(ln, lo, at, hi, at);
+      else writeLineEnds(ln, at, lo, at, hi);
+    }
+    /* 刀轴上、两端子之间的竖线，是这把横刀该接上的母线或抽头。 */
+    function busJointOnAxis(list, axis, lo, hi) {
+      var best = null;
+      var bestD = Infinity;
+      list.forEach(function (ln) {
+        if (ln.t !== 'L' || ln.net === 'frame' || ln.holdGray || ln._dropLead) return;
+        var e = lineEnds(ln);
+        if (Math.abs(e.x1 - e.x2) > 2.5) return;
+        var ylo = Math.min(e.y1, e.y2);
+        var yhi = Math.max(e.y1, e.y2);
+        if (yhi < axis - 2 || ylo > axis + 2) return;
+        if (yhi - ylo < 18) return;
+        var x = (e.x1 + e.x2) / 2;
+        if (x <= lo + 2 || x >= hi - 2) return;
+        var dist = Math.min(Math.abs(x - lo), Math.abs(x - hi));
+        if (dist < bestD) {
+          bestD = dist;
+          best = x;
+        }
+      });
+      return best;
+    }
+    /* 线头在刀外、离端子 2～110px：收到端子上。另一头更远，才是这把刀自己的引线。 */
+    function pullOutside(ln, e, isH, loT, hiT, axisAt) {
+      var ends = [{ x: e.x1, y: e.y1 }, { x: e.x2, y: e.y2 }];
+      var moved = false;
+      var i;
+      for (i = 0; i < ends.length; i++) {
+        var v = isH ? ends[i].x : ends[i].y;
+        var other = isH ? ends[1 - i].x : ends[1 - i].y;
+        var tip = Math.abs(v - loT) <= Math.abs(v - hiT) ? loT : hiT;
+        if ((v - tip) * (other - tip) <= 0) continue;
+        if (Math.abs(other - tip) <= Math.abs(v - tip) + 0.5) continue;
+        var gap = Math.abs(v - tip);
+        if (gap < 2 || gap > 110) continue;
+        if (isH) ends[i] = { x: tip, y: axisAt };
+        else ends[i] = { x: axisAt, y: tip };
+        moved = true;
+      }
+      if (moved) writeLineEnds(ln, ends[0].x, ends[0].y, ends[1].x, ends[1].y);
+    }
+  }
+
   function prep(pg) {
     if (!pg || pg._prepped) return pg;
     fixPowerLinesFromCadHints(pg);
+    if (pg.kind === 'power') alignKnifeLeads(pg.nodes);
     (pg.nodes || []).forEach(function (n) {
       if (n.t === 'T' && !n.k && !n.lay) {
         var k = guessKey(pg, n.s);
@@ -2692,7 +2939,7 @@
     if (pane.getAttribute('data-loaded') === code) return;
     pane.setAttribute('data-loaded', code);
     pane.innerHTML = '<div class="hx-pt">正在打开 ' + esc(code) + ' 的 CAD…</div>';
-    fetch('/hx-dcim/cad/' + encodeURIComponent(code) + '.svg?v=20261107merge')
+    fetch('/hx-dcim/cad/' + encodeURIComponent(code) + '.svg?v=20261108bt')
       .then(function (r) {
         var ct = (r.headers.get('content-type') || '').toLowerCase();
         if (!r.ok || ct.indexOf('svg') < 0) throw new Error('missing');

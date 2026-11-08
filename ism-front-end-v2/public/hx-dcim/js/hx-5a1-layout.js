@@ -83,9 +83,11 @@
     if (len < 0.5) return null;
     var cx = (a[0] + b[0]) / 2;
     var cy = (a[1] + b[1]) / 2;
+    var net = wire.net;
+    if (String(wire.c || '').replace(/\s/g, '').toLowerCase() === '#8aa0b8') net = 'frame';
     var n = {
       t: 'L', x: cx - len / 2, y: cy - 13, w: len, h: 26, a: horiz ? 0 : 90,
-      sw: wire.sw || 2, c: wire.c || RED, z: 2, lay: 1, net: wire.net, fixc: 1
+      sw: wire.sw || 2, c: wire.c || RED, z: 2, lay: 1, net: net, fixc: 1
     };
     /* 保留 421-spine / 411-spine 等标记，编辑态禁止误删 */
     if (wire.fix) n.fix = wire.fix;
@@ -100,10 +102,10 @@
     var midY = n.y + KNIFE_H / 2;
     if (n.orient === 'h') {
       var axisY = n.y + 30;
-      var long = n.bladeFit ? 55.2 : (114 * KNIFE_H / 124);
+      var long = n.bladeFit ? 140 : (114 * KNIFE_H / 124);
       return { in: { x: midX - long / 2, y: axisY }, out: { x: midX + KNIFE_W / 2 + 18, y: axisY } };
     }
-    var d = 114 * KNIFE_H / 124;
+    var d = n.bladeFit ? (140 * 114 / 124) : (114 * KNIFE_H / 124);
     return { in: { x: midX, y: n.y }, out: { x: midX, y: n.y + d } };
   }
 
@@ -196,6 +198,8 @@
     }
     function isMainBus(ln) {
       if (ln.net === 'bus') return true;
+      var horiz = Math.abs((Number(ln.a) || 0) % 180) < 1;
+      if (!horiz) return false;
       return Number(ln.w) > 280;
     }
     function isUpstream(e, taps, horizKnife) {

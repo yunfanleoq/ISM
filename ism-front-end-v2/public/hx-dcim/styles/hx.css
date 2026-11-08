@@ -171,15 +171,24 @@
   display: block; width: 100%; height: 100%; overflow: visible;
   shape-rendering: geometricPrecision;
 }
-/* 横刀长轴 = 60px 框高的 92%。五层单室竖刀用同一个长度，顶边留在进线上。 */
-.hx-sym { --hx-blade-long: 55.2px; }
+/* 横刀、竖刀同一长轴。现为 140px，不要再缩回 96px 或 55px。顶边留在进线上。 */
+.hx-sym { --hx-blade-long: 140px; }
+/* 分闸时两端按各自有没有电分色：进线端红，出线端绿。合闸两端都有电，都是红。 */
+.hx-sym.is-open .hx-k-jaw-a { color: #ff0000; }
+.hx-sym.is-open .hx-k-jaw-b { color: #00ff00; }
+.hx-sym.is-open.hx-blade-flip .hx-k-jaw-a { color: #00ff00; }
+.hx-sym.is-open.hx-blade-flip .hx-k-jaw-b { color: #ff0000; }
+.hx-sym.is-open.hx-k-tie .hx-k-jaw-a,
+.hx-sym.is-open.hx-k-tie .hx-k-jaw-b { color: #ff0000; }
 .hx-sym-h {
   display: flex; align-items: center; justify-content: center; overflow: visible;
 }
 .hx-sym-h .hx-blade {
-  width: auto; height: var(--hx-blade-long); max-height: 100%; flex: 0 0 auto;
+  width: auto; height: var(--hx-blade-long); max-height: none; flex: 0 0 auto;
   transform: rotate(-90deg); transform-origin: 50% 50%;
 }
+/* 刀尖在插入点左侧时反过来转，端子仍落在 CAD 刀长上。不影响没标 bladeFlip 的刀。 */
+.hx-sym-h.hx-blade-flip .hx-blade { transform: rotate(90deg); transform-origin: 50% 50%; }
 .hx-blade-fit:not(.hx-sym-h) .hx-blade,
 .hx-blade-fit.hx-sym-has-out:not(.hx-sym-h) .hx-blade {
   display: block; width: auto; height: var(--hx-blade-long);
@@ -217,8 +226,8 @@
   cursor: pointer;
 }
 /* 跟闸铭牌：底不透明，挡住穿进框里的线。
-   这圈 border 只留给没有 CAD 铭牌矩形的字。
-   有 net:frame 矩形时，画面把 borderColor 设成透明，只留 CAD 那一圈。 */
+   这圈 border 只留给没有几何铭牌矩形的字。
+   已经有一圈矩形（net:frame 或铭牌灰 #8aa0b8）时，画面把 borderColor 设成透明，只留那一笔。 */
 .hx-tx.hx-plate-live {
   box-sizing: border-box;
   border: 1px solid currentColor;

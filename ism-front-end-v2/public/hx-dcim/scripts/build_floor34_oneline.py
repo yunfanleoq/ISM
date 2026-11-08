@@ -341,8 +341,97 @@ def _cad_id(line, room):
     return ""
 
 
+def _floor2_plates(plates, X, Y, shift_x, shift_y):
+    boxes = []
+    for r in plates:
+        x = X(r["x0"]) + shift_x
+        y = Y(r["y1"]) + shift_y
+        boxes.append((x, y, x + r["w"] * S, y + r["h"] * S))
+    return boxes
+
+
+def _land_floor2(wires, boxes):
+    """馈线停在铭牌前就收到近边。横线收到左沿或右沿，电源在上的竖线落到上沿。
+    母线、连杆、不是朝向这只铭牌的立管不伸进去。已经穿进框的收到边上。"""
+    max_gap = 4.0 * S
+    max_len = 30.0 * S
+    landed = 0
+    out = []
+
+    def land_end(end, other, horiz, vert):
+        best = None
+        for x0, y0, x1, y1 in boxes:
+            if horiz:
+                y = end[1]
+                if not (y0 + 1.0 <= y <= y1 - 1.0):
+                    continue
+                if end[0] < x0 - 0.4 and other[0] <= end[0] + 0.6:
+                    gap = x0 - end[0]
+                    if 0.4 < gap <= max_gap and (best is None or gap < best[0]):
+                        best = (gap, x0, y)
+                elif end[0] > x1 + 0.4 and other[0] >= end[0] - 0.6:
+                    gap = end[0] - x1
+                    if 0.4 < gap <= max_gap and (best is None or gap < best[0]):
+                        best = (gap, x1, y)
+            elif vert:
+                x = end[0]
+                if not (x0 + 1.0 <= x <= x1 - 1.0):
+                    continue
+                if end[1] < y0 - 0.4 and other[1] <= end[1] + 0.6:
+                    gap = y0 - end[1]
+                    if 0.4 < gap <= max_gap and (best is None or gap < best[0]):
+                        best = (gap, x, y0)
+        return best
+
+    for w in wires:
+        if str(w.get("c", "")).lower() == "#8aa0b8" or w.get("net") == "frame":
+            out.append(w)
+            continue
+        parts = [tuple(w["pts"])]
+        for box in boxes:
+            nxt = []
+            for a, bseg in parts:
+                for p, q in _clip_one(a, bseg, box):
+                    if _dist(p, q) >= 1.0:
+                        nxt.append((p, q))
+            parts = nxt
+        for a, bseg in parts:
+            p = [a[0], a[1]]
+            q = [bseg[0], bseg[1]]
+            span = _dist(p, q)
+            horiz = abs(p[1] - q[1]) <= 1.2 and abs(p[0] - q[0]) > 1.2
+            vert = abs(p[0] - q[0]) <= 1.2 and abs(p[1] - q[1]) > 1.2
+            if span <= max_len and (horiz or vert):
+                for idx, end, other in ((0, p, q), (1, q, p)):
+                    hit = land_end(end, other, horiz, vert)
+                    if not hit:
+                        continue
+                    landed += 1
+                    if idx == 0:
+                        p = [hit[1], hit[2]]
+                    else:
+                        q = [hit[1], hit[2]]
+            nw = dict(w)
+            nw["pts"] = [[round(p[0], 2), round(p[1], 2)], [round(q[0], 2), round(q[1], 2)]]
+            out.append(nw)
+    frames = 0
+    for x0, y0, x1, y1 in boxes:
+        corners = [((x0, y0), (x1, y0)), ((x1, y0), (x1, y1)), ((x1, y1), (x0, y1)), ((x0, y1), (x0, y0))]
+        for a, bseg in corners:
+            out.append({
+                "pts": [[round(a[0], 2), round(a[1], 2)], [round(bseg[0], 2), round(bseg[1], 2)]],
+                "c": "#8aa0b8",
+                "sw": 1.25,
+                "net": "frame",
+            })
+            frames += 1
+    return out, landed, frames // 4
+
+
 def build(room, dxf_path):
     layers, _blocks, entities = cad.load_dxf(str(dxf_path))
+    # 二层竖刀长轴与横刀同为 55.2，刀尖在顶边下 114/124。横刀不放大。
+    tip_dy = (55.2 * 114.0 / 124.0) if str(room).startswith("2") else OUT_DY
     inserts = [e for e in entities if e["t"] == "INSERT" and _knife_block(e.get("name")) and "x" in e]
     inserts.sort(key=lambda e: (round(e["y"], 2), e["x"]))
     kept = []
@@ -595,10 +684,10 @@ def build(room, dxf_path):
         else:
             if oy >= iy:
                 left, top = ix - KW / 2.0, iy
-                inlet_s, outlet_s = (left + KW / 2.0, top), (left + KW / 2.0, top + OUT_DY)
+                inlet_s, outlet_s = (left + KW / 2.0, top), (left + KW / 2.0, top + tip_dy)
             else:
-                left, top = ix - KW / 2.0, iy - OUT_DY
-                inlet_s, outlet_s = (left + KW / 2.0, top + OUT_DY), (left + KW / 2.0, top)
+                left, top = ix - KW / 2.0, iy - tip_dy
+                inlet_s, outlet_s = (left + KW / 2.0, top + tip_dy), (left + KW / 2.0, top)
             orient = ""
         lines, plate = plate_lines(i, k)
         use_parts = []
@@ -659,7 +748,7 @@ def build(room, dxf_path):
         if item["orient"] == "h":
             bodies.append((x + 26.0, y + 12.0, x + 70.0, y + 48.0))
         else:
-            bodies.append((x + 10.0, y + 8.0, x + 50.0, y + OUT_DY - 4.0))
+            bodies.append((x + 10.0, y + 8.0, x + 50.0, y + tip_dy - 4.0))
 
     clipped = []
     for w in wires:
@@ -915,6 +1004,12 @@ def build(room, dxf_path):
         b["x"] = round(b["x"] + shift_x, 2)
         b["y"] = round(b["y"] + shift_y, 2)
 
+    plate_n = 0
+    landed_n = 0
+    if str(room).startswith("2"):
+        plate_boxes = _floor2_plates(plates, X, Y, shift_x, shift_y)
+        wires, landed_n, plate_n = _land_floor2(wires, plate_boxes)
+
     max_x = PAD
     max_y = PAD
     for item in spec:
@@ -957,8 +1052,8 @@ def build(room, dxf_path):
         src = "docs/refs/hangxin-screen-drawings/floor5-20261105/%s.dwg" % room
         ver = "20261106a4b4"
     elif room[0] == "2":
-        src = "docs/refs/hangxin-screen-drawings/floor2-20261106/%s.dwg" % room
-        ver = "20261106f2"
+        src = "docs/refs/hangxin-screen-drawings/floor2-20261107/%s.dwg" % room
+        ver = "20261107f2"
     else:
         src = "docs/refs/hangxin-screen-drawings/floor3-floor4-20261105/%s.dwg" % room
         ver = VERSION
@@ -976,7 +1071,8 @@ def build(room, dxf_path):
         "openEnds": open_ends,
         "notes": [
             "按 %s 模型空间的线和字绘制。横刀保持文件朝向，接到旁边的立管。铭牌框用文件矩形，字号按组码 40 再缩进框内。" % src
-        ] + (["并联竖列改成 -1 立管加小横母线: " + ",".join(series_notes)] if series_notes else []),
+        ] + (["并联竖列改成 -1 立管加小横母线: " + ",".join(series_notes)] if series_notes else [])
+        + (["二层馈线停在铭牌前的，收到框的近边。横线到左沿或右沿，竖线落到上沿。母线和不是朝向铭牌的立管不伸进框。铭牌是一圈 #8aa0b8，中间没有横杠。"] if str(room).startswith("2") else []),
         "meta": {
             "knifeCount": len(knives),
             "dwgKnives": len(kept),
@@ -991,6 +1087,8 @@ def build(room, dxf_path):
             "framesDropped": len(frames),
             "title": title,
             "scale": S,
+            "plateFrames": plate_n,
+            "feederLanded": landed_n,
         },
     }
     return doc

@@ -8,6 +8,9 @@
   }
 
   function ends(n) {
+    if (n.x1 != null && n.y1 != null && n.x2 != null && n.y2 != null) {
+      return [Number(n.x1), Number(n.y1), Number(n.x2), Number(n.y2)];
+    }
     var rad = (Number(n.a) || 0) * Math.PI / 180;
     var cos = Math.cos(rad);
     var sin = Math.sin(rad);
@@ -45,6 +48,8 @@
   var KNIFE_TEXT_DROP = 18;
 
   function underKnifeTextDrop(n, knives) {
+    /* 铭牌字和几何框是同一只矩形。再下移 18px，框就空在字的上面。 */
+    if (n.plate) return 0;
     var tw = Number(n.w) || 0;
     var cx = Number(n.x) + tw / 2;
     var ty = Number(n.y);
@@ -115,11 +120,17 @@
         dots +
       '</g>' +
       '<g class="hx-k-open" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round">' +
-        '<line x1="18" y1="0" x2="18" y2="44" stroke-linecap="butt"/>' +
-        '<line x1="18" y1="86" x2="18" y2="114" stroke-linecap="butt"/>' +
+        '<g class="hx-k-jaw-a" fill="currentColor" stroke="currentColor">' +
+          '<line x1="18" y1="0" x2="18" y2="44" stroke-linecap="butt"/>' +
+          '<circle cx="18" cy="14" r="4.15" fill="currentColor" stroke="none"/>' +
+          '<circle cx="18" cy="44" r="4.15" fill="currentColor" stroke="none"/>' +
+        '</g>' +
+        '<g class="hx-k-jaw-b" fill="currentColor" stroke="currentColor">' +
+          '<line x1="18" y1="86" x2="18" y2="114" stroke-linecap="butt"/>' +
+          '<circle cx="18" cy="86" r="4.15" fill="currentColor" stroke="none"/>' +
+        '</g>' +
         arc +
         bladeLine +
-        dots +
       '</g>' +
       '<circle cx="18" cy="114" r="4.2" fill="#ffffff"/>' +
       '</svg>';
@@ -135,8 +146,10 @@
     if (decor && power) cls += ' hx-sym-has-out';
     else if (decor) cls += ' hx-sym-full';
     if (knifeHorizontal(n)) cls += ' hx-sym-h';
+    if (n.bladeFlip) cls += ' hx-blade-flip';
     if (n.bladeFit) cls += ' hx-blade-fit';
     if (n.bladeLeft) cls += ' hx-blade-left';
+    if (n.role === 'tie') cls += ' hx-k-tie';
     if (n.hfull) cls += ' hx-sym-hf';
     var inner = knifeInner(decor && !power);
     if (decor && power) {
@@ -196,7 +209,11 @@
       for (j = i + 1; j < segs.length; j++) {
         var pt = wireCrossPoint(segs[i], segs[j]);
         if (!pt) continue;
-        var target = segs[j].li;
+        /* 没标 noHop 的照旧：后画的那根跳。两根都标了 noHop 的是穿过，不跳。 */
+        var iHop = !segs[i].n.noHop;
+        var jHop = !segs[j].n.noHop;
+        if (!iHop && !jHop) continue;
+        var target = (iHop && !jHop) ? segs[i].li : segs[j].li;
         jumps[target] = jumps[target] || [];
         jumps[target].push(pt);
       }

@@ -19,10 +19,10 @@
         var rooms = j.rooms || [];
         return Promise.all(rooms.map(function (room) {
           var fileVer = ver;
-          if (/^[34][AB][12]$/.test(room.code)) fileVer = '20261105f34';
+          if (/^[34][AB][12]$/.test(room.code)) fileVer = '20261108np';
           if (room.code === '5A4' || room.code === '5B4') fileVer = '20261107merge';
           if (room.code === '5A2' || room.code === '5A3') fileVer = '20261107merge';
-          if (/^2[AB][12]$/.test(room.code)) fileVer = '20261106f2';
+          if (/^2[AB][12]$/.test(room.code)) fileVer = '20261108bt';
           return fetch('/hx-dcim/data/hx-power-rooms/' + room.file + '?v=' + fileVer, { cache: 'no-store' })
             .then(function (r) { if (!r.ok) throw new Error(room.file); return r.json(); })
             .then(function (lay) { layouts[room.code] = lay; });
@@ -105,20 +105,35 @@
     if (spec.use) n.use = spec.use;
     if (fit) n.bladeFit = 1;
     if (spec.bladeLeft) n.bladeLeft = 1;
+    if (spec.bladeFlip) n.bladeFlip = 1;
     return n;
   }
 
   function lineNode(a, b, wire) {
-    var horiz = Math.abs(a[1] - b[1]) < 0.8;
-    var len = horiz ? Math.abs(b[0] - a[0]) : Math.abs(b[1] - a[1]);
-    if (len < 0.5) return null;
+    var dx = b[0] - a[0];
+    var dy = b[1] - a[1];
+    var elen = Math.sqrt(dx * dx + dy * dy);
+    if (elen < 0.5) return null;
+    var horiz = Math.abs(dy) < 0.8;
+    var vert = Math.abs(dx) < 0.8;
+    var len = horiz ? Math.abs(dx) : (vert ? Math.abs(dy) : elen);
     var cx = (a[0] + b[0]) / 2;
     var cy = (a[1] + b[1]) / 2;
+    var net = wire.net;
+    if (String(wire.c || '').replace(/\s/g, '').toLowerCase() === '#8aa0b8') net = 'frame';
     var n = {
       t: 'L', x: cx - len / 2, y: cy - 13, w: len, h: 26, a: horiz ? 0 : 90,
-      sw: wire.sw || 2, c: wire.c || RED, z: 2, lay: 1, net: wire.net, fixc: 1
+      sw: wire.sw || 2, c: wire.c || RED, z: 2, lay: 1, net: net, fixc: 1
     };
+    if (!horiz && !vert) {
+      n.x1 = a[0];
+      n.y1 = a[1];
+      n.x2 = b[0];
+      n.y2 = b[1];
+      n.a = 0;
+    }
     if (wire.fix) n.fix = wire.fix;
+    if (wire.noHop) n.noHop = 1;
     return n;
   }
 
@@ -128,10 +143,12 @@
     var midY = n.y + KNIFE_H / 2;
     if (n.orient === 'h') {
       var axisY = n.y + 30;
-      var long = n.bladeFit ? 55.2 : (114 * KNIFE_H / 124);
+      var long = n.bladeFit ? 140 : (114 * KNIFE_H / 124);
       return { in: { x: midX - long / 2, y: axisY }, out: { x: midX + KNIFE_W / 2 + 18, y: axisY } };
     }
     var d = 114 * KNIFE_H / 124;
+    /* 竖刀长轴与横刀同为 140，出线端跟刀尖。 */
+    if (n.bladeFit) d = 140 * 114 / 124;
     return { in: { x: midX, y: n.y }, out: { x: midX, y: n.y + d } };
   }
 
@@ -145,7 +162,7 @@
   function build(pg, lay) {
     var prefix = pg.name + '_';
     var code = codeOf(pg.name);
-    var fit = code === '5A2' || code === '5A3' || code === '5A4' || code === '5B1' || code === '5B2' || code === '5B3' || code === '5B4';
+    var fit = code === '5A2' || code === '5A3' || code === '5A4' || code === '5B1' || code === '5B2' || code === '5B3' || code === '5B4' || /^2[AB][12]$/.test(code) || /^[34][AB][12]$/.test(code);
     var scene = indexSceneKnives(pg.nodes || [], prefix);
     var nodes = [];
     var missing = [];
@@ -169,6 +186,8 @@
     (lay.texts || []).forEach(function (t) {
       var n = { t: 'T', s: t.s, x: t.x, y: t.y, w: t.w, h: t.h, fs: t.fs, c: t.c || '#ffffff', z: 6, lay: 1, al: t.al || 'c' };
       if (t.capDraw) n.capDraw = 1;
+      if (t.plate) n.plate = 1;
+      if (t.stack) n.stack = 1;
       /* UPS / 机组铭牌：补回路 key，悬停才能取数（如 5A1-U11、UPS1进线） */
       if (!n.k && t.s) {
         var ups = String(t.s).match(/(?:配电室)?(\d[AB]\d)[-_]?U(\d{2})/i);
@@ -179,11 +198,118 @@
       }
       nodes.push(n);
     });
+    if (/^[34][AB][12]$/.test(code)) {
+      addFloor34Frames(nodes);
+      landPlateLeads(nodes);
+    }
     tagOutletFollow(nodes);
     return { nodes: nodes, missing: missing };
   }
 
+  /* 柜号、kVA、母联是铭牌。房间标题和母线名称不是。 */
+  function isNameplateText(n) {
+    if (!n || n.t !== 'T' || !(n.w > 28) || !(n.h > 16)) return false;
+    if (n.w > 220 || n.h > 160) return false;
+    var s = String(n.s || '');
+    if (/母线/.test(s)) return false;
+    if (/配电室$/.test(s.replace(/\s/g, '')) && s.indexOf('\n') < 0) return false;
+    return /T[12]-|U[12]-|445|kVA/.test(s);
+  }
+
+  function addFloor34Frames(nodes) {
+    var plates = [];
+    nodes.forEach(function (n) {
+      if (!isNameplateText(n)) return;
+      n.plate = 1;
+      plates.push(n);
+    });
+    plates.forEach(function (n) {
+      var x0 = n.x;
+      var y0 = n.y;
+      var x1 = n.x + n.w;
+      var y1 = n.y + n.h;
+      var edges = [[[x0, y0], [x1, y0]], [[x1, y0], [x1, y1]], [[x1, y1], [x0, y1]], [[x0, y1], [x0, y0]]];
+      edges.forEach(function (e) {
+        var ln = lineNode(e[0], e[1], { c: '#8aa0b8', sw: 1.25, net: 'frame', noHop: 1 });
+        if (!ln) return;
+        ln.holdGray = 1;
+        ln.noHop = 1;
+        nodes.push(ln);
+      });
+    });
+  }
+
+  /* 朝铭牌去的线收到框边。缝不超过 36px 就补上，已经伸进框的收到近边。 */
+  function landPlateLeads(nodes) {
+    var plates = [];
+    nodes.forEach(function (n) {
+      if (isNameplateText(n)) plates.push(n);
+    });
+    nodes.forEach(function (ln) {
+      if (ln.t !== 'L' || ln.net === 'frame' || ln.net === 'bus' || ln.holdGray) return;
+      var ends = lineEnds(ln);
+      if (!ends || ends.length < 2) return;
+      var a = { x: ends[0].x, y: ends[0].y };
+      var b = { x: ends[1].x, y: ends[1].y };
+      var hitA = landPlateEnd(a, b, plates);
+      var hitB = landPlateEnd(b, a, plates);
+      if (!hitA && !hitB) return;
+      if (hitA) a = { x: hitA.x, y: hitA.y };
+      if (hitB) b = { x: hitB.x, y: hitB.y };
+      var dx = b.x - a.x;
+      var dy = b.y - a.y;
+      var elen = Math.sqrt(dx * dx + dy * dy);
+      if (elen < 0.8) return;
+      var horiz = Math.abs(dy) <= 1.5;
+      var len = horiz ? Math.abs(dx) : Math.abs(dy);
+      var cx = (a.x + b.x) / 2;
+      var cy = (a.y + b.y) / 2;
+      ln.a = horiz ? 0 : 90;
+      ln.w = len;
+      ln.x = cx - len / 2;
+      ln.y = cy - 13;
+      if (ln.x1 != null) {
+        ln.x1 = a.x;
+        ln.y1 = a.y;
+        ln.x2 = b.x;
+        ln.y2 = b.y;
+      }
+    });
+  }
+
+  function landPlateEnd(end, other, plates) {
+    var horiz = Math.abs(end.y - other.y) <= 1.5 && Math.abs(end.x - other.x) > 4;
+    var vert = Math.abs(end.x - other.x) <= 1.5 && Math.abs(end.y - other.y) > 4;
+    if (!horiz && !vert) return null;
+    var best = null;
+    plates.forEach(function (p) {
+      var x0 = p.x;
+      var y0 = p.y;
+      var x1 = p.x + p.w;
+      var y1 = p.y + p.h;
+      var g;
+      var hit = null;
+      if (vert && end.x > x0 + 1 && end.x < x1 - 1 && other.y < end.y - 2) {
+        if (end.y <= y0 && y0 - end.y <= 36) hit = { g: y0 - end.y, x: end.x, y: y0 };
+        else if (end.y > y0 && end.y < y1) hit = { g: end.y - y0, x: end.x, y: y0 };
+      } else if (horiz && end.y > y0 + 1 && end.y < y1 - 1) {
+        if (other.x < end.x - 2) {
+          g = Math.abs(end.x - x0);
+          if (end.x <= x0 + 2 && g <= 36) hit = { g: g, x: x0, y: end.y };
+        } else if (other.x > end.x + 2) {
+          g = Math.abs(end.x - x1);
+          if (end.x >= x1 - 2 && g <= 36) hit = { g: g, x: x1, y: end.y };
+        }
+      }
+      if (hit && (!best || hit.g < best.g)) best = hit;
+    });
+    return best;
+  }
+
   function lineEnds(ln) {
+    if (ln.x1 != null && ln.y1 != null && ln.x2 != null && ln.y2 != null) {
+      return [{ x: ln.x1, y: ln.y1 }, { x: ln.x2, y: ln.y2 }];
+    }
     var cx = ln.x + ln.w / 2;
     var cy = ln.y + 13;
     var half = ln.w / 2;
@@ -226,6 +352,8 @@
     }
     function isMainBus(ln) {
       if (ln.net === 'bus') return true;
+      var horiz = Math.abs((Number(ln.a) || 0) % 180) < 1;
+      if (!horiz) return false;
       return Number(ln.w) > 280;
     }
     function isUpstream(e, taps, horizKnife) {
