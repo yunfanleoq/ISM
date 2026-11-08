@@ -173,9 +173,9 @@
 }
 /* 横刀、竖刀同一长轴。现为 140px，不要再缩回 96px 或 55px。顶边留在进线上。 */
 .hx-sym { --hx-blade-long: 140px; }
-/* 分闸时两端按各自有没有电分色：进线端红，出线端绿。合闸两端都有电，都是红。 */
-.hx-sym.is-open .hx-k-jaw-a { color: #ff0000; }
-.hx-sym.is-open .hx-k-jaw-b { color: #00ff00; }
+/* 分闸时两端按各自有没有电分色。进线端跟电源线（红或绿），出线端绿。合闸两端都有电，都是红。 */
+.hx-sym.is-open .hx-k-jaw-a { color: var(--hx-jaw-in, #ff0000); }
+.hx-sym.is-open .hx-k-jaw-b { color: var(--hx-jaw-out, #00ff00); }
 .hx-sym.is-open.hx-blade-flip .hx-k-jaw-a { color: #00ff00; }
 .hx-sym.is-open.hx-blade-flip .hx-k-jaw-b { color: #ff0000; }
 .hx-sym.is-open.hx-k-tie .hx-k-jaw-a,

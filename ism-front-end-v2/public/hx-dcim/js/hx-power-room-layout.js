@@ -19,7 +19,7 @@
         var rooms = j.rooms || [];
         return Promise.all(rooms.map(function (room) {
           var fileVer = ver;
-          if (/^[34][AB][12]$/.test(room.code)) fileVer = '20261108np';
+          if (/^[34][AB][12]$/.test(room.code)) fileVer = '20261108cad';
           if (room.code === '5A4' || room.code === '5B4') fileVer = '20261107merge';
           if (room.code === '5A2' || room.code === '5A3') fileVer = '20261107merge';
           if (/^2[AB][12]$/.test(room.code)) fileVer = '20261108bt';

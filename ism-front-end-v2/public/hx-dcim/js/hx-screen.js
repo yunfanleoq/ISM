@@ -460,6 +460,30 @@
       el.classList.toggle('is-closed', closed);
       el.classList.toggle('is-open', !closed);
       el.style.color = closed ? '#ff0000' : '#00ff00';
+      /* 竖刀分闸：进线端跟上面那根电源线的颜色，出线端保持绿。不要把上侧母线改成绿。 */
+      if (!closed && !knifeHorizontal(n) && !el.classList.contains('hx-k-tie')) {
+        var top = Number(n.y);
+        var cx = Number(n.x) + (Number(n.w) || 60) / 2;
+        var srcGreen = false;
+        var srcSeen = false;
+        hostEl.querySelectorAll('line[data-hx-line]').forEach(function (ln) {
+          var x1 = +ln.getAttribute('x1');
+          var y1 = +ln.getAttribute('y1');
+          var x2 = +ln.getAttribute('x2');
+          var y2 = +ln.getAttribute('y2');
+          if (Math.abs(x1 - x2) > 3) return;
+          if (Math.abs((x1 + x2) / 2 - cx) > 14) return;
+          var ylo = Math.min(y1, y2);
+          var yhi = Math.max(y1, y2);
+          if (yhi < top - 6 || ylo > top + 6) return;
+          if (ylo > top + 2) return;
+          srcSeen = true;
+          if (isGreenStroke(ln.getAttribute('stroke'))) srcGreen = true;
+        });
+        if (srcSeen) el.style.setProperty('--hx-jaw-in', srcGreen ? '#00ff00' : '#ff0000');
+        else el.style.removeProperty('--hx-jaw-in');
+        el.style.setProperty('--hx-jaw-out', '#00ff00');
+      }
     });
     /* 出线侧铭牌跟闸；UPS 铭牌：进线或出线任一侧有电则红 */
     hostEl.querySelectorAll('.hx-tx').forEach(function (el) {
@@ -2273,8 +2297,45 @@
     }
   }
 
+  function nameplateBoxes(nodes) {
+    var plates = [];
+    nodes.forEach(function (n) {
+      if (n.t !== 'T' || !(n.w > 28) || !(n.h > 16) || n.w > 220 || n.h > 160) return;
+      var s = String(n.s || '');
+      if (/母线/.test(s)) return;
+      if (/配电室$/.test(s.replace(/\s/g, '')) && s.indexOf('\n') < 0) return;
+      if (!/T[12]-|U[12]-|445|kVA/.test(s)) return;
+      plates.push(n);
+    });
+    return plates;
+  }
+
+  /* 线段是否穿过铭牌内部。贴在框边上不算穿过。 */
+  function segCrossesPlate(x1, y1, x2, y2, p) {
+    var x0 = p.x;
+    var y0 = p.y;
+    var x1p = p.x + p.w;
+    var y1p = p.y + p.h;
+    if (Math.abs(y1 - y2) <= 1.5) {
+      var y = (y1 + y2) / 2;
+      if (y <= y0 + 2 || y >= y1p - 2) return false;
+      var lo = Math.min(x1, x2);
+      var hi = Math.max(x1, x2);
+      return lo < x0 + 1 && hi > x1p - 1;
+    }
+    if (Math.abs(x1 - x2) <= 1.5) {
+      var x = (x1 + x2) / 2;
+      if (x <= x0 + 2 || x >= x1p - 2) return false;
+      var ylo = Math.min(y1, y2);
+      var yhi = Math.max(y1, y2);
+      return ylo < y0 + 1 && yhi > y1p - 1;
+    }
+    return false;
+  }
+
   function alignKnifeLeads(nodes) {
     if (!nodes || !nodes.length) return;
+    var plates = nameplateBoxes(nodes);
     var knives = [];
     nodes.forEach(function (n) {
       if (n.t !== 'I' && n.t !== 'S') return;
@@ -2331,6 +2392,7 @@
       });
       born.forEach(function (n) { nodes.push(n); });
     });
+    clipPlates(nodes, plates);
     var kept = [];
     nodes.forEach(function (n) {
       if (!n._dropLead) kept.push(n);
@@ -2386,6 +2448,51 @@
       });
       return best;
     }
+    /* 已经穿过铭牌的导体从框边切开。左来的停在左沿，下来的停在上沿，另一侧另起一段。 */
+    function clipPlates(list, plateBoxes) {
+      var extra = [];
+      list.forEach(function (ln) {
+        if (ln.t !== 'L' || ln.net === 'frame' || ln.holdGray || ln._dropLead) return;
+        var e = lineEnds(ln);
+        var horiz = Math.abs(e.y1 - e.y2) <= 1.5;
+        var vert = Math.abs(e.x1 - e.x2) <= 1.5;
+        if (!horiz && !vert) return;
+        var cuts = [];
+        plateBoxes.forEach(function (p) {
+          if (!segCrossesPlate(e.x1, e.y1, e.x2, e.y2, p)) return;
+          if (horiz) cuts.push([p.x, p.x + p.w]);
+          else cuts.push([p.y, p.y + p.h]);
+        });
+        if (!cuts.length) return;
+        var lo = horiz ? Math.min(e.x1, e.x2) : Math.min(e.y1, e.y2);
+        var hi = horiz ? Math.max(e.x1, e.x2) : Math.max(e.y1, e.y2);
+        var at = horiz ? (e.y1 + e.y2) / 2 : (e.x1 + e.x2) / 2;
+        cuts.sort(function (a, b) { return a[0] - b[0]; });
+        var spans = [];
+        var cursor = lo;
+        cuts.forEach(function (c) {
+          var a = Math.max(c[0], lo);
+          if (a > cursor + 0.8) spans.push([cursor, Math.min(a, hi)]);
+          if (c[1] > cursor) cursor = c[1];
+        });
+        if (hi > cursor + 0.8) spans.push([cursor, hi]);
+        if (!spans.length) {
+          ln._dropLead = 1;
+          return;
+        }
+        putSpan(ln, spans[0][0], spans[0][1], at, horiz);
+        var i;
+        for (i = 1; i < spans.length; i++) {
+          if (spans[i][1] - spans[i][0] < 0.8) continue;
+          var copy = {};
+          Object.keys(ln).forEach(function (k) { copy[k] = ln[k]; });
+          delete copy._dropLead;
+          putSpan(copy, spans[i][0], spans[i][1], at, horiz);
+          extra.push(copy);
+        }
+      });
+      extra.forEach(function (n) { list.push(n); });
+    }
     /* 线头在刀外、离端子 2～110px：收到端子上。另一头更远，才是这把刀自己的引线。 */
     function pullOutside(ln, e, isH, loT, hiT, axisAt) {
       var ends = [{ x: e.x1, y: e.y1 }, { x: e.x2, y: e.y2 }];
@@ -2399,6 +2506,18 @@
         if (Math.abs(other - tip) <= Math.abs(v - tip) + 0.5) continue;
         var gap = Math.abs(v - tip);
         if (gap < 2 || gap > 110) continue;
+        var nx = isH ? tip : ends[i].x;
+        var ny = isH ? axisAt : tip;
+        /* 拉到刀端子时不许穿过铭牌。3B1 的 Y11 曾被从左框边拖到下一把刀，红线横穿文字。 */
+        var crossed = false;
+        var pi;
+        for (pi = 0; pi < plates.length; pi++) {
+          if (segCrossesPlate(ends[i].x, ends[i].y, nx, ny, plates[pi])) {
+            crossed = true;
+            break;
+          }
+        }
+        if (crossed) continue;
         if (isH) ends[i] = { x: tip, y: axisAt };
         else ends[i] = { x: axisAt, y: tip };
         moved = true;
