@@ -2508,16 +2508,25 @@
         if (gap < 2 || gap > 110) continue;
         var nx = isH ? tip : ends[i].x;
         var ny = isH ? axisAt : tip;
-        /* 拉到刀端子时不许穿过铭牌。3B1 的 Y11 曾被从左框边拖到下一把刀，红线横穿文字。 */
-        var crossed = false;
+        /* 线头已经停在铭牌边上就留在边上。不许再拉进框里，也不许拉过文字去够下一把刀。 */
+        var blocked = false;
         var pi;
         for (pi = 0; pi < plates.length; pi++) {
-          if (segCrossesPlate(ends[i].x, ends[i].y, nx, ny, plates[pi])) {
-            crossed = true;
-            break;
+          var p = plates[pi];
+          var rx = p.x + p.w;
+          var by = p.y + p.h;
+          if (isH && ends[i].y > p.y + 2 && ends[i].y < by - 2) {
+            if (Math.abs(ends[i].x - p.x) <= 2.5 && nx > p.x + 2) blocked = true;
+            if (Math.abs(ends[i].x - rx) <= 2.5 && nx < rx - 2) blocked = true;
           }
+          if (!isH && ends[i].x > p.x + 2 && ends[i].x < rx - 2) {
+            if (Math.abs(ends[i].y - p.y) <= 2.5 && ny > p.y + 2) blocked = true;
+            if (Math.abs(ends[i].y - by) <= 2.5 && ny < by - 2) blocked = true;
+          }
+          if (segCrossesPlate(ends[i].x, ends[i].y, nx, ny, p)) blocked = true;
+          if (blocked) break;
         }
-        if (crossed) continue;
+        if (blocked) continue;
         if (isH) ends[i] = { x: tip, y: axisAt };
         else ends[i] = { x: axisAt, y: tip };
         moved = true;
