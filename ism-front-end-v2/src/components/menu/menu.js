@@ -39,6 +39,7 @@ import {getI18nKey} from '@/utils/routerUtil'
 const {Item, SubMenu} = Menu
 
 const resolvePath = (path, params = {}) => {
+  if (typeof path !== 'string') return ''
   let _path = path
   Object.entries(params).forEach(([key, value]) => {
     _path = _path.replace(new RegExp(`:${key}`, 'g'), value)
@@ -100,7 +101,7 @@ export default {
   },
   created () {
     this.updateMenu()
-    if (this.options.length > 0 && !this.options[0].fullPath) {
+    if (this.options.length > 0) {
       this.formatOptions(this.options, '')
     }
     // 自定义国际化配置
@@ -113,8 +114,8 @@ export default {
   },
   watch: {
     options(val) {
-      if (val.length > 0 && !val[0].fullPath) {
-        this.formatOptions(this.options, '')
+      if (val.length > 0) {
+        this.formatOptions(val, '')
       }
     },
     i18n(val) {
@@ -155,19 +156,20 @@ export default {
     },
     renderMenuItem: function (h, menu) {
       let tag = 'router-link'
-      const path = resolvePath(menu.fullPath, menu.meta.params)
-      let config = {props: {to: {path, query: menu.meta.query}, }, attrs: {style: 'overflow:hidden;white-space:normal;text-overflow:clip;'}}
+      const menuPath = menu.fullPath || menu.path
+      const path = resolvePath(menuPath, menu.meta && menu.meta.params)
+      let config = {props: {to: {path, query: menu.meta && menu.meta.query}, }, attrs: {style: 'overflow:hidden;white-space:normal;text-overflow:clip;'}}
       if (menu.meta && menu.meta.link) {
         tag = 'a'
         config = {attrs: {style: 'overflow:hidden;white-space:normal;text-overflow:clip;', href: menu.meta.link, target: '_blank'}}
       }
       return h(
-        Item, {key: menu.fullPath},
+        Item, {key: menuPath},
         [
           h(tag, config,
             [
-              this.renderIcon(h, menu.meta ? menu.meta.icon : 'none', menu.fullPath),
-              this.$t(getI18nKey(menu.fullPath))
+              this.renderIcon(h, menu.meta ? menu.meta.icon : 'none', menuPath),
+              this.$t(getI18nKey(menuPath))
             ]
           )
         ]
@@ -177,8 +179,8 @@ export default {
       let this_ = this
       let subItem = [h('span', {slot: 'title', attrs: {style: 'overflow:hidden;white-space:normal;text-overflow:clip;'}},
         [
-          this.renderIcon(h, menu.meta ? menu.meta.icon : 'none', menu.fullPath),
-          this.$t(getI18nKey(menu.fullPath))
+          this.renderIcon(h, menu.meta ? menu.meta.icon : 'none', menu.fullPath || menu.path),
+          this.$t(getI18nKey(menu.fullPath || menu.path))
         ]
       )]
       let itemArr = []
@@ -216,8 +218,11 @@ export default {
     },
     formatOptions(options, parentPath) {
       options.forEach(route => {
-        let isFullPath = route.path.substring(0, 1) == '/'
-        route.fullPath = isFullPath ? route.path : parentPath + '/' + route.path
+        if (!route || typeof route.path !== 'string') return
+        if (!route.fullPath) {
+          const isFullPath = route.path.charAt(0) === '/'
+          route.fullPath = isFullPath ? route.path : (parentPath ? parentPath + '/' + route.path : '/' + route.path)
+        }
         if (route.children) {
           this.formatOptions(route.children, route.fullPath)
         }
