@@ -118,22 +118,8 @@
          {{$t(AlarmMessage)}}
         </span>
         <span slot="AlarmLevel" slot-scope="AlarmLevel">
-          <a-tag style="background-color:#0099FF ;" v-if="AlarmLevel==0">
-           {{ $t('dataModel.alarm.Tips')}}
-         </a-tag>
-          <a-tag style="background-color:#0099FF ;" v-if="AlarmLevel==1">
-           {{ $t('dataModel.alarm.Minor')}}
-         </a-tag>
-          <a-tag style="background-color:yellow ;" v-if="AlarmLevel==2">
-           {{ $t('dataModel.alarm.Importance')}}
-         </a-tag>
-          <a-tag style="background-color:orange ;" v-if="AlarmLevel==3">
-           {{ $t('dataModel.alarm.Urgency')}}
-         </a-tag>
-          <a-tag style="background-color:red ;" v-else-if="AlarmLevel==4">
-           {{ $t('dataModel.alarm.Deadly')}}
-         </a-tag>
-        </span>
+          <dict-tag dict-code="alarm_level" :value="AlarmLevel" />
+</span>
     </a-table>
     </a-spin>
 
@@ -289,23 +275,7 @@ export default {
           field: "alarmLevel",
           //自定义回调函数
           callback: value => {
-            switch (value){
-              case 0:{
-                return this.$t('dataModel.alarm.Tips')
-              }
-              case 1:{
-                return this.$t('dataModel.alarm.Minor')
-              }
-              case 2:{
-                return this.$t('dataModel.alarm.Importance')
-              }
-              case 3:{
-                return this.$t('dataModel.alarm.Urgency')
-              }
-              case 4:{
-                return this.$t('dataModel.alarm.Deadly')
-              }
-            }
+            return this.$dictLabel('alarm_level', value)
           }
         },
         "保持时间": "KeepTime",
@@ -346,23 +316,7 @@ export default {
           field: "alarmLevel",
           //自定义回调函数
           callback: value => {
-            switch (value){
-              case 0:{
-                return this.$t('dataModel.alarm.Tips')
-              }
-              case 1:{
-                return this.$t('dataModel.alarm.Minor')
-              }
-              case 2:{
-                return this.$t('dataModel.alarm.Importance')
-              }
-              case 3:{
-                return this.$t('dataModel.alarm.Urgency')
-              }
-              case 4:{
-                return this.$t('dataModel.alarm.Deadly')
-              }
-            }
+            return this.$dictLabel('alarm_level', value)
           }
         },
         "KeepTime": "KeepTime",

@@ -30,6 +30,7 @@
 
 import {getMonitorTree} from "../../services/device";
 import {sortMonitorTreeByName} from "@/utils/naturalSort";
+import {ensureProjectUuid} from "@/utils/ensureProjectUuid";
 
 export default {
   name: 'deviceTree',
@@ -84,6 +85,7 @@ export default {
     getMonitorTree(){
       let _t = this
       _t.treeLoading = true
+      ensureProjectUuid().finally(function () {
       const params = _t.treeLazy ? {lazy: true, pid: 0} : {}
       getMonitorTree(params).then(function (res){
         if(res.data.code==0)
@@ -111,6 +113,7 @@ export default {
         _t.treeData = []
       }).finally(function () {
         _t.treeLoading = false
+      })
       })
     },
     // 编辑/变更后刷新树：保留 expandedKeys 与选中态，懒加载路径逐级恢复，避免只剩 RootZone

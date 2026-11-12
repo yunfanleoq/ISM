@@ -72,12 +72,12 @@
   function loadScenes() {
     var jobs = [];
     if (w.HX5A1) {
-      jobs.push(w.HX5A1.load('20261107merge').catch(function (e) {
+      jobs.push(w.HX5A1.load('20261111t144').catch(function (e) {
         if (w.console) w.console.warn('[hx-5a1] 布局未加载，5A1 退回通用绘制', e);
       }));
     }
     if (w.HXRooms) {
-      jobs.push(w.HXRooms.load('20261108bt').catch(function (e) {
+      jobs.push(w.HXRooms.load('20261111t144').catch(function (e) {
         if (w.console) w.console.warn('[hx-rooms] 配电室布局未加载', e);
       }));
     }
@@ -350,12 +350,7 @@
         continue;
       }
       if (!rr.col) continue;
-      var holdGray = false;
-      for (j = 0; j < rr.segs.length; j++) {
-        var gn = nodes[Number(rr.segs[j].el.getAttribute('data-i'))];
-        if (gn && gn.holdGray) holdGray = true;
-      }
-      for (j = 0; j < rr.segs.length; j++) rr.segs[j].el.setAttribute('stroke', holdGray ? '#8aa0b8' : rr.col);
+      for (j = 0; j < rr.segs.length; j++) rr.segs[j].el.setAttribute('stroke', rr.col);
       for (j = 0; j < plates.length; j++) {
         var p = plates[j];
         var pcx = p.tx.x + p.tx.w / 2;
@@ -367,6 +362,86 @@
     for (j = 0; j < plates.length; j++) {
       if (hide[j]) plates[j].el.style.borderColor = 'transparent';
     }
+  }
+
+  /* 母联铭牌两端都是电源，不开绿。 */
+  function isTiePlateText(tx) {
+    return /母\s*联/.test(String(tx && tx.s || ''));
+  }
+
+  /* 柜号铭牌。母线名称、刀口柜号、房间大框不是。 */
+  function isLivePlateText(n) {
+    if (!n || n.t !== 'T' || n.knifeTag) return false;
+    if (!(n.w > 28) || !(n.h > 16) || n.w > 560 || n.h > 560) return false;
+    var s = String(n.s || '');
+    if (/母线/.test(s)) return false;
+    if (n.plate) return true;
+    return /T[12]|U[12]-|445|kVA/.test(s);
+  }
+
+  /* 框和字 = 端点落在这只铭牌上的电源线。有电红，没电绿。
+     长母线只是经过旁边时不拿来涂铭牌。母联保持红。 */
+  function syncPlateColorsFromLines() {
+    if (!page || page.kind !== 'power' || !hostEl) return;
+    var nodes = page.nodes || [];
+    var lines = [];
+    hostEl.querySelectorAll('[data-hx-line]').forEach(function (el) {
+      if ((el.getAttribute('stroke') || '') === 'transparent') return;
+      var n = nodes[Number(el.getAttribute('data-i'))];
+      if (!n || n.t !== 'L' || isPlateFrameLine(n)) return;
+      var ends = lineEndsOf(n);
+      if (!ends) return;
+      var dx = ends[0].x - ends[1].x;
+      var dy = ends[0].y - ends[1].y;
+      var len = Math.sqrt(dx * dx + dy * dy);
+      var horiz = Math.abs(dy) <= 1.5;
+      lines.push({
+        ends: ends,
+        len: len,
+        bus: n.net === 'bus' || (horiz && len > 600),
+        green: isGreenStroke(el.getAttribute('stroke'))
+      });
+    });
+    hostEl.querySelectorAll('.hx-tx').forEach(function (el) {
+      if (el.getAttribute('contenteditable') === 'true') return;
+      var tx = nodes[Number(el.getAttribute('data-i'))];
+      if (!isLivePlateText(tx)) return;
+      var feed = [];
+      var any = [];
+      lines.forEach(function (ln) {
+        if (!hitsPlate(ln.ends, tx, 10)) return;
+        any.push(ln);
+        if (!ln.bus) feed.push(ln);
+      });
+      var src = feed.length ? feed : any;
+      if (!src.length && !(tx.followKnife && tx.k)) return;
+      var col;
+      if (isTiePlateText(tx)) col = '#ff0000';
+      else if (!src.length) col = normPaintColor(el.style.color);
+      else {
+        var greens = src.filter(function (ln) { return ln.green; });
+        var reds = src.filter(function (ln) { return !ln.green; });
+        if (greens.length && !reds.length) col = '#00ff00';
+        else if (reds.length && !greens.length) col = '#ff0000';
+        else {
+          var cx = tx.x + tx.w / 2;
+          var cy = tx.y + tx.h / 2;
+          var best = null;
+          var bestD = Infinity;
+          src.forEach(function (ln) {
+            ln.ends.forEach(function (e) {
+              var d = Math.abs(e.x - cx) + Math.abs(e.y - cy);
+              if (d < bestD) { bestD = d; best = ln; }
+            });
+          });
+          col = best && best.green ? '#00ff00' : '#ff0000';
+        }
+      }
+      if (!col) return;
+      el.style.color = '#ffffff';
+      el.style.borderColor = col;
+      el.classList.add('hx-plate-live');
+    });
   }
 
   function syncFloor5OpenPlates() {
@@ -393,7 +468,7 @@
       });
       var openLine = touch.some(function (ln) { return ln.green; });
       if (openLine) {
-        el.style.color = '#00ff00';
+        el.style.color = '#ffffff';
         el.style.borderColor = '#00ff00';
         el.classList.add('hx-plate-live');
         touch.forEach(function (ln) {
@@ -485,7 +560,7 @@
         el.style.setProperty('--hx-jaw-out', '#00ff00');
       }
     });
-    /* 出线侧铭牌跟闸；UPS 铭牌：进线或出线任一侧有电则红 */
+    /* 出线侧铭牌跟闸；UPS 铭牌：进线或出线任一侧有电则红。字、框同一个颜色，仍随闸开合。 */
     hostEl.querySelectorAll('.hx-tx').forEach(function (el) {
       var n = page.nodes[Number(el.getAttribute('data-i'))];
       if (!n) return;
@@ -525,11 +600,19 @@
       }
       if (!col) return;
       el.style.color = col;
+      /* 刀口柜号只留字。上次按 CAD 矩形数把这圈空框留下了，用户要求去掉。 */
+      if (n.knifeTag) {
+        el.style.borderColor = 'transparent';
+        el.style.background = 'transparent';
+        return;
+      }
       el.style.borderColor = col;
       el.classList.add('hx-plate-live');
     });
     /* 五层：开闸绿线碰到的铭牌改绿，隔着铭牌的出线也改绿。母线保持红。 */
     if (page && /^配电室5/.test(String(page.name || ''))) syncFloor5OpenPlates();
+    /* 各层铭牌：框和字跟接到牌上的那根电源线同色。母联不涂绿。 */
+    syncPlateColorsFromLines();
     /* 铭牌框跟字同色，并藏掉文字上的第二圈 CSS 边框。 */
     syncPlateFrames();
     hostEl.querySelectorAll('[data-hx-uuid]').forEach(function (el) {
@@ -610,13 +693,67 @@
     return '<button type="button" class="hx-drill-go" data-hx-drill="1">下钻 · ' + esc(sug.item.name) + '</button>';
   }
 
+  function plateIds(text) {
+    var re = /(?:\d[AB]\d-)?(?:T\d+-\d+(?:-\d+)?|U\d+-(?:XBP|XT|X\d+(?:-\d+)*|Y\d+(?:-\d+)*))/gi;
+    var m;
+    var seen = {};
+    var out = [];
+    var s = String(text || '');
+    while ((m = re.exec(s))) {
+      if (!seen[m[0]]) {
+        seen[m[0]] = 1;
+        out.push(m[0]);
+      }
+    }
+    /* 机组号 5B2-U11。不要把 U1-X01 收进来。 */
+    var ure = /(?:配电室)?(\d[AB]\d)[-_]U(\d{2})(?![-_]\d)/gi;
+    while ((m = ure.exec(s))) {
+      var id = m[1].toUpperCase() + '-U' + m[2];
+      if (!seen[id]) {
+        seen[id] = 1;
+        out.push(id);
+      }
+    }
+    return out;
+  }
+
+  function hoverTitle(key) {
+    var s = labelOf(key);
+    if (w.HXDraw && w.HXDraw.joinCjkBreaks) s = w.HXDraw.joinCjkBreaks(s);
+    return s;
+  }
+
+  /* 标题里恰好一个设备号，却和点名前缀不是同一路：标出来，不把另一路的点摆上来。 */
+  function titleMismatch(label, key) {
+    var ids = plateIds(label);
+    if (ids.length !== 1) return '';
+    var bare = ids[0].replace(/^\d[AB]\d-/i, '').replace(/-/g, '_');
+    var keyS = String(key || '');
+    if (!bare) return '';
+    /* 机组号按整段比。U11 不能算进 U1，也不能算进别的房间。 */
+    if (/^U\d{2}$/.test(bare)) {
+      var room = ids[0].match(/^(\d[AB]\d)-/i);
+      var unitRe = new RegExp('(?:^|_)' + bare + '(?:_|$)');
+      if (!unitRe.test(keyS) || (room && keyS.toUpperCase().indexOf(room[1].toUpperCase()) < 0)) {
+        return '标题上的设备号是 ' + ids[0] + '，和测点前缀对不上，先不显示另一路的点';
+      }
+      return '';
+    }
+    if (keyS.indexOf(bare) >= 0) return '';
+    return '标题上的设备号是 ' + ids[0] + '，和测点前缀对不上，先不显示另一路的点';
+  }
+
   function hoverHtml(key, rows) {
-    var body = rows.length ? rows.map(function (p) {
-      var known = L().remembered(p) || p;
-      return '<div class="hx-pt"><span>' + esc(p.name) + '</span><b data-hx-uuid="' + esc(p.uuid) + '">' + esc(L().showValue(known)) + '</b></div>';
-    }).join('') : '<div class="hx-pt"><span>这一回路还没有测点</span></div>';
+    var title = hoverTitle(key);
+    var mismatch = titleMismatch(title, key);
+    var body = mismatch
+      ? '<div class="hx-pt"><span>' + esc(mismatch) + '</span></div>'
+      : (rows.length ? rows.map(function (p) {
+        var known = L().remembered(p) || p;
+        return '<div class="hx-pt"><span>' + esc(p.name) + '</span><b data-hx-uuid="' + esc(p.uuid) + '">' + esc(L().showValue(known)) + '</b></div>';
+      }).join('') : '<div class="hx-pt"><span>这一回路还没有测点</span></div>');
     return '<i class="hx-hover-caret" aria-hidden="true"></i><div class="hx-hover-body"><div class="hx-hover-title">' +
-      esc(labelOf(key)) + '</div>' + body + powerDrillBtn(key) + '</div>';
+      esc(title) + '</div>' + body + powerDrillBtn(key) + '</div>';
   }
 
   function knifeOf(node) {
@@ -632,49 +769,91 @@
     }
   }
 
-  /* fixed 提示框的包含块是带 transform 的 .page，不是视口。把刀的视口矩形换到这个包含块里。 */
-  function localIn(origin, el) {
-    var r = el.getBoundingClientRect();
-    if (!origin) {
-      return { left: r.left, right: r.right, top: r.top, bottom: r.bottom, cx: (r.left + r.right) / 2, cy: (r.top + r.bottom) / 2, viewW: window.innerWidth, viewH: window.innerHeight };
-    }
+  /* 看得见的区域是窗口和主画面的交集。#screen 有 transform，不能拿它的设计宽当屏幕。 */
+  function visibleBox() {
+    var main = document.querySelector('.hx-main') || document.querySelector('.page-root');
+    var vr = main ? main.getBoundingClientRect() : { left: 0, top: 0, right: window.innerWidth, bottom: window.innerHeight };
+    var left = Math.max(8, vr.left);
+    var top = Math.max(8, vr.top);
+    var right = Math.min(window.innerWidth - 8, vr.right);
+    var bottom = Math.min(window.innerHeight - 8, vr.bottom);
+    if (right - left < 80) { left = 8; right = window.innerWidth - 8; }
+    if (bottom - top < 80) { top = 8; bottom = window.innerHeight - 8; }
+    return { left: left, top: top, right: right, bottom: bottom };
+  }
+
+  function toLocal(origin, vx, vy) {
+    if (!origin) return { x: vx, y: vy };
     var o = origin.getBoundingClientRect();
     var sx = o.width ? origin.offsetWidth / o.width : 1;
     var sy = o.height ? origin.offsetHeight / o.height : 1;
-    var left = (r.left - o.left) * sx;
-    var right = (r.right - o.left) * sx;
-    var top = (r.top - o.top) * sy;
-    var bottom = (r.bottom - o.top) * sy;
-    return { left: left, right: right, top: top, bottom: bottom, cx: (left + right) / 2, cy: (top + bottom) / 2, viewW: origin.offsetWidth, viewH: origin.offsetHeight };
+    return { x: (vx - o.left) * sx, y: (vy - o.top) * sy };
   }
 
-  /* 提示框贴在刀的一侧，三角指向刀心。靠近屏幕边缘时翻到另一侧，三角仍指向这把刀。 */
+  function clearCaret(box) {
+    box.classList.remove('is-caret-left', 'is-caret-right', 'is-caret-top', 'is-caret-bottom');
+  }
+
+  /* 数据框挨着目标，指针指向目标中心。放不下就收到可见区域里，不钉到画面边上。 */
   function placeHoverOnKnife(box, el) {
-    var k = localIn(box.offsetParent, el);
-    var bw = box.offsetWidth || 420;
+    var r = el.getBoundingClientRect();
+    var vis = visibleBox();
+    var gap = 14;
+    var roomW = Math.max(160, vis.right - vis.left);
+    var roomH = Math.max(80, vis.bottom - vis.top);
+    var boxW = Math.min(420, Math.max(180, roomW - gap - 12));
+    box.style.width = boxW + 'px';
+    var body = box.querySelector('.hx-hover-body');
+    if (body) body.style.maxHeight = Math.max(72, Math.min(340, roomH - 56)) + 'px';
+    var bw = box.offsetWidth || boxW;
     var bh = box.offsetHeight || 160;
-    var gap = 18;
-    var left = k.right + gap;
-    var side = 'left';
-    if (left + bw > k.viewW - 8) {
-      left = k.left - gap - bw;
-      side = 'right';
+    var ax = (r.left + r.right) / 2;
+    var ay = (r.top + r.bottom) / 2;
+    var cands = [
+      { side: 'left', left: r.right + gap, top: ay - bh / 2 },
+      { side: 'right', left: r.left - gap - bw, top: ay - bh / 2 },
+      { side: 'top', left: ax - bw / 2, top: r.bottom + gap },
+      { side: 'bottom', left: ax - bw / 2, top: r.top - gap - bh }
+    ];
+    function overflow(c) {
+      var n = 0;
+      if (c.left < vis.left) n += vis.left - c.left;
+      if (c.left + bw > vis.right) n += c.left + bw - vis.right;
+      if (c.top < vis.top) n += vis.top - c.top;
+      if (c.top + bh > vis.bottom) n += c.top + bh - vis.bottom;
+      return n;
     }
-    if (left < 8) {
-      left = 8;
-      side = 'left';
+    var best = cands[0];
+    var bestOv = overflow(best);
+    var i;
+    for (i = 1; i < cands.length; i++) {
+      var ov = overflow(cands[i]);
+      if (ov < bestOv - 0.5) {
+        best = cands[i];
+        bestOv = ov;
+      }
     }
-    var top = k.cy - bh / 2;
-    if (top < 8) top = 8;
-    if (top + bh > k.viewH - 8) top = Math.max(8, k.viewH - bh - 8);
-    box.style.left = left + 'px';
-    box.style.top = top + 'px';
-    var caret = k.cy - top - 8;
-    if (caret < 12) caret = 12;
-    if (caret > bh - 28) caret = Math.max(12, bh - 28);
-    box.style.setProperty('--hx-caret-y', caret + 'px');
-    box.classList.toggle('is-caret-left', side === 'left');
-    box.classList.toggle('is-caret-right', side === 'right');
+    var left = best.left;
+    var top = best.top;
+    if (left < vis.left) left = vis.left;
+    if (left + bw > vis.right) left = Math.max(vis.left, vis.right - bw);
+    if (top < vis.top) top = vis.top;
+    if (top + bh > vis.bottom) top = Math.max(vis.top, vis.bottom - bh);
+    pinHover(box, left, top);
+    clearCaret(box);
+    if (best.side === 'left' || best.side === 'right') {
+      box.classList.add(best.side === 'left' ? 'is-caret-left' : 'is-caret-right');
+      var caretY = ay - top - 8;
+      if (caretY < 12) caretY = 12;
+      if (caretY > bh - 28) caretY = Math.max(12, bh - 28);
+      box.style.setProperty('--hx-caret-y', caretY + 'px');
+    } else {
+      box.classList.add(best.side === 'top' ? 'is-caret-top' : 'is-caret-bottom');
+      var caretX = ax - left - 8;
+      if (caretX < 12) caretX = 12;
+      if (caretX > bw - 28) caretX = Math.max(12, bw - 28);
+      box.style.setProperty('--hx-caret-x', caretX + 'px');
+    }
   }
 
   function placeHover(box, ev) {
@@ -684,31 +863,32 @@
       placeHoverOnKnife(box, hoverAnchor);
       return;
     }
-    box.classList.remove('is-caret-left', 'is-caret-right');
+    var target = ev && ev.target && ev.target.closest ? ev.target.closest('[data-hx-key]') : null;
+    if (target) {
+      placeHoverOnKnife(box, target);
+      return;
+    }
+    clearCaret(box);
     if (!ev) return;
-    var origin = box.offsetParent;
-    var r = ev.target && ev.target.getBoundingClientRect ? ev.target.getBoundingClientRect() : null;
+    var vis = visibleBox();
     var bw = box.offsetWidth || 420;
     var bh = box.offsetHeight || 160;
     var gap = 16;
-    var left;
-    var top;
-    if (r && r.width) {
-      var loc = localIn(origin, ev.target.closest ? (ev.target.closest('[data-hx-key]') || ev.target) : ev.target);
-      left = loc.right + gap;
-      if (left + bw > loc.viewW - 8) left = loc.left - gap - bw;
-      if (left < 8) left = 8;
-      top = loc.cy - bh / 2;
-      if (top < 8) top = 8;
-      if (top + bh > loc.viewH - 8) top = Math.max(8, loc.viewH - bh - 8);
-    } else {
-      left = ev.clientX + gap;
-      top = ev.clientY + gap;
-      if (left + bw > window.innerWidth) left = Math.max(8, ev.clientX - bw - gap);
-      if (top + bh > window.innerHeight) top = Math.max(8, ev.clientY - bh - gap);
-    }
-    box.style.left = left + 'px';
-    box.style.top = top + 'px';
+    var left = ev.clientX + gap;
+    var top = ev.clientY + gap;
+    if (left + bw > vis.right) left = Math.max(vis.left, ev.clientX - bw - gap);
+    if (top + bh > vis.bottom) top = Math.max(vis.top, ev.clientY - bh - gap);
+    if (left < vis.left) left = vis.left;
+    if (top < vis.top) top = vis.top;
+    pinHover(box, left, top);
+  }
+
+  /* 固定在视口上。放进带 transform 的画布里，最边上的框会被裁掉。 */
+  function pinHover(box, left, top) {
+    if (box.parentNode !== document.body) document.body.appendChild(box);
+    box.style.position = 'fixed';
+    box.style.left = Math.round(left) + 'px';
+    box.style.top = Math.round(top) + 'px';
   }
 
   function openHover(key, ev, anchor) {
@@ -737,7 +917,7 @@
     var box = document.getElementById('hxHover');
     if (box) {
       box.hidden = true;
-      box.classList.remove('is-caret-left', 'is-caret-right');
+      box.classList.remove('is-caret-left', 'is-caret-right', 'is-caret-top', 'is-caret-bottom');
     }
     L().allow(pageRows);
   }
@@ -810,7 +990,7 @@
         var box = document.getElementById('hxHover');
         if (box) {
           box.hidden = true;
-          box.classList.remove('is-caret-left', 'is-caret-right');
+          box.classList.remove('is-caret-left', 'is-caret-right', 'is-caret-top', 'is-caret-bottom');
         }
         L().allow(pageRows);
         return;
@@ -2300,11 +2480,11 @@
   function nameplateBoxes(nodes) {
     var plates = [];
     nodes.forEach(function (n) {
-      if (n.t !== 'T' || !(n.w > 28) || !(n.h > 16) || n.w > 220 || n.h > 160) return;
+      if (n.t !== 'T' || n.knifeTag || !(n.w > 28) || !(n.h > 16) || n.w > 220 || n.h > 160) return;
       var s = String(n.s || '');
       if (/母线/.test(s)) return;
       if (/配电室$/.test(s.replace(/\s/g, '')) && s.indexOf('\n') < 0) return;
-      if (!/T[12]-|U[12]-|445|kVA/.test(s)) return;
+      if (!/T[12](?:-|\n|$)|U[12]-|445|kVA/.test(s)) return;
       plates.push(n);
     });
     return plates;
@@ -3067,7 +3247,7 @@
     if (pane.getAttribute('data-loaded') === code) return;
     pane.setAttribute('data-loaded', code);
     pane.innerHTML = '<div class="hx-pt">正在打开 ' + esc(code) + ' 的 CAD…</div>';
-    fetch('/hx-dcim/cad/' + encodeURIComponent(code) + '.svg?v=20261108bt')
+    fetch('/hx-dcim/cad/' + encodeURIComponent(code) + '.svg?v=20261111t144')
       .then(function (r) {
         var ct = (r.headers.get('content-type') || '').toLowerCase();
         if (!r.ok || ct.indexOf('svg') < 0) throw new Error('missing');
@@ -3452,6 +3632,7 @@
       if (!page || !hostEl) return;
       page._prepped = 0;
       page._layRoom = 0;
+      page._lay5a1 = 0;
       page._cadLinesFixed = 0;
       page._mainParallelFixed = 0;
       page = prep(page);

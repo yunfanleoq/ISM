@@ -44,6 +44,7 @@ import {
 import { LOCALUPGATEALLMODBUSDATAMODEL, EXPORTALLMODBUSDATAMODEL } from "@/services/api";
 import { AUTH_TYPE, getAuthorization } from "@/utils/request";
 import axios from 'axios'
+import {dictLabel} from '@/utils/systemDict'
 
 // 全量导入点位量大（OceanBase 尤其慢），需远长于全局 30s
 const IMPORT_ALL_TIMEOUT_MS = 2 * 60 * 60 * 1000
@@ -55,16 +56,7 @@ const alarmText = (value) => {
     default: return "否"
   }
 }
-const alarmLevelText = (value) => {
-  switch (value) {
-    case 0: return "提示"
-    case 1: return "次要"
-    case 2: return "重要"
-    case 3: return "紧急"
-    case 4: return "致命"
-    default: return "提示"
-  }
-}
+const alarmLevelText = (value) => dictLabel('alarm_level', value)
 const recordText = (value) => {
   switch (value) {
     case 0: return "否"

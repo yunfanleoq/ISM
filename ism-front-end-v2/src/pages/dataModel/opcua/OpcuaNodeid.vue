@@ -278,11 +278,7 @@
                         rules: [{ required: true, message: $t('dataModel.AlarmLevel') }],
                       },
                     ]">
-                        <a-select-option value='0'>{{$t('dataModel.alarm.Tips')}}</a-select-option>
-                        <a-select-option value='1'>{{$t('dataModel.alarm.Minor')}}</a-select-option>
-                        <a-select-option value='2'>{{$t('dataModel.alarm.Importance')}}</a-select-option>
-                        <a-select-option value='3'>{{$t('dataModel.alarm.Urgency')}}</a-select-option>
-                        <a-select-option value='4'>{{$t('dataModel.alarm.Deadly')}}</a-select-option>
+                        <a-select-option v-for="opt in $dictOptions('alarm_level')" :key="opt.value" :value="opt.value">{{ opt.label }}</a-select-option>
                       </a-select>
                     </a-form-item>
                   </a-col>
@@ -492,23 +488,7 @@ export default {
           field: "alarmLevel",
           //自定义回调函数
           callback: value => {
-            switch (value){
-              case 0:{
-                return "提示"
-              }
-              case 1:{
-                return "次要"
-              }
-              case 2:{
-                return "重要"
-              }
-              case 3:{
-                return "紧急"
-              }
-              case 4:{
-                return "致命"
-              }
-            }
+            return this.$dictLabel('alarm_level', value)
           }
         },
         "告警消息": "AlarmMessage",

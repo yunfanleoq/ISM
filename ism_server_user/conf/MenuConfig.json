@@ -310,6 +310,9 @@
                         "router": "SystemParams"
                     },
                     {
+                        "router": "SystemDict"
+                    },
+                    {
                         "router": "AccessToken"
                     }
                 ]

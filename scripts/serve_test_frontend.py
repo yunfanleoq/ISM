@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 """测试环境：静态托管 dist/ 并将 /api/* 及 SSE 等后端根路径反向代理到 ism_server。"""
 
-from __future__ import annotations
-
 import argparse
 import http.client
 import http.server
@@ -12,6 +10,14 @@ import socket
 import sys
 import urllib.parse
 from pathlib import Path
+
+try:
+    ThreadingHTTPServer = http.server.ThreadingHTTPServer
+except AttributeError:
+    import socketserver
+
+    class ThreadingHTTPServer(socketserver.ThreadingMixIn, http.server.HTTPServer):
+        daemon_threads = True
 
 # EventSource 等不走 /api 前缀的后端根路径
 BACKEND_ROOT_PREFIXES = ("/SSEPushData",)
@@ -88,7 +94,7 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
         else:
             self.send_error(405, "Method Not Allowed")
 
-    def _proxy_headers(self, body_len: int) -> dict[str, str]:
+    def _proxy_headers(self, body_len):
         skip = {"host", "connection", "content-length", "proxy-connection", "keep-alive"}
         headers = {
             k: v for k, v in self.headers.items() if k.lower() not in skip
@@ -106,7 +112,7 @@ class ProxyHandler(http.server.SimpleHTTPRequestHandler):
             target_path = target_path[4:] or "/"
         return target_path
 
-    def _backend_host_port(self) -> tuple[str, int]:
+    def _backend_host_port(self):
         parsed = urllib.parse.urlparse(self.api_backend)
         host = parsed.hostname or "127.0.0.1"
         port = parsed.port or (443 if parsed.scheme == "https" else 80)
@@ -204,7 +210,8 @@ def main():
     ProxyHandler.dist_dir = dist
     ProxyHandler.api_backend = args.backend
     os.chdir(dist)
-    server = http.server.ThreadingHTTPServer(("0.0.0.0", args.port), ProxyHandler)
+    # 必须 0.0.0.0。只绑 127.0.0.1 时，浏览器访问机器 IP 会 ERR_CONNECTION_REFUSED。
+    server = ThreadingHTTPServer(("0.0.0.0", args.port), ProxyHandler)
     print(f"前端: http://0.0.0.0:{args.port}/  (dist={dist})")
     print(f"API 代理: /api/* -> {args.backend} (timeout={PROXY_TIMEOUT}s, import={IMPORT_PROXY_TIMEOUT}s, stream chunk={STREAM_CHUNK})")
     print(f"根路径代理: {', '.join(BACKEND_ROOT_PREFIXES)} -> {args.backend} (timeout={SSE_TIMEOUT}s)")

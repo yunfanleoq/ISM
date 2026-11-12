@@ -337,6 +337,9 @@ export default {
           _t.$message.error("您的软件授权已过期，请联系管理员续费或更新授权!", 6)
           _t.$router.push('/auth')
         }
+        else if (_t.$route && _t.$route.path === '/auth') {
+          _t.$router.replace('/login')
+        }
       }).catch(function(e){
         const msg = isBackendUnreachableError(e)
           ? backendUnreachableMessage()

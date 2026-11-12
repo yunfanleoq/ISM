@@ -422,26 +422,9 @@ export default {
             single[1] = _t.$t(item.AlarmName)
             const timeVal = item.EventStatus === 'recovered' ? item.ClearTime : item.HappenTime
             single[2] = formatDate(new Date(timeVal),'yyyy-MM-dd hh:mm:ss')
-            if(item.AlarmLevel==0)
-            {
-              single[3] ='<span style="color:#0099FF;">'+ _t.$t('dataModel.alarm.Tips')+'</span>'
-            }
-            else if(item.AlarmLevel==1)
-            {
-              single[3] = '<span style="color:#0099FF;">'+ _t.$t('dataModel.alarm.Minor')+'</span>'
-            }
-            else if(item.AlarmLevel==2)
-            {
-              single[3] = '<span style="color:yellow;">'+ _t.$t('dataModel.alarm.Importance')+'</span>'
-            }
-            else if(item.AlarmLevel==3)
-            {
-              single[3] = '<span style="color:orange;">'+ _t.$t('dataModel.alarm.Urgency')+'</span>'
-            }
-            else if(item.AlarmLevel==4)
-            {
-              single[3] = '<span style="color:red;">'+ _t.$t('dataModel.alarm.Deadly')+'</span>'
-            }
+            const levelColor = _t.$dictColor('alarm_level', item.AlarmLevel) || '#0099FF'
+            const levelName = _t.$dictLabel('alarm_level', item.AlarmLevel)
+            single[3] = '<span style="color:' + levelColor + ';">' + levelName + '</span>'
             if(item.EventStatus === 'recovered') {
               single[4] = '<span style="color:#52c41a;">'+ _t.$t('configComponent.AlarmList.recovered')+'</span>'
               single[5] = '<span title='+_t.$t(item.AlarmClearMessage)+'>'+ _t.$t(item.AlarmClearMessage)+'</span>'

@@ -149,6 +149,35 @@ def _inside(rect, x, y, pad=0.35):
     return rect[0] - pad <= x <= rect[2] + pad and rect[1] - pad <= y <= rect[3] + pad
 
 
+def _dangling_crossbar(a, b, segs, idx):
+    """两端悬空、只在中点搭在竖线上的短横线。出线铭牌下的十字是这种。"""
+    if abs(a[1] - b[1]) > 0.12:
+        return False
+    length = abs(a[0] - b[0])
+    if not (6.5 <= length <= 8.0):
+        return False
+
+    def free(p):
+        for i, (u, v, _c) in enumerate(segs):
+            if i == idx:
+                continue
+            if _dist(p, u) <= 0.35 or _dist(p, v) <= 0.35:
+                return False
+        return True
+
+    if not (free(a) and free(b)):
+        return False
+    mid = ((a[0] + b[0]) / 2.0, (a[1] + b[1]) / 2.0)
+    for i, (u, v, _c) in enumerate(segs):
+        if i == idx or abs(u[0] - v[0]) > 0.25:
+            continue
+        y0, y1 = sorted((u[1], v[1]))
+        x = (u[0] + v[0]) / 2.0
+        if abs(mid[0] - x) <= 0.45 and y0 - 0.2 <= mid[1] <= y1 + 0.2:
+            return True
+    return False
+
+
 def _segs_of(e):
     col = e.get("color")
     if e["t"] == "LINE" and all(k in e for k in ("x", "y", "x2", "y2")):
@@ -492,6 +521,8 @@ def build(room, dxf_path):
         return False
 
     segs = [(a, b, c) for a, b, c in segs if not drop_seg(a, b)]
+    # 出线铭牌下那根短横线两端都不接设备，只在中点搭在竖线上。一次图照搬会变成十字，跳线再拱成拐弯。
+    segs = [(a, b, c) for i, (a, b, c) in enumerate(segs) if not _dangling_crossbar(a, b, segs, i)]
 
     circles = []
     for e in entities:
@@ -919,11 +950,59 @@ def build(room, dxf_path):
                 "w": round(bw, 2), "h": round(bh, 2), "fs": fs, "c": INK, "al": "l",
             })
         else:
+            # 柜号已经写在另一块 CAD 铭牌里时，不要在刀口再贴一块 72×36。
+            own = {ln.strip() for ln in item["label"].split("\n") if ln.strip()}
+            elsewhere = False
+            for other in spec:
+                if other is item or not other.get("plate") or not other.get("label"):
+                    continue
+                if own and own <= {ln.strip() for ln in other["label"].split("\n") if ln.strip()}:
+                    elsewhere = True
+                    break
+            if elsewhere:
+                continue
             fs, shown = _fit(item["label"], 72, 36, min(item["fs0"], 11))
             texts_out.append({
                 "s": shown, "x": round(item["outlet"][0] - 28, 2), "y": round(item["outlet"][1] + 6, 2),
                 "w": 72, "h": 36, "fs": fs, "c": INK, "al": "l",
             })
+
+    # 没有归到刀上的铭牌矩形也要画出来。字在框里却没人领走时，不能丢。
+    for r in plates:
+        if id(r) in used_plates:
+            continue
+        got = []
+        for t in texts:
+            if _inside((r["x0"], r["y0"], r["x1"], r["y1"]), t["x"], t["y"], 0.6):
+                got.append(t)
+        if not got:
+            continue
+        got.sort(key=lambda t: (-t["y"], t["x"]))
+        lines = []
+        fs0 = 8.0
+        for t in got:
+            for line in t["s"].split("\n"):
+                line = line.strip()
+                if line:
+                    lines.append(line)
+                    fs0 = t["h"] * S
+        if not lines:
+            continue
+        label = "\n".join(lines)
+        bw = r["w"] * S
+        bh = r["h"] * S
+        fs = fs0
+        keep = len(lines)
+        while fs > 6.5 and len(_wrap(label, bw - 4, fs)) > keep:
+            fs -= 0.5
+        fs, shown = round(fs, 2), "\n".join(_wrap(label, bw - 4, fs))
+        dx = r.get("_dx", 0)
+        dy = r.get("_dy", 0)
+        texts_out.append({
+            "s": shown, "x": round(X(r["x0"]) + dx, 2), "y": round(Y(r["y1"]) + dy, 2),
+            "w": round(bw, 2), "h": round(bh, 2), "fs": fs, "c": INK, "al": "l",
+        })
+        used_plates.add(id(r))
 
     # 没有进铭牌的其它字（房间标题、去向）
     for t in texts:
@@ -958,6 +1037,12 @@ def build(room, dxf_path):
             "s": shown, "x": round(x, 2), "y": round(y, 2),
             "w": round(bw, 2), "h": round(bh, 2), "fs": fs, "c": "#ffffff" if title else INK, "al": "l",
         })
+
+    # 刀口上的 72×36 只是柜号，不是铭牌。字留下，标记后不要再画框。
+    # 以前这段在柜号已经出现在另一块铭牌里时把字整个丢掉，框却从别的路径又长出来。
+    for t in texts_out:
+        if abs(t["w"] - 72) < 1 and abs(t["h"] - 36) < 1 and "\n" not in t["s"]:
+            t["knifeTag"] = 1
 
     boxes = []
     for i, xf in enumerate(xfmrs):

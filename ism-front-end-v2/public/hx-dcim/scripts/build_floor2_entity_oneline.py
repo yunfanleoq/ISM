@@ -20,12 +20,27 @@ ROOMS = ["2A1", "2A2", "2B1", "2B2"]
 DXF = Path("/tmp/hx-floor2-20261107")
 ROOT = Path(__file__).resolve().parents[1]
 JSON_DIR = ROOT / "data" / "hx-power-rooms"
-VER = "20261108bt"
+VER = "20261109f3"
+# 140px 横刀翻转后，铰接在符号局部 x=119、导线轴在顶边下 30。
+# 与 hx-screen.js bladeAnchors（BLADE_LONG=140，框 98×60，bladeFlip）同一套点。
+HINGE_FLIP_X = 119.0
+HINGE_NORM_X = -21.0
+AXIS_Y = 30.0
 
 # 刀片、上下触头、直刀、铰接。一次图不画这些刀形斜线。
 KNIFE_GLYPH = {"DYDQ0201", "DYDQAA03", "DYDQAA04", "DYDQAA05", "DYDQAA09"}
 # 电流互感器。一次图不画。CAD 原图仍展开这个块。
 CT_BLOCKS = {"A$C03DD39B5"}
+
+
+def canon_block(name):
+    """DXF 里同一把刀有时写成 DYDQ0201_copy9。去掉 _copy 后缀再认刀和互感器。"""
+    if not name:
+        return ""
+    base = name.split("_copy", 1)[0]
+    if base in KNIFE_GLYPH or base in CT_BLOCKS:
+        return base
+    return name
 LOCAL_TIP = (0.0, -7.0)
 BLADE_PX = 55.2 * 114.0 / 124.0
 HALF_BOX = 55.2 / 2.0
@@ -97,15 +112,14 @@ def resolve_color(rec, layers_c, parent):
 
 
 def blade_vec(ins):
+    """和 Xform.pt 一样：先缩放再旋转。不能先旋转再乘 sx、sy。"""
     ang = math.radians(ins.get("ang") or 0.0)
     sx = ins.get("sx") or 1.0
     sy = ins.get("sy") if ins.get("sy") is not None else sx
     c, s = math.cos(ang), math.sin(ang)
     lx, ly = LOCAL_TIP
-    return (
-        sx * (lx * c - ly * s),
-        sy * (lx * s + ly * c),
-    )
+    xs, ys = sx * lx, sy * ly
+    return (xs * c - ys * s, ys * c + xs * s)
 
 
 def tagged_explode(entities, blocks, layers, layers_c):
@@ -121,7 +135,8 @@ def tagged_explode(entities, blocks, layers, layers_c):
                 child = blocks.get(name)
                 if not child:
                     continue
-                if name in CT_BLOCKS:
+                src_name = canon_block(name)
+                if src_name in CT_BLOCKS:
                     continue
                 sx = rec.get("sx") or 1.0
                 sy = rec.get("sy") if rec.get("sy") is not None else sx
@@ -131,7 +146,7 @@ def tagged_explode(entities, blocks, layers, layers_c):
                     col = layers_c.get(rec.get("layer") or "0", parent_col if parent_col is not None else 7)
                 elif int(col) == 0:
                     col = parent_col if parent_col is not None else 7
-                walk(child, xf.then(cad.Xform(rec["x"], rec["y"], sx, sy, rot)), depth + 1, name, col)
+                walk(child, xf.then(cad.Xform(rec["x"], rec["y"], sx, sy, rot)), depth + 1, src_name, col)
             else:
                 buf = []
                 cad._emit_primitive(rec, xf, layers, buf, depth)
@@ -456,6 +471,21 @@ def _on_plate_edge(p, plates):
     return False
 
 
+def _near_knife_terminal(p, knives, reach=8.0):
+    """端点沿刀轴离端子不到 reach，是接到刀的引线，不是透出去的短头。"""
+    for ins in knives:
+        vx, vy = blade_vec(ins)
+        horiz = abs(vx) >= abs(vy)
+        ix, iy = ins["x"], ins["y"]
+        for px, py in ((ix, iy), (ix + vx, iy + vy)):
+            if horiz:
+                if abs(p[1] - py) <= 0.35 and abs(p[0] - px) <= reach:
+                    return True
+            elif abs(p[0] - px) <= 0.35 and abs(p[1] - py) <= reach:
+                return True
+    return False
+
+
 def _on_knife_axis(p, knives):
     """刀片轴上的端点是端子，不是透出去的短头。"""
     for ins in knives:
@@ -558,6 +588,7 @@ def trim_overruns(segs, plates, knives):
                     _on_perp(joint, horiz, segs, i)
                     and not _on_knife_axis(free, knives)
                     and not _aimed_at_plate(free, joint, plates)
+                    and not _near_knife_terminal(free, knives, 8.0)
                 ):
                     removed += 1
                     continue
@@ -680,13 +711,257 @@ def close_bus_corners(segs):
     return extra
 
 
+def drop_dangling_crossbars(segs):
+    """两端悬空、约 7.37、只在中点搭在竖线上的短横。只从一次图去掉。"""
+    out = []
+    removed = 0
+    for i, (a, c, col) in enumerate(segs):
+        if b34._dangling_crossbar(a, c, segs, i):
+            removed += 1
+            continue
+        out.append((a, c, col))
+    return out, removed
+
+
+def join_knife_terminals(knives, segs):
+    """刀的插入点或刀尖和同轴模型线差 0.25～6 个单位时，把线收到端子上。
+    不把两根分开的母线接成一根，也不新拉一根跨过刀身的长线。"""
+    extra = []
+    seen = set()
+    for ins in knives:
+        vx, vy = blade_vec(ins)
+        horiz = abs(vx) >= abs(vy)
+        ix, iy = ins["x"], ins["y"]
+        terminals = ((ix, iy), (ix + vx, iy + vy))
+        for pi, (px, py) in enumerate(terminals):
+            ox, oy = terminals[1 - pi]
+            best = None
+            for a, c, col in segs:
+                ends = (a, c)
+                if horiz:
+                    if abs(a[1] - c[1]) > 0.15 or min(abs(a[1] - py), abs(c[1] - py)) > 0.3:
+                        continue
+                    for end, other in ((a, c), (c, a)):
+                        gap = abs(end[0] - px)
+                        if not (0.25 < gap <= 6.0 and abs(end[1] - py) <= 0.3):
+                            continue
+                        if (end[0] - px) * (px - ox) <= 0:
+                            continue
+                        if abs(other[0] - px) <= gap + 0.05:
+                            continue
+                        if best is None or gap < best[0]:
+                            best = (gap, end[0], end[1], col)
+                else:
+                    if abs(a[0] - c[0]) > 0.15 or min(abs(a[0] - px), abs(c[0] - px)) > 0.3:
+                        continue
+                    for end, other in ((a, c), (c, a)):
+                        gap = abs(end[1] - py)
+                        if not (0.25 < gap <= 6.0 and abs(end[0] - px) <= 0.3):
+                            continue
+                        if (end[1] - py) * (py - oy) <= 0:
+                            continue
+                        if abs(other[1] - py) <= gap + 0.05:
+                            continue
+                        if best is None or gap < best[0]:
+                            best = (gap, end[0], end[1], col)
+            if not best:
+                continue
+            key = (round(px, 2), round(py, 2), round(best[1], 2), round(best[2], 2))
+            if key in seen:
+                continue
+            seen.add(key)
+            extra.append(((px, py), (best[1], best[2]), best[3]))
+    return extra
+
+
+def close_axis_gaps(knives, segs, blade_span):
+    """刀端子向外差 0.05～8 个单位没碰到母线或导线时接上。
+    只往刀身外侧接，不跨过另一端，也不把两根长母线接成一根。"""
+    extra = []
+    seen = set()
+
+    def add(p, q, col):
+        if _dist(p, q) < 0.04:
+            return
+        key = (
+            round(min(p[0], q[0]), 2), round(min(p[1], q[1]), 2),
+            round(max(p[0], q[0]), 2), round(max(p[1], q[1]), 2),
+        )
+        if key in seen:
+            return
+        seen.add(key)
+        extra.append((p, q, col))
+
+    for ins in knives:
+        vx, vy = blade_vec(ins)
+        horiz = abs(vx) >= abs(vy)
+        ix, iy = ins["x"], ins["y"]
+        ends = ((ix, iy), (ix + vx, iy + vy))
+        for px, py in ends:
+            ox, oy = ends[1] if (px, py) == ends[0] else ends[0]
+            best = None
+            for a, c, col in segs:
+                if horiz:
+                    if abs(a[0] - c[0]) > 0.15:
+                        continue
+                    x = (a[0] + c[0]) / 2.0
+                    ylo, yhi = sorted((a[1], c[1]))
+                    if yhi - ylo < 4.0 or not (ylo - 0.3 <= py <= yhi + 0.3):
+                        continue
+                    gap = abs(x - px)
+                    if not (0.05 < gap <= 8.0):
+                        continue
+                    if (x - px) * (px - ox) <= 0:
+                        continue
+                    if best is None or gap < best[0]:
+                        best = (gap, (x, py), col)
+                else:
+                    if abs(a[1] - c[1]) > 0.15:
+                        continue
+                    y = (a[1] + c[1]) / 2.0
+                    xlo, xhi = sorted((a[0], c[0]))
+                    if xhi - xlo < 4.0 or not (xlo - 0.3 <= px <= xhi + 0.3):
+                        continue
+                    gap = abs(y - py)
+                    if not (0.05 < gap <= 8.0):
+                        continue
+                    if (y - py) * (py - oy) <= 0:
+                        continue
+                    if best is None or gap < best[0]:
+                        best = (gap, (px, y), col)
+            if not best:
+                continue
+            tx, ty = best[1]
+            covered = False
+            for a, c, _col in list(segs) + extra:
+                for p, other in ((a, c), (c, a)):
+                    if abs(p[0] - px) > 0.25 or abs(p[1] - py) > 0.25:
+                        continue
+                    if horiz and abs(other[1] - py) <= 0.35 and (other[0] - px) * (tx - px) > 0:
+                        covered = True
+                    if (not horiz) and abs(other[0] - px) <= 0.35 and (other[1] - py) * (ty - py) > 0:
+                        covered = True
+            if not covered:
+                add((px, py), best[1], best[2])
+    # 140px 刀尖比 CAD 刀长，出线还差不到 3 个单位时收到刀尖上。
+    for ins in knives:
+        vx, vy = blade_vec(ins)
+        if abs(vx) < abs(vy):
+            continue
+        ix, iy = ins["x"], ins["y"]
+        bus = source_bus_x(ins, list(segs) + extra)
+        if bus is None:
+            continue
+        direction = 1.0 if bus <= (ix + ix + vx) / 2.0 else -1.0
+        tip_x = bus + direction * blade_span
+        best = None
+        pool = list(segs) + extra
+        for a, c, col in pool:
+            if abs(a[1] - c[1]) > 0.15 or min(abs(a[1] - iy), abs(c[1] - iy)) > 0.35:
+                continue
+            for end, other in ((a, c), (c, a)):
+                if abs(end[1] - iy) > 0.35:
+                    continue
+                gap = abs(end[0] - tip_x)
+                if not (0.05 < gap <= 3.0):
+                    continue
+                if (end[0] - tip_x) * direction <= 0:
+                    continue
+                if abs(other[0] - tip_x) < gap:
+                    continue
+                if best is None or gap < best[0]:
+                    best = (gap, end[0], end[1], col)
+        if best:
+            add((tip_x, iy), (best[1], best[2]), best[3])
+    return extra
+
+
+def source_bus_x(ins, segs):
+    """附近长竖线的 x。只给旧的 close_axis_gaps 用。
+
+    不要用它摆横刀铰接。竖线长度必须 ≥ 8。同一列母线常被画成上段 13.5、下段 7.8，
+    上面两把会被吸到这根母线，下面两把够不着就退回插入点，或者去够更远的另一根母线。
+    铰接要落在块展开后的轴线端点上，见 horiz_power_load。"""
+    vx, vy = blade_vec(ins)
+    ix, iy = ins["x"], ins["y"]
+    ends = ((ix, iy), (ix + vx, iy + vy))
+    best = None
+    for px, py in ends:
+        ox = ends[1][0] if (px, py) == ends[0] else ends[0][0]
+        for a, c, _col in segs:
+            if abs(a[0] - c[0]) > 0.15:
+                continue
+            x = (a[0] + c[0]) / 2.0
+            ylo, yhi = sorted((a[1], c[1]))
+            if yhi - ylo < 8.0 or not (ylo - 0.4 <= py <= yhi + 0.4):
+                continue
+            gap = abs(x - px)
+            if gap > 8.0 or (x - px) * (px - ox) <= 0:
+                continue
+            if best is None or gap < best[0]:
+                best = (gap, x)
+    return None if best is None else best[1]
+
+
+def pick_cabinet(ids_at, origin, aim, horiz):
+    """认负荷侧那块铭牌。欧氏距离会把刀认成旁边一列，Y12 就绑到 Y13。"""
+    ox, oy = origin
+    ax, ay = aim
+    ranked = []
+    if horiz:
+        sign = 1.0 if ax >= ox else -1.0
+        for x, y, cid, raw in ids_at:
+            along = (x - ox) * sign
+            if along < 0.6 or along > 24 or abs(y - oy) > 2.8:
+                continue
+            ranked.append((along, cid, raw))
+    else:
+        sign = 1.0 if ay >= oy else -1.0
+        for x, y, cid, raw in ids_at:
+            along = (y - oy) * sign
+            if along < 0.6 or along > 24 or abs(x - ox) > 2.8:
+                continue
+            ranked.append((along, cid, raw))
+    ranked.sort(key=lambda item: item[0])
+    if not ranked:
+        for x, y, cid, raw in ids_at:
+            d = math.hypot(x - ox, y - oy)
+            if d > 20:
+                continue
+            ranked.append((d, cid, raw))
+        ranked.sort(key=lambda item: item[0])
+    return ranked
+
+
+# 这些室的母联测点在 T1_445，图上只写 445 或 室号-445。
+T1_BUS_TIE = {
+    "2B1", "2B2", "3A1", "3A2", "3B1", "3B2",
+    "5A3", "5A4", "5B2", "5B3", "5B4",
+}
+
+
 def cabinet_id(text, room):
-    raw = text.replace("\n", " ").strip()
-    raw = re.sub(r"^" + re.escape(room) + r"-", "", raw)
+    raw0 = text.replace("\n", " ").strip()
+    # 5A4-411-1、5A4-401：图上没写 T1，测点在 T1 下。带上室号，前端再补 T1。
+    # 445 只有测点确实在 T1 下的室才带室号，其余室仍用 445。
+    prefixed = re.search(
+        r"(?:^|\s)" + re.escape(room) + r"-(\d{3}(?:-\d+)?)(?!\d)",
+        raw0,
+    )
+    if prefixed:
+        num = prefixed.group(1)
+        if num != "445":
+            return room + "-" + num
+        if room in T1_BUS_TIE:
+            return room + "-445"
+    raw = re.sub(r"^" + re.escape(room) + r"-", "", raw0)
     m = CAB_RE.search(raw)
     if not m:
         return None
-    return next(g for g in m.groups() if g)
+    cid = next(g for g in m.groups() if g)
+    if cid == "445" and room in T1_BUS_TIE:
+        return room + "-445"
+    return cid
 
 
 def old_seg_count(path):
@@ -738,10 +1013,10 @@ def build_room(room):
             if src in CT_BLOCKS:
                 continue
             if src in KNIFE_GLYPH:
+                # 刀片、触头、DYDQAA09 那截重复的 0.75 短线都不进一次图。
+                # 以前只丢斜线，轴上的短线留下，和共享刀符号叠成第二套框。
                 n_glyph += 1
-                # 斜刀片、箭头不进一次图。轴上的导线留下，刀口那一段合闸直线另剪。
-                if not _axis_aligned((x1, y1), (x2, y2)) or _dist((x1, y1), (x2, y2)) < 0.22:
-                    continue
+                continue
             if on_rect_edge(x1, y1, x2, y2, plates):
                 continue
             if on_rect_edge(x1, y1, x2, y2, frames):
@@ -803,6 +1078,11 @@ def build_room(room):
     kept.extend(tie_extra)
     corner_extra = close_bus_corners(kept)
     kept.extend(corner_extra)
+    kept, bar_n = drop_dangling_crossbars(kept)
+    knife_join = join_knife_terminals(knives_ins, kept)
+    kept.extend(knife_join)
+    axis_join = close_axis_gaps(knives_ins, kept, 128.71 / scale)
+    kept.extend(axis_join)
 
     ct_off = 0
     ct_n = 0
@@ -853,6 +1133,8 @@ def build_room(room):
     minx, maxx = min(xs), max(xs)
     miny, maxy = min(ys), max(ys)
 
+    # 和 CAD 原图同一套模型坐标，只此一次。2A2 实测 scale=34.0531（刀长 1.4903）、PAD=100。
+    # 不是 S=12、PAD=40。套那套数会把母线和铭牌整段平移开。
     def X(x):
         return round((x - minx) * scale + PAD, 2)
 
@@ -876,14 +1158,19 @@ def build_room(room):
         horiz = abs(vx) >= abs(vy)
         if horiz:
             horiz_n += 1
-            tip_left = vx < 0
-            left_x = tx if tip_left else ix
+            # 电源在母线那一头，不跟 CAD 刀尖方向走。铰接落在母线上，刀尖朝铭牌。
+            src = source_bus_x(e, kept)
+            if src is None:
+                src = min(ix, tx)
+            hinge_on_right = src >= (ix + tx) / 2.0
+            hinge_local = HINGE_FLIP_X if hinge_on_right else HINGE_NORM_X
             spec = {
-                "x": round(X(left_x) - (25.813 if tip_left else 21.4), 2),
-                "y": round(Y(iy) - 30.0, 2),
+                "x": round(X(src) - hinge_local, 2),
+                "y": round(Y(iy) - AXIS_Y, 2),
                 "orient": "h",
+                "anchor": 1,
             }
-            if tip_left:
+            if hinge_on_right:
                 spec["bladeFlip"] = 1
             mid = ((ix + tx) / 2.0, iy)
         else:
@@ -1111,6 +1398,9 @@ def build_room(room):
             "overrun": overrun_n,
             "tieJoin": len(tie_extra),
             "corners": len(corner_extra),
+            "crossbars": bar_n,
+            "knifeJoin": len(knife_join),
+            "axisJoin": len(axis_join),
             "glyphSkipped": n_glyph,
             "axisBridges": len(bridges),
             "circuitIn": len(raw_keys),
@@ -1120,38 +1410,536 @@ def build_room(room):
     return doc, missing, plates
 
 
+def jaw_perp(ins, blade_segs):
+    """刀口相对轴线的有符号偏移。横刀正值是模型 Y 朝上，竖刀负值是朝左。"""
+    vx, vy = blade_vec(ins)
+    horiz = abs(vx) >= abs(vy)
+    ix, iy = ins["x"], ins["y"]
+    best = None
+    for x1, y1, x2, y2 in blade_segs:
+        for x, y in ((x1, y1), (x2, y2)):
+            if horiz:
+                off, along = y - iy, x - ix
+            else:
+                off, along = x - ix, y - iy
+            if abs(off) < 0.15 or abs(off) > 2.0 or abs(along) > 4.0:
+                continue
+            if best is None or abs(off) > abs(best):
+                best = off
+    return 0.0 if best is None else best
+
+
+# bladeAnchors 里 vy=0 与 vy=114 的间距。画面长轴是 140px，导线两端是这个数。
+SYMBOL_AXIS_PX = 128.71
+
+
+def glyph_axis_ends(ins, glyph_lines):
+    """横刀块展开后，落在刀轴上的笔画左右端。铰接和刀尖对这两个端点，不对插入点。"""
+    vx, vy = blade_vec(ins)
+    if abs(vx) < abs(vy):
+        return None
+    iy = ins["y"]
+    ix = ins["x"]
+    xs = []
+    for x1, y1, x2, y2 in glyph_lines:
+        if abs(y1 - iy) > 0.35 or abs(y2 - iy) > 0.35:
+            continue
+        if max(x1, x2) < ix - 12 or min(x1, x2) > ix + 12:
+            continue
+        xs.append(x1)
+        xs.append(x2)
+    if len(xs) < 2:
+        return None
+    return min(xs), max(xs)
+
+
+def _vert_at(x, y, segs, min_len=4.0):
+    for a, c, _col in segs:
+        if abs(a[0] - c[0]) > 0.15 or abs(a[1] - c[1]) < min_len:
+            continue
+        vx = (a[0] + c[0]) / 2.0
+        lo, hi = (a[1], c[1]) if a[1] <= c[1] else (c[1], a[1])
+        if abs(vx - x) <= 0.25 and lo - 0.35 <= y <= hi + 0.35:
+            return True
+    return False
+
+
+def _outward_stub(end, other, y, segs):
+    """贴着轴线端点、朝刀身外侧走的最短横线。返回 (近端 x, 远端 x, 颜色)。"""
+    best = None
+    for a, c, col in segs:
+        if abs(a[1] - c[1]) > 0.15 or abs((a[1] + c[1]) / 2.0 - y) > 0.22:
+            continue
+        for near, far in ((a, c), (c, a)):
+            if abs(near[1] - y) > 0.25 or abs(near[0] - end) > 0.35:
+                continue
+            if (far[0] - end) * (end - other) <= 0.05:
+                continue
+            dist = abs(far[0] - near[0])
+            if dist < 0.05:
+                continue
+            if best is None or dist < best[0]:
+                best = (dist, near[0], far[0], col)
+    if best is None:
+        return None
+    return best[1], best[2], best[3]
+
+
+def vert_glyph_span(ins, glyph_lines):
+    """竖刀整组笔画在刀轴上的上下端。含 DYDQAA05 / DYDQAA09，不是只有 DYDQ0201 那一截。"""
+    ix, iy = ins["x"], ins["y"]
+    ys = []
+    for x1, y1, x2, y2 in glyph_lines:
+        if abs(x1 - ix) > 0.45 or abs(x2 - ix) > 0.45:
+            continue
+        if max(y1, y2) < iy - 12 or min(y1, y2) > iy + 12:
+            continue
+        ys.append(y1)
+        ys.append(y2)
+    if len(ys) < 2:
+        return None
+    return min(ys), max(ys)
+
+
+def _vert_stub(x, y, segs, direction):
+    """贴着 (x, y)、朝 direction（+1 模型 Y 向上）走的最短竖线。返回 (近端 y, 远端 y, 颜色)。"""
+    best = None
+    for a, c, col in segs:
+        if abs(a[0] - c[0]) > 0.2:
+            continue
+        if abs((a[0] + c[0]) / 2.0 - x) > 0.35:
+            continue
+        for near, far in ((a, c), (c, a)):
+            if abs(near[0] - x) > 0.4 or abs(near[1] - y) > 0.45:
+                continue
+            if (far[1] - y) * direction <= 0.05:
+                continue
+            dist = abs(far[1] - near[1])
+            if dist < 0.05:
+                continue
+            if best is None or dist < best[0]:
+                best = (dist, near[1], far[1], col)
+    if best is None:
+        return None
+    return best[1], best[2], best[3]
+
+
+def _short_horiz_at(x, y, segs, max_len=12.0):
+    """刀轴端落在一根短横上（成对小母线，或进线顶上约 7.37 的抽头）。长母线不算。"""
+    best = None
+    for a, c, col in segs:
+        if abs(a[1] - c[1]) > 0.2:
+            continue
+        yy = (a[1] + c[1]) / 2.0
+        if abs(yy - y) > 0.3:
+            continue
+        xlo, xhi = (a[0], c[0]) if a[0] <= c[0] else (c[0], a[0])
+        length = xhi - xlo
+        if length < 0.3 or length > max_len:
+            continue
+        if x < xlo - 0.35 or x > xhi + 0.35:
+            continue
+        if best is None or length < best[0]:
+            best = (length, yy, col)
+    if best is None:
+        return None
+    return best[1], best[2]
+
+
+def horiz_power_load(glo, ghi, y, segs):
+    """电源侧轴线端点，负荷侧轴线端点。返回的是刀块端点，不是母线 x。"""
+    left_on = _vert_at(glo, y, segs)
+    right_on = _vert_at(ghi, y, segs)
+    if left_on and not right_on:
+        return glo, ghi
+    if right_on and not left_on:
+        return ghi, glo
+    left = _outward_stub(glo, ghi, y, segs)
+    right = _outward_stub(ghi, glo, y, segs)
+
+    def on_bus(hit):
+        return bool(hit) and _vert_at(hit[1], y, segs)
+
+    if on_bus(left) and not on_bus(right):
+        return glo, ghi
+    if on_bus(right) and not on_bus(left):
+        return ghi, glo
+    if left and right:
+        if abs(left[1] - left[0]) <= abs(right[1] - right[0]):
+            return glo, ghi
+        return ghi, glo
+    if right and not left:
+        return ghi, glo
+    return glo, ghi
+
+
+LITERAL_VER = "20261111t142"
+
+
+def build_literal(room, dxf_path, floor=None):
+    """一次图和 SVG 同一套展开。只换刀、去掉互感器。铰接不吸母线。
+
+    横刀铰接放在块展开后的电源侧轴线端点。负荷侧只补到原来那根馈线的近端。
+    竖刀符号顶在 DYDQ0201 插入点，块外导线停在整组刀轴的端点。哪一端有块外的线，
+    就只把符号这一端补到那根线的近端。上端有的是向上的短竖线，有的是落在短横上；
+    下端是向下的馈线。没有块外导线的那一端不补。不把馈线拉到铭牌，不把两根母线接起来。
+    """
+    layers, blocks, entities = cad.load_dxf(str(dxf_path))
+    layers_c = layer_colors(str(dxf_path))
+    knives_ins = [
+        e for e in entities
+        if e["t"] == "INSERT" and canon_block(e.get("name")) == "DYDQ0201" and "x" in e
+    ]
+    if not knives_ins:
+        raise SystemExit("%s 没有 DYDQ0201" % room)
+    lengths = sorted(math.hypot(*blade_vec(e)) for e in knives_ins)
+    blade_len = lengths[len(lengths) // 2]
+    if blade_len < 0.2:
+        raise SystemExit("%s 刀长异常 %s" % (room, blade_len))
+    scale = BLADE_PX / blade_len
+    plates = plates_of(entities)
+    prims = tagged_explode(entities, blocks, layers, layers_c)
+
+    blade_segs = []
+    glyph_lines = []
+    kept = []
+    texts = []
+    n_glyph = 0
+    n_circle = 0
+    for prim, color, src in prims:
+        kind = prim[0]
+        if src in KNIFE_GLYPH or src in CT_BLOCKS:
+            n_glyph += 1
+            if kind == "L" and src in KNIFE_GLYPH:
+                glyph_lines.append((prim[1], prim[2], prim[3], prim[4]))
+                if src == "DYDQ0201":
+                    blade_segs.append((prim[1], prim[2], prim[3], prim[4]))
+            continue
+        if kind == "L":
+            _, x1, y1, x2, y2, _lw = prim
+            if _dist((x1, y1), (x2, y2)) < 0.02:
+                continue
+            kept.append(((x1, y1), (x2, y2), color))
+        elif kind == "C":
+            _, cx, cy, r, _lw = prim
+            if r <= 0.01:
+                continue
+            n_circle += 1
+            for a, c in circle_segs(cx, cy, r):
+                kept.append((a, c, color))
+        elif kind == "T":
+            _, x, y, h, s, col, row, _ls, title, _lw = prim
+            if not s or not str(s).strip() or (h < 0.05 and not title):
+                continue
+            texts.append({
+                "x": x, "y": y, "h": h, "s": s, "col": col, "row": row, "title": bool(title),
+            })
+
+    xs, ys = [], []
+    for p, q, _c in kept:
+        xs += [p[0], q[0]]
+        ys += [p[1], q[1]]
+    for t in texts:
+        xs.append(t["x"])
+        ys.append(t["y"])
+    for x0, y0, x1, y1 in plates:
+        xs += [x0, x1]
+        ys += [y0, y1]
+    for e in knives_ins:
+        vx, vy = blade_vec(e)
+        xs += [e["x"], e["x"] + vx]
+        ys += [e["y"], e["y"] + vy]
+    minx, maxx = min(xs), max(xs)
+    miny, maxy = min(ys), max(ys)
+
+    def X(x):
+        return round((x - minx) * scale + PAD, 2)
+
+    def Y(y):
+        return round((maxy - y) * scale + PAD, 2)
+
+    wires = []
+    seen = set()
+    for p, q, color in kept:
+        key = seg_key(p, q)
+        if key in seen:
+            continue
+        seen.add(key)
+        sx1, sy1, sx2, sy2 = X(p[0]), Y(p[1]), X(q[0]), Y(q[1])
+        if math.hypot(sx2 - sx1, sy2 - sy1) < 0.5:
+            continue
+        wire = {"pts": [[sx1, sy1], [sx2, sy2]], "c": color, "sw": 2, "noHop": 1}
+        if on_rect_edge(p[0], p[1], q[0], q[1], plates):
+            wire["net"] = "frame"
+            wire["sw"] = 1.25
+        wires.append(wire)
+
+    ids_at = []
+    for t in texts:
+        cid = cabinet_id(t["s"], room)
+        if cid:
+            ids_at.append((t["x"], t["y"], cid, t["s"].replace("\n", " ")))
+    knife_specs = []
+    used = {}
+    horiz_n = 0
+    jaw_up_n = 0
+    tip_leads = 0
+    vert_up_stub = 0
+    vert_up_tap = 0
+    vert_down = 0
+    lead_seen = set()
+    reach = SYMBOL_AXIS_PX / scale
+
+    def add_lead(p, q, col):
+        if _dist(p, q) < 0.05:
+            return False
+        key = seg_key(p, q)
+        if key in lead_seen or key in seen:
+            return False
+        lead_seen.add(key)
+        wires.append({
+            "pts": [[X(p[0]), Y(p[1])], [X(q[0]), Y(q[1])]],
+            "c": col, "sw": 2, "noHop": 1,
+        })
+        return True
+    for e in knives_ins:
+        vx, vy = blade_vec(e)
+        ix, iy = e["x"], e["y"]
+        tx, ty = ix + vx, iy + vy
+        horiz = abs(vx) >= abs(vy)
+        jaw = jaw_perp(e, blade_segs)
+        if horiz:
+            horiz_n += 1
+            ends = glyph_axis_ends(e, glyph_lines)
+            if ends:
+                glo, ghi = ends
+                power, load = horiz_power_load(glo, ghi, iy, kept)
+            else:
+                power, load = min(ix, tx), max(ix, tx)
+            hinge_on_right = abs(power - (ghi if ends else max(ix, tx))) <= abs(power - (glo if ends else min(ix, tx)))
+            hinge_local = HINGE_FLIP_X if hinge_on_right else HINGE_NORM_X
+            spec = {
+                "x": round(X(power) - hinge_local, 2),
+                "y": round(Y(iy) - AXIS_Y, 2),
+                "orient": "h",
+                "anchor": 1,
+            }
+            if hinge_on_right:
+                spec["bladeFlip"] = 1
+                if jaw > 0:
+                    spec["jawUp"] = 1
+                    jaw_up_n += 1
+            elif jaw > 0:
+                jaw_up_n += 1
+            # 负荷侧：符号尖比块外馈线的近端短，才补到这根馈线的近端。不拉到母线，不拉到铭牌。
+            sign = 1.0 if load >= power else -1.0
+            tip = power + sign * reach
+            hit = _outward_stub(load, power, iy, kept) if ends else None
+            if hit and (hit[0] - tip) * sign > 0.05 and abs(hit[0] - tip) <= 8.0:
+                if add_lead((tip, iy), (hit[0], iy), hit[2]):
+                    tip_leads += 1
+            # 电源侧短头已经贴着铰接就不加。铰接不挪。近端离铰接超过吸附公差才补到近端。
+            phit = _outward_stub(power, load, iy, kept) if ends else None
+            if phit and 0.4 < abs(phit[0] - power) <= 4.0:
+                if add_lead((power, iy), (phit[0], iy), phit[2]):
+                    tip_leads += 1
+            aim_o = (power, iy)
+            aim_a = (load, iy)
+        else:
+            upper_y = iy if iy >= ty else ty
+            upper_x = ix if iy >= ty else tx
+            spec = {
+                "x": round(X(upper_x) - 30.0, 2),
+                "y": round(Y(upper_y), 2),
+                "orient": "v",
+            }
+            if jaw < 0:
+                spec["bladeLeft"] = 1
+            span = vert_glyph_span(e, glyph_lines)
+            low_y = min(iy, ty)
+            if span:
+                glo, ghi = span
+                low_y = glo
+                # 上端：块外是向上的短竖线，或刀轴落在一根短横上。只补到那根线，不加长它。
+                up = _vert_stub(upper_x, ghi, kept, 1.0)
+                if up and 0.08 < (up[0] - upper_y) <= 6.0:
+                    if add_lead((upper_x, upper_y), (upper_x, up[0]), up[2]):
+                        vert_up_stub += 1
+                elif up is None:
+                    tap = _short_horiz_at(upper_x, ghi, kept)
+                    if tap and 0.08 < (tap[0] - upper_y) <= 6.0:
+                        if add_lead((upper_x, upper_y), (upper_x, tap[0]), tap[1]):
+                            vert_up_tap += 1
+                # 下端：块外是向下的馈线。只补到这根线的上端。馈线自己停在铭牌前的那段不动。
+                down = _vert_stub(upper_x, glo, kept, -1.0)
+                sym_bot = upper_y - reach
+                if down and 0.08 < (sym_bot - down[0]) <= 6.0:
+                    if add_lead((upper_x, sym_bot), (upper_x, down[0]), down[2]):
+                        vert_down += 1
+            aim_o = (upper_x, upper_y)
+            aim_a = (upper_x, low_y)
+        ranked = pick_cabinet(ids_at, aim_o, aim_a, horiz)
+        chosen = None
+        for item in ranked:
+            if item[1] not in used:
+                chosen = item
+                break
+        if chosen is None and ranked:
+            chosen = ranked[0]
+        cad_id = chosen[1] if chosen else "K%d" % (len(knife_specs) + 1)
+        if cad_id in used:
+            used[cad_id] += 1
+            cad_id = "%s@%d" % (cad_id, used[cad_id])
+        else:
+            used[cad_id] = 1
+        spec["cad"] = cad_id
+        spec["out"] = False
+        spec["amp"] = ""
+        spec["use"] = ""
+        spec["role"] = "tie" if cad_id == "445" or cad_id.startswith("445@") else ""
+        knife_specs.append(spec)
+
+    plate_texts = {i: [] for i in range(len(plates))}
+    free = []
+    for t in texts:
+        hit = None
+        for i, (x0, y0, x1, y1) in enumerate(plates):
+            if x0 - 0.45 <= t["x"] <= x1 + 0.45 and y0 - 0.45 <= t["y"] <= y1 + 0.45:
+                hit = i
+                break
+        if hit is None or t["title"]:
+            free.append(t)
+        else:
+            plate_texts[hit].append(t)
+
+    text_nodes = []
+    for i, (x0, y0, x1, y1) in enumerate(plates):
+        group = plate_texts[i]
+        if not group:
+            continue
+        group.sort(key=lambda t: (-t["y"], t["x"]))
+        parts = []
+        for t in group:
+            for line in t["s"].split("\n"):
+                line = line.strip()
+                if line:
+                    parts.append(line)
+        if not parts:
+            continue
+        s = "\n".join(parts)
+        bx, by = X(x0), Y(y1)
+        bw, bh = round((x1 - x0) * scale, 2), round((y1 - y0) * scale, 2)
+        fs = min(t["h"] for t in group) * scale
+        longest = max(len(line) for line in parts)
+        if longest:
+            fs = min(fs, (bw - 6) / (longest * 0.62))
+        fs = min(fs, (bh - 4) / (len(parts) * 1.25))
+        fs = max(8.0, fs)
+        text_nodes.append({
+            "s": s, "x": bx, "y": by, "w": bw, "h": bh,
+            "fs": round(fs, 2), "c": "#ffffff", "al": "c", "plate": 1, "stack": 1,
+        })
+
+    for t in free:
+        lines = [ln for ln in t["s"].split("\n") if ln.strip()]
+        if not lines:
+            continue
+        s = "\n".join(lines)
+        fs = max(8.0, t["h"] * scale)
+        longest = max(len(ln) for ln in lines)
+        tw = max(longest * fs * 0.62, fs)
+        th = fs * 1.25 * len(lines)
+        ax, ay = X(t["x"]), Y(t["y"])
+        if t["col"] == 1:
+            left = ax - tw / 2.0
+        elif t["col"] == 2:
+            left = ax - tw
+        else:
+            left = ax
+        if t["row"] == 1:
+            top = ay - th / 2.0
+        elif t["row"] == 2:
+            top = ay - th
+        else:
+            top = ay
+        node = {
+            "s": s, "x": round(left, 2), "y": round(top, 2),
+            "w": round(tw, 2), "h": round(th, 2),
+            "fs": round(min(fs, 64.0), 2), "c": "#ffffff", "al": "c",
+        }
+        if "\n" in s:
+            node["stack"] = 1
+        text_nodes.append(node)
+
+    max_sx = max(p for w in wires for p in (w["pts"][0][0], w["pts"][1][0]))
+    max_sy = max(p for w in wires for p in (w["pts"][0][1], w["pts"][1][1]))
+    for spec in knife_specs:
+        max_sx = max(max_sx, spec["x"] + 160)
+        max_sy = max(max_sy, spec["y"] + 150)
+    canvas = {
+        "w": int(math.ceil(max(max_sx + PAD, (maxx - minx) * scale + PAD * 2))),
+        "h": int(math.ceil(max(max_sy + PAD, (maxy - miny) * scale + PAD * 2))),
+        "x0": 0,
+    }
+    if floor is None:
+        floor = int(str(room)[0]) if str(room)[:1].isdigit() else 2
+    doc = {
+        "version": LITERAL_VER,
+        "room": room,
+        "name": "配电室" + room,
+        "floor": floor,
+        "canvas": canvas,
+        "knives": knife_specs,
+        "wires": wires,
+        "texts": text_nodes,
+        "boxes": [],
+        "meta": {
+            "generator": "build_literal",
+            "gapFill": 0,
+            "scale": round(scale, 4),
+            "bladeLen": round(blade_len, 4),
+            "minx": round(minx, 4),
+            "maxy": round(maxy, 4),
+            "knives": len(knife_specs),
+            "horiz": horiz_n,
+            "jawUp": jaw_up_n,
+            "plates": len(plates),
+            "circles": n_circle,
+            "glyphSkipped": n_glyph,
+            "wires": len(wires),
+            "tipLeads": tip_leads,
+            "vertUpStub": vert_up_stub,
+            "vertUpTap": vert_up_tap,
+            "vertDown": vert_down,
+            "hinge": "glyph-axis",
+        },
+    }
+    return doc
+
+
 def main():
-    index_path = JSON_DIR / "index.json"
-    index = json.loads(index_path.read_text(encoding="utf-8"))
-    by_code = {r["code"]: r for r in index["rooms"]}
-    for room in ROOMS:
+    # build_room 用 source_bus_x 摆铰接，同列四把刀会吸到不同母线段。
+    # 默认入口不再写文件。按房间走 build_literal，并且不覆盖已接受的 2A2。
+    if len(sys.argv) >= 4 and sys.argv[1] == "literal":
+        room = sys.argv[2]
+        dxf = Path(sys.argv[3])
+        if room == "2A2" and "--force" not in sys.argv:
+            raise SystemExit("2A2 已接受。要按新认牌重写一次图，加上 --force")
+        if not dxf.is_file():
+            raise SystemExit("没有这份 DXF: %s" % dxf)
+        doc = build_literal(room, dxf)
         dest = JSON_DIR / ("%s.json" % room)
-        before = old_seg_count(dest)
-        doc, missing, plates = build_room(room)
-        after = 0
-        for w in doc["wires"]:
-            pts = w["pts"]
-            dx = pts[1][0] - pts[0][0]
-            dy = pts[1][1] - pts[0][1]
-            if dx * dx + dy * dy >= 0.25:
-                after += 1
         dest.write_text(json.dumps(doc, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
-        if room in by_code:
-            by_code[room]["knives"] = len(doc["knives"])
         meta = doc["meta"]
         print(
-            "%s before=%d after=%d knives=%d horiz=%d twoState=%d overrun=%d tie=%d corner=%d missing=%d"
-            % (room, before, after, meta["knives"], meta["horiz"], meta["twoState"], meta["overrun"], meta["tieJoin"], meta["corners"], meta["missing"])
+            "%s knives=%d horiz=%d wires=%d scale=%s floor=%s hinge=%s"
+            % (room, meta["knives"], meta["horiz"], meta["wires"], meta["scale"], doc["floor"], meta["hinge"])
         )
-        if missing:
-            print("  missing sample", missing[:12])
-        if meta["knives"] != {"2A1": 100, "2A2": 100, "2B1": 111, "2B2": 111}[room]:
-            raise SystemExit("%s 刀数不对 %d" % (room, meta["knives"]))
-        if not plates:
-            raise SystemExit("%s 没有铭牌" % room)
-    index["version"] = VER
-    index_path.write_text(json.dumps(index, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    print("index", VER)
+        return
+    raise SystemExit(
+        "默认入口已停用。build_room 会用 source_bus_x 把同列铰接吸开。"
+        "用法: python3 build_floor2_entity_oneline.py literal 房间 dxf路径"
+    )
 
 
 if __name__ == "__main__":

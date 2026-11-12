@@ -153,8 +153,11 @@
   function persistProject() {
     captureParentProjectOnce();
     var pu = parentProjectSnapshot || dcimProjectCache || get('ProjectUuid');
-    if (!pu) return '';
-    return writeProjectUuid(pu, { persist: true });
+    if (pu) return writeProjectUuid(pu, { persist: true });
+    return fetchProjectUuids().then(function (uuids) {
+      if (uuids.length !== 1) return '';
+      return writeProjectUuid(uuids[0], { persist: true });
+    });
   }
 
   function headers() {

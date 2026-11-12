@@ -316,12 +316,7 @@ export default {
       return this.$te(msg) ? this.$t(msg) : msg
     },
     levelColor(level) {
-      switch (Number(level)) {
-        case 4: return '#ff3b30' // 致命
-        case 3: return '#ff6b35' // 紧急
-        case 2: return '#ffd60a' // 重要
-        default: return '#3b82f6' // 次要/提示
-      }
+      return this.$dictColor('alarm_level', level) || '#3b82f6'
     },
     shortTime(t) {
       if (!t) return ''

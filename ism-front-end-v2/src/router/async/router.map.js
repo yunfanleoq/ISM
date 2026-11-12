@@ -1099,6 +1099,14 @@ const routerMap = {
 },
   component: () => import('@/pages/Setting/SystemParams')
 },
+  SystemDict:{
+  path: 'SystemDict',
+      name: '数据字典',
+    meta: {
+  icon:"book",
+},
+  component: () => import('@/pages/Setting/SystemDict')
+},
   AccessToken:{
   path: 'AccessToken',
       name: 'API令牌',

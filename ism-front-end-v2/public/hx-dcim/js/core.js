@@ -261,8 +261,10 @@ window.App = window.App || {};
   };
 
   A.leaveToAdmin = function () {
-    if (window.HXAuth && window.HXAuth.persistProject) window.HXAuth.persistProject();
-    A.leaveTo('/#/dashboard');
+    var go = function () { A.leaveTo('/#/dashboard'); };
+    var pending = window.HXAuth && window.HXAuth.persistProject && window.HXAuth.persistProject();
+    if (pending && pending.then) pending.then(go, go);
+    else go();
   };
 
   /* 只有总览卡片下钻才带上来源。顶栏菜单是新进入，hash 里没有这段。 */

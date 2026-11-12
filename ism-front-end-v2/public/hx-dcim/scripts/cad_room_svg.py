@@ -80,10 +80,15 @@ class Xform:
         self.rot = rot
 
     def pt(self, px, py):
+        # AutoCAD 插入：先按 sx/sy 缩放局部坐标，再旋转，再平移。
+        # 不能先旋转再分别乘 sx、sy。sx 与 sy 正负不同（2A2 横刀 ang=90、sx 为负）时，
+        # 后一种会把刀口翻到轴的另一侧，并把刀轴从母线右侧翻到母线左侧。
+        # 整图 Y 取反只在 write_svg 做一次，这里不要再取反。
         c, s = math.cos(self.rot), math.sin(self.rot)
+        xs, ys = self.sx * px, self.sy * py
         return (
-            self.x + self.sx * (px * c - py * s),
-            self.y + self.sy * (px * s + py * c),
+            self.x + xs * c - ys * s,
+            self.y + ys * c + xs * s,
         )
 
     def scale(self):
@@ -375,6 +380,8 @@ def _esc(s):
 
 
 def write_svg(prims, dest):
+    # 只做一次变换：svg x = 模型 x，svg y = -模型 y。viewBox 只留白，不再缩放、不再平移端点。
+    # 2A2 实测这一步和 DXF 组码、LibreDWG dwg2SVG 模型空间一致（残差约 1e-6）。不要改成另一套 S/PAD。
     xs, ys = [], []
     for p in prims:
         if p[0] == "L":

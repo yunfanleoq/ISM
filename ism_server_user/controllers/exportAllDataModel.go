@@ -42,18 +42,7 @@ func virtualYesNo(v int) string {
 }
 
 func virtualAlarmLevelText(v int) string {
-	switch v {
-	case 1:
-		return "次要"
-	case 2:
-		return "重要"
-	case 3:
-		return "紧急"
-	case 4:
-		return "致命"
-	default:
-		return "提示"
-	}
+	return models.AlarmLevelLabel(v)
 }
 
 const excelRecordTypeHeader = "存储类型(变化存储、定时存储、即时存储、变化百分比、整点存储)"
@@ -125,18 +114,7 @@ func parseYesNoExcel(v string) int {
 }
 
 func parseAlarmLevelExcel(v string) int {
-	switch v {
-	case "次要":
-		return 1
-	case "重要":
-		return 2
-	case "紧急":
-		return 3
-	case "致命":
-		return 4
-	default:
-		return 0
-	}
+	return models.ParseAlarmLevel(v)
 }
 
 func parseAlarmOnValueExcel(v string) int {

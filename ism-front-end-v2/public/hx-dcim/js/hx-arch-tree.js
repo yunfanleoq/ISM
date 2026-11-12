@@ -71,7 +71,7 @@
   }
 
   function isPowerLeaf(name) {
-    return /^配电室\d/.test(name) || /^ECC\d/.test(name);
+    return /^配电室\d/.test(name) || /^ECC\d/.test(name) || name === '配电室动力楼';
   }
 
   /** 配电室叶子 ↔ 同编码数据机房 / 机房模块（设计稿与测点命名） */
@@ -286,8 +286,22 @@
       cabName = cabFromDesign(name);
       if (!roomName || !cabName) return { ok: false, reason: '列标识无法解析', design: name };
       pair = idx.pairs[roomName + '\0' + cabName];
+      /* A 侧列尾测点挂在「数据机房」，设计树活名是「机房模块」。两边都查。 */
+      if (!pair && /列尾$/.test(cabName)) {
+        var tailCode = roomCode(roomName);
+        if (tailCode) pair = idx.pairs['数据机房' + tailCode + '\0' + cabName];
+      }
       if (pair) return { room: pair.room, cab: pair.cab, ok: true };
       room = idx.byName[roomName];
+      /* 数据机房2A1 的 WA–WJ：点表没有列尾设备，不造空画面。 */
+      if (room && roomName === '机房模块2A1' && /^W[A-J]$/.test(name)) {
+        return {
+          ok: false,
+          reason: '点表没有数据机房2A1 的 ' + cabName + '，所以不画',
+          design: name,
+          room: room
+        };
+      }
       if (room) return { ok: false, reason: '现场索引无' + cabName, design: name, room: room };
       return { ok: false, reason: '机房未绑点', design: roomName };
     }

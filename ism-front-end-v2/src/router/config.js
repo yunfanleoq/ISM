@@ -1215,6 +1215,17 @@ const options = {
               component: () => import('@/pages/Setting/SystemParams')
             },
             {
+              path: 'SystemDict',
+              name: '数据字典',
+              meta: {
+                icon:"book",
+                authority: {
+                  role: ['Admin','Operator']
+                }
+              },
+              component: () => import('@/pages/Setting/SystemDict')
+            },
+            {
               path: 'AccessToken',
               name: 'API令牌',
               meta: {

@@ -100,6 +100,7 @@ import {
 import ISMRender from '@/pages/ISMDisPlay/ISMRender';
 import {formatDate} from '@/utils/common';
 import {AUTH_TYPE, getAuthorization} from "@/utils/request";
+import {ensureProjectUuid} from "@/utils/ensureProjectUuid";
 import {ismDebug} from '@/utils/ismDebug';
 import {
   formatPointDisplayValue,
@@ -355,6 +356,12 @@ export default {
       })
     },
     getRealData(uuid, page, pageSize){
+      let _t = this
+      ensureProjectUuid().finally(function () {
+      _t._loadRealData(uuid, page, pageSize)
+      })
+    },
+    _loadRealData(uuid, page, pageSize){
       let _t = this
       const currentPage = page || _t.realDataPage || 1
       const currentSize = clampPageSize(pageSize || _t.realDataPageSize || REAL_DATA_DEFAULT_PAGE_SIZE)

@@ -1,4 +1,5 @@
 import routerMap from '@/router/async/router.map'
+import {loadSystemDict} from '@/utils/systemDict'
 import {mergeI18nFromRoutes} from '@/utils/i18n'
 import Router from 'vue-router'
 import deepMerge from 'deepmerge'
@@ -145,6 +146,7 @@ function loadRoutes(routesConfig) {
     store.getters['account/roles']
     store.getters['account/permissions']
     store.commit('setting/setMenuData', menuRoutes)
+    loadSystemDict()
     ensureHangxinScreenMenu(store)
     const homeName = store.state.setting.systemHomeDashboard &&
       store.state.setting.systemHomeDashboard.dashboardName

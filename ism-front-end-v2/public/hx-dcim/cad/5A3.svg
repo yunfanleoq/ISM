@@ -1,14 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" viewBox="172.168 -147.361 236.432 73.200">
-<rect x="172.168" y="-147.361" width="236.432" height="73.200" fill="#ffffff" stroke="none"/>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="100%" height="100%" preserveAspectRatio="xMidYMid meet" viewBox="170.152 -149.377 117.204 76.031">
+<rect x="170.152" y="-149.377" width="117.204" height="76.031" fill="#ffffff" stroke="none"/>
 <line x1="269.7779" y1="-127.8424" x2="190.9591" y2="-127.8424" data-lw="40" style="fill:none;stroke:#1a1a1a;stroke-width:0.4000;stroke-linecap:round;stroke-linejoin:round"/>
+<line x1="190.9591" y1="-127.8424" x2="190.9591" y2="-127.8424" data-lw="40" style="fill:none;stroke:#1a1a1a;stroke-width:0.4000;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="183.3819" y1="-110.3306" x2="188.5910" y2="-110.3306" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="188.5910" y1="-110.3306" x2="188.5910" y2="-103.3764" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="188.5910" y1="-103.3764" x2="183.3819" y2="-103.3764" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="183.3819" y1="-103.3764" x2="183.3819" y2="-110.3306" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
-<text x="183.5619" y="-109.1617" text-anchor="start" font-size="0.7128" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-401</text>
-<text x="183.5619" y="-107.9737" text-anchor="start" font-size="0.7128" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">总输出柜</text>
+<text x="186.0132" y="-109.1617" text-anchor="middle" font-size="0.7128" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-401</text>
+<text x="186.0582" y="-105.0834" text-anchor="middle" font-size="0.7128" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">总输出柜</text>
 <line x1="187.1871" y1="-127.8424" x2="178.5091" y2="-127.8424" data-lw="40" style="fill:none;stroke:#1a1a1a;stroke-width:0.4000;stroke-linecap:round;stroke-linejoin:round"/>
+<line x1="178.5091" y1="-127.8424" x2="178.5091" y2="-127.8424" data-lw="40" style="fill:none;stroke:#1a1a1a;stroke-width:0.4000;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="181.8309" y1="-111.8186" x2="181.8309" y2="-127.8424" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="185.9864" y1="-127.8424" x2="185.9864" y2="-126.3521" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="186.4380" y1="-125.1554" x2="185.9864" y2="-125.6070" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
@@ -261,10 +263,10 @@
 <line x1="200.1395" y1="-110.1196" x2="200.1395" y2="-103.1654" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="200.1395" y1="-103.1654" x2="194.9304" y2="-103.1654" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="194.9304" y1="-103.1654" x2="194.9304" y2="-110.1196" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
-<text x="195.1104" y="-108.9507" text-anchor="start" font-size="0.7128" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">445</text>
-<text x="195.1104" y="-107.7627" text-anchor="start" font-size="0.7128" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">母 联</text>
-<text x="221.2286" y="-124.1488" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-411-1</text>
-<text x="221.2850" y="-117.3991" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-411-2</text>
+<text x="197.5617" y="-108.9507" text-anchor="middle" font-size="0.7128" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">445</text>
+<text x="197.5085" y="-104.7963" text-anchor="middle" font-size="0.7128" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">母 联</text>
+<text x="223.6286" y="-124.1488" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-411-1</text>
+<text x="223.7679" y="-117.3991" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-411-2</text>
 <line x1="175.9724" y1="-118.7270" x2="175.9724" y2="-111.8186" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="178.8602" y1="-119.3359" x2="178.8602" y2="-120.0802" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="178.4542" y1="-118.7270" x2="179.2662" y2="-118.7270" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
@@ -296,11 +298,11 @@
 <line x1="178.5770" y1="-110.3306" x2="178.5770" y2="-103.3764" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="178.5770" y1="-103.3764" x2="173.3679" y2="-103.3764" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="173.3679" y1="-103.3764" x2="173.3679" y2="-110.3306" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
-<text x="173.5479" y="-104.5350" text-anchor="start" font-size="1.1000" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1</text>
-<text x="173.5479" y="-109.0748" text-anchor="start" font-size="0.7700" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1</text>
+<text x="173.7463" y="-104.7000" text-anchor="start" font-size="1.1000" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1</text>
+<text x="173.9244" y="-109.0748" text-anchor="start" font-size="0.7700" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1</text>
 <line x1="207.0043" y1="-110.5804" x2="207.0043" y2="-127.8424" data-lw="20" style="fill:none;stroke:#1a1a1a;stroke-width:0.2000;stroke-linecap:round;stroke-linejoin:round"/>
-<text x="222.1396" y="-122.9428" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">新风风冷</text>
-<text x="221.8841" y="-121.9906" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">冷水机组6</text>
+<text x="223.6955" y="-122.9428" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">新风风冷</text>
+<text x="223.6563" y="-121.9906" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">冷水机组6</text>
 <line x1="207.0043" y1="-110.5804" x2="208.4946" y2="-110.5804" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="209.6914" y1="-110.1288" x2="209.2397" y2="-110.5804" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="209.6914" y1="-111.0320" x2="209.2397" y2="-110.5804" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
@@ -361,7 +363,7 @@
 <circle cx="216.0194" cy="-111.9837" r="0.3898" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500"/>
 <line x1="215.2437" y1="-110.5804" x2="216.8834" y2="-110.5804" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="216.8834" y1="-110.5804" x2="220.4490" y2="-110.5804" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
-<text x="221.1665" y="-111.2778" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-411-3</text>
+<text x="223.6384" y="-111.2778" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-411-3</text>
 <line x1="232.3572" y1="-84.8410" x2="233.8475" y2="-84.8410" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="235.0442" y1="-84.3893" x2="234.5926" y2="-84.8410" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="235.0442" y1="-85.2926" x2="234.5926" y2="-84.8410" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
@@ -422,7 +424,7 @@
 <circle cx="241.3723" cy="-86.2443" r="0.3898" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500"/>
 <line x1="240.5966" y1="-84.8410" x2="242.2362" y2="-84.8410" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="242.2362" y1="-84.8410" x2="245.8019" y2="-84.8410" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
-<text x="246.5101" y="-84.5695" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">备用</text>
+<text x="248.9069" y="-83.6115" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">备用</text>
 <line x1="232.3572" y1="-90.9963" x2="233.8475" y2="-90.9963" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="235.0442" y1="-90.5447" x2="234.5926" y2="-90.9963" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="235.0442" y1="-91.4479" x2="234.5926" y2="-90.9963" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
@@ -723,7 +725,7 @@
 <circle cx="241.3723" cy="-117.9505" r="0.3898" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500"/>
 <line x1="240.5966" y1="-116.5472" x2="242.2362" y2="-116.5472" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="242.2362" y1="-116.5472" x2="245.8019" y2="-116.5472" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
-<text x="247.4272" y="-117.2446" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-412-2</text>
+<text x="249.9511" y="-117.2446" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-412-2</text>
 <line x1="232.3572" y1="-123.1861" x2="233.8475" y2="-123.1861" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="235.0442" y1="-122.7345" x2="234.5926" y2="-123.1861" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="235.0442" y1="-123.6377" x2="234.5926" y2="-123.1861" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
@@ -784,14 +786,14 @@
 <circle cx="241.3723" cy="-124.5894" r="0.3898" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500"/>
 <line x1="240.5966" y1="-123.1861" x2="242.2362" y2="-123.1861" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="242.2362" y1="-123.1861" x2="245.8019" y2="-123.1861" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
-<text x="247.5996" y="-123.9305" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-412-1</text>
+<text x="250.0400" y="-123.9305" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-412-1</text>
 <line x1="232.3572" y1="-78.6856" x2="232.3572" y2="-127.8424" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
-<text x="247.5996" y="-123.0023" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">新风一次泵6</text>
-<text x="247.2559" y="-110.6699" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-412-3</text>
-<text x="247.0862" y="-104.3170" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-412-4</text>
-<text x="247.0292" y="-97.7197" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-412-5</text>
-<text x="246.9716" y="-91.6946" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-412-6</text>
-<text x="246.5101" y="-85.4977" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-412-7</text>
+<text x="250.0855" y="-122.0489" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">新风一次泵6</text>
+<text x="249.7440" y="-110.6699" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-412-3</text>
+<text x="249.4808" y="-104.3170" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-412-4</text>
+<text x="249.3270" y="-97.7197" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-412-5</text>
+<text x="249.4402" y="-91.6946" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-412-6</text>
+<text x="248.8939" y="-85.4977" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-412-7</text>
 <line x1="232.3572" y1="-78.6856" x2="233.8475" y2="-78.6856" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="235.0442" y1="-78.2340" x2="234.5926" y2="-78.6856" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="235.0442" y1="-79.1372" x2="234.5926" y2="-78.6856" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
@@ -852,19 +854,21 @@
 <circle cx="241.3723" cy="-80.0889" r="0.3898" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500"/>
 <line x1="240.5966" y1="-78.6856" x2="242.2362" y2="-78.6856" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="242.2362" y1="-78.6856" x2="245.8019" y2="-78.6856" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
-<text x="246.4944" y="-78.1818" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">备用</text>
-<text x="246.4944" y="-79.1100" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-412-8</text>
-<text x="247.4272" y="-116.3164" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">新风机组6</text>
-<text x="246.9716" y="-90.7664" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">备用</text>
-<text x="247.0292" y="-96.7915" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">电伴热DBR</text>
-<text x="247.0862" y="-103.3888" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">北侧DFL</text>
-<text x="221.2850" y="-116.4709" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">备用</text>
-<text x="221.1665" y="-110.3496" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">备用</text>
-<text x="247.2559" y="-109.7417" text-anchor="start" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">水处理（主）</text>
-<text x="194.5485" y="-140.1610" font-size="6.4000" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3配电室</text>
+<text x="248.8975" y="-77.2238" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">备用</text>
+<text x="248.8846" y="-79.1100" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3-T1-412-8</text>
+<text x="249.8776" y="-115.3615" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">新风机组6</text>
+<text x="249.3555" y="-89.8084" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">备用</text>
+<text x="249.3445" y="-95.8335" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">电伴热DBR</text>
+<text x="249.4675" y="-102.4308" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">北侧DFL</text>
+<text x="223.7462" y="-115.6607" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">备用</text>
+<text x="223.5932" y="-109.5393" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">备用</text>
+<text x="250.0332" y="-108.7837" text-anchor="middle" font-size="0.5569" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">水处理（主）</text>
+<text x="194.5485" y="-139.7614" text-anchor="start" font-size="6.4000" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5A3配电室</text>
 <line x1="197.5350" y1="-110.9158" x2="202.9817" y2="-110.9158" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="202.9817" y1="-110.9158" x2="202.9817" y2="-131.2867" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="202.9817" y1="-131.2867" x2="284.1412" y2="-131.2867" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
+<line x1="284.1412" y1="-131.2867" x2="284.1412" y2="-131.2867" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
+<line x1="284.1412" y1="-131.2867" x2="284.1412" y2="-131.2867" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="221.1050" y1="-118.4519" x2="226.3141" y2="-118.4519" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="226.3141" y1="-118.4519" x2="226.3141" y2="-114.9748" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="226.3141" y1="-114.9748" x2="221.1050" y2="-114.9748" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
@@ -905,5 +909,5 @@
 <line x1="251.5234" y1="-80.1119" x2="251.5234" y2="-76.6348" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="251.5234" y1="-76.6348" x2="246.3144" y2="-76.6348" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
 <line x1="246.3144" y1="-76.6348" x2="246.3144" y2="-80.1119" data-lw="25" style="fill:none;stroke:#1a1a1a;stroke-width:0.2500;stroke-linecap:round;stroke-linejoin:round"/>
-<text x="263.3112" y="-132.9458" font-size="2.5000" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5B3配电室-445</text>
+<text x="263.3112" y="-132.0708" text-anchor="start" font-size="2.5000" fill="#1a1a1a" font-family="PingFang SC, Noto Sans SC, Microsoft YaHei, sans-serif">5B3配电室-445</text>
 </svg>

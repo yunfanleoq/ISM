@@ -204,6 +204,7 @@ const MENU_PERMISSIONS = [
       { label: '角色管理', value: '/Setting/RoleManager' },
       { label: '告警通知', value: '/Setting/AlarmTipsSetting' },
       { label: '系统参数', value: '/Setting/SystemParams' },
+      { label: '数据字典', value: '/Setting/SystemDict' },
       { label: 'API令牌', value: '/Setting/AccessToken' },
     ]
   },

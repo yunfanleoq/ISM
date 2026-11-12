@@ -69,22 +69,8 @@
          {{$t(name)}}
         </span>
         <span slot="AlarmLevel" slot-scope="AlarmLevel">
-          <a-tag style="background-color:#0099FF ;" v-if="AlarmLevel==0">
-           {{ $t('dataModel.alarm.Tips')}}
-         </a-tag>
-          <a-tag style="background-color:#0099FF ;" v-if="AlarmLevel==1">
-           {{ $t('dataModel.alarm.Minor')}}
-         </a-tag>
-          <a-tag style="background-color:yellow ;" v-if="AlarmLevel==2">
-           {{ $t('dataModel.alarm.Importance')}}
-         </a-tag>
-          <a-tag style="background-color:orange ;" v-if="AlarmLevel==3">
-           {{ $t('dataModel.alarm.Urgency')}}
-         </a-tag>
-          <a-tag style="background-color:red ;" v-else-if="AlarmLevel==4">
-           {{ $t('dataModel.alarm.Deadly')}}
-         </a-tag>
-        </span>
+          <dict-tag dict-code="alarm_level" :value="AlarmLevel" />
+</span>
 
         <div slot="action" slot-scope="text, record">
           <a-popconfirm :title="$t('alarm.current.RestoreTips')" @confirm="ShieldAlarm(record,0)">

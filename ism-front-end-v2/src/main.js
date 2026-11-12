@@ -21,6 +21,8 @@ const IconFont = Icon.createFromIconfontCN({
 });
 
 import BaiduMap from 'vue-baidu-map'
+import DictTag from '@/components/dict/DictTag.vue'
+import {dictColor, dictLabel, dictOptions} from '@/utils/systemDict'
 
  
 // DisableDevtool({
@@ -43,6 +45,10 @@ Vue.use(Plugins)
 Vue.use(dataV)
 Vue.use(VueResource)
 Vue.component('icon-font',IconFont)
+Vue.component('dict-tag', DictTag)
+Vue.prototype.$dictOptions = dictOptions
+Vue.prototype.$dictLabel = dictLabel
+Vue.prototype.$dictColor = dictColor
 
 Vue.prototype.$EventBus = new Vue()
 // 供 X6 组态子组件跨 chunk 安全读 store（禁止在 ism-render chunk 内 require @/store）

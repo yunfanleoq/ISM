@@ -19,6 +19,8 @@
 
   function setLayout(j) { layout = j; }
 
+  function getLayout() { return layout; }
+
   function applies(pg) {
     return !!(layout && pg && pg.name === PAGE && pg.kind === 'power');
   }
@@ -63,6 +65,9 @@
     if (spec.out) n.decor = 1; else delete n.decor;
     if (spec.outWire) n.outWire = 1; else delete n.outWire;
     if (spec.bladeLeft) n.bladeLeft = 1;
+    if (spec.anchor) n.anchor = 1;
+    if (spec.bladeFlip) n.bladeFlip = 1;
+    if (spec.jawUp) n.jawUp = 1;
     if (spec.role) n.role = spec.role;
     if (spec.use) n.use = spec.use;
     n.bladeFit = 1;
@@ -102,6 +107,11 @@
     var midY = n.y + KNIFE_H / 2;
     if (n.orient === 'h') {
       var axisY = n.y + 30;
+      /* 和其它配电室一样：铰接在块展开的电源侧端点，不吸到另一根竖母线。 */
+      if (n.anchor) {
+        if (n.bladeFlip) return { in: { x: n.x + 119, y: axisY }, out: { x: n.x - 9.71, y: axisY } };
+        return { in: { x: n.x - 21, y: axisY }, out: { x: n.x + 107.71, y: axisY } };
+      }
       var long = n.bladeFit ? 140 : (114 * KNIFE_H / 124);
       return { in: { x: midX - long / 2, y: axisY }, out: { x: midX + KNIFE_W / 2 + 18, y: axisY } };
     }
@@ -136,6 +146,8 @@
     });
     lay.texts.forEach(function (t) {
       var n = { t: 'T', s: t.s, x: t.x, y: t.y, w: t.w, h: t.h, fs: t.fs, c: t.c || '#ffffff', z: 6, lay: 1, al: t.al || 'c' };
+      if (t.cLock) n.cLock = 1;
+      if (t.fsLock) n.fsLock = 1;
       if (t.s && String(t.s).indexOf('\n') >= 0) n.stack = 1;
       if (t.capDraw) n.capDraw = 1;
       if (t.k && cadToKey[t.k]) n.k = cadToKey[t.k];
@@ -337,6 +349,7 @@
 
   w.HX5A1 = {
     load: load,
+    getLayout: getLayout,
     setLayout: setLayout,
     applies: applies,
     apply: apply,

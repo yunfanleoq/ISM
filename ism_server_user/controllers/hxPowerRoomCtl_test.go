@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -74,5 +75,64 @@ func TestApplyHxRoomPatchReal5B2(t *testing.T) {
 	}
 	if !bytes.Equal(out2, src) {
 		t.Fatalf("5B2 round trip changed %d bytes", len(out2)-len(src))
+	}
+}
+
+func TestWriteHxRoomAtomic(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "room.json")
+	orig := []byte("{\"room\":\"5A1\",\"texts\":[]}\n")
+	if err := os.WriteFile(path, orig, 0644); err != nil {
+		t.Fatal(err)
+	}
+	next := []byte("{\"room\":\"5A1\",\"texts\":[{\"s\":\"a\"}]}\n")
+	if err := writeHxRoomAtomic(path, next); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, next) || !json.Valid(got) {
+		t.Fatalf("written %s", got)
+	}
+	if _, err := os.Stat(path + ".tmp"); !os.IsNotExist(err) {
+		t.Fatal("temp left behind")
+	}
+	if err := writeHxRoomAtomic(path, []byte("{")); err == nil {
+		t.Fatal("invalid json accepted")
+	}
+	got, err = os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, next) {
+		t.Fatalf("invalid json changed file: %s", got)
+	}
+	if _, err := os.Stat(path + ".tmp"); !os.IsNotExist(err) {
+		t.Fatal("temp left after invalid json")
+	}
+
+	ro := t.TempDir()
+	roFile := filepath.Join(ro, "room.json")
+	if err := os.WriteFile(roFile, orig, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chmod(ro, 0555); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Chmod(ro, 0755) })
+	if err := writeHxRoomAtomic(roFile, next); err == nil {
+		t.Fatal("unwritable dir accepted")
+	}
+	got, err = os.ReadFile(roFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(got, orig) {
+		t.Fatalf("unwritable dir changed file: %s", got)
+	}
+	if _, err := os.Stat(roFile + ".tmp"); !os.IsNotExist(err) {
+		t.Fatal("temp left after unwritable dir")
 	}
 }

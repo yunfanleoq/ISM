@@ -38,6 +38,45 @@
     r: 'justify-content:flex-end;text-align:right;'
   };
 
+  /* 只合上从词中间拆开的换行。旁|路 是一个词；电源|出线 是两截，留着。 */
+  function joinCjkBreaks(raw) {
+    return String(raw == null ? '' : raw).replace(/旁\n+路/g, '旁路');
+  }
+
+  function measureLine(s, fs) {
+    var w = 0;
+    var i;
+    for (i = 0; i < s.length; i++) {
+      w += s.charCodeAt(i) > 255 ? fs : fs * 0.56;
+    }
+    return w;
+  }
+
+  /* 按框缩字号。只在已有换行处折行，不在汉字中间断开。不改框的宽高。 */
+  function fitPlateText(raw, boxW, boxH, fs) {
+    var text = joinCjkBreaks(raw);
+    var lines = text.split('\n');
+    var kept = [];
+    var i;
+    for (i = 0; i < lines.length; i++) {
+      if (lines[i]) kept.push(lines[i]);
+    }
+    if (!kept.length) return { s: text, fs: fs };
+    var size = fs;
+    var guard = 0;
+    while (guard++ < 40) {
+      var widest = 0;
+      for (i = 0; i < kept.length; i++) widest = Math.max(widest, measureLine(kept[i], size));
+      var th = kept.length * size * 1.2;
+      var wideOk = !(boxW > 0) || widest <= boxW - 2;
+      var tallOk = !(boxH > 0) || th <= boxH - 2;
+      if (wideOk && tallOk) break;
+      if (size <= 5) break;
+      size = Math.max(5, size - 1);
+    }
+    return { s: kept.join('\n'), fs: size };
+  }
+
   function pos(n) {
     /* 工程里的 z 有到 -1000 的框。加 120 仍是负数，会画到背景后面，红框就看不见。 */
     var b = n.lay && n.t !== 'I' && n.t !== 'S' ? { w: n.w, h: n.h } : symBox(n);
@@ -140,21 +179,33 @@
       '<svg class="hx-k-tri" viewBox="0 0 20 14" aria-hidden="true"><polygon points="1.5,1 18.5,1 10,13" fill="#ffffff"/></svg>';
   }
 
+  /* 列头三相支路（支路号带 A/B/C，或生成时标了 noOut）不画 OUT。单相支路仍画。 */
+  function columnPhaseNoOut(n, page) {
+    if (n && n.noOut) return true;
+    if (!page || page.kind !== 'column' || !n) return false;
+    return /支路\d+[ABC]$/.test(String(n.k || ''));
+  }
+
   function knifeHtml(n, i, decor, page) {
     var power = page && page.kind === 'power';
+    var hideOut = columnPhaseNoOut(n, page);
     var cls = 'hx-abs hx-sym is-open';
     if (decor && power) cls += ' hx-sym-has-out';
     else if (decor) cls += ' hx-sym-full';
     if (knifeHorizontal(n)) cls += ' hx-sym-h';
     if (n.bladeFlip) cls += ' hx-blade-flip';
+    if (n.jawUp) cls += ' hx-jaw-up';
     if (n.bladeFit) cls += ' hx-blade-fit';
     if (n.bladeLeft) cls += ' hx-blade-left';
     if (n.role === 'tie') cls += ' hx-k-tie';
     if (n.hfull) cls += ' hx-sym-hf';
-    var inner = knifeInner(decor && !power);
+    var tri = '<svg class="hx-k-tri" viewBox="0 0 20 14" aria-hidden="true"><polygon points="1.5,1 18.5,1 10,13" fill="#ffffff"/></svg>';
+    var inner = knifeInner(decor && !power && !hideOut);
     if (decor && power) {
       inner = knifeInner(false) +
         '<svg class="hx-k-tri hx-k-tri-pwr" viewBox="0 0 20 14" aria-hidden="true"><polygon points="1.5,1 18.5,1 10,13" fill="#ffffff"/></svg>';
+    } else if (hideOut && decor) {
+      inner = knifeInner(false) + tri;
     }
     return '<div class="' + cls + '" data-hx-knife' + keyAttr(n, i) + ' style="color:#00ff00;' + pos(n) + '">' + inner + '</div>';
   }
@@ -364,28 +415,19 @@
       }
       if (n.t === 'T') {
         var pe = n.k ? '' : 'pointer-events:none;';
-        var wrap = '';
+        var wrap = 'word-break:keep-all;line-break:strict;';
         var fs = Number(n.fs) || 18;
         var raw = String(n.s || '');
-        /* 字进框：不改框宽高，过长则缩字号并允许换行（P1） */
-        if (n.w && raw && !n.stack && raw.indexOf('\n') < 0) {
-          var approx = raw.length * fs * 0.6;
-          if (approx > Number(n.w)) {
-            fs = Math.max(10, Math.floor(Number(n.w) / (raw.length * 0.6)));
-            wrap = 'display:block;white-space:normal;overflow:hidden;line-height:1.15;';
-          }
+        /* 字进框：不改框宽高。汉字按整字宽缩字号，只在已有换行处折行。 */
+        if (!n.fsLock && n.w) {
+          var fitted = fitPlateText(raw, Number(n.w), Number(n.h) || 0, fs);
+          raw = fitted.s;
+          fs = fitted.fs;
+        } else {
+          raw = joinCjkBreaks(raw);
         }
-        if (n.stack) {
-          /* 5A1 多行柜号按框宽折行。flex+nowrap 会把两行拉成一条，盖住旁边的刀和线。 */
-          wrap = 'display:block;white-space:normal;overflow:hidden;line-height:1.15;';
-          if (n.w && n.h) {
-            /* 禁止用 var lines —— 会提升遮蔽外层 SVG lines[]，紫/绿 followKnife 线一 push 就整页空白 */
-            var stackRows = Math.max(1, raw.split('\n').length);
-            var fitFs = Math.floor(Number(n.h) / (stackRows * 1.2));
-            if (fitFs > 0 && fitFs < fs) fs = Math.max(10, fitFs);
-          }
-        } else if (raw.indexOf('\n') >= 0) {
-          wrap = 'white-space:normal;text-align:center;line-height:1.15;';
+        if (raw.indexOf('\n') >= 0) {
+          wrap += 'display:block;white-space:normal;overflow:hidden;line-height:1.15;text-align:center;';
         }
         var align = TEXT_ALIGN[n.al] || '';
         var drop = page.kind === 'power' ? underKnifeTextDrop(n, knifeNodes) : 0;
@@ -424,7 +466,7 @@
     var title = spec.incoming || '进线';
     nodes.push({ t: 'L', x: 780, y: 8, w: 36, h: 8, a: 90, sw: 3, c: '#ff3b3b', z: 2 });
     nodes.push({
-      t: 'T', x: 700, y: 16, w: 200, h: 28, s: title, k: spec.mainKey, c: '#fff', fs: 18, z: 6
+      t: 'T', x: 700, y: 16, w: 200, h: 28, s: title, k: spec.mainKey, c: '#fff', fs: 18, z: 6, lay: 1
     });
     if (spec.mainPoint) {
       nodes.push({
@@ -435,7 +477,7 @@
     }
     var x = 28;
     var y = 146;
-    var rowH = 196;
+    var rowH = 230;
     var maxW = 1560;
     var rowReady = false;
     function openRow() {
@@ -453,16 +495,20 @@
         rowReady = false;
       }
       openRow();
-      var busY = y + 26;
-      nodes.push({
-        t: 'T', x: x, y: y, w: w, h: 22,
-        s: String(br.num), k: single ? br.key : '', c: '#fff', fs: 16, z: 6
-      });
-      if (!single) nodes.push({ t: 'B', x: x + 6, y: y + 34, w: w - 12, h: 92, z: 3 });
+      /* 柜号在框上，方框只套闸，支路号在框下。没有 lay 时 pos 会把字和框都画成 60×98，数字就被框套住。 */
+      var numH = 22;
+      var busY = y + numH + 4;
       var kw = 46;
       var kh = 132;
-      var ky = y + 28;
-      var ly = y + 164;
+      var frameTop = busY + 6;
+      var frameH = kh + 8;
+      var ky = frameTop + 4;
+      var ly = frameTop + frameH + 4;
+      nodes.push({
+        t: 'T', x: x, y: y, w: w, h: numH, lay: 1,
+        s: String(br.num), k: single ? br.key : '', c: '#fff', fs: 16, z: 6
+      });
+      if (!single) nodes.push({ t: 'B', x: x + 6, y: frameTop, w: w - 12, h: frameH, z: 3, lay: 1 });
       if (single) {
         nodes.push({
           t: 'L', x: x + w / 2 - 2, y: busY, w: 4, h: Math.max(4, ky - busY), a: 90, sw: 1.35, c: '#ffffff', z: 2
@@ -472,23 +518,31 @@
           k: br.key, p: br.p, dev: br.dev, z: 5
         });
         nodes.push({
-          t: 'T', x: x, y: ly, w: w, h: 20,
+          t: 'T', x: x, y: ly, w: w, h: 20, lay: 1,
           s: String(br.num), k: br.key, c: '#fff', fs: 13, z: 6
         });
       } else {
         var gap = (w - 12 - phases.length * kw) / (phases.length + 1);
         var shared = br.p && String(br.dev || '').indexOf('数据机房') === 0;
+        /* 母线盒高 4、角度 0，中心线在 busY+2。连接口 x 仍是原来的 kx+kw/2，不另起一组。 */
+        var busCY = busY + 2;
         phases.forEach(function (ph, pi) {
           var kx = x + 6 + gap + pi * (kw + gap);
+          var portX = kx + kw / 2;
+          var knifeX = portX - KNIFE_W / 2;
           var pk = (br.phaseKey && br.phaseKey[ph]) || '';
           var pp = shared ? br.p : ((br.phaseP && br.phaseP[ph]) || br.p || '');
           var pd = shared ? br.dev : ((br.phaseDev && br.phaseDev[ph]) || br.dev || '');
+          var lead = Math.max(1, ky - busCY);
           nodes.push({
-            t: 'L', x: kx + kw / 2 - 2, y: busY, w: 4, h: Math.max(4, ky - busY), a: 90, sw: 1.35, c: '#ffffff', z: 2
+            t: 'L', x: portX - lead / 2, y: busCY, w: lead, h: lead, a: 90, sw: 1.35, c: '#ffffff', z: 2
           });
-          nodes.push({ t: 'S', x: kx, y: ky, w: kw, h: kh, decor: 1, k: pk, p: pp, dev: pd, z: 5 });
           nodes.push({
-            t: 'T', x: kx - 12, y: ly, w: kw + 24, h: 20,
+            t: 'S', x: knifeX, y: ky, w: KNIFE_W, h: kh, decor: 1, noOut: 1,
+            k: pk, p: pp, dev: pd, z: 5
+          });
+          nodes.push({
+            t: 'T', x: kx - 12, y: ly, w: kw + 24, h: 20, lay: 1,
             s: br.num + ph, k: pk, c: '#fff', fs: 13, z: 6
           });
         });
@@ -508,5 +562,12 @@
     };
   }
 
-  w.HXDraw = { html: html, cabinet: cabinet, lineColor: lineColor, powerWireColor: powerWireColor, isPowerGreen: isPowerGreen };
+  w.HXDraw = {
+    html: html,
+    cabinet: cabinet,
+    lineColor: lineColor,
+    powerWireColor: powerWireColor,
+    isPowerGreen: isPowerGreen,
+    joinCjkBreaks: joinCjkBreaks
+  };
 })(window);

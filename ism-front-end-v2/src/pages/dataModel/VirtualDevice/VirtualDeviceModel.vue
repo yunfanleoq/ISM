@@ -116,6 +116,7 @@ import {
 import { LOCALUPGATEALLVIRTUALDEVICEDATAMODEL, EXPORTALLVIRTUALDEVICEDATAMODEL } from "@/services/api";
 import { AUTH_TYPE, getAuthorization } from "@/utils/request";
 import axios from 'axios'
+import {dictLabel} from '@/utils/systemDict'
 
 const IMPORT_ALL_TIMEOUT_MS = 2 * 60 * 60 * 1000
 
@@ -125,15 +126,7 @@ const alarmText = (value) => {
     default: return "否"
   }
 }
-const alarmLevelText = (value) => {
-  switch (Number(value)) {
-    case 1: return "次要"
-    case 2: return "重要"
-    case 3: return "紧急"
-    case 4: return "致命"
-    default: return "提示"
-  }
-}
+const alarmLevelText = (value) => dictLabel('alarm_level', value)
 const recordText = (value) => {
   switch (Number(value)) {
     case 1: return "是"

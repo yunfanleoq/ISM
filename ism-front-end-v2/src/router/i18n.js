@@ -174,6 +174,9 @@ module.exports = {
         SystemParams: {
           name: '系統參數',
         },
+        SystemDict: {
+          name: '數據字典',
+        },
         AccessToken: {
           name: 'API權杖',
         },

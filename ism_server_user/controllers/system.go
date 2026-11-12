@@ -760,19 +760,7 @@ func (c *ISMSystem) UpdateDataModel() {
 					setparams.IsAlarm = 0
 				}
 
-				if row[7] == "提示" {
-					setparams.AlarmLevel = 0
-				} else if row[7] == "次要" {
-					setparams.AlarmLevel = 1
-				} else if row[7] == "重要" {
-					setparams.AlarmLevel = 2
-				} else if row[7] == "紧急" {
-					setparams.AlarmLevel = 3
-				} else if row[7] == "致命" {
-					setparams.AlarmLevel = 4
-				} else {
-					setparams.AlarmLevel = 0
-				}
+				setparams.AlarmLevel = parseAlarmLevelExcel(row[7])
 
 				setparams.AlarmMessage = row[8]
 				setparams.AlarmClearMessage = row[9]
@@ -912,19 +900,7 @@ func (c *ISMSystem) UpdateDataModel() {
 					setparams.IsAlarm = 0
 				}
 
-				if row[11] == "提示" {
-					setparams.AlarmLevel = 0
-				} else if row[11] == "次要" {
-					setparams.AlarmLevel = 1
-				} else if row[11] == "重要" {
-					setparams.AlarmLevel = 2
-				} else if row[11] == "紧急" {
-					setparams.AlarmLevel = 3
-				} else if row[11] == "致命" {
-					setparams.AlarmLevel = 4
-				} else {
-					setparams.AlarmLevel = 0
-				}
+				setparams.AlarmLevel = parseAlarmLevelExcel(row[11])
 
 				setparams.AlarmMessage = row[12]
 				setparams.AlarmClearMessage = row[13]
@@ -994,19 +970,7 @@ func (c *ISMSystem) UpdateDataModel() {
 					setparams.IsAlarm = 0
 				}
 
-				if row[7] == "提示" {
-					setparams.AlarmLevel = 0
-				} else if row[7] == "次要" {
-					setparams.AlarmLevel = 1
-				} else if row[7] == "重要" {
-					setparams.AlarmLevel = 2
-				} else if row[7] == "紧急" {
-					setparams.AlarmLevel = 3
-				} else if row[7] == "致命" {
-					setparams.AlarmLevel = 4
-				} else {
-					setparams.AlarmLevel = 0
-				}
+				setparams.AlarmLevel = parseAlarmLevelExcel(row[7])
 
 				setparams.AlarmMessage = row[8]
 				setparams.AlarmClearMessage = row[9]
@@ -1092,19 +1056,7 @@ func (c *ISMSystem) UpdateDataModel() {
 					setparams.IsAlarm = 0
 				}
 
-				if row[7] == "提示" {
-					setparams.AlarmLevel = 0
-				} else if row[7] == "次要" {
-					setparams.AlarmLevel = 1
-				} else if row[7] == "重要" {
-					setparams.AlarmLevel = 2
-				} else if row[7] == "紧急" {
-					setparams.AlarmLevel = 3
-				} else if row[7] == "致命" {
-					setparams.AlarmLevel = 4
-				} else {
-					setparams.AlarmLevel = 0
-				}
+				setparams.AlarmLevel = parseAlarmLevelExcel(row[7])
 
 				setparams.AlarmMessage = row[8]
 				setparams.AlarmClearMessage = row[8]
@@ -1186,19 +1138,7 @@ func (c *ISMSystem) UpdateDataModel() {
 					setparams.IsAlarm = 0
 				}
 
-				if row[8] == "提示" {
-					setparams.AlarmLevel = 0
-				} else if row[8] == "次要" {
-					setparams.AlarmLevel = 1
-				} else if row[8] == "重要" {
-					setparams.AlarmLevel = 2
-				} else if row[8] == "紧急" {
-					setparams.AlarmLevel = 3
-				} else if row[8] == "致命" {
-					setparams.AlarmLevel = 4
-				} else {
-					setparams.AlarmLevel = 0
-				}
+				setparams.AlarmLevel = parseAlarmLevelExcel(row[8])
 
 				setparams.AlarmMessage = row[9]
 				setparams.AlarmClearMessage = row[10]
@@ -1282,19 +1222,7 @@ func (c *ISMSystem) UpdateDataModel() {
 					setparams.IsAlarm = 0
 				}
 
-				if row[7] == "提示" {
-					setparams.AlarmLevel = 0
-				} else if row[7] == "次要" {
-					setparams.AlarmLevel = 1
-				} else if row[7] == "重要" {
-					setparams.AlarmLevel = 2
-				} else if row[7] == "紧急" {
-					setparams.AlarmLevel = 3
-				} else if row[7] == "致命" {
-					setparams.AlarmLevel = 4
-				} else {
-					setparams.AlarmLevel = 0
-				}
+				setparams.AlarmLevel = parseAlarmLevelExcel(row[7])
 
 				setparams.AlarmMessage = row[8]
 				setparams.AlarmClearMessage = row[9]
@@ -1366,19 +1294,7 @@ func (c *ISMSystem) UpdateDataModel() {
 					setparams.IsAlarm = 0
 				}
 
-				if row[7] == "提示" {
-					setparams.AlarmLevel = 0
-				} else if row[7] == "次要" {
-					setparams.AlarmLevel = 1
-				} else if row[7] == "重要" {
-					setparams.AlarmLevel = 2
-				} else if row[7] == "紧急" {
-					setparams.AlarmLevel = 3
-				} else if row[7] == "致命" {
-					setparams.AlarmLevel = 4
-				} else {
-					setparams.AlarmLevel = 0
-				}
+				setparams.AlarmLevel = parseAlarmLevelExcel(row[7])
 
 				setparams.AlarmMessage = row[8]
 				setparams.AlarmClearMessage = row[9]
@@ -1472,19 +1388,7 @@ func (c *ISMSystem) UpdateDataModel() {
 					setparams.IsAlarm = 0
 				}
 
-				if row[8] == "提示" {
-					setparams.AlarmLevel = 0
-				} else if row[8] == "次要" {
-					setparams.AlarmLevel = 1
-				} else if row[8] == "重要" {
-					setparams.AlarmLevel = 2
-				} else if row[8] == "紧急" {
-					setparams.AlarmLevel = 3
-				} else if row[8] == "致命" {
-					setparams.AlarmLevel = 4
-				} else {
-					setparams.AlarmLevel = 0
-				}
+				setparams.AlarmLevel = parseAlarmLevelExcel(row[8])
 
 				setparams.AlarmMessage = row[9]
 				setparams.AlarmClearMessage = row[10]
@@ -2266,7 +2170,7 @@ func (c *ISMSystem) GetSystemParams() {
 	getParamsInfo.AuthRemainingTimeMinutes = protocolCommon.AuthRemainingTimeMinutes
 	getParamsInfo.IsLicense = protocolCommon.IsLicense
 	getParamsInfo.IsOEM = protocolCommon.IsOem
-	MenuListDefault := `[{"router":"root","children":[{"router":"dashboard"},{"router":"DataWarehouse"},{"router":"DeviceLibraryConfig"},{"router":"DeviceModel","children":[{"router":"SnmpModel"},{"router":"SnmpAdd"},{"router":"SnmpDetail"},{"router":"ModbusModel"},{"router":"ModbusAdd"},{"router":"ModbusRegister"},{"router":"ModbusDetail"},{"router":"DLT645Model"},{"router":"DLT645ModelAdd"},{"router":"DLT645ModelData"},{"router":"DLT645ModelDetail"},{"router":"OPCUAModel"},{"router":"OpcuaAdd"},{"router":"OpcuaNodeid"},{"router":"OpcuaDetail"},{"router":"MqttModel"},{"router":"MqttAdd"},{"router":"MqttNodeid"},{"router":"MqttDetail"},{"router":"SiemensS7Model"},{"router":"SimS7Add"},{"router":"S7DataList"},{"router":"SimS7Detail"},{"router":"IEC104Model"},{"router":"IEC104ModelAdd"},{"router":"IEC104ModelData"},{"router":"IEC104ModelDetail"},{"router":"IEC61850Model"},{"router":"IEC61850Add"},{"router":"IEC61850Nodeid"},{"router":"IEC61850Detail"},{"router":"RestFulModel"},{"router":"RestFulData"},{"router":"HJ212Model"},{"router":"HJ212Add"},{"router":"HJ212Nodeid"},{"router":"HJ212Detail"},{"router":"VirtualDevice"},{"router":"VirtualDeviceData"},{"router":"DeviceCustomData"},{"router":"SystemData"},{"router":"StaticDataAdd"},{"router":"StaticDataDetail"}]},{"router":"Application"},{"router":"VideoManager","children":[{"router":"videoScreen"},{"router":"videoList"},{"router":"GB28281List"}]},{"router":"RealTimeAlarm"},{"router":"AlarmStrategy","children":[{"router":"ModelTrigger"},{"router":"AlarmRestoreMask"}]},{"router":"TaskPlan"},{"router":"ISMScripts"},{"router":"DataPush","children":[{"router":"DataTemplete"},{"router":"IEC104DataTemplete"},{"router":"IEC104TempleteData"},{"router":"ModbusDataTemplete"},{"router":"ModbusTempleteData"},{"router":"DataInterface"}]},{"router":"Reporting","children":[{"router":"AlarmHistory"},{"router":"DataHistory"},{"router":"DiyReport"},{"router":"DiyReportTemplete"},{"router":"ReportTempleteContent"}]},{"router":"Network","children":[{"router":"SystemNetwork"},{"router":"ISMNetwork"}]},{"router":"DataBase","children":[{"router":"DbManager"},{"router":"HistoryManager"}]},{"router":"Setting","children":[{"router":"Account"},{"router":"UserAdd"},{"router":"UserManager"},{"router":"AlarmTipsSetting"},{"router":"SystemParams"},{"router":"AccessToken"}]},{"router":"Journal","children":[{"router":"OperationJournal"}]},{"router":"Help","children":[{"router":"AboutSystem"},{"router":"SystemAuth"}]}]}]`
+	MenuListDefault := `[{"router":"root","children":[{"router":"dashboard"},{"router":"DataWarehouse"},{"router":"DeviceLibraryConfig"},{"router":"DeviceModel","children":[{"router":"SnmpModel"},{"router":"SnmpAdd"},{"router":"SnmpDetail"},{"router":"ModbusModel"},{"router":"ModbusAdd"},{"router":"ModbusRegister"},{"router":"ModbusDetail"},{"router":"DLT645Model"},{"router":"DLT645ModelAdd"},{"router":"DLT645ModelData"},{"router":"DLT645ModelDetail"},{"router":"OPCUAModel"},{"router":"OpcuaAdd"},{"router":"OpcuaNodeid"},{"router":"OpcuaDetail"},{"router":"MqttModel"},{"router":"MqttAdd"},{"router":"MqttNodeid"},{"router":"MqttDetail"},{"router":"SiemensS7Model"},{"router":"SimS7Add"},{"router":"S7DataList"},{"router":"SimS7Detail"},{"router":"IEC104Model"},{"router":"IEC104ModelAdd"},{"router":"IEC104ModelData"},{"router":"IEC104ModelDetail"},{"router":"IEC61850Model"},{"router":"IEC61850Add"},{"router":"IEC61850Nodeid"},{"router":"IEC61850Detail"},{"router":"RestFulModel"},{"router":"RestFulData"},{"router":"HJ212Model"},{"router":"HJ212Add"},{"router":"HJ212Nodeid"},{"router":"HJ212Detail"},{"router":"VirtualDevice"},{"router":"VirtualDeviceData"},{"router":"DeviceCustomData"},{"router":"SystemData"},{"router":"StaticDataAdd"},{"router":"StaticDataDetail"}]},{"router":"Application"},{"router":"VideoManager","children":[{"router":"videoScreen"},{"router":"videoList"},{"router":"GB28281List"}]},{"router":"RealTimeAlarm"},{"router":"AlarmStrategy","children":[{"router":"ModelTrigger"},{"router":"AlarmRestoreMask"}]},{"router":"TaskPlan"},{"router":"ISMScripts"},{"router":"DataPush","children":[{"router":"DataTemplete"},{"router":"IEC104DataTemplete"},{"router":"IEC104TempleteData"},{"router":"ModbusDataTemplete"},{"router":"ModbusTempleteData"},{"router":"DataInterface"}]},{"router":"Reporting","children":[{"router":"AlarmHistory"},{"router":"DataHistory"},{"router":"DiyReport"},{"router":"DiyReportTemplete"},{"router":"ReportTempleteContent"}]},{"router":"Network","children":[{"router":"SystemNetwork"},{"router":"ISMNetwork"}]},{"router":"DataBase","children":[{"router":"DbManager"},{"router":"HistoryManager"}]},{"router":"Setting","children":[{"router":"Account"},{"router":"UserAdd"},{"router":"UserManager"},{"router":"AlarmTipsSetting"},{"router":"SystemParams"},{"router":"SystemDict"},{"router":"AccessToken"}]},{"router":"Journal","children":[{"router":"OperationJournal"}]},{"router":"Help","children":[{"router":"AboutSystem"},{"router":"SystemAuth"}]}]}]`
 	MenuReadData, err2 := os.ReadFile("conf/MenuConfig.json")
 	if err2 != nil {
 		json.Unmarshal([]byte(MenuListDefault), &MenuData)

@@ -1,12 +1,12 @@
 {
-  "version": "20261108bt",
+  "version": "20261111t144",
   "rooms": [
     {
       "code": "1A1",
       "name": "配电室1A1",
       "floor": 1,
       "file": "1A1.json",
-      "knives": 85
+      "knives": 119
     },
     {
       "code": "1A2",
@@ -20,28 +20,28 @@
       "name": "配电室1A3",
       "floor": 1,
       "file": "1A3.json",
-      "knives": 83
+      "knives": 79
     },
     {
       "code": "1A4",
       "name": "配电室1A4",
       "floor": 1,
       "file": "1A4.json",
-      "knives": 24
+      "knives": 20
     },
     {
       "code": "1A5",
       "name": "配电室1A5",
       "floor": 1,
       "file": "1A5.json",
-      "knives": 33
+      "knives": 28
     },
     {
       "code": "1B1",
       "name": "配电室1B1",
       "floor": 1,
       "file": "1B1.json",
-      "knives": 85
+      "knives": 81
     },
     {
       "code": "1B2",
@@ -55,21 +55,21 @@
       "name": "配电室1B3",
       "floor": 1,
       "file": "1B3.json",
-      "knives": 98
+      "knives": 94
     },
     {
       "code": "1B4",
       "name": "配电室1B4",
       "floor": 1,
       "file": "1B4.json",
-      "knives": 22
+      "knives": 20
     },
     {
       "code": "1B5",
       "name": "配电室1B5",
       "floor": 1,
       "file": "1B5.json",
-      "knives": 30
+      "knives": 29
     },
     {
       "code": "2A1",
@@ -174,7 +174,7 @@
       "name": "配电室5A4",
       "floor": 5,
       "file": "5A4.json",
-      "knives": 18
+      "knives": 17
     },
     {
       "code": "5B1",
@@ -188,7 +188,7 @@
       "name": "配电室5B2",
       "floor": 5,
       "file": "5B2.json",
-      "knives": 113
+      "knives": 112
     },
     {
       "code": "5B3",
@@ -217,6 +217,13 @@
       "floor": 0,
       "file": "ECC2.json",
       "knives": 95
+    },
+    {
+      "code": "动力楼",
+      "name": "配电室动力楼",
+      "floor": 0,
+      "file": "动力楼.json",
+      "knives": 61
     }
   ]
 }

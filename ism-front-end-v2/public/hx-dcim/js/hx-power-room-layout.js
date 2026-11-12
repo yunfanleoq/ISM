@@ -18,11 +18,7 @@
         index = j;
         var rooms = j.rooms || [];
         return Promise.all(rooms.map(function (room) {
-          var fileVer = ver;
-          if (/^[34][AB][12]$/.test(room.code)) fileVer = '20261108px';
-          if (room.code === '5A4' || room.code === '5B4') fileVer = '20261107merge';
-          if (room.code === '5A2' || room.code === '5A3') fileVer = '20261107merge';
-          if (/^2[AB][12]$/.test(room.code)) fileVer = '20261108bt';
+          var fileVer = '20261111t144';
           return fetch('/hx-dcim/data/hx-power-rooms/' + room.file + '?v=' + fileVer, { cache: 'no-store' })
             .then(function (r) { if (!r.ok) throw new Error(room.file); return r.json(); })
             .then(function (lay) { layouts[room.code] = lay; });
@@ -72,9 +68,27 @@
     var id = String(cad || '').split('#')[0].trim();
     if (!id || !roomName) return '';
     var code = codeOf(roomName);
+    var t1Bus = {
+      '2B1': 1, '2B2': 1, '3A1': 1, '3A2': 1, '3B1': 1, '3B2': 1,
+      '5A3': 1, '5A4': 1, '5B2': 1, '5B3': 1, '5B4': 1
+    };
+    /* 图上的 445，测点不一定在同一层：1B1 在 T4，一批室在 T1，其余就是室号_445。 */
+    function busTie() {
+      if (code === '1B1') return roomName + '_T4_445';
+      if (t1Bus[code]) return roomName + '_T1_445';
+      return roomName + '_445';
+    }
+    if (id === '445' || id === 'T1-445') return busTie();
+    /* 5B1/5B2 测试回路的字在 DXF 里粘成了 X5B1-T，测点是 U1_XT / U2_XT。 */
+    if ((code === '5B1' || code === '5B2') && /^U\d+-X5$/i.test(id)) {
+      return roomName + '_' + id.replace(/X5/i, 'XT').replace(/-/g, '_');
+    }
+    /* 1A2 这块铭牌写 Y23-1，点表只有不带支路号的 U1_Y23。 */
+    if (code === '1A2' && id === 'U1-Y23-1') return roomName + '_U1_Y23';
     var m = id.match(new RegExp('^' + code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-(.+)$', 'i'));
     if (m) {
-      /* 单室图柜号常带室号前缀，测点在 T1/T2 下 */
+      if (m[1] === '445') return busTie();
+      /* 单室图柜号常带室号前缀，测点在 T1/T2 下。5A4-411-1 这种没写 T 的也走这里。 */
       return roomName + '_T1_' + m[1].replace(/-/g, '_');
     }
     return roomName + '_' + id.replace(/-/g, '_');
@@ -106,6 +120,8 @@
     if (fit) n.bladeFit = 1;
     if (spec.bladeLeft) n.bladeLeft = 1;
     if (spec.bladeFlip) n.bladeFlip = 1;
+    if (spec.jawUp) n.jawUp = 1;
+    if (spec.anchor) n.anchor = 1;
     return n;
   }
 
@@ -143,6 +159,14 @@
     var midY = n.y + KNIFE_H / 2;
     if (n.orient === 'h') {
       var axisY = n.y + 30;
+      /* 二层按刀符号真实端子：铰接是进线，刀尖是出线。母线在哪一侧由 anchor + bladeFlip 决定。 */
+      if (n.anchor) {
+        if (n.bladeFlip) return { in: { x: n.x + 119, y: axisY }, out: { x: n.x - 9.71, y: axisY } };
+        return { in: { x: n.x - 21, y: axisY }, out: { x: n.x + 107.71, y: axisY } };
+      }
+      if (n.bladeFlip) {
+        return { in: { x: n.x + 119, y: axisY }, out: { x: n.x - 9.71, y: axisY } };
+      }
       var long = n.bladeFit ? 140 : (114 * KNIFE_H / 124);
       return { in: { x: midX - long / 2, y: axisY }, out: { x: midX + KNIFE_W / 2 + 18, y: axisY } };
     }
@@ -159,10 +183,56 @@
     return /母\s*联|^445$/.test(blob);
   }
 
+  /* 2A2 东侧：列头铭牌在立管左侧约 100～260px，刀尖却朝右。
+     铰接留在立管上，只把刀尖翻向这块铭牌。西侧和间距更大的不翻。 */
+  function aimEastBladesAtPlates(nodes) {
+    var plates = [];
+    nodes.forEach(function (n) {
+      if (n.t === 'T' && n.w && n.h && !n.knifeTag) plates.push(n);
+    });
+    nodes.forEach(function (kn) {
+      if (kn.t !== 'I' || kn.orient !== 'h' || !kn.anchor || !kn.cad) return;
+      var cid = String(kn.cad).replace(/@\d+$/, '');
+      var axis = kn.y + 30;
+      var hinge = kn.bladeFlip ? kn.x + 119 : kn.x - 21;
+      if (hinge < 6000) return;
+      var out = kn.bladeFlip ? kn.x - 9.71 : kn.x + 107.71;
+      var re = new RegExp('(^|[^A-Z0-9])' + cid.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^0-9]|$)');
+      var cands = [];
+      plates.forEach(function (t) {
+        if (!re.test(String(t.s || '').replace(/\n/g, ' '))) return;
+        if (axis < t.y - 12 || axis > t.y + t.h + 12) return;
+        cands.push(t);
+      });
+      if (cands.length !== 1) return;
+      var t = cands[0];
+      var edge;
+      var plateLeft;
+      if (t.x + t.w < hinge) {
+        edge = hinge - (t.x + t.w);
+        plateLeft = true;
+      } else if (t.x > hinge) {
+        edge = t.x - hinge;
+        plateLeft = false;
+      } else return;
+      if (edge < 20 || edge > 280) return;
+      if ((out < hinge) === plateLeft) return;
+      if (plateLeft) {
+        kn.x = hinge - 119;
+        kn.bladeFlip = 1;
+        kn.jawUp = 1;
+      } else {
+        kn.x = hinge + 21;
+        delete kn.bladeFlip;
+        delete kn.jawUp;
+      }
+    });
+  }
+
   function build(pg, lay) {
     var prefix = pg.name + '_';
     var code = codeOf(pg.name);
-    var fit = code === '5A2' || code === '5A3' || code === '5A4' || code === '5B1' || code === '5B2' || code === '5B3' || code === '5B4' || /^2[AB][12]$/.test(code) || /^[34][AB][12]$/.test(code);
+    var fit = code === '1A1' || code === '1A2' || code === '1B1' || code === '5A2' || code === '5A3' || code === '5A4' || code === '5B1' || code === '5B2' || code === '5B3' || code === '5B4' || /^2[AB][12]$/.test(code) || /^[34][AB][12]$/.test(code);
     var scene = indexSceneKnives(pg.nodes || [], prefix);
     var nodes = [];
     var missing = [];
@@ -185,8 +255,12 @@
     });
     (lay.texts || []).forEach(function (t) {
       var n = { t: 'T', s: t.s, x: t.x, y: t.y, w: t.w, h: t.h, fs: t.fs, c: t.c || '#ffffff', z: 6, lay: 1, al: t.al || 'c' };
+      if (t.cLock) n.cLock = 1;
+      if (t.fsLock) n.fsLock = 1;
       if (t.capDraw) n.capDraw = 1;
       if (t.plate) n.plate = 1;
+      /* 刀口另贴的 72×36 柜号不是铭牌。字留下，不给它画框。 */
+      if (t.knifeTag || (t.w === 72 && t.h === 36 && String(t.s || '').indexOf('\n') < 0)) n.knifeTag = 1;
       if (t.stack) n.stack = 1;
       /* UPS / 机组铭牌：补回路 key，悬停才能取数（如 5A1-U11、UPS1进线） */
       if (!n.k && t.s) {
@@ -198,22 +272,23 @@
       }
       nodes.push(n);
     });
-    if (/^[34][AB][12]$/.test(code)) {
-      addFloor34Frames(nodes);
-      landPlateLeads(nodes);
-    }
-    tagOutletFollow(nodes);
+    if (/^[34][AB][12]$/.test(code)) addFloor34Frames(nodes);
+    /* 2A2 东侧测试母线这一排：铭牌在立管左侧，刀尖要朝铭牌，铰接留在立管上。 */
+    if (code === '2A2') aimEastBladesAtPlates(nodes);
+    /* 一次图不再把短缝拉到铭牌上。DXF 里断开的地方保持断开。 */
+    tagOutletFollow(nodes, pg.name);
     return { nodes: nodes, missing: missing };
   }
 
   /* 柜号、kVA、母联是铭牌。房间标题和母线名称不是。 */
   function isNameplateText(n) {
-    if (!n || n.t !== 'T' || !(n.w > 28) || !(n.h > 16)) return false;
+    if (!n || n.t !== 'T' || n.knifeTag) return false;
+    if (!(n.w > 28) || !(n.h > 16)) return false;
     if (n.w > 220 || n.h > 160) return false;
     var s = String(n.s || '');
     if (/母线/.test(s)) return false;
     if (/配电室$/.test(s.replace(/\s/g, '')) && s.indexOf('\n') < 0) return false;
-    return /T[12]-|U[12]-|445|kVA/.test(s);
+    return /T[12](?:-|\n|$)|U[12]-|445|kVA/.test(s);
   }
 
   function addFloor34Frames(nodes) {
@@ -232,7 +307,6 @@
       edges.forEach(function (e) {
         var ln = lineNode(e[0], e[1], { c: '#8aa0b8', sw: 1.25, net: 'frame', noHop: 1 });
         if (!ln) return;
-        ln.holdGray = 1;
         ln.noHop = 1;
         nodes.push(ln);
       });
@@ -247,6 +321,8 @@
     });
     nodes.forEach(function (ln) {
       if (ln.t !== 'L' || ln.net === 'frame' || ln.net === 'bus' || ln.holdGray) return;
+      /* 房间母线不收到铭牌上。东侧测试母线和东侧备份母线保持断开。 */
+      if (ln.w > 600 && Math.abs((Number(ln.a) || 0) % 180) < 1) return;
       var ends = lineEnds(ln);
       if (!ends || ends.length < 2) return;
       var a = { x: ends[0].x, y: ends[0].y };
@@ -320,7 +396,56 @@
   }
 
   /* 出线侧跟闸合红分绿；母联跳过；铭牌同色 */
-  function tagOutletFollow(nodes) {
+  function idsInPlate(text) {
+    var re = /(?:\d[AB]\d-(?:T\d+-\d+(?:-\d+)?|\d{3}(?:-\d+)?))|(?:T\d+-\d+(?:-\d+)?)|(?:U\d+-(?:XBP|XT|X\d+(?:-\d+)*|Y\d+(?:-\d+)*))/gi;
+    var m;
+    var seen = {};
+    var out = [];
+    while ((m = re.exec(String(text || '')))) {
+      if (!seen[m[0]]) {
+        seen[m[0]] = 1;
+        out.push(m[0]);
+      }
+    }
+    return out;
+  }
+
+  /* 机组铭牌是 5B2-U11。两位数字，后面不跟刀的 -X / -Y。恰好一个就用它。多个不猜。 */
+  function upsUnitKey(text) {
+    var re = /(?:配电室)?(\d[AB]\d)[-_]U(\d{2})(?![-_]\d)/gi;
+    var m;
+    var seen = {};
+    var out = [];
+    while ((m = re.exec(String(text || '')))) {
+      var id = m[1].toUpperCase() + '-U' + m[2];
+      if (!seen[id]) {
+        seen[id] = 1;
+        out.push(id);
+      }
+    }
+    if (out.length !== 1) return out.length > 1 ? null : '';
+    var um = out[0].match(/^(\d[AB]\d)-U(\d{2})$/);
+    if (!um) return '';
+    return '配电室' + um[1] + '_U' + um[2];
+  }
+
+  /* 铭牌上恰好一个柜号时，回路用这个号，不被旁边的刀盖掉。多个柜号不猜。
+     没有刀柜号时，恰好一个机组号同样锁住，出线漫过来也不能改成邻刀。 */
+  function plateOwnKey(tx, roomName) {
+    var ids = idsInPlate(tx.s);
+    if (ids.length > 1) return null;
+    if (!roomName) return '';
+    if (ids.length === 1) {
+      var bare = ids[0];
+      var code = codeOf(roomName);
+      var pref = bare.match(new RegExp('^' + code.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '-(.+)$', 'i'));
+      if (pref && /^(T\d+|U\d+)/i.test(pref[1])) bare = pref[1];
+      return circuitFromCad(roomName, bare);
+    }
+    return upsUnitKey(tx.s);
+  }
+
+  function tagOutletFollow(nodes, roomName) {
     var knives = [];
     var lines = [];
     var texts = [];
@@ -357,7 +482,10 @@
       return Number(ln.w) > 280;
     }
     function isUpstream(e, taps, horizKnife) {
-      if (horizKnife) return e.x < taps.in.x - 2;
+      if (horizKnife) {
+        if (taps.out.x < taps.in.x) return e.x > taps.in.x + 2;
+        return e.x < taps.in.x - 2;
+      }
       return e.y < taps.in.y - 2;
     }
     knives.forEach(function (kn) {
@@ -462,6 +590,22 @@
           });
         });
         if (already || hit) {
+          if (tx._plateLock) return;
+          var own = plateOwnKey(tx, roomName);
+          if (own === null) {
+            delete tx.k;
+            tx.followKnife = 0;
+            tx._plateLock = 1;
+            return;
+          }
+          /* 铭牌上有自己的柜号就用它。出线擦到下一块时，不能把上一把刀的回路盖上去。 */
+          if (own) {
+            tx.k = own;
+            tx.followKnife = 1;
+            tx._plateLock = 1;
+            return;
+          }
+          if (tx.k && String(tx.k) !== String(kn.k)) return;
           tx.k = kn.k;
           tx.followKnife = 1;
         }

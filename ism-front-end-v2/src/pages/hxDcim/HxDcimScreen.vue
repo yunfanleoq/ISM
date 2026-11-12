@@ -9,7 +9,7 @@
     <iframe
       ref="frame"
       title="新大屏"
-      src="/hx-dcim/index.html?v=20261108px#/power"
+      src="/hx-dcim/index.html?v=20261111t144#/power"
       @load="onFrameLoad"
       @error="onFrameError"
     />

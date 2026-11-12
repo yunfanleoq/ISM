@@ -1024,8 +1024,8 @@ export default {
       return STATUS_LABELS[status] || status
     },
     levelLabel(level) {
-      const map = { 0: '提示', 1: '次要', 2: '重要', 3: '紧急' }
-      return map[level] || '未知'
+      const label = this.$dictLabel('alarm_level', level)
+      return label || '未知'
     },
   },
 }

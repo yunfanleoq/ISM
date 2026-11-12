@@ -219,6 +219,16 @@ if [[ -n "${ISM_BE_PORT:-}" ]]; then
     sed -i "s/^httpport=.*/httpport=${HTTPPORT}/" "$CONF"
   fi
 fi
+# 空 httpaddr 时 beego 听「:端口」（全部网卡）。写明 0.0.0.0，避免现场改成 127.0.0.1 后外网 Connection refused。
+if grep -q '^httpaddr=' "$CONF"; then
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    sed -i '' 's/^httpaddr=.*/httpaddr=0.0.0.0/' "$CONF"
+  else
+    sed -i 's/^httpaddr=.*/httpaddr=0.0.0.0/' "$CONF"
+  fi
+else
+  printf '\nhttpaddr=0.0.0.0\n' >> "$CONF"
+fi
 
 mkdir -p "$BACKEND_DIR/data/sessionon" "$BACKEND_DIR/static/HistoryData" "$BACKEND_DIR/static/reportTemplete" "$BACKEND_DIR/static/RecordVideo" "$ROOT/logs"
 
@@ -230,45 +240,103 @@ if [[ ! -x "$BACKEND_DIR/ism_server" ]]; then
   exit 1
 fi
 
-if [[ -f "$PID_BACKEND" ]] && kill -0 "$(cat "$PID_BACKEND")" 2>/dev/null; then
-  echo "后端已在运行 (PID $(cat "$PID_BACKEND"))"
-else
-  echo "启动后端 (端口 ${HTTPPORT}) ..."
-  cd "$BACKEND_DIR"
-  chmod +x ./ism_server
-  nohup ./ism_server > "$LOG_BACKEND" 2>&1 &
-  echo $! > "$PID_BACKEND"
-  cd "$ROOT"
-  ok=0
-  for i in $(seq 1 30); do
-    if ss -tlnp 2>/dev/null | grep -q ":${HTTPPORT}\\b"; then
-      ok=1
-      break
+# 堡垒机会话注销会杀掉同一会话里的 nohup 子进程。setsid 新开会话才能留下。
+# 这是 Linux 现场包脚本。macOS 开发机不要用它起本机 ISM。
+if ! command -v setsid >/dev/null 2>&1; then
+  echo "错误: 没有 setsid，进程会随堡垒机注销一起退出"
+  exit 1
+fi
+
+port_listen_line() {
+  local port="$1"
+  if command -v ss >/dev/null 2>&1; then
+    ss -lnt | grep -E "[.:]${port}([^0-9]|$)" || true
+  else
+    netstat -lnt | grep -E "[.:]${port}([^0-9]|$)" || true
+  fi
+}
+
+require_listen() {
+  local port="$1" name="$2" i line
+  for i in $(seq 1 40); do
+    line="$(port_listen_line "$port")"
+    if [[ -n "$line" ]]; then
+      echo "$line"
+      if echo "$line" | grep -q "127.0.0.1:${port}" \
+        && ! echo "$line" | grep -Eq "0\\.0\\.0\\.0:${port}|\\*:${port}|\\[::\\]:${port}"; then
+        echo "${name} 只听了 127.0.0.1:${port}，用机器 IP 访问会 Connection refused"
+        return 1
+      fi
+      return 0
     fi
     sleep 1
   done
-  if [[ "$ok" -ne 1 ]]; then
-    echo "警告: 后端 ${HTTPPORT} 健康检查未通过，请查看 $LOG_BACKEND"
-    tail -20 "$LOG_BACKEND" 2>/dev/null || true
-  fi
+  echo "${name} 端口 ${port} 没有在听"
+  return 1
+}
+
+# 不要用 PATH 上的 python3。现场 /usr/local/bin/python3 会缺 libpython3.11.so.1.0。
+pick_python() {
+  local c
+  for c in /usr/bin/python3 /usr/bin/python3.8 /usr/bin/python3.7 /usr/bin/python3.6 /usr/bin/python2; do
+    [[ -x "$c" ]] || continue
+    "$c" -c 'print(1)' >/dev/null 2>&1 || continue
+    "$c" -c 'import sys; raise SystemExit(0 if sys.version_info[0] >= 3 else 1)' >/dev/null 2>&1 || continue
+    echo "$c"
+    return 0
+  done
+  return 1
+}
+PY="$(pick_python || true)"
+if [[ -z "$PY" ]]; then
+  echo "没有可用的 python"
+  exit 1
+fi
+echo "前端解释器: $PY"
+
+if [[ -n "$(port_listen_line "$HTTPPORT")" ]]; then
+  echo "后端 ${HTTPPORT} 已在听，不重启"
+elif [[ -f "$PID_BACKEND" ]] && kill -0 "$(cat "$PID_BACKEND")" 2>/dev/null; then
+  echo "后端已在运行 (PID $(cat "$PID_BACKEND"))"
+else
+  echo "启动后端 (0.0.0.0:${HTTPPORT}) ..."
+  cd "$BACKEND_DIR"
+  chmod +x ./ism_server
+  setsid ./ism_server > "$LOG_BACKEND" 2>&1 < /dev/null &
+  echo $! > "$PID_BACKEND"
+  cd "$ROOT"
 fi
 
-if [[ -f "$PID_FRONTEND" ]] && kill -0 "$(cat "$PID_FRONTEND")" 2>/dev/null; then
+if [[ -n "$(port_listen_line "$FRONTEND_PORT")" ]]; then
+  echo "前端 ${FRONTEND_PORT} 已在听，不重启"
+elif [[ -f "$PID_FRONTEND" ]] && kill -0 "$(cat "$PID_FRONTEND")" 2>/dev/null; then
   echo "前端已在运行 (PID $(cat "$PID_FRONTEND"))"
 else
-  echo "启动前端静态服务 (端口 ${FRONTEND_PORT}, /api -> ${HTTPPORT}) ..."
-  nohup python3 "$ROOT/scripts/serve_test_frontend.py" \
+  echo "启动前端 (0.0.0.0:${FRONTEND_PORT}, /api -> 127.0.0.1:${HTTPPORT}) ..."
+  setsid "$PY" "$ROOT/scripts/serve_test_frontend.py" \
     --port "${FRONTEND_PORT}" \
     --dist "$ROOT/web/dist" \
     --backend "http://127.0.0.1:${HTTPPORT}" \
-    > "$LOG_FRONTEND" 2>&1 &
+    > "$LOG_FRONTEND" 2>&1 < /dev/null &
   echo $! > "$PID_FRONTEND"
 fi
 
+echo "确认端口 ..."
+if ! require_listen "$HTTPPORT" "后端"; then
+  echo "后端没起来，看 $LOG_BACKEND"
+  tail -30 "$LOG_BACKEND" 2>/dev/null || true
+  exit 1
+fi
+if ! require_listen "$FRONTEND_PORT" "前端"; then
+  echo "前端没起来，看 $LOG_FRONTEND"
+  tail -30 "$LOG_FRONTEND" 2>/dev/null || true
+  exit 1
+fi
+
 echo ""
-echo "=== ISM 测试环境已启动 ==="
-echo "  后端端口: ${HTTPPORT}"
-echo "  前端端口: ${FRONTEND_PORT}"
+echo "=== ISM 测试环境已启动（会话断开后仍在） ==="
+echo "  后端: 0.0.0.0:${HTTPPORT}"
+echo "  前端: 0.0.0.0:${FRONTEND_PORT}"
 echo "  访问: http://<本机IP>:${FRONTEND_PORT}/#/login"
 echo "  外网(cpolar): https://largescreen.cpolar.cn"
 echo "  账号: admin / 123456"

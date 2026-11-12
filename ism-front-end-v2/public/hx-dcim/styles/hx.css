@@ -189,6 +189,8 @@
 }
 /* 刀尖在插入点左侧时反过来转，端子仍落在 CAD 刀长上。不影响没标 bladeFlip 的刀。 */
 .hx-sym-h.hx-blade-flip .hx-blade { transform: rotate(90deg); transform-origin: 50% 50%; }
+/* 铰接在右、刀口仍朝上：先转到刀尖朝左，再上下镜像，弧回到轴线上方。端子仍在轴上。 */
+.hx-sym-h.hx-blade-flip.hx-jaw-up .hx-blade { transform: scaleY(-1) rotate(90deg); transform-origin: 50% 50%; }
 .hx-blade-fit:not(.hx-sym-h) .hx-blade,
 .hx-blade-fit.hx-sym-has-out:not(.hx-sym-h) .hx-blade {
   display: block; width: auto; height: var(--hx-blade-long);
@@ -243,6 +245,8 @@
   background: rgba(7, 32, 68, .96);
   cursor: text;
   white-space: pre-wrap;
+  user-select: text;
+  -webkit-user-select: text;
 }
 .hx-glow {
   border: 1px solid rgba(150, 220, 255, .78); border-radius: 12px; pointer-events: none;
@@ -301,7 +305,18 @@
   display: block; right: -16px; top: var(--hx-caret-y, 24px);
   border-left-color: #7fd0ff;
 }
-.hx-hover-title { color: #ffd24d; margin-bottom: 6px; font-size: 13px; }
+.hx-hover.is-caret-top .hx-hover-caret {
+  display: block; top: -16px; left: var(--hx-caret-x, 24px);
+  border-bottom-color: #7fd0ff;
+}
+.hx-hover.is-caret-bottom .hx-hover-caret {
+  display: block; bottom: -16px; left: var(--hx-caret-x, 24px);
+  border-top-color: #7fd0ff;
+}
+.hx-hover-title {
+  color: #ffd24d; margin-bottom: 6px; font-size: 13px; line-height: 1.35;
+  word-break: keep-all; line-break: strict;
+}
 .hx-pt { display: flex; justify-content: space-between; gap: 12px; color: #e7f2ff; padding: 3px 0; font-size: 12px; }
 .hx-pt b { color: #9eebff; font-weight: 600; white-space: nowrap; }
 .hx-site-note { padding: 28px 32px; }
@@ -361,6 +376,7 @@
 }
 .hx-edit-cmd-msg { flex-basis: 100%; margin: 0; min-height: 16px; font-size: 11px; color: #9eebff; }
 .hx-edit-layer { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; }
+.is-hx-editing .hx-edit-layer { z-index: 6800; }
 .hx-edit-layer, .hx-edit-layer * { pointer-events: none; }
 .hx-edit-wires { position: absolute; left: 0; top: 0; overflow: visible; }
 .is-hx-editing .hx-edit-item,
@@ -382,10 +398,44 @@
 .is-hx-editing .is-hx-sel { outline: 1px dashed #ffd24d; outline-offset: 2px; }
 .is-hx-editing .hx-wires [data-hx-line].is-hx-sel { stroke: #ffd24d !important; }
 .is-hx-editing .hx-edit-wires line.hx-edit-item.is-hx-sel { stroke: #ffd24d; }
+.hx-snap-magnet {
+  position: absolute; width: 22px; height: 22px; box-sizing: border-box;
+  border: 2px solid #ffd24d; border-radius: 50%;
+  box-shadow: 0 0 10px rgba(255, 210, 77, 0.9);
+  pointer-events: none; z-index: 7100; display: none;
+}
 .hx-edit-handle {
   position: absolute; width: 12px; height: 12px; box-sizing: border-box;
   border-radius: 50%; background: #ffd24d; border: 1px solid #072044;
   z-index: 7000; cursor: grab;
+}
+.hx-edit-handle[data-cursor="ns"] { cursor: ns-resize; }
+.hx-edit-handle[data-cursor="ew"] { cursor: ew-resize; }
+.hx-edit-handle[data-cursor="nwse"] { cursor: nwse-resize; }
+.hx-edit-handle[data-cursor="nesw"] { cursor: nesw-resize; }
+.hx-edit-style {
+  position: absolute; right: 12px; bottom: 52px; z-index: 32;
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; color: #e7f2ff; font-size: 12px;
+  background: rgba(6, 28, 58, .94);
+  border: 1px solid rgba(127, 208, 255, .45); border-radius: 4px;
+}
+.hx-edit-style[hidden] { display: none !important; }
+.hx-edit-style [data-hx-color-free] { display: flex; align-items: center; gap: 8px; }
+.hx-edit-style [data-hx-color-free][hidden],
+.hx-edit-style [data-hx-knife-note][hidden] { display: none !important; }
+.hx-edit-style [data-hx-knife-note] { color: #ffd24d; }
+.hx-edit-style input[type="number"] {
+  width: 52px; font-size: 12px; color: #e7f2ff;
+  background: rgba(4, 18, 36, .9); border: 1px solid rgba(127, 208, 255, .35);
+  border-radius: 3px; padding: 2px 4px;
+}
+.hx-edit-style input[type="color"] {
+  width: 28px; height: 22px; padding: 0; border: 0; background: transparent; cursor: pointer;
+}
+.hx-edit-style button {
+  width: 16px; height: 16px; padding: 0; border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.7); cursor: pointer;
 }
 
 /* —— 网络通讯图（管理机 → COM 列 → 设备） —— */

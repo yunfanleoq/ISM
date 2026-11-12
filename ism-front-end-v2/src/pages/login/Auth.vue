@@ -1,19 +1,27 @@
 <template>
-      <div class="boxer" :style="styleVar">
+      <div class="boxer xunan-login" :style="styleVar">
         <div class="header">
           <div class="inner-header flex">
             <div class="box1">
               <div class="middle1">
                 <div class="middle_left">
-                  <img :src="systemLoginBg"  style="width: 670px;height: 600px;">
+                  <div class="brand-panel">
+                    <img :src="systemLogo" alt="循安" class="brand-logo" />
+                    <h1 class="brand-title">循安科技电力监控平台</h1>
+                    <p class="brand-subtitle">POWER MONITORING &amp; INTELLIGENT MANAGEMENT</p>
+                    <ul class="brand-features">
+                      <li>实时数据采集与监控</li>
+                      <li>智能告警与故障预警</li>
+                      <li>能耗分析与报表统计</li>
+                    </ul>
+                  </div>
                 </div>
                 <div class="middle_right">
                   <div class="mr_box">
-                    <div>
-                      <div>
-                        <img :src="systemLogo" alt="logo">
-                      </div>
+                    <div class="login-head">
+                      <img :src="systemLogo" alt="logo" class="login-card-logo" />
                       <h2>授权</h2>
+                      <p class="login-welcome">请核对机器码并填写授权码</p>
                     </div>
                     <a-form @submit="onSubmit" :form="form">
                       <a-alert type="error" :closable="true" v-show="error" :message="error" showIcon style="margin-bottom: 24px;" />
@@ -63,6 +71,9 @@
           </div>
           <!--Waves end-->
         </div>
+        <div class="xunan-footer">
+          © 北京循安科技有限公司 - 循安科技电力监控平台
+        </div>
       </div>
 </template>
 
@@ -91,7 +102,11 @@ export default {
       return this.$store.state.setting.systemName
     },
     systemLogo () {
-      return this.$store.state.setting.SystemLogo
+      const logo = this.$store.state.setting.SystemLogo
+      if (!logo || String(logo).indexOf('data:image') === 0) {
+        return '/static/branding/logo-xunan-hexagon.png'
+      }
+      return logo
     },
     ProtectedID () {
       return this.$store.state.setting.ProtectedID
@@ -237,7 +252,7 @@ export default {
     width: 70px;
   }
   .boxer {
-    background-image:var(--bgImage);
+    background-image: linear-gradient(135deg, #0a1a3a 0%, #0d2b55 45%, #0a3d5c 100%);
     height: 100%;
     position: relative;
     overflow: hidden;
@@ -248,24 +263,88 @@ export default {
     width: 1156px;
     margin:6% auto 0;
     overflow: hidden;
-    box-shadow: 0px 0px 13px 5px rgba(14,25,80,.2);
-    border-radius: 10px;
+    box-shadow: 0px 0px 24px 8px rgba(0, 40, 80, .35);
+    border-radius: 12px;
+    background: rgba(8, 28, 58, 0.55);
+    border: 1px solid rgba(19, 194, 194, 0.25);
   }
   .middle1 {
     overflow: hidden;
+    display: flex;
+    align-items: stretch;
   }
   .middle_left {
-    float: left;
-    width: 500px;
+    float: none;
+    width: 560px;
+    flex: 0 0 560px;
+    height: 600px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at 30% 20%, rgba(19,194,194,0.18), transparent 55%),
+      linear-gradient(160deg, rgba(10,40,80,0.9), rgba(8,24,50,0.95));
   }
-  .middle_left img {
-
+  .brand-panel {
+    padding: 40px 48px;
+    text-align: left;
+    color: #e8f7f7;
+  }
+  .brand-logo {
+    width: 88px;
+    height: 88px;
+    object-fit: contain;
+    margin-bottom: 20px;
+  }
+  .brand-title {
+    margin: 0 0 10px;
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    color: #ffffff;
+    line-height: 1.3;
+  }
+  .brand-subtitle {
+    margin: 0 0 28px;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    color: rgba(160, 220, 230, 0.85);
+  }
+  .brand-features {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  .brand-features li {
+    margin: 12px 0;
+    padding: 12px 16px;
+    border-radius: 8px;
+    background: rgba(12, 40, 72, 0.65);
+    border: 1px solid rgba(19, 194, 194, 0.35);
+    color: #d7f3f3;
+    font-size: 15px;
   }
   .middle_right {
-    width: 500px;
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
     height: 600px;
-    float: right;
-    background: #ffffff;
+    float: none;
+    background: rgba(255, 255, 255, 0.96);
+  }
+  .login-head { text-align: center; margin-bottom: 8px; }
+  .login-card-logo { width: 72px; height: 72px; object-fit: contain; }
+  .login-welcome { margin: -8px 0 24px; color: #6b7c8a; font-size: 13px; }
+  .xunan-footer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 28px;
+    z-index: 5;
+    text-align: center;
+    color: rgba(210, 230, 240, 0.88);
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    pointer-events: none;
   }
   .mr_box {
     width: 318px;

@@ -347,21 +347,7 @@ func (c *VirtualDeviceController) UpdateAllVirtualDeviceDataModel() {
 		return 0
 	}
 	parseAlarmLevel := func(v string) int {
-		switch v {
-		case "次要":
-			return 1
-		case "重要":
-			return 2
-		case "紧急":
-			return 3
-		case "致命":
-			return 4
-		default:
-			if n, err := strconv.Atoi(v); err == nil {
-				return n
-			}
-			return 0
-		}
+		return models.ParseAlarmLevel(v)
 	}
 	parseRecordType := func(v string) int {
 		return parseRecordTypeFromExcel(v)

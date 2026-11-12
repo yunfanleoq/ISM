@@ -364,19 +364,19 @@ export default {
     optionFunc(){
       let _t = this
       this.trafficWay = [{
-        name: this.$t('dataModel.alarm.Tips'),
+        name: this.$dictLabel('alarm_level', 0),
         value: _t.TipsCount*1000
       },{
-        name: this.$t('dataModel.alarm.Minor'),
+        name: this.$dictLabel('alarm_level', 1),
         value: _t.MinorCount*1000
       },{
-        name: this.$t('dataModel.alarm.Importance'),
+        name: this.$dictLabel('alarm_level', 2),
         value: _t.ImportanceCount*1000
       },{
-        name: this.$t('dataModel.alarm.Urgency'),
+        name: this.$dictLabel('alarm_level', 3),
         value: _t.UrgencyCount*1000
       },{
-        name: this.$t('dataModel.alarm.Deadly'),
+        name: this.$dictLabel('alarm_level', 4),
         value: _t.DeadlyCount*1000
       }];
 
@@ -417,7 +417,7 @@ export default {
           show:_t.ISShowLegend,
           icon: "circle",
           orient: 'horizontal',
-          data:[_t.$t('dataModel.alarm.Tips'),_t.$t('dataModel.alarm.Minor'),_t.$t('dataModel.alarm.Importance'),_t.$t('dataModel.alarm.Urgency'),_t.$t('dataModel.alarm.Deadly')],
+          data:[_t.$dictLabel('alarm_level', 0),_t.$dictLabel('alarm_level', 1),_t.$dictLabel('alarm_level', 2),_t.$dictLabel('alarm_level', 3),_t.$dictLabel('alarm_level', 4)],
           bottom: '2%',
           align: 'right',
           textStyle: {

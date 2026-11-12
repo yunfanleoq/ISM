@@ -231,11 +231,7 @@
                 style="width: 100%"
                 v-model="showAlarmItems"
             >
-              <a-select-option value='0'>{{$t('dataModel.alarm.Tips')}}</a-select-option>
-              <a-select-option value='1'>{{$t('dataModel.alarm.Minor')}}</a-select-option>
-              <a-select-option value='2'>{{$t('dataModel.alarm.Importance')}}</a-select-option>
-              <a-select-option value='3'>{{$t('dataModel.alarm.Urgency')}}</a-select-option>
-              <a-select-option value='4'>{{$t('dataModel.alarm.Deadly')}}</a-select-option>
+              <a-select-option v-for="opt in $dictOptions('alarm_level')" :key="opt.value" :value="opt.value">{{ opt.label }}</a-select-option>
             </a-select>
           </a-form-item>
           <a-form-item :label-col="{ span: 3}" :wrapper-col="{ span: 7}" >
@@ -384,11 +380,7 @@
                 style="width: 100%"
                 v-model="showWindowsAlarmItems"
             >
-              <a-select-option value='0'>{{$t('dataModel.alarm.Tips')}}</a-select-option>
-              <a-select-option value='1'>{{$t('dataModel.alarm.Minor')}}</a-select-option>
-              <a-select-option value='2'>{{$t('dataModel.alarm.Importance')}}</a-select-option>
-              <a-select-option value='3'>{{$t('dataModel.alarm.Urgency')}}</a-select-option>
-              <a-select-option value='4'>{{$t('dataModel.alarm.Deadly')}}</a-select-option>
+              <a-select-option v-for="opt in $dictOptions('alarm_level')" :key="opt.value" :value="opt.value">{{ opt.label }}</a-select-option>
             </a-select>
           </a-form-item>
 
@@ -485,11 +477,7 @@
                 style="width: 100%"
                 v-model="showAlarmVoiceItems"
             >
-              <a-select-option value='0'>{{$t('dataModel.alarm.Tips')}}</a-select-option>
-              <a-select-option value='1'>{{$t('dataModel.alarm.Minor')}}</a-select-option>
-              <a-select-option value='2'>{{$t('dataModel.alarm.Importance')}}</a-select-option>
-              <a-select-option value='3'>{{$t('dataModel.alarm.Urgency')}}</a-select-option>
-              <a-select-option value='4'>{{$t('dataModel.alarm.Deadly')}}</a-select-option>
+              <a-select-option v-for="opt in $dictOptions('alarm_level')" :key="opt.value" :value="opt.value">{{ opt.label }}</a-select-option>
             </a-select>
           </a-form-item>
           <a-form-item :label-col="{ span: 3}" :wrapper-col="{ span: 7}" >

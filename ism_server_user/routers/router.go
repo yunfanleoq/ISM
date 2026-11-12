@@ -457,6 +457,13 @@ func init() {
 	beego.Router("/SaveSystemHistoryConfig", &controllers.SystemParamsController{}, "*:SaveSystemHistoryConfig")
 	beego.Router("/SaveSystemTimeConfig", &controllers.SystemParamsController{}, "*:SaveSystemTimeConfig")
 	beego.Router("/TestNtpServer", &controllers.SystemParamsController{}, "*:TestNtpServer")
+	beego.Router("/GetSystemDictAll", &controllers.SystemDictController{}, "*:GetSystemDictAll")
+	beego.Router("/GetSystemDictTypeList", &controllers.SystemDictController{}, "*:GetSystemDictTypeList")
+	beego.Router("/SaveSystemDictType", &controllers.SystemDictController{}, "*:SaveSystemDictType")
+	beego.Router("/DelSystemDictType", &controllers.SystemDictController{}, "*:DelSystemDictType")
+	beego.Router("/GetSystemDictItemList", &controllers.SystemDictController{}, "*:GetSystemDictItemList")
+	beego.Router("/SaveSystemDictItem", &controllers.SystemDictController{}, "*:SaveSystemDictItem")
+	beego.Router("/DelSystemDictItem", &controllers.SystemDictController{}, "*:DelSystemDictItem")
 	//系统数据模版
 	beego.Router("/GetSystemDataTemplete", &controllers.SystemDataTempleteController{}, "*:GetSystemDataTemplete")
 	beego.Router("/AddSystemDataTemplete", &controllers.SystemDataTempleteController{}, "*:AddSystemDataTemplete")

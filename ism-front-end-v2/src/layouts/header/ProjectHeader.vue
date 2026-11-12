@@ -74,31 +74,8 @@ export default {
           messageContent =_this.$t('monitor.Notification.public.videoOnline')
         }
       }
-      if(wsData.AlarmLevel==0)
-      {
-        iconColor = '#0099FF'
-        AlarmLevel = _this.$t("dataModel.alarm.Tips")
-      }
-      else if(wsData.AlarmLevel==1)
-      {
-        iconColor = '#0066FF'
-        AlarmLevel = _this.$t("dataModel.alarm.Minor")
-      }
-      else if(wsData.AlarmLevel==2)
-      {
-        iconColor = 'yellow'
-        AlarmLevel =_this.$t("dataModel.alarm.Importance")
-      }
-      else if(wsData.AlarmLevel==3)
-      {
-        iconColor = 'orange'
-        AlarmLevel = _this.$t("dataModel.alarm.Urgency")
-      }
-      else if(wsData.AlarmLevel==4)
-      {
-        iconColor = 'red'
-        AlarmLevel = _this.$t("dataModel.alarm.Deadly")
-      }
+      iconColor = _this.$dictColor('alarm_level', wsData.AlarmLevel) || '#0099FF'
+      AlarmLevel = _this.$dictLabel('alarm_level', wsData.AlarmLevel)
       SpeechAlarmContent = SpeechAlarmContent+_this.$t('monitor.Notification.DeviceTitle')
       SpeechAlarmContent = SpeechAlarmContent+_this.$t(wsData.DeviceName)
       SpeechAlarmContent = SpeechAlarmContent+_this.$t('monitor.Notification.DataTitle')
